@@ -19099,7 +19099,20 @@ function posSettingsSub(){
 /* =========================================================
    INICIO: caja, avisos y herramientas
 ========================================================= */
+/* Sin productos: se avisa que hay que agregarlos (y no se pide la caja todavía). */
+function noProductsBannerHTML(margin){
+  if(DB.getProducts().length) return '';
+  const puede = can('gestionarProductos');
+  const sub = puede ? 'Toca aquí para agregar tu primer producto y empezar a vender'
+                    : 'Pídele al Dueño o al Administrador que agregue los productos';
+  return `<button class="alert-card" onclick="${puede ? "productsTab='catalogo'; goTo('products'); setTimeout(function(){ openProductForm(); }, 80);" : "goTo('products')"}" style="margin:${margin || '16px 0 4px'};">
+    <span class="alert-ico">${icon('box')}</span>
+    <span class="alert-txt"><span class="alert-title">Agrega tus nuevos productos</span><span class="alert-sub">${sub}</span></span>
+    <span class="acc-chev">${icon('chevronRight')}</span>
+  </button>`;
+}
 function homeCashCardHTML(){
+  if(!DB.getProducts().length) return noProductsBannerHTML('16px 0 0');
   const s = cashCurrent();
   const puede = can('manejarCaja');
   if(s && cashIsStale(s)){
@@ -19124,6 +19137,7 @@ function homeCashCardHTML(){
   </button>`;
 }
 function cashSaleBannerHTML(){
+  if(!DB.getProducts().length) return noProductsBannerHTML('12px 0 4px');
   const s = cashCurrent();
   if(s && !cashIsStale(s)) return '';
   const puede = can('manejarCaja');
