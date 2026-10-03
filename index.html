@@ -3587,7 +3587,7 @@
     <button class="navbtn" data-view="stats" data-icon="chart" onclick="goTo('stats')"><span class="navicon"></span><span>Ventas</span></button>
     <button class="navbtn" data-view="menu" data-icon="menuBook" onclick="goTo('menu')"><span class="navicon"></span><span>Menú Digital</span></button>
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
-    <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y fiado</span></button>
+    <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y gastos</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
@@ -4569,7 +4569,7 @@ function vibrate(pattern){
 }
 
 /* ---------- Navegación ---------- */
-/* Secciones nuevas (Caja y gastos, Clientes y fiado…): se registran aquí con su
+/* Secciones nuevas (Caja y gastos, Clientes y crédito…): se registran aquí con su
    función de pintado. En el celular se abren desde Inicio; en PC también
    tienen su botón en el menú lateral. */
 const EXTRA_VIEWS = {};
@@ -8684,7 +8684,6 @@ function openProductForm(productId){
         ${categories.map(c => `<option value="${c.id}" ${editing && editing.category===c.id ? 'selected':''}>${catEmo(c)}${c.name}</option>`).join('')}
       </select>
     </div>
-    ${typeof mdUnitFieldHTML === 'function' ? mdUnitFieldHTML(editing) : ''}
     <div class="field" id="pfSkuField">
       <label for="pfSku">Código de barras o clave (opcional)</label>
       <div class="sku-row">
@@ -10233,7 +10232,7 @@ function renderAccount(){
       <button class="acc-row" onclick="goTo('customers')">
         <span class="acc-ico gold">${icon('users')}</span>
         <span class="acc-txt">
-          <span class="acc-label">Clientes y fiado</span>
+          <span class="acc-label">Clientes y crédito</span>
           <span class="acc-sub">${DB.getCustomers().length} cliente${DB.getCustomers().length === 1 ? '' : 's'}${typeof totalReceivable === 'function' && totalReceivable() > 0 ? ' · te deben ' + formatMoney(totalReceivable()) : ''}</span>
         </span>
         <span class="acc-chev">${icon('chevronRight')}</span>
@@ -12765,6 +12764,7 @@ function mdCopyFallback(text, done){
    PRODUCTOS: descripción breve + unidad de venta
    (se agregan al formulario existente sin cambiar lo demás)
 ========================================================= */
+function u_present(vals){ return vals.unit != null; }
 function mdUnitFieldHTML(p){
   const unit = productUnit(p).id;
   const step = p && p.unitStep ? p.unitStep : '';
@@ -12831,7 +12831,7 @@ saveProductForm = function(productId){
   const d = document.getElementById('pfDesc');
   const u = document.getElementById('pfUnit');
   const st = document.getElementById('pfUnitStep');
-  const vals = d ? { description:d.value.trim().slice(0, 160), unit:u ? u.value : 'pieza', unitStep:st && st.value ? parseFloat(st.value) : null } : null;
+  const vals = d ? { description:d.value.trim().slice(0, 160), unit:u ? u.value : null, unitStep:st && st.value ? parseFloat(st.value) : null } : null;
   const before = DB.getProducts().map(p => p.id);
   _mdSaveProductForm(productId);
   if(!vals || document.getElementById('pfName')) return;   // no se guardó (faltan datos)
@@ -12839,8 +12839,8 @@ saveProductForm = function(productId){
   const t = productId ? list.find(p => p.id === productId) : list.find(p => !before.includes(p.id));
   if(!t) return;
   t.description = vals.description;
-  t.unit = hasSizes(t) ? 'pieza' : (vals.unit || 'pieza');
-  t.unitStep = (unitOf(t.unit).frac && vals.unitStep > 0) ? vals.unitStep : null;
+  t.unit = hasSizes(t) ? 'pieza' : (vals.unit || t.unit || 'pieza');
+  if(u_present(vals)) t.unitStep = (unitOf(t.unit).frac && vals.unitStep > 0) ? vals.unitStep : null;
   DB.saveProducts(list);
   render();
 };
@@ -16071,7 +16071,7 @@ function invContext(ctx){ INV_CTX = ctx; }
 })();
 
 /* =========================================================
-   CLIENTES Y FIADO
+   CLIENTES Y CRÉDITO
    El saldo de un cliente = lo que se le fió − sus abonos − lo que
    se le devolvió a su cuenta. Se calcula siempre desde las ventas,
    así nunca se "desacomoda".
@@ -16108,7 +16108,7 @@ function renderCustomers(){
   sales.forEach(s => { if(!lastBuy[s.customerId] || s.date > lastBuy[s.customerId]) lastBuy[s.customerId] = s.date; totalBuy[s.customerId] = (totalBuy[s.customerId] || 0) + s.total; });
   return `
     ${subViewBackHTML()}
-    <h1 class="page-title">Clientes y fiado</h1>
+    <h1 class="page-title">Clientes y crédito</h1>
     <p class="page-sub">Quién te compra, quién te debe y sus abonos</p>
 
     <div class="mdi-today">
@@ -16895,7 +16895,7 @@ function renderCash(){
       </div>
       <div class="cash-actions two">
         <button class="btn ghost" onclick="openCashCut('X')">${icon('document')} Corte parcial</button>
-        <button class="btn ghost" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}">${icon('check')} Cerrar caja</button>
+        <button class="btn dark" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}">${icon('check')} Cerrar caja</button>
       </div>` : ''}
     <div class="section-title">Movimientos de esta caja</div>
     ${(movs.length || exps.length || sum.abonos.efectivo) ? `<div class="card mov-card">
@@ -19196,7 +19196,7 @@ function homeToolsHTML(){
   const t = [];
   if(can('manejarCaja') || can('registrarGastos') || cashCurrent()) t.push(['cash', 'cashbox', 'Caja y gastos', cashCurrent() ? (cashIsStale(cashCurrent()) ? 'Falta el corte' : 'Caja abierta') : 'Caja cerrada', "cashTab='caja'; goTo('cash')"]);
   const debe = typeof totalReceivable === 'function' ? totalReceivable() : 0;
-  t.push(['customers', 'users', 'Clientes y fiado', debe > 0.004 ? 'Te deben ' + formatMoney(debe) : 'Fiado y abonos', "goTo('customers')"]);
+  t.push(['customers', 'users', 'Clientes y crédito', debe > 0.004 ? 'Te deben ' + formatMoney(debe) : 'Crédito y abonos', "goTo('customers')"]);
   return `
     <div class="section-title">Herramientas</div>
     <div class="tool-grid">${t.map(x => `
