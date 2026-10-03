@@ -3995,12 +3995,7 @@ function illustration(name, opts){
 
 const IVA_RATE = 0.16;
 
-function defaultCategories(){
-  return [
-    { id:'hotcakes',  name:'Hotcakes',  emoji:'🥞', color:'#D19A4E', demo:true },
-    { id:'malteadas', name:'Malteadas', emoji:'🥤', color:'#D96A8A', demo:true },
-  ];
-}
+function defaultCategories(){ return []; }
 const UNCATEGORIZED = { id:'_none', name:'Sin categoría', emoji:'', color:'#8A93AC' };
 
 const SERVICE_TYPES = [
@@ -4213,14 +4208,7 @@ function dismissDemoHint(){
   try{ localStorage.setItem('mesa_demo_hint_off', '1'); }catch(e){}
 }
 
-function defaultProducts(){
-  return [
-    { id:'demo1', name:'Hotcakes con miel (EJEMPLO · reemplázame)',      price:65, cost:22, category:'hotcakes',  active:true, image:DEMO_PHOTOS.hotcakesMiel,      demo:true },
-    { id:'demo2', name:'Hotcakes con fresa (EJEMPLO · reemplázame)',     price:75, cost:28, category:'hotcakes',  active:true, image:DEMO_PHOTOS.hotcakesFresa,     demo:true },
-    { id:'demo3', name:'Malteada de chocolate (EJEMPLO · reemplázame)',  price:55, cost:20, category:'malteadas', active:true, image:DEMO_PHOTOS.malteadaChocolate, demo:true },
-    { id:'demo4', name:'Malteada de fresa (EJEMPLO · reemplázame)',      price:55, cost:20, category:'malteadas', active:true, image:DEMO_PHOTOS.malteadaFresa,     demo:true },
-  ];
-}
+function defaultProducts(){ return []; }
 
 /* ---------- Persistencia ---------- */
 /* Cada get/save lee o guarda una lista en este navegador. */
@@ -4318,10 +4306,7 @@ function initDB(){
      de eso ya no vuelven a aparecer solos. */
   if(localStorage.getItem('mesa_todos_seed') === null){
     if(DB.getTodos().length === 0){
-      DB.saveTodos([
-        { id:'t1', text:'Comprar refrescos', done:false, date:new Date().toISOString() },
-        { id:'t2', text:'Pagar al proveedor', done:false, date:new Date().toISOString() }
-      ]);
+      DB.saveTodos([]);   /* cuenta nueva: empieza con 0 pendientes */
     }
     localStorage.setItem('mesa_todos_seed', '1');
   }
@@ -8234,7 +8219,8 @@ function renderProducts(){
       <div class="empty-state">
         ${illustration('boxEmpty')}
         <div class="empty-title">Aún no hay productos</div>
-        <div class="empty-text">Agrega tu primer producto para empezar a vender.</div>
+        <div class="empty-text">Agrega tus nuevos productos para empezar a vender y llevar tus existencias.</div>
+        ${puedeEditar ? `<button class="btn primary" style="margin-top:14px;" onclick="openProductForm()">${icon('plus')} Agregar nuevo producto</button>` : ''}
       </div>
     ` : ''}
     ${(q && !shown.length) ? `
@@ -13493,21 +13479,8 @@ const MU_DEMO_PHOTOS = {
   cuaderno: svgPhoto(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#fff"/><ellipse cx="104" cy="182" rx="56" ry="6" fill="#EEF0F6"/><rect x="52" y="30" width="104" height="142" rx="10" fill="#1FAF5A"/><rect x="52" y="30" width="18" height="142" rx="6" fill="#168A46"/><rect x="84" y="62" width="58" height="30" rx="6" fill="#fff"/><path d="M92 72h42M92 82h28" stroke="#BDEFD0" stroke-width="4" stroke-linecap="round"/>${[44,62,80,98,116,134,152].map(y => `<circle cx="61" cy="${y}" r="5" fill="#fff"/><path d="M48 ${y}h13" stroke="#B7BCD0" stroke-width="3" stroke-linecap="round"/>`).join('')}</svg>`),
   lapices: svgPhoto(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#fff"/><ellipse cx="100" cy="182" rx="58" ry="6" fill="#EEF0F6"/>${[[70,'#F9C23C'],[100,'#35B67A'],[130,'#E86A5C']].map(([x,c]) => `<g transform="rotate(-8 ${x} 100)"><rect x="${x-10}" y="34" width="20" height="104" fill="${c}"/><rect x="${x-10}" y="24" width="20" height="14" rx="3" fill="#F2A7B8"/><rect x="${x-10}" y="36" width="20" height="6" fill="#C9CEDD"/><path d="M${x-10} 138h20l-10 26z" fill="#F3D2A2"/><path d="M${x-3} 157h6l-3 7z" fill="#2B2F3A"/><path d="M${x-3} 44v90" stroke="#fff" stroke-width="3" opacity=".35"/></g>`).join('')}</svg>`),
 };
-defaultCategories = function(){
-  return [
-    { id:'bebidas',   name:'Bebidas',   emoji:'🥤', color:'#128C7E', demo:true },
-    { id:'papeleria', name:'Papelería', emoji:'📒', color:'#E8A33D', demo:true },
-  ];
-};
-defaultProducts = function(){
-  const base = { active:true, demo:true, stock:null, minStock:2, sizesOn:false, sizeUnit:'litro', sizes:[] };
-  return [
-    Object.assign({ id:'demo1', name:'Refresco de naranja 600 ml', price:22, cost:13, category:'bebidas',   image:MU_DEMO_PHOTOS.refresco }, base),
-    Object.assign({ id:'demo2', name:'Agua natural 1 L',           price:15, cost:8,  category:'bebidas',   image:MU_DEMO_PHOTOS.agua }, base),
-    Object.assign({ id:'demo3', name:'Cuaderno profesional',       price:45, cost:26, category:'papeleria', image:MU_DEMO_PHOTOS.cuaderno }, base),
-    Object.assign({ id:'demo4', name:'Lápices (paquete de 3)',     price:18, cost:9,  category:'papeleria', image:MU_DEMO_PHOTOS.lapices }, base),
-  ];
-};
+defaultCategories = function(){ return []; };   /* cuenta nueva: sin categorías de ejemplo */
+defaultProducts = function(){ return []; };   /* cuenta nueva: empieza con 0 productos */
 
 /* =========================================================
    3. INFORMACIÓN DEL NEGOCIO: logo, giro y tipo de negocio
@@ -18043,7 +18016,13 @@ function inventoryTabHTML(){
         <button class="btn primary" onclick="openInvEntry()">${icon('boxes')} Llegó mercancía</button>
         <button class="btn ghost" onclick="openInvPick('merma')">${icon('minus')} Merma / ajuste</button>
       </div>` : ''}
-    ${!ctl.length ? `
+    ${!products.length ? `
+      <div class="empty-state">
+        ${illustration('boxEmpty')}
+        <div class="empty-title">Aún no hay productos</div>
+        <div class="empty-text">Agrega tus nuevos productos para poder llevar sus existencias.</div>
+        ${puede ? `<button class="btn primary" style="margin-top:14px;" onclick="setProductsTab('catalogo'); openProductForm();">${icon('plus')} Agregar nuevo producto</button>` : ''}
+      </div>` : !ctl.length ? `
       <div class="empty-state">
         ${illustration('boxEmpty')}
         <div class="empty-title">Aún no llevas el conteo de ningún producto</div>
