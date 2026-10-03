@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F4FA">
-<title>Vendo+ · Punto de venta</title>
+<title>Vendo plus · Punto de venta</title>
 <style>
   :root{
     --bg:#F4F6FB;
@@ -1970,8 +1970,8 @@
   .doc-note b{ display:block; font-size:13.5px; }
 
   /* ---------- Mi cuenta ---------- */
-  .profile-hero{ background:linear-gradient(135deg, var(--brand-2) 0%, var(--brand-deep) 60%, var(--brand-deeper) 100%); box-shadow:0 14px 30px rgba(14,122,61,.3); }
-  .profile-avatar{ background:#fff; color:var(--brand-ink); }
+  .profile-hero{ background:#16213E; box-shadow:0 10px 24px rgba(22,33,62,.22); }
+  .profile-avatar{ background:#fff; color:#16213E; }
   .auth-hero{ background:linear-gradient(160deg, var(--brand-deep) 0%, var(--brand-deeper) 62%, var(--brand-deepest) 100%); }
   @media (min-width:900px){
     .auth-screen::before{ background:linear-gradient(160deg, var(--brand-deep) 0%, var(--brand-deeper) 62%, var(--brand-deepest) 100%); }
@@ -3393,11 +3393,11 @@
   .cust-balance .btn{ flex-shrink:0; }
 
   /* ---------- Caja ---------- */
-  .cash-hero{ display:flex; align-items:center; gap:14px; background:linear-gradient(135deg, var(--brand-2) 0%, var(--brand-deep) 70%); color:#fff; border-radius:20px; padding:18px; box-shadow:0 12px 26px rgba(14,122,61,.25); }
+  .cash-hero{ display:flex; align-items:center; gap:14px; background:#DDF3E5; color:#1F6B42; border-radius:20px; padding:18px; box-shadow:0 4px 12px rgba(22,33,62,.06); }
   .cash-hero.off{ background:var(--surface); color:var(--ink); border:1px solid var(--border); box-shadow:var(--shadow-card); }
   .cash-hero.exp{ background:linear-gradient(135deg, #2B3A5E 0%, var(--ink) 75%); box-shadow:0 12px 26px rgba(22,33,62,.18); }
   .mov-amt.exp{ color:var(--ink); }
-  .cash-hero-ico{ width:48px; height:48px; border-radius:15px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cash-hero-ico{ width:48px; height:48px; border-radius:15px; background:rgba(31,107,66,.12); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .cash-hero.off .cash-hero-ico{ background:var(--surface-alt); color:var(--ink-soft); }
   .cash-hero-ico svg{ width:24px; height:24px; }
   .cash-hero-txt{ min-width:0; }
@@ -3460,14 +3460,6 @@
   .rep-doc tr.g td{ border-top:1.5px solid #12162B; }
   @media print{ #printRoot .rep-doc{ width:auto; } }
 
-  /* ---------- Datos y respaldo ---------- */
-  .storage-card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:13px 14px; margin-bottom:12px; }
-  .storage-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:13px; font-weight:700; color:var(--ink-soft); }
-  .storage-top span{ display:inline-flex; align-items:center; gap:6px; }
-  .storage-top svg{ width:16px; height:16px; }
-  .storage-top b{ color:var(--ink); white-space:nowrap; }
-  .storage-card .trial-bar{ margin-top:10px; }
-  .storage-card small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-top:8px; }
   .trial-bar-fill.hot{ background:var(--accent-2); }
   .doc-note.warn-note{ background:var(--accent-soft); color:#6B4E00; }
   .tax-grid .opt-card{ padding:12px 6px; }
@@ -3537,7 +3529,7 @@
 <!-- Pantalla de bienvenida: el logo da una vuelta y desaparece -->
 <div id="splash" aria-hidden="true">
   <span class="splash-mark"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.3 8.6h13.4l-1.05 10.9a1.7 1.7 0 0 1-1.7 1.5H8.05a1.7 1.7 0 0 1-1.7-1.5L5.3 8.6Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.6V7.2a3 3 0 0 1 6 0v1.4" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M12 12.1v5.6M9.2 14.9h5.6" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-  <span class="splash-name">Vendo<span style="color:var(--brand)">+</span></span>
+  <span class="splash-name">Vendo <span style="color:var(--brand)">plus</span></span>
 </div>
 <script>
 /* El logo solo se muestra cuando se ABRE Mesa. Si la página se recarga
@@ -3573,7 +3565,7 @@
     <div class="brand">
       <span class="brand-mark" id="brandMark"></span>
       <span class="brand-txt">
-        <span class="brand-name" id="brandName">Vendo+</span>
+        <span class="brand-name" id="brandName">Vendo plus</span>
         <span class="brand-sub" id="brandSub">Punto de venta</span>
       </span>
     </div>
@@ -3751,7 +3743,7 @@ const Store = {
     if(typeof toast === 'function'){
       toast('No se pudo guardar: el navegador se quedó sin espacio', {
         icon: typeof icon === 'function' ? icon('alert') : '', variant:'toast-danger', duration:5000,
-        subtitle:'Descarga un respaldo en Mi cuenta › Datos y respaldo y quita fotos o datos viejos.'
+        subtitle:'Quita fotos pesadas o datos viejos para liberar espacio.'
       });
     }
   },
@@ -8276,7 +8268,6 @@ function renderProducts(){
         ${orphans.map(p => renderProdRow(p, UNCATEGORIZED)).join('')}
       `;
     })()}
-    ${(puedeEditar && products.length) ? `<p class="md-hint" style="text-align:center; margin-top:18px;">¿Muchos productos? Súbelos de un jalón desde Excel en <a href="#" onclick="event.preventDefault(); openDataSheet();">Mi cuenta › Datos y respaldo</a>.</p>` : ''}
   `;
 }
 
@@ -9782,7 +9773,7 @@ function openTerms(){
       <h3 class="sheet-title" style="margin-top:18px;">Tratamiento de datos personales</h3>
       <p><b>Qué guardamos.</b> Tu correo electrónico, tu nombre, los datos de tu negocio (productos, ventas, clientes) y las fotos que subas.</p>
       <p><b>Para qué.</b> Solo para que la app funcione, mandarte por correo los códigos de verificación y cobrar tu membresía. No vendemos tus datos.</p>
-      <p><b>Tus derechos.</b> Puedes pedir acceso, corrección o eliminación de tus datos, o eliminar tu cuenta desde “Mi cuenta”. Para cualquier duda escríbenos a soporte.</p>
+      <p><b>Tus derechos.</b> Puedes pedir acceso, corrección o eliminación de tus datos, o la eliminación de tu cuenta. Para cualquier duda escríbenos a soporte.</p>
     </div>
     <button class="btn dark xl block" style="margin-top:16px;" onclick="closeModal()">Entendido</button>
   `, { dismissible:true });
@@ -10309,14 +10300,6 @@ function renderAccount(){
         <span class="acc-chev">${icon('chevronRight')}</span>
       </button>
       ${soyDueno ? `
-        <button class="acc-row" onclick="openDataSheet()">
-          <span class="acc-ico blue">${icon('database')}</span>
-          <span class="acc-txt">
-            <span class="acc-label">Datos y respaldo</span>
-            <span class="acc-sub">${Store.meta().lastBackupAt ? 'Respaldo del ' + formatDateShort(Store.meta().lastBackupAt) : 'Aún sin respaldo'} · Excel y .json</span>
-          </span>
-          <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>
         <button class="acc-row" onclick="openSecurity()">
           <span class="acc-ico gold">${icon('shield')}</span>
           <span class="acc-txt">
@@ -10344,14 +10327,6 @@ function renderAccount(){
           <span class="acc-txt">
             <span class="acc-label">Cerrar sesión</span>
             <span class="acc-sub">Tus ventas y productos se quedan guardados</span>
-          </span>
-          <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>
-        <button class="acc-row danger" onclick="confirmDeleteAccount()">
-          <span class="acc-ico red">${icon('trash')}</span>
-          <span class="acc-txt">
-            <span class="acc-label">Eliminar cuenta</span>
-            <span class="acc-sub">Borra tu perfil de este dispositivo</span>
           </span>
           <span class="acc-chev">${icon('chevronRight')}</span>
         </button>` : ''}
@@ -13395,7 +13370,7 @@ function dmSig(){
 /* =========================================================
    1. MARCA
 ========================================================= */
-const APP_NAME = 'Vendo+';
+const APP_NAME = 'Vendo plus';
 const APP_TAGLINE = 'Punto de venta';
 
 Object.assign(ICONS, {
@@ -16016,7 +15991,6 @@ function muMigrateDemo(){
      · Devoluciones parciales con reingreso al inventario
      · Ventas en espera / cuentas abiertas, venta libre y lector de códigos
      · Ventas con filtro de periodo, reportes, Excel (.xlsx) e impresión
-     · Datos y respaldo: respaldo .json, Excel e importar productos
      · Lector de códigos Bluetooth, USB (teclado o puerto COM) y cámara
 ========================================================================= */
 
@@ -16921,7 +16895,7 @@ function renderCash(){
       </div>
       <div class="cash-actions two">
         <button class="btn ghost" onclick="openCashCut('X')">${icon('document')} Corte parcial</button>
-        <button class="btn dark" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}">${icon('check')} Cerrar caja</button>
+        <button class="btn ghost" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}">${icon('check')} Cerrar caja</button>
       </div>` : ''}
     <div class="section-title">Movimientos de esta caja</div>
     ${(movs.length || exps.length || sum.abonos.efectivo) ? `<div class="card mov-card">
@@ -19073,339 +19047,6 @@ function exportReportExcel(){
     return sh;
   }, reportRangeLabel(r));
 }
-/** Todo lo guardado, en un solo Excel (una hoja por tema). */
-function exportAllExcel(){
-  return xlRun(xlBizSlug() + '_todo_' + dayKey(new Date()) + '.xlsx', () =>
-    ['ventas', 'detalle', 'productos', 'clientes', 'abonos', 'gastos', 'inventario', 'cortes'].reduce((a, k) => a.concat(xlSheetsFor(k, null)), []));
-}
-
-/* =========================================================
-   DATOS Y RESPALDO
-   Todo vive en ESTE navegador. Desde aquí se guarda una copia:
-     · Respaldo (.json): la copia completa para restaurar todo
-       aquí mismo o en otro aparato.
-     · Excel (.xlsx): tus datos acomodados para verlos, imprimirlos
-       o mandárselos a tu contador.
-   Y se suben productos desde Excel.
-========================================================= */
-function backupObject(){
-  const data = {};
-  try{
-    for(let i = 0; i < localStorage.length; i++){
-      const k = localStorage.key(i);
-      if(!k || k.indexOf('mesa_') !== 0 || DATA_NOT_IN_BACKUP.indexOf(k) >= 0) continue;
-      const raw = localStorage.getItem(k);
-      try{ data[k] = JSON.parse(raw); }catch(e){ data[k] = raw; }
-    }
-  }catch(e){}
-  return { app:'Vendo', version:DATA_SCHEMA_VERSION, exportedAt:new Date().toISOString(), business:bizData().name || '', data };
-}
-function downloadBackup(){
-  if(!requireOwner('Solo el Dueño puede descargar el respaldo')) return;
-  const obj = backupObject();
-  const name = 'respaldo_' + xlBizSlug() + '_' + dayKey(new Date()) + '.json';
-  downloadFile(name, JSON.stringify(obj), 'application/json');
-  const m = Store.meta(); m.lastBackupAt = new Date().toISOString(); Store.saveMeta();
-  toast('Respaldo descargado', { icon:icon('download'), variant:'toast-success', subtitle:name + ' · guárdalo en tu correo o en la nube' });
-  if(document.getElementById('dataSheet')) openDataSheet();
-}
-function pickBackupFile(){
-  if(!requireOwner('Solo el Dueño puede restaurar un respaldo')) return;
-  const inp = document.createElement('input');
-  inp.type = 'file'; inp.accept = '.json,application/json';
-  inp.onchange = () => {
-    const f = inp.files && inp.files[0]; if(!f) return;
-    if(/\.xlsx?$/i.test(f.name)){ toast('Para restaurar se usa el respaldo .json', { icon:icon('alert'), variant:'toast-danger', subtitle:'El Excel es para ver tus datos; el .json guarda todo para regresarlo' }); return; }
-    const rd = new FileReader();
-    rd.onload = () => {
-      let obj = null;
-      try{ obj = JSON.parse(rd.result); }catch(e){}
-      if(!obj || !obj.data || typeof obj.data !== 'object'){ toast('Ese archivo no es un respaldo de ' + APP_NAME, { icon:icon('alert'), variant:'toast-danger' }); return; }
-      const n = Array.isArray(obj.data.mesa_sales) ? obj.data.mesa_sales.length : 0;
-      const np = Array.isArray(obj.data.mesa_products) ? obj.data.mesa_products.length : 0;
-      askConfirm({
-        title:'¿Restaurar este respaldo?',
-        text:'Del ' + (obj.exportedAt ? formatDateTime(obj.exportedAt) : 'archivo') + ': ' + np + ' productos y ' + n + ' ventas.<br><b>Todo lo que hay ahora en este aparato se reemplaza.</b> Si no estás seguro, descarga antes un respaldo de lo actual.',
-        ok:'Restaurar', danger:true, icon:icon('upload')
-      }, () => restoreBackup(obj));
-    };
-    rd.readAsText(f);
-  };
-  inp.click();
-}
-function restoreBackup(obj){
-  try{
-    const keep = {};
-    ['mesa_session', 'mesa_meta', 'mesa_printer', 'mesa_scanner'].forEach(k => { const v = localStorage.getItem(k); if(v != null) keep[k] = v; });
-    const quitar = [];
-    for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k && k.indexOf('mesa_') === 0 && !(k in keep)) quitar.push(k); }
-    quitar.forEach(k => localStorage.removeItem(k));
-    Object.keys(obj.data).forEach(k => {
-      if(k.indexOf('mesa_') !== 0 || DATA_NOT_IN_BACKUP.indexOf(k) >= 0) return;
-      const v = obj.data[k];
-      localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
-    });
-    localStorage.setItem('mesa_session', '1');
-    try{ sessionStorage.setItem('mesaSplashVisto', '1'); }catch(e){}
-    toast('Respaldo restaurado', { icon:icon('check'), variant:'toast-success', subtitle:'Volviendo a cargar…' });
-    setTimeout(() => location.reload(), 700);
-  }catch(e){
-    toast('No se pudo restaurar', { icon:icon('alert'), variant:'toast-danger', subtitle:String(e && e.message || e).slice(0, 80) });
-  }
-}
-
-function openDataSheet(){
-  if(!requireOwner('Solo el Dueño puede ver los datos y respaldos')) return;
-  const u = Store.usage();
-  const pct = Math.min(100, Math.round(u.bytes / u.limit * 100));
-  const m = Store.meta();
-  const last = m.lastBackupAt;
-  const dias = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null;
-  const sales = DB.getSales().length, prods = DB.getProducts().length;
-  openModal(`
-    <div id="dataSheet"></div>
-    <div class="sheet-header">
-      <h2>Datos y respaldo</h2>
-      <button class="sheet-close" onclick="closeModal(); render();">${icon('close')}</button>
-    </div>
-    <div class="storage-card">
-      <div class="storage-top"><span>${icon('shield')} Guardado en este navegador</span><b>${(u.bytes / 1024 / 1024).toFixed(2)} MB de ~5 MB</b></div>
-      <div class="trial-bar"><div class="trial-bar-fill ${pct > 80 ? 'hot' : ''}" style="width:${Math.max(2, pct)}%"></div></div>
-      <small>${prods} productos · ${sales} ventas · ${DB.getCustomers().length} clientes${pct > 80 ? ' · <b style="color:var(--accent-2)">casi lleno: baja un respaldo y quita fotos pesadas</b>' : ''}</small>
-    </div>
-    <div class="doc-note ${dias === null || dias > 7 ? 'warn-note' : ''}">${icon('shield')}<span>
-      <b>${last ? 'Último respaldo: ' + formatDateTime(last) : 'Aún no haces ningún respaldo'}</b>
-      Tus datos viven solo en este aparato. Si se borra el navegador o cambias de celular, con el respaldo recuperas todo. Hazlo cada semana.
-    </span></div>
-    <div class="section-title">Respaldo (.json)</div>
-    <div class="acc-list">
-      <button class="acc-row" onclick="downloadBackup()">
-        <span class="acc-ico green">${icon('download')}</span>
-        <span class="acc-txt"><span class="acc-label">Descargar respaldo completo</span><span class="acc-sub">Todo tu negocio en un archivo .json</span></span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <button class="acc-row" onclick="pickBackupFile()">
-        <span class="acc-ico blue">${icon('upload')}</span>
-        <span class="acc-txt"><span class="acc-label">Restaurar un respaldo</span><span class="acc-sub">Aquí o en otro aparato, desde el .json</span></span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-    </div>
-    <div class="section-title">Excel (.xlsx)</div>
-    <div class="acc-list">
-      <button class="acc-row" onclick="exportAllExcel()">
-        <span class="acc-ico gold">${icon('document')}</span>
-        <span class="acc-txt"><span class="acc-label">Todo en un solo Excel</span><span class="acc-sub">Una hoja por cada tema</span></span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <button class="acc-row" onclick="openExportSheet()">
-        <span class="acc-ico violet">${icon('download')}</span>
-        <span class="acc-txt"><span class="acc-label">Bajar solo una parte</span><span class="acc-sub">Solo ventas, solo clientes…</span></span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <button class="acc-row" onclick="openImportProducts()">
-        <span class="acc-ico green">${icon('upload')}</span>
-        <span class="acc-txt"><span class="acc-label">Subir productos desde Excel</span><span class="acc-sub">Muchos productos de un jalón</span></span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-    </div>
-    <p class="print-tip">Los Excel salen acomodados: encabezados fijos, pesos con formato de dinero, fechas que se pueden ordenar y filtrar, y totales al final. Para un periodo en especial usa <b>Ventas</b>.</p>
-  `, { dismissible:true });
-}
-function openExportSheet(){
-  const items = [
-    ['ventas', 'Ventas y devoluciones', 'Un renglón por venta, con totales'],
-    ['detalle', 'Productos vendidos', 'Un renglón por producto vendido'],
-    ['productos', 'Catálogo de productos', 'Precios, códigos y existencias'],
-    ['clientes', 'Clientes', 'Lo que te debe y te compra cada uno'],
-    ['abonos', 'Abonos de fiado', 'Pagos que te hicieron los clientes'],
-    ['gastos', 'Gastos', 'Todos los gastos registrados'],
-    ['inventario', 'Movimientos de inventario', 'Entradas, ventas, mermas y ajustes'],
-    ['cortes', 'Cortes de caja', 'Lo que cuadró, sobró o faltó'],
-  ].filter(x => x[0] !== 'gastos' || can('verGanancias') || isOwner());
-  openModal(`
-    <div class="sheet-header">
-      <div class="sheet-header-left">
-        <button class="sheet-back" onclick="openDataSheet()" aria-label="Volver">${icon('chevronLeft')}</button>
-        <h2>Bajar a Excel</h2>
-      </div>
-      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
-    </div>
-    <p class="sheet-text" style="margin-top:-6px;">Cada opción baja un archivo de Excel (.xlsx) con todo lo registrado. Se abre en Excel, Google Sheets o Numbers.</p>
-    <div class="acc-list">${items.map(([k, t, s]) => `
-      <button class="acc-row" onclick="exportExcel('${k}')">
-        <span class="acc-ico green">${icon('download')}</span>
-        <span class="acc-txt"><span class="acc-label">${t}</span><span class="acc-sub">${s}</span></span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>`).join('')}</div>
-  `, { dismissible:true });
-}
-
-/* ---------- Subir productos desde Excel ---------- */
-function parseCSV(text){
-  text = String(text || '').replace(/^﻿/, '');
-  const first = text.split(/\r?\n/)[0] || '';
-  const sep = (first.split(';').length > first.split(',').length) ? ';' : (first.split('\t').length > first.split(',').length ? '\t' : ',');
-  const rows = []; let row = [], cell = '', q = false;
-  for(let i = 0; i < text.length; i++){
-    const ch = text[i];
-    if(q){
-      if(ch === '"'){ if(text[i + 1] === '"'){ cell += '"'; i++; } else q = false; }
-      else cell += ch;
-    }else{
-      if(ch === '"') q = true;
-      else if(ch === sep){ row.push(cell); cell = ''; }
-      else if(ch === '\n'){ row.push(cell); rows.push(row); row = []; cell = ''; }
-      else if(ch !== '\r') cell += ch;
-    }
-  }
-  if(cell !== '' || row.length){ row.push(cell); rows.push(row); }
-  return rows.filter(r => r.some(c => String(c).trim() !== ''));
-}
-function csvNum(v){
-  if(v == null) return NaN;
-  let s = String(v).trim().replace(/[$\s]/g, '');
-  if(s === '') return NaN;
-  if(/^-?\d+(\.\d+)?(e-?\d+)?$/i.test(s)) return parseFloat(s);                            // número tal cual de Excel
-  if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');   // 1.234,50
-  else s = s.replace(/,(?=\d{3}(\D|$))/g, '').replace(',', '.');                          // 1,234.50 · 12,5
-  return parseFloat(s);
-}
-let importPreview = null;
-function openImportProducts(){
-  if(!requirePerm('gestionarProductos', 'No tienes permiso para administrar productos')) return;
-  importPreview = null;
-  openModal(`
-    <div class="sheet-header">
-      <div class="sheet-header-left">
-        <button class="sheet-back" onclick="openDataSheet()" aria-label="Volver">${icon('chevronLeft')}</button>
-        <h2>Subir productos</h2>
-      </div>
-      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
-    </div>
-    <p class="sheet-text" style="margin-top:-6px;">1) Baja la plantilla, 2) llénala en Excel (un renglón por producto) y guárdala, 3) súbela aquí. Si el código o el nombre ya existe, se actualiza; si no, se crea. También puedes subir el “Catálogo de productos” que bajas aquí, ya corregido.</p>
-    <div class="acc-list">
-      <button class="acc-row" onclick="downloadImportTemplate()">
-        <span class="acc-ico gold">${icon('download')}</span>
-        <span class="acc-txt"><span class="acc-label">Bajar plantilla de Excel</span><span class="acc-sub">Ya trae las columnas y 2 ejemplos</span></span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <label class="acc-row" style="cursor:pointer;">
-        <span class="acc-ico green">${icon('upload')}</span>
-        <span class="acc-txt"><span class="acc-label">Elegir mi archivo de Excel</span><span class="acc-sub">La plantilla llena o tu catálogo</span></span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-        <input id="importFile" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" style="display:none" onchange="readImportFile(this)">
-      </label>
-    </div>
-    <div id="importResult"></div>
-  `, { dismissible:true });
-}
-function downloadImportTemplate(){
-  const cols = [{ h:'Nombre', t:'text', w:34 }, { h:'Precio', t:'money' }, { h:'Costo', t:'money' }, { h:'Categoría', t:'text' }, { h:'Código', t:'text', w:18 },
-                { h:'Existencias', t:'num' }, { h:'Avisar al quedar', t:'num' }, { h:'Unidad', t:'text' }, { h:'Precio mayoreo', t:'money' }, { h:'Mayoreo desde', t:'num' }, { h:'Descripción', t:'wrap', w:34 }];
-  const rows = [['Refresco de cola 600 ml', 22, 13, 'Bebidas', '7501055300075', 24, 6, 'pieza', 20, 12, ''],
-                ['Queso Oaxaca', 180, 120, 'Lácteos', '', 5.5, 1, 'kilo', '', '', 'Se vende por kilo']];
-  return xlRun('plantilla_productos.xlsx', () => [{ name:'Productos', title:'Plantilla para subir productos',
-    subtitle:'Borra los ejemplos y escribe un producto por renglón. Solo Nombre y Precio son obligatorios. Unidad: pieza, kilo, gramo, litro, metro, paquete, caja…',
-    cols, rows, totals:false }]);
-}
-async function readImportFile(input){
-  const f = input.files && input.files[0]; if(!f) return;
-  input.value = '';
-  let rows;
-  try{
-    if(/\.xls$/i.test(f.name)){ toast('Ese Excel es de una versión muy vieja', { icon:icon('alert'), variant:'toast-danger', subtitle:'En Excel usa “Guardar como” › Libro de Excel (.xlsx)' }); return; }
-    if(/\.xlsx$/i.test(f.name) || /spreadsheetml/.test(f.type)) rows = await readXlsxRows(await f.arrayBuffer(), /producto|catalogo|plantilla/);
-    else rows = parseCSV(await f.text());
-  }catch(e){
-    toast('No se pudo leer el archivo', { icon:icon('alert'), variant:'toast-danger',
-      subtitle: String(e && e.message) === 'no-inflate' ? 'Actualiza tu navegador para abrir archivos de Excel' : 'Revisa que sea un Excel (.xlsx)' });
-    return;
-  }
-  importRows(rows);
-}
-/** Revisa los renglones del archivo y enseña qué se va a crear o actualizar. */
-function importRows(rows){
-  rows = rows || [];
-  /* El encabezado puede no estar en el primer renglón (la plantilla trae título arriba) */
-  let hi = rows.findIndex((r, i) => i < 15 && r.some(c => /^(nombre|producto)$/.test(saleNorm(String(c)).trim())) && r.some(c => /^precio/.test(saleNorm(String(c)).trim())));
-  if(hi < 0) hi = 0;
-  const data = rows.slice(hi + 1).filter(r => !/^total$/i.test(String(r[0] || '').trim()));
-  if(!data.length){ toast('El archivo no tiene productos', { icon:icon('alert'), variant:'toast-danger' }); return; }
-  const head = rows[hi].map(h => saleNorm(String(h)).trim());
-  const col = (...names) => head.findIndex(h => names.some(n => h === n || h.indexOf(n) === 0));
-  const ix = { name:col('nombre','producto','descripcion del producto'), price:col('precio de venta','precio'), cost:col('costo','precio de produccion','precio de compra'),
-               cat:col('categoria'), sku:col('codigo','sku','clave'), stock:col('existencias','stock','cantidad'), min:col('avisar','minimo'),
-               unit:col('unidad'), wp:col('precio mayoreo','mayoreo'), wm:col('mayoreo desde','desde'), desc:col('descripcion') };
-  if(ix.price === ix.wp) ix.price = head.findIndex(h => h === 'precio' || h === 'precio de venta');
-  if(ix.wp === ix.wm) ix.wm = col('mayoreo desde','desde');
-  if(ix.name < 0 || ix.price < 0){ toast('Faltan las columnas “Nombre” y “Precio”', { icon:icon('alert'), variant:'toast-danger', subtitle:'Usa la plantilla' }); return; }
-  const products = DB.getProducts();
-  const out = { nuevos:[], actualiza:[], errores:[] };
-  data.forEach((r, k) => {
-    const g = i => i >= 0 ? String(r[i] == null ? '' : r[i]).trim() : '';
-    const name = g(ix.name).slice(0, 80);
-    const price = csvNum(g(ix.price));
-    if(!name || r.filter(c => String(c == null ? '' : c).trim() !== '').length < 2){ return; }
-    if(!(price >= 0)){ out.errores.push('Renglón ' + (hi + k + 2) + ': el precio de "' + name + '" no es un número'); return; }
-    let sku = g(ix.sku).slice(0, 40);
-    if(/^\d+(\.\d+)?e\+?\d+$/i.test(sku)) sku = String(Math.round(Number(sku)));      // 7.50106E+12 → 7501055300075
-    const ex = (sku && products.find(p => p.sku && String(p.sku).toLowerCase() === sku.toLowerCase())) || products.find(p => saleNorm(p.name) === saleNorm(name));
-    const unitTxt = saleNorm(g(ix.unit));
-    const unit = (SALE_UNITS.find(u => saleNorm(u.id) === unitTxt || saleNorm(u.label) === unitTxt || (u.short && saleNorm(u.short) === unitTxt) || (u.many && saleNorm(u.many) === unitTxt)) || SALE_UNITS[0]).id;
-    const stockRaw = g(ix.stock);
-    const row = { name, price:round2(price), cost:isNaN(csvNum(g(ix.cost))) ? null : round2(csvNum(g(ix.cost))), cat:g(ix.cat), sku,
-                  stock:stockRaw === '' ? undefined : r3(csvNum(stockRaw)), min:isNaN(csvNum(g(ix.min))) ? null : r3(csvNum(g(ix.min))), unit,
-                  wp:isNaN(csvNum(g(ix.wp))) ? null : round2(csvNum(g(ix.wp))), wm:isNaN(csvNum(g(ix.wm))) ? null : r3(csvNum(g(ix.wm))), desc:g(ix.desc).slice(0, 160) };
-    if(row.stock !== undefined && isNaN(row.stock)) row.stock = undefined;
-    (ex ? out.actualiza : out.nuevos).push(Object.assign(row, { id: ex ? ex.id : null }));
-  });
-  importPreview = out;
-  const box = document.getElementById('importResult');
-  if(box) box.innerHTML = `
-    <div class="card kv-card" style="margin-top:14px;">
-      <div class="kv-row"><span>Productos nuevos</span><b>${out.nuevos.length}</b></div>
-      <div class="kv-row"><span>Se actualizan</span><b>${out.actualiza.length}</b></div>
-      ${out.errores.length ? `<div class="kv-row"><span>Con errores (se saltan)</span><b class="neg">${out.errores.length}</b></div><div class="kv-note">${out.errores.slice(0, 4).map(escapeHtml).join('<br>')}</div>` : ''}
-    </div>
-    <button class="btn primary block" style="margin-top:12px;" onclick="applyImport()" ${out.nuevos.length + out.actualiza.length ? '' : 'disabled'}>${icon('check')} Subir ${out.nuevos.length + out.actualiza.length} productos</button>`;
-}
-function applyImport(){
-  const out = importPreview; if(!out) return;
-  const products = DB.getProducts();
-  const cats = DB.getCategories();
-  const catId = name => {
-    if(!name) return (cats[0] || UNCATEGORIZED).id;
-    let c = cats.find(x => saleNorm(x.name) === saleNorm(name));
-    if(!c){ c = { id:uid('cat'), name:name.slice(0, 40), emoji:'', color:['#128C7E','#E8A33D','#3B82C4','#D9534F','#8E6CD1','#2FA59A'][cats.length % 6] }; cats.push(c); }
-    return c.id;
-  };
-  const now = new Date().toISOString();
-  const apply = (p, r) => {
-    p.name = r.name; p.price = r.price;
-    if(r.cost != null) p.cost = r.cost;
-    if(r.cat) p.category = catId(r.cat);
-    if(r.sku) p.sku = r.sku;
-    if(r.stock !== undefined){ p.stock = Math.max(0, r.stock); p.minStock = r.min != null ? r.min : (p.minStock != null ? p.minStock : 2); }
-    if(r.unit && !hasSizes(p)) p.unit = r.unit;
-    if(r.wp > 0 && r.wm > 0){ p.wholesalePrice = r.wp; p.wholesaleMin = r.wm; }
-    if(r.desc) p.description = r.desc;
-    p.updatedAt = now;
-  };
-  out.actualiza.forEach(r => { const p = products.find(x => x.id === r.id); if(p) apply(p, r); });
-  out.nuevos.forEach(r => {
-    const p = { id:uid('p'), active:true, image:null, stock:null, minStock:2, sizesOn:false, sizeUnit:'litro', sizes:[], unit:'pieza', category:catId(r.cat), createdAt:now };
-    apply(p, r); products.push(p);
-  });
-  DB.saveCategories(cats);
-  invContext({ type:'ajuste', note:'Subido desde Excel' });
-  DB.saveProducts(products);
-  invContext(null);
-  dismissDemoHint();
-  toast('Productos subidos', { icon:icon('check'), variant:'toast-success', subtitle:out.nuevos.length + ' nuevos · ' + out.actualiza.length + ' actualizados' });
-  importPreview = null;
-  closeModal();
-  goTo('products');
-}
 
 /* =========================================================
    VENTAS Y COBRO (configuración)
@@ -19548,15 +19189,6 @@ function homeAlertsHTML(){
       }
     }
   }
-  /* Recordatorio de respaldo (solo el Dueño) */
-  if(isOwner() && DB.getSales().length >= 5){
-    const last = Store.meta().lastBackupAt;
-    const dias = last ? (Date.now() - new Date(last).getTime()) / 86400000 : 999;
-    if(dias > 7) h += `<button class="alert-card" onclick="openDataSheet()" style="margin-top:16px;">
-      <span class="alert-ico">${icon('shield')}</span>
-      <span class="alert-txt"><span class="alert-title">${last ? 'Hace ' + Math.floor(dias) + ' días que no respaldas' : 'Haz un respaldo de tus datos'}</span><span class="alert-sub">Tus ventas viven solo en este aparato. Descarga una copia.</span></span>
-      <span class="acc-chev">${icon('chevronRight')}</span></button>`;
-  }
   return h;
 }
 function homeToolsHTML(){
@@ -19565,7 +19197,6 @@ function homeToolsHTML(){
   if(can('manejarCaja') || can('registrarGastos') || cashCurrent()) t.push(['cash', 'cashbox', 'Caja y gastos', cashCurrent() ? (cashIsStale(cashCurrent()) ? 'Falta el corte' : 'Caja abierta') : 'Caja cerrada', "cashTab='caja'; goTo('cash')"]);
   const debe = typeof totalReceivable === 'function' ? totalReceivable() : 0;
   t.push(['customers', 'users', 'Clientes y fiado', debe > 0.004 ? 'Te deben ' + formatMoney(debe) : 'Fiado y abonos', "goTo('customers')"]);
-  if(isOwner()) t.push(['data', 'database', 'Datos y respaldo', 'Respaldo y Excel', 'openDataSheet()']);
   return `
     <div class="section-title">Herramientas</div>
     <div class="tool-grid">${t.map(x => `
@@ -19579,9 +19210,9 @@ function homeToolsHTML(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* =========================================================
-   VENDO+ · CONEXIÓN A LA NUBE
+   VENDO PLUS · CONEXIÓN A LA NUBE
    Supabase (datos, fotos, sesión) · Gmail (códigos por correo, los manda Supabase) · Stripe (cobro)
-   Si las dos claves de abajo están vacías, Vendo+ funciona como antes
+   Si las dos claves de abajo están vacías, Vendo plus funciona como antes
    (solo en este navegador), para que puedas probarlo sin conectar nada.
 ========================================================= */
 const VENDO_CONFIG = {
@@ -19643,7 +19274,7 @@ const Cloud = {
       }
       return true;
     }catch(e){
-      console.error('Vendo+ sync', e);
+      console.error('Vendo plus sync', e);
       keys.forEach(k => this.q.add(k));
       clearTimeout(this._t); this._t = setTimeout(() => this.flush(), 15000);
       return false;
