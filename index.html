@@ -9413,9 +9413,11 @@ function newUser(country, phone, email){
   };
 }
 
-/* ---------- Prueba gratis de 3 meses ---------- */
+/* ---------- Prueba gratis de 1 mes · después $149 MXN al mes con Stripe ----------
+   OJO: este número solo es el TEXTO que ve el cliente. Lo que se cobra de verdad
+   es el precio (price_...) que creas en Stripe: tiene que ser de $149 MXN mensual. */
 const TRIAL_MESES = 1;
-const TRIAL_PRECIO = 129;
+const TRIAL_PRECIO = 149;
 function trialInfo(u){
   u = u || currentUser();
   if(!u) return null;
@@ -10090,7 +10092,7 @@ function trialWidgetHTML(u){
       <div class="trial-widget-top">
         <span class="trial-widget-ico warn">${icon('bell')}</span>
         <div class="trial-widget-txt">
-          <span class="trial-widget-label">Tu prueba gratis terminó</span>
+          <span class="trial-widget-label">${t.lapsed ? 'Tu membresía venció' : 'Tu prueba gratis terminó'}</span>
           <span class="trial-widget-sub">Activa tu membresía para seguir usando ${APP_NAME}</span>
         </div>
       </div>
@@ -19342,19 +19344,22 @@ const Cloud = {
     const bloquear = this.ready && this.uid && this.sub && !this.hasAccess() && AUTH.isLogged();
     if(!bloquear){ if(el) el.remove(); return; }
     if(el) return;
+    /* ¿Nunca ha pagado (se acabó el mes gratis) o ya había pagado y no renovó? */
+    const motivo = this.sub.paid_until ? 'Tu membresía venció.' : 'Tu mes de prueba gratis terminó.';
     el = document.createElement('div');
     el.id = 'paywall';
     el.style.cssText = 'position:fixed;inset:0;z-index:9000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
     el.innerHTML = `<div style="max-width:380px;width:100%;text-align:center;">
       <span class="brand-mark" style="width:68px;height:68px;border-radius:21px;margin:0 auto 18px;">${ICONS.logo.replace('<svg ', '<svg style="width:34px;height:34px" ')}</span>
       <h1 class="auth-title" style="font-size:24px;margin:0 0 8px;">Tu cuenta está pausada</h1>
-      <p class="auth-sub" style="margin:0 0 20px;">Tu acceso a ${APP_NAME} terminó. Activa tu membresía de <b style="color:var(--ink)">$${TRIAL_PRECIO} al mes</b> y tu cuenta se reactiva al momento. Tus datos siguen guardados.</p>
+      <p class="auth-sub" style="margin:0 0 20px;">${motivo} Paga tu membresía de <b style="color:var(--ink)">$${TRIAL_PRECIO} MXN al mes</b> y tu cuenta se libera al momento. Tus datos siguen guardados.</p>
       <button class="btn primary xl block" id="payBtn" onclick="Cloud.checkout()">Pagar con Stripe · $${TRIAL_PRECIO}/mes</button>
       <button class="btn ghost block" style="margin-top:10px;" onclick="doLogout()">Cerrar sesión</button>
     </div>`;
     document.body.appendChild(el);
   },
   async checkout(){
+    if(!this.uid) return this.fail('Inicia sesión para pagar', 'Tu pago se liga a tu cuenta');
     const b = document.getElementById('payBtn'); if(b){ b.disabled = true; b.textContent = 'Abriendo Stripe…'; }
     try{
       const { data, error } = await this.sb.functions.invoke('create-checkout');
@@ -19366,8 +19371,14 @@ const Cloud = {
       this.fail('No se pudo abrir el pago', 'Intenta de nuevo en un momento');
     }
   },
-  /* Al volver de Stripe: se espera a que el webhook active la cuenta */
+  /* Al volver de Stripe: se espera a que el webhook active la cuenta.
+     create-checkout debe mandar de regreso a  APP_URL?pago=ok  (pagó)  o  APP_URL?pago=cancel  (se salió). */
   afterPayment(){
+    if(/[?&]pago=cancel/.test(location.search)){
+      try{ history.replaceState(null, '', location.pathname); }catch(e){}
+      toast('Pago cancelado', { subtitle:'No se te cobró nada', icon:icon('alert') });
+      return;
+    }
     if(!/[?&]pago=ok/.test(location.search)) return;
     try{ history.replaceState(null, '', location.pathname); }catch(e){}
     toast('Confirmando tu pago…', { icon:icon('check') });
@@ -19377,7 +19388,10 @@ const Cloud = {
       if(this.paidNow()){
         clearInterval(t); render();
         toast('¡Pago recibido! Tu cuenta está activa', { variant:'toast-success', icon:icon('check') });
-      }else if(++n > 20) clearInterval(t);
+      }else if(++n > 48){            /* ~2 min; si Stripe tarda más, el revisado de cada 30 s la libera solo */
+        clearInterval(t);
+        toast('Tu pago se está procesando', { subtitle:'En cuanto Stripe lo confirme, tu cuenta se libera sola', icon:icon('check') });
+      }
     }, 2500);
   },
 
@@ -19442,7 +19456,13 @@ if(Cloud.ready){
   document.addEventListener('visibilitychange', async () => {
     if(document.visibilityState === 'visible' && Cloud.uid){ await Cloud.refreshSub(); Cloud.gate(); }
   });
-  setInterval(() => Cloud.gate(), 30000);
+  /* Cada 30 s: si la cuenta está (o está por quedar) bloqueada, se vuelve a preguntar
+     a Supabase. Así se libera sola en cuanto llega el pago, y una renovación ya cobrada
+     no bloquea por error con fechas viejas guardadas en el aparato. */
+  setInterval(async () => {
+    if(Cloud.uid && (document.getElementById('paywall') || !Cloud.hasAccess())) await Cloud.refreshSub();
+    Cloud.gate();
+  }, 30000);
 }
 
 /* ---------- Membresía: 1 mes de prueba (fechas de Supabase) y pago con Stripe ---------- */
@@ -19453,7 +19473,8 @@ trialInfo = function(u){
   const paid = Cloud.paidNow();
   const total = Math.max(1, Math.round((end - start) / 864e5));
   const left = Math.max(0, Math.ceil((end - now) / 864e5));
-  return { start, end, totalDays:total, daysLeft:left, pct:Math.min(100, Math.max(0, Math.round((total - left) / total * 100))), expired: now >= end && !paid, paid };
+  return { start, end, totalDays:total, daysLeft:left, pct:Math.min(100, Math.max(0, Math.round((total - left) / total * 100))), expired: now >= end && !paid, paid,
+           lapsed: !paid && !!s.paid_until };   /* ya había pagado antes y no renovó */
 };
 const _omp = openMembershipPay;
 openMembershipPay = function(){ if(!Cloud.ready) return _omp(); if(typeof isOwner === 'function' && !isOwner()) return toast('Solo el Dueño puede pagar la membresía'); Cloud.checkout(); };

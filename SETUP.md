@@ -60,8 +60,9 @@ En **Authentication → Emails → Templates** cambia **dos** plantillas. Las do
 ```
 
 ## 4. Stripe
-1. Productos → crea **Vendo+ mensual**, precio recurrente mensual, **$129 MXN** (si cambias el precio, cambia también `TRIAL_PRECIO` en `index.html`).
-2. Copia el `price_...` (ID del precio) y tu clave secreta `sk_...`.
+1. Productos → crea **Vendo+ mensual**, precio recurrente mensual, **$149 MXN** (moneda **MXN**). `TRIAL_PRECIO` en `index.html` ya dice 149; si algún día cambias el precio, cambia los dos.
+   > **Si ya tenías creado el precio de $129:** en Stripe los precios no se pueden editar. Dentro del mismo producto dale **Add another price** → $149 MXN mensual, archiva el de $129 y usa el `price_...` **nuevo** en el paso 3. Lo que se cobra de verdad es ese `price_...`; el 149 del index solo es el texto que ve el cliente.
+2. Copia el `price_...` (ID del precio de $149) y tu clave secreta `sk_...`.
 3. Instala la CLI de Supabase y, en la carpeta de este proyecto:
 ```bash
 supabase link --project-ref TU_REF
@@ -76,6 +77,15 @@ supabase functions deploy stripe-webhook --no-verify-jwt
 supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 > Si tu función `create-checkout` usaba el **teléfono** del usuario para crear el cliente de Stripe, cámbialo por su **correo** (`user.email`), porque las cuentas nuevas ya no tienen teléfono.
+
+**Lo que el `index.html` espera de tus dos funciones** (revísalo antes de probar):
+
+| Función | Tiene que… |
+|---|---|
+| `create-checkout` | Sacar al usuario del token (el index lo manda solo), crear/reusar su cliente de Stripe con su correo y guardar `stripe_customer_id` en `profiles`. Abrir Checkout en modo **`subscription`** con `STRIPE_PRICE_ID` (el de $149). `success_url` = `APP_URL?pago=ok` y `cancel_url` = `APP_URL?pago=cancel`. Responder `{ "url": "https://checkout.stripe.com/..." }`. |
+| `stripe-webhook` | Verificar la firma con `STRIPE_WEBHOOK_SECRET`. En **`invoice.paid`**: buscar el perfil por `stripe_customer_id` y poner `paid_until` = fin del periodo pagado de esa factura (recomendado: + 2 días de colchón por si la renovación tarda). Escribir con la clave `service_role` (el cliente no puede). |
+
+Con eso el flujo queda así: **1 mes gratis → se bloquea → paga $149 en Stripe → `invoice.paid` → se libera**. Cada mes Stripe cobra solo; si la tarjeta falla o cancela, ya no llega `invoice.paid`, `paid_until` vence y la cuenta se vuelve a bloquear. Cuando vuelve a pagar, se libera otra vez.
 
 ## 5. Publicar
 Sube `index.html` a tu hosting (Netlify, Vercel, Cloudflare Pages, etc.) y pon esa URL en `APP_URL`.
@@ -94,7 +104,7 @@ Si no llega nada: en Supabase revisa **Logs → Auth**. Lo más común es la cla
 - **Cambiar contraseña:** Mi cuenta → Seguridad → Cambiar contraseña (código al correo).
 - **Olvidé mi NIP:** el código le llega al correo del Dueño (sirve para el NIP de cualquiera del equipo).
 - **Datos:** todo se guarda en Supabase; las fotos en Storage (bucket `fotos`).
-- **Cobro:** al terminar el mes la cuenta se pausa y sale la pantalla de pago con Stripe. Al pagar, el webhook la reactiva sola. Si no se renueva, vuelve a pausarse.
+- **Cobro:** al terminar el mes gratis la cuenta se pausa y sale la pantalla de pago con Stripe ($149 MXN al mes). Al pagar, el webhook la reactiva sola (la app revisa cada 30 s, no hace falta recargar). Si no se renueva, vuelve a pausarse. El bloqueo también lo pone Supabase: sin acceso, no se puede guardar nada ni subir fotos aunque alguien se brinque la pantalla.
 - **Datos que ya tenías en el navegador:** al crear tu cuenta nueva se suben solos a Supabase.
 - **Cuentas de prueba creadas antes con celular:** ya no pueden entrar; bórralas en *Authentication → Users* y crea la cuenta con tu correo.
 - Con las claves vacías la app sigue funcionando local, como antes (entras solo con tu correo, sin códigos).
