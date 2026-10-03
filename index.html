@@ -19592,10 +19592,12 @@ const VENDO_CONFIG = {
 
 const SYNC_SKIP = DATA_NOT_IN_BACKUP.concat(['mesa_cloud_uid']);
 const Cloud = {
-  sb:null, ready:false, uid:null, email:'', sub:null, q:new Set(), _mute:false, _t:null, known:{},
+  sb:null, ready:false, uid:null, email:'', sub:null, q:new Set(), _mute:false, _t:null, known:{}, linkHash:'',
   init(){
     try{
       if(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY && window.supabase){
+        /* Si alguien abre un enlace de un correo viejo, se guarda aquí para atenderlo al arrancar */
+        if(/(^#|&)(access_token|error_code|error_description)=/.test(location.hash)) this.linkHash = location.hash;
         this.sb = supabase.createClient(VENDO_CONFIG.SUPABASE_URL, VENDO_CONFIG.SUPABASE_ANON_KEY);
         this.ready = true;
       }
@@ -19763,12 +19765,21 @@ const Cloud = {
   },
   /** ¿Este correo ya terminó de crear su cuenta? (ya tiene sus datos guardados) */
   async accountDone(user){
+    if(user && user.user_metadata && user.user_metadata.vendo_pw) return true;   /* ya eligió su contraseña */
     try{
       const { data, error } = await this.sb.from('user_data').select('key').eq('key', 'mesa_user').limit(1);
       if(!error) return !!(data && data.length);
     }catch(e){}
     const c = user && user.created_at ? new Date(user.created_at) : new Date();
     return Date.now() - c.getTime() > 10 * 60 * 1000;
+  },
+  /** ¿Confirmó su correo pero todavía no elige contraseña? (solo responde "sí" cuando está seguro) */
+  async signupPending(user){
+    if(!user || (user.user_metadata && user.user_metadata.vendo_pw)) return false;
+    try{
+      const { data, error } = await this.sb.from('user_data').select('key').eq('key', 'mesa_user').limit(1);
+      return !error && !(data && data.length);
+    }catch(e){ return false; }
   },
 
   /* ---------- Después de iniciar sesión / verificar el código ---------- */
@@ -19878,6 +19889,10 @@ function cloudSendCode(email, crear){
 }
 function cloudCheckCode(email, token){
   return Cloud.sb.auth.verifyOtp({ email, token, type:'email' });
+}
+/** Guarda la contraseña y marca la cuenta como terminada. */
+function cloudSetPassword(pw){
+  return Cloud.sb.auth.updateUser({ password:pw, data:{ vendo_pw:true } });
 }
 /** Correo de la cuenta abierta (el de Supabase manda). */
 ownerRecoveryEmail = function(){ return (Cloud.ready && Cloud.email) || accountEmail(); };
