@@ -3564,7 +3564,38 @@
   .dm-boot .dm-empty .btn{ margin-top:18px; }
   .dm-boot .dm-empty .btn svg{ width:17px; height:17px; padding:0; margin:0; background:none; color:inherit; border-radius:0; }
   .dm-owner-note{ margin-bottom:14px; }
+  /* ---------- Íconos de línea (sin emojis) ---------- */
+  .ic{ display:inline-flex; align-items:center; justify-content:center; vertical-align:-0.17em; margin-right:.38em; flex-shrink:0; }
+  .ic svg{ width:1.12em; height:1.12em; }
+  .chip .ic, .filter-chip .ic, .filter-chip .cat-dot{ margin-right:0; }
+  .cat-dot{ display:inline-block; width:.6em; height:.6em; border-radius:50%; margin-right:.45em; vertical-align:.06em; flex-shrink:0;
+    box-shadow:0 0 0 1.5px rgba(255,255,255,.9); }
+  .chip .cat-dot, .cat-header .cat-dot{ margin-right:0; }
+  .dm-chip .cat-dot{ margin-right:7px; }
+  .cat-header .cat-dot{ width:10px; height:10px; box-shadow:none; }
+  .opt-card .opt-emoji svg{ width:20px; height:20px; margin:0 auto; }
+  .opt-card.active .opt-emoji{ color:var(--brand-ink); }
+  .sale-row-badge svg{ width:20px; height:20px; color:var(--ink); }
+  .sale-row-badge.md svg{ color:var(--sec-menu-ink); }
+  .sale-row-badge.ret svg, .sale-row-badge.cut-off svg{ color:var(--accent-2); }
+  .sale-row-badge.q svg, .sale-row-badge.cut-ok svg{ color:var(--brand-ink); }
+  .mov-ico svg{ width:16px; height:16px; color:var(--ink-soft); }
+  .doc-big-ico svg{ width:26px; height:26px; color:var(--brand-ink); }
+  .kind-card .kind-ico svg{ width:19px; height:19px; color:var(--ink); }
+  .kind-card.active .kind-ico svg{ color:var(--brand-ink); }
+  .trial-badge svg{ width:15px; height:15px; }
+  .inv-kind svg{ width:14px; height:14px; flex-shrink:0; }
+  .qe-peek svg{ width:17px; height:17px; }
+  .qp-total b svg{ width:20px; height:20px; }
+  .ticket-origin .ic{ vertical-align:-0.2em; }
+  .auth-side-chips span{ display:inline-flex; align-items:center; }
+  .dm-sec-ini{ font-size:17px; font-weight:800; color:var(--dm-ink); }
+  .cflag{ font-size:11px; font-weight:800; letter-spacing:.4px; color:var(--ink-soft); background:var(--surface-alt);
+    border-radius:6px; padding:3px 6px; min-width:30px; text-align:center; }
+  .hist-seg button svg, .seg button .ic svg{ width:15px; height:15px; }
+  @media (min-width:700px){ .opt-card .opt-emoji svg{ width:18px; height:18px; } }
 </style>
+
 
 
 </head>
@@ -3947,6 +3978,42 @@ const ICONS = {
 };
 function icon(name){ return ICONS[name] || ''; }
 
+/* ---------- Íconos de línea en lugar de emojis ----------
+   icx('cash') = ícono pequeño que acompaña a un texto (se ajusta al
+   tamaño de la letra). catDot(c) = punto con el color de la categoría. */
+Object.assign(ICONS, {
+  dine: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3v6a2.5 2.5 0 0 0 2.5 2.5h0A2.5 2.5 0 0 0 9.5 9V3M7 3v18"/><path d="M19.5 15V3c-2.2.6-3.6 2.8-3.6 5.5V13a2 2 0 0 0 2 2h1.6Zm0 0v6"/></svg>`,
+  truck: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5h11v9.5h-11z"/><path d="M13.5 9.5h4l3 3.3v3.2h-7"/><circle cx="7" cy="17.6" r="1.8"/><circle cx="17" cy="17.6" r="1.8"/></svg>`,
+  cash: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg>`,
+  coin: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.3v9.4M14.6 9.3h-3.4a1.6 1.6 0 0 0 0 3.2h1.6a1.6 1.6 0 0 1 0 3.2H9.4"/></svg>`,
+  transfer: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3M9 11h6M12.8 8.6 15.2 11l-2.4 2.4"/></svg>`,
+  notebook: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h11a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5h-11z"/><path d="M6.5 3.5v17M4.5 7.5h4M4.5 12h4M4.5 16.5h4M11 8h5M11 11.5h5"/></svg>`,
+  split: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-6.5M12 14.5 5.5 8M12 14.5 18.5 8M4 11.5V6.5h5M20 11.5V6.5h-5"/></svg>`,
+  droplet: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5c3.6 4.3 6 7.6 6 10.6a6 6 0 0 1-12 0c0-3 2.4-6.3 6-10.6Z"/></svg>`,
+  scale: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M7 20h10M5 7h14M8 7l-3.5 7h7zM16 7l-3.5 7h7z"/></svg>`,
+  ruler: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6.5 8v3M10.5 8v4.5M14.5 8v3M18.5 8v4.5"/></svg>`,
+  moon: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/></svg>`,
+  gift: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="8.5" width="17" height="4" rx="1"/><path d="M5 12.5v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7M12 8.5v12M12 8.5c-1-3-4.5-4.5-5.5-2.5S9 8.5 12 8.5ZM12 8.5c1-3 4.5-4.5 5.5-2.5S15 8.5 12 8.5Z"/></svg>`,
+  eye: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  pin: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.1-6.5-11a6.5 6.5 0 0 1 13 0c0 4.9-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>`,
+  note: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h14a.5.5 0 0 1 .5.5v9.5l-5 5H5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5Z"/><path d="M14.5 19.5V15a.5.5 0 0 1 .5-.5h4.5M8 9h8M8 12.5h4"/></svg>`,
+  mobile: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>`,
+  arrowDown: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v14M6.5 12.5 12 18l5.5-5.5"/></svg>`,
+  arrowUp: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V6M6.5 11.5 12 6l5.5 5.5"/></svg>`,
+  ban: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg>`,
+  bulb: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2v1.6h5v-1.6c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z"/></svg>`,
+  fuel: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h6A1.5 1.5 0 0 1 14 5v15.5M3.5 20.5h12M5 10.5h9M14 8.5h2a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 0 3 0V8L18 5.5"/></svg>`,
+  wrench: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.2a4.5 4.5 0 0 0-5.6 5.9l-5.2 5.2a1.9 1.9 0 0 0 2.7 2.7l5.2-5.2a4.5 4.5 0 0 0 5.9-5.6l-2.7 2.7-2.4-.5-.5-2.4 2.6-2.8Z"/></svg>`,
+  megaphone: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 0 0 1 1h2l8 4.5v-15L7 9H5a1 1 0 0 0-1 1Z"/><path d="m7 15 1.2 4.5M18.5 9.5a3.5 3.5 0 0 1 0 5"/></svg>`,
+  flag: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 21V4M5.5 4.5h11l-2.2 4 2.2 4h-11"/></svg>`,
+  hash: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4 8 20M16 4l-1.5 16M4.5 9h15M4 15h15"/></svg>`,
+  shop: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>`
+});
+ICONS.clipboard = ICONS.paste;
+function icx(name){ return '<span class="ic">' + icon(name) + '</span>'; }
+function catDot(c){ return '<span class="cat-dot" style="background:' + ((c && c.color) || '#8A93AC') + '"></span>'; }
+
+
 /* =========================================================
    ILUSTRACIONES — estados vacíos (SVG inline, sin emojis)
    Paleta: azul marino (ink), gris claro (surface-alt/faint),
@@ -4043,17 +4110,17 @@ function defaultCategories(){ return []; }
 const UNCATEGORIZED = { id:'_none', name:'Sin categoría', emoji:'', color:'#8A93AC' };
 
 const SERVICE_TYPES = [
-  { id:'comer',     name:'Comer aquí',  emoji:'🍽️' },
-  { id:'llevar',    name:'Para llevar', emoji:'🥡' },
-  { id:'domicilio', name:'Domicilio',   emoji:'🛵' },
+  { id:'comer',     name:'Comer aquí',  ico:'dine' },
+  { id:'llevar',    name:'Para llevar', ico:'shop' },
+  { id:'domicilio', name:'Domicilio',   ico:'truck' },
 ];
 
 const PAYMENT_METHODS = [
-  { id:'efectivo',      name:'Efectivo',      emoji:'💵' },
-  { id:'tarjeta',       name:'Tarjeta',       emoji:'💳' },
-  { id:'transferencia', name:'Transferencia', emoji:'📲' },
-  { id:'credito',       name:'Fiado',         emoji:'📒', special:true },   /* a crédito: queda en la cuenta del cliente */
-  { id:'mixto',         name:'Pago mixto',    emoji:'🔀', special:true },   /* con varios métodos a la vez */
+  { id:'efectivo',      name:'Efectivo',      ico:'cash' },
+  { id:'tarjeta',       name:'Tarjeta',       ico:'card' },
+  { id:'transferencia', name:'Transferencia', ico:'transfer' },
+  { id:'credito',       name:'Fiado',         ico:'notebook', special:true },   /* a crédito: queda en la cuenta del cliente */
+  { id:'mixto',         name:'Pago mixto',    ico:'split', special:true },   /* con varios métodos a la vez */
 ];
 /** Métodos "de dinero" (sin fiado ni mixto): para pedidos del menú, abonos, gastos, etc. */
 function basicPayMethods(){ return PAYMENT_METHODS.filter(p => !p.special); }
@@ -4526,7 +4593,7 @@ function customProduct(id){
            image:null, stock:null, minStock:0, sizesOn:false, sizeUnit:'litro', sizes:[], unit:'pieza', custom:true };
 }
 function categoryOf(id){
-  if(id === '_libre') return { id:'_libre', name:'Venta libre', emoji:'✍️', color:'#8A93AC' };
+  if(id === '_libre') return { id:'_libre', name:'Venta libre', emoji:'', color:'#8A93AC' };
   return Store.peek('mesa_categories', []).find(c => c && c.id === id) || UNCATEGORIZED;
 }
 function serviceOf(id){ return SERVICE_TYPES.find(s => s.id === id) || SERVICE_TYPES[0]; }
@@ -4960,7 +5027,7 @@ function renderSale(){
     </div>` : `<div class="chip-row sticky-index">
       <button class="chip ${saleCategoryFilter==='todos'?'active':''}" style="${saleCategoryFilter==='todos'?'background:var(--sec-sale)':''}" onclick="setSaleCategory('todos')">Todos</button>
       ${categories.map(c => `
-        <button class="chip ${saleCategoryFilter===c.id?'active':''}" style="${saleCategoryFilter===c.id?'background:var(--sec-sale)':''}" onclick="setSaleCategory('${c.id}')">${catEmo(c)}${escapeHtml(c.name)}</button>
+        <button class="chip ${saleCategoryFilter===c.id?'active':''}" style="${saleCategoryFilter===c.id?'background:var(--sec-sale)':''}" onclick="setSaleCategory('${c.id}')">${catDot(c)}${escapeHtml(c.name)}</button>
       `).join('')}
     </div>`;
 
@@ -5048,7 +5115,7 @@ function saleGroups(list, categories){
 function saleSectionHTML(cat, items){
   return `<section class="sale-sec">
     <div class="sale-sec-head">
-      <span class="sale-sec-ico" style="--cat:${cat.color || '#8A93AC'}">${cat.emoji ? escapeHtml(cat.emoji) : ''}</span>
+      <span class="sale-sec-ico" style="--cat:${cat.color || '#8A93AC'}"></span>
       <h2 class="sale-sec-name">${escapeHtml(cat.name)}</h2>
       <span class="sale-sec-count">${items.length}</span>
     </div>
@@ -5585,7 +5652,7 @@ function cartSheetHTML(step){
       <div class="opt-grid">
         ${SERVICE_TYPES.map(s => `
           <button class="opt-card ${checkout.serviceType===s.id?'active':''}" onclick="setServiceType('${s.id}')">
-            <span class="opt-emoji">${s.emoji}</span>${s.name}
+            <span class="opt-emoji">${icon(s.ico)}</span>${s.name}
           </button>
         `).join('')}
       </div>
@@ -5607,7 +5674,7 @@ function cartSheetHTML(step){
       <div class="opt-grid pay-grid ${methods.length === 4 ? 'four' : ''}">
         ${methods.map(p => `
           <button class="opt-card ${pm===p.id?'active':''}" onclick="setPaymentMethod('${p.id}')">
-            <span class="opt-emoji">${p.emoji}</span>${p.name}
+            <span class="opt-emoji">${icon(p.ico)}</span>${p.name}
           </button>
         `).join('')}
       </div>
@@ -5677,7 +5744,7 @@ function cartSheetHTML(step){
             <div class="cart-item-name">${escapeHtml(label)} <span class="ci-edit">${icon('edit')}</span></div>
             <div class="cart-item-price">${formatMoney(base)} ${c.sizeLabel || !isFracProduct(p) ? 'c/u' : 'por ' + productUnit(p).short}${stockNote}</div>
             ${tags.length ? `<div class="ci-tags">${tags.join('')}</div>` : ''}
-            ${c.note ? `<div class="ci-note">📝 ${escapeHtml(c.note)}</div>` : ''}
+            ${c.note ? `<div class="ci-note">${icx('note')}${escapeHtml(c.note)}</div>` : ''}
           </div>
           <div class="qty-control">
             <button class="qty-btn" onclick="changeLineQty(${i}, -1)">−</button>
@@ -5986,7 +6053,7 @@ function splitPayHTML(toPay){
       ${rows.map((r, i) => `
         <div class="split-row">
           <select onchange="checkout.payments[${i}].method=this.value; openCartSheet('checkout');">
-            ${opts.map(o => `<option value="${o.id}" ${r.method === o.id ? 'selected' : ''}>${o.emoji} ${o.name}</option>`).join('')}
+            ${opts.map(o => `<option value="${o.id}" ${r.method === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}
           </select>
           <input type="number" inputmode="decimal" min="0" step="any" placeholder="$0.00" value="${escapeHtml(r.amount)}" oninput="checkout.payments[${i}].amount=this.value; splitRefresh();">
           <button class="icon-btn" onclick="checkout.payments.splice(${i},1); openCartSheet('checkout');" ${rows.length <= 1 ? 'disabled' : ''} aria-label="Quitar">${icon('trash')}</button>
@@ -6303,7 +6370,7 @@ function applyPrintVars(){
 /* Las termicas dibujan los emojis como imagen y salen borrosos:
    en el ticket impreso se quitan. */
 /** Emoji de una categoría con su espacio, o nada si no tiene. */
-function catEmo(c){ return c && c.emoji ? c.emoji + ' ' : ''; }
+function catEmo(c){ return ''; }   /* las categorías ya no llevan emoji: se usa su color (catDot) */
 function stripEmoji(txt){
   return String(txt == null ? '' : txt)
     .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '')
@@ -6402,7 +6469,6 @@ function ticketPrintHTML(sale){
         <div class="p-title">${escapeHtml(biz.title)}</div>
         <div class="p-sub">${escapeHtml(stripEmoji(biz.sub))}</div>
         ${biz.address ? `<div class="p-meta">${biz.address}</div>` : ''}
-        ${b.phone ? `<div class="p-meta">Tel. ${escapeHtml(b.phone)}</div>` : ''}
         ${ret ? `<div class="p-kind">*** DEVOLUCIÓN ***</div>` : ''}
       </div>
       <hr class="p-sep">
@@ -7130,7 +7196,6 @@ async function escposTicketBytes(sale){
   gran(false); neg(false);
   escWrap(stripEmoji(biz.sub), cols).forEach(ln);
   if(b.address && biz.address) escWrap(b.address, cols).forEach(ln);
-  if(b.phone) ln('Tel. ' + b.phone);
   if(ret){ neg(true); ln('*** DEVOLUCION ***'); neg(false); }
   izq(); sep();
 
@@ -7412,7 +7477,6 @@ function ticketHTML(sale){
   const pay = ticketPayRows(sale);
   if(!ret && pay.length && pay[0][0] === 'Pago' && sale.paymentMethod !== 'mixto'){
     const pm = paymentOf(sale.paymentMethod);
-    pay[0] = ['Pago', pm.emoji + ' ' + pay[0][1]];
   }
   return `
     <div class="ticket ticket-center">
@@ -7437,7 +7501,7 @@ function ticketHTML(sale){
       <hr>
       ${ticketTotalsRows(sale).map(r => `<div class="ticket-line ${r[2] === 'grand' ? 'ticket-total' : ''}"><span>${escapeHtml(r[0])}</span><span>${r[1]}</span></div>`).join('')}
       <hr>
-      ${!ret ? `<div class="ticket-line"><span>Servicio</span><span>${service.emoji} ${service.name}</span></div>` : ''}
+      ${!ret ? `<div class="ticket-line"><span>Servicio</span><span>${service.name}</span></div>` : ''}
       ${sale.table ? `<div class="ticket-line"><span>${tableTicketLabel(sale)}</span><span>${escapeHtml(sale.table)}</span></div>` : ''}
       ${pay.map(r => `<div class="ticket-line"><span>${escapeHtml(r[0])}</span><span>${escapeHtml(r[1])}</span></div>`).join('')}
       ${retTotal > 0 ? `<div class="ticket-line" style="color:var(--accent-2); font-weight:700;"><span>Devoluciones</span><span>−${formatMoney(retTotal)}</span></div>` : ''}
@@ -7560,7 +7624,7 @@ function renderSaleRow(sale){
   const fiado = !ret && (sale.paymentMethod === 'credito' || sale.credit > 0);
   return `
     <button class="sale-row ${sale.cancelled?'cancelled':''} ${ret ? 'is-return' : ''}" onclick="openSaleDetail('${sale.id}')">
-      <div class="sale-row-badge ${sale.origin === 'menu' ? 'md' : ''} ${ret ? 'ret' : ''}">${ret ? '↩️' : (sale.origin === 'menu' ? '📱' : service.emoji)}</div>
+      <div class="sale-row-badge ${sale.origin === 'menu' ? 'md' : ''} ${ret ? 'ret' : ''}">${icon(ret ? 'undo' : (sale.origin === 'menu' ? 'mobile' : service.ico))}</div>
       <div class="sale-row-main">
         <div class="sale-row-num">${ret ? 'Devolución ' + escapeHtml(sale.folio || '') : orderNumberLabel(sale.number)}${sale.origin === 'menu' ? ' <span class="tag md">Menú Digital' + (sale.menuCode ? ' · ' + escapeHtml(sale.menuCode) : '') + '</span>' : ''}${sale.quoteFolio ? ' <span class="tag fact">Cotización ' + escapeHtml(sale.quoteFolio) + '</span>' : ''}${fiado ? ' <span class="tag credit">Fiado</span>' : ''}</div>
         ${ret && sale.refNumber ? `<div class="sale-row-who">De la venta ${orderNumberLabel(sale.refNumber)}</div>` : ''}
@@ -7631,8 +7695,8 @@ function openHistoryFilters(){
         <div class="filter-pill-row">
           <button class="filter-chip ${historyFilters.status==='all'?'active':''}" onclick="setHistoryFilter('status','all')">Todos los estados</button>
           <button class="filter-chip ${historyFilters.status==='activa'?'active':''}" onclick="setHistoryFilter('status','activa')">Activas</button>
-          <button class="filter-chip ${historyFilters.status==='fiado'?'active':''}" onclick="setHistoryFilter('status','fiado')">📒 Fiadas</button>
-          <button class="filter-chip ${historyFilters.status==='devolucion'?'active is-danger':''}" onclick="setHistoryFilter('status','devolucion')">↩️ Devoluciones</button>
+          <button class="filter-chip ${historyFilters.status==='fiado'?'active':''}" onclick="setHistoryFilter('status','fiado')">${icx('notebook')}Fiadas</button>
+          <button class="filter-chip ${historyFilters.status==='devolucion'?'active is-danger':''}" onclick="setHistoryFilter('status','devolucion')">${icx('undo')}Devoluciones</button>
           <button class="filter-chip ${historyFilters.status==='cancelada'?'active is-danger':''}" onclick="setHistoryFilter('status','cancelada')">Canceladas</button>
         </div>
       </div>
@@ -7641,7 +7705,7 @@ function openHistoryFilters(){
         <div class="filter-modal-label"><span class="fml-icon">${icon('utensils')}</span>Servicio</div>
         <div class="filter-pill-row">
           <button class="filter-chip ${historyFilters.service==='all'?'active':''}" onclick="setHistoryFilter('service','all')">Todo servicio</button>
-          ${SERVICE_TYPES.map(s => `<button class="filter-chip ${historyFilters.service===s.id?'active':''}" onclick="setHistoryFilter('service','${s.id}')">${s.emoji} ${s.name}</button>`).join('')}
+          ${SERVICE_TYPES.map(s => `<button class="filter-chip ${historyFilters.service===s.id?'active':''}" onclick="setHistoryFilter('service','${s.id}')">${icx(s.ico)}${s.name}</button>`).join('')}
         </div>
       </div>
 
@@ -7649,7 +7713,7 @@ function openHistoryFilters(){
         <div class="filter-modal-label"><span class="fml-icon">${icon('card')}</span>Método de pago</div>
         <div class="filter-pill-row">
           <button class="filter-chip ${historyFilters.payment==='all'?'active':''}" onclick="setHistoryFilter('payment','all')">Todo pago</button>
-          ${PAYMENT_METHODS.map(p => `<button class="filter-chip ${historyFilters.payment===p.id?'active':''}" onclick="setHistoryFilter('payment','${p.id}')">${p.emoji} ${p.name}</button>`).join('')}
+          ${PAYMENT_METHODS.map(p => `<button class="filter-chip ${historyFilters.payment===p.id?'active':''}" onclick="setHistoryFilter('payment','${p.id}')">${icx(p.ico)}${p.name}</button>`).join('')}
         </div>
       </div>
 
@@ -8040,16 +8104,16 @@ function renderStats(){
     <div class="section-title">Cómo te pagaron</div>
     <div class="card">
       ${pays.map(p => `<div class="bar-row">
-        <div class="bar-row-top"><span>${p.emoji} ${p.name}</span><span class="bv">${formatMoney(d.byMethod[p.id] || 0)}</span></div>
+        <div class="bar-row-top"><span>${icx(p.ico)}${p.name}</span><span class="bv">${formatMoney(d.byMethod[p.id] || 0)}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, (d.byMethod[p.id] || 0) / maxPay) * 100}%; background:var(--sec-stats);"></div></div>
       </div>`).join('')}
-      ${abonosTot ? `<div class="kv-row" style="margin-top:10px;"><span>💵 Abonos de fiado recibidos</span><b>${formatMoney(abonosTot)}</b></div>` : ''}
+      ${abonosTot ? `<div class="kv-row" style="margin-top:10px;"><span>${icx('cash')}Abonos de fiado recibidos</span><b>${formatMoney(abonosTot)}</b></div>` : ''}
     </div>
 
     <div class="section-title">Por tipo de servicio</div>
     <div class="card">
       ${SERVICE_TYPES.map(s => { const v = byService[s.id]; return `<div class="bar-row">
-        <div class="bar-row-top"><span>${s.emoji} ${s.name}</span><span class="bv">${formatMoney(v.total)} · ${v.count}</span></div>
+        <div class="bar-row-top"><span>${icx(s.ico)}${s.name}</span><span class="bv">${formatMoney(v.total)} · ${v.count}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, v.total / maxService) * 100}%; background:var(--ink);"></div></div>
       </div>`; }).join('')}
     </div>
@@ -8057,7 +8121,7 @@ function renderStats(){
     ${cats.length ? `
       <div class="section-title">Por categoría</div>
       <div class="card">${cats.map(c => `<div class="bar-row">
-        <div class="bar-row-top"><span>${catEmo(c)}${escapeHtml(c.name)}</span><span class="bv">${formatMoney(c.total)}</span></div>
+        <div class="bar-row-top"><span>${catDot(c)}${escapeHtml(c.name)}</span><span class="bv">${formatMoney(c.total)}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, c.total / maxCat) * 100}%; background:var(--ink);"></div></div>
       </div>`).join('')}</div>` : ''}
 
@@ -8300,7 +8364,7 @@ function renderProducts(){
       if(items.length === 0) return '';
       return `
         <div class="cat-header">
-          ${cat.emoji ? `<span class="cat-emoji">${cat.emoji}</span>` : ''}
+          ${catDot(cat)}
           <span class="cat-name">${escapeHtml(cat.name)}</span>
           <span class="cat-count">· ${items.length}</span>
         </div>
@@ -8312,7 +8376,7 @@ function renderProducts(){
       if(orphans.length === 0) return '';
       return `
         <div class="cat-header">
-          ${UNCATEGORIZED.emoji ? `<span class="cat-emoji">${UNCATEGORIZED.emoji}</span>` : ''}
+          ${catDot(UNCATEGORIZED)}
           <span class="cat-name">${UNCATEGORIZED.name}</span>
           <span class="cat-count">· ${orphans.length}</span>
         </div>
@@ -8368,9 +8432,9 @@ function openStockForm(productId, mode){
   stockFormMode = mode || stockFormMode || 'entrada';
   const u = stockUnitShort(p);
   const modes = [
-    { id:'entrada', emoji:'📦', label:'Llegó mercancía' },
-    { id:'ajuste',  emoji:'🔢', label:'Contar lo que hay' },
-    { id:'merma',   emoji:'🗑️', label:'Merma / pérdida' },
+    { id:'entrada', ico:'box', label:'Llegó mercancía' },
+    { id:'ajuste',  ico:'hash', label:'Contar lo que hay' },
+    { id:'merma',   ico:'trash', label:'Merma / pérdida' },
   ];
   const label = { entrada:'¿Cuánto llegó?', ajuste:'¿Cuánto hay en realidad?', merma:'¿Cuánto se perdió?' }[stockFormMode];
   openModal(`
@@ -8380,7 +8444,7 @@ function openStockForm(productId, mode){
     </div>
     <div class="stock-now"><span>Hoy tienes</span><b>${fmtStock(p, st.stock)}</b>${st.level !== 'ok' ? `<span class="stock-badge ${st.level}">${st.level === 'out' ? 'Agotado' : 'Queda poco'}</span>` : ''}</div>
     <div class="opt-grid">
-      ${modes.map(m => `<button class="opt-card ${stockFormMode === m.id ? 'active' : ''}" onclick="openStockForm('${p.id}', '${m.id}')"><span class="opt-emoji">${m.emoji}</span>${m.label}</button>`).join('')}
+      ${modes.map(m => `<button class="opt-card ${stockFormMode === m.id ? 'active' : ''}" onclick="openStockForm('${p.id}', '${m.id}')"><span class="opt-emoji">${icon(m.ico)}</span>${m.label}</button>`).join('')}
     </div>
     <div class="field">
       <label for="sfQty">${label}${u ? ' (' + u + ')' : ''}</label>
@@ -8515,7 +8579,7 @@ function openCategoryManager(){
       const count = products.filter(p => p.category === c.id).length;
       return `
         <div class="catmgr-row">
-          <div class="catmgr-dot" style="background:${c.color}22">${c.emoji || `<span class="catmgr-color" style="background:${c.color}"></span>`}</div>
+          <div class="catmgr-dot" style="background:${c.color}22"><span class="catmgr-color" style="background:${c.color}"></span></div>
           <div class="catmgr-name">${escapeHtml(c.name)}</div>
           <div class="catmgr-count">${count} prod.</div>
           <div class="catmgr-actions">
@@ -8544,23 +8608,26 @@ function openCategoryForm(categoryId){
       <input id="cfName" type="text" placeholder="Ej. Bebidas" value="${editing ? escapeHtml(editing.name) : ''}">
     </div>
     <div class="field">
-      <label>Emoji (opcional)</label>
-      <input id="cfEmoji" type="text" maxlength="4" placeholder="Sin emoji" value="${editing ? escapeHtml(editing.emoji || '') : ''}">
-      <div class="field-hint" style="color:var(--ink-soft);">Si lo dejas vacío, la categoría se muestra solo con su nombre.</div>
-    </div>
-    <div class="field">
       <label>Color</label>
       <input id="cfColor" type="color" style="height:46px; padding:4px;" value="${editing ? editing.color : '#25D366'}">
+      <div class="field-hint" style="color:var(--ink-soft);">Identifica la categoría en tus ventas y en tu catálogo.</div>
     </div>
     <button class="btn primary block" onclick="saveCategoryForm('${editing ? editing.id : ''}')">${editing ? 'Guardar cambios' : 'Crear categoría'}</button>
   `;
   openModal(html, { dismissible:true });
 }
 
+/* Categoría que sale elegida al agregar un producto nuevo: la del último
+   producto que agregaste (o la última categoría que creaste). Se guarda
+   solo en este aparato. */
+const LAST_CAT_KEY = 'vendo_last_cat';
+function lastProductCategory(){ try{ return localStorage.getItem(LAST_CAT_KEY) || ''; }catch(e){ return ''; } }
+function rememberProductCategory(id){ try{ if(id) localStorage.setItem(LAST_CAT_KEY, id); }catch(e){} }
+
 function saveCategoryForm(categoryId){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para administrar productos')) return;
   const name = document.getElementById('cfName').value.trim();
-  const emoji = document.getElementById('cfEmoji').value.trim();
+  const emoji = '';
   const color = document.getElementById('cfColor').value || '#25D366';
   if(!name){ toast('Escribe un nombre para la categoría'); return; }
 
@@ -8569,7 +8636,9 @@ function saveCategoryForm(categoryId){
     const c = categories.find(x => x.id === categoryId);
     c.name = name; c.emoji = emoji; c.color = color;
   } else {
-    categories.push({ id:'cat' + Date.now(), name, emoji, color });
+    const nueva = { id:'cat' + Date.now(), name, emoji, color };
+    categories.push(nueva);
+    rememberProductCategory(nueva.id);   /* el siguiente producto nuevo cae aquí */
   }
   DB.saveCategories(categories);
   toast(categoryId ? 'Categoría actualizada' : 'Categoría creada');
@@ -8612,9 +8681,9 @@ function renderBackgroundIfProducts(){ if(currentView === 'products') render(); 
    producción) salen de aquí, así que al elegir Kilo o Metro TODO el
    apartado cambia a esa unidad. */
 const SIZE_UNITS = {
-  litro: { id:'litro', emoji:'💧', label:'Litro', one:'litro', many:'litros', short:'L',  half:'Medio litro', ex:'medio litro, litro o 2 litros', hint:'el litro no siempre cuesta el doble que el medio litro' },
-  kilo:  { id:'kilo',  emoji:'⚖️', label:'Kilo',  one:'kilo',  many:'kilos',  short:'kg', half:'Medio kilo',  ex:'medio kilo, kilo o 2 kilos',   hint:'el kilo no siempre cuesta el doble que el medio kilo' },
-  metro: { id:'metro', emoji:'📏', label:'Metro', one:'metro', many:'metros', short:'m',  half:'Medio metro', ex:'medio metro, metro o 2 metros', hint:'el metro no siempre cuesta el doble que el medio metro' },
+  litro: { id:'litro', ico:'droplet', label:'Litro', one:'litro', many:'litros', short:'L',  half:'Medio litro', ex:'medio litro, litro o 2 litros', hint:'el litro no siempre cuesta el doble que el medio litro' },
+  kilo:  { id:'kilo',  ico:'scale', label:'Kilo',  one:'kilo',  many:'kilos',  short:'kg', half:'Medio kilo',  ex:'medio kilo, kilo o 2 kilos',   hint:'el kilo no siempre cuesta el doble que el medio kilo' },
+  metro: { id:'metro', ico:'ruler', label:'Metro', one:'metro', many:'metros', short:'m',  half:'Medio metro', ex:'medio metro, metro o 2 metros', hint:'el metro no siempre cuesta el doble que el medio metro' },
 };
 function sizeUnitOf(id){ return SIZE_UNITS[id] || SIZE_UNITS.litro; }
 function cleanSizeUnit(id){ return SIZE_UNITS[id] ? id : 'litro'; }
@@ -8732,7 +8801,11 @@ function openProductForm(productId){
     <div class="field">
       <label>Categoría</label>
       <select id="pfCategory">
-        ${categories.map(c => `<option value="${c.id}" ${editing && editing.category===c.id ? 'selected':''}>${catEmo(c)}${c.name}</option>`).join('')}
+        ${(() => {
+          const last = lastProductCategory();
+          const sel = editing ? editing.category : (categories.some(c => c.id === last) ? last : '');
+          return categories.map(c => `<option value="${c.id}" ${sel === c.id ? 'selected':''}>${catEmo(c)}${c.name}</option>`).join('');
+        })()}
       </select>
     </div>
     <div class="field" id="pfSkuField">
@@ -8786,7 +8859,7 @@ function openProductForm(productId){
       <div class="field">
         <label>Se vende por</label>
         <div class="opt-grid" style="grid-template-columns:1fr 1fr 1fr; margin-bottom:0;">
-          ${Object.values(SIZE_UNITS).map(x => `<button type="button" class="opt-card ${sizeUnit===x.id?'active':''}" id="pfUnit_${x.id}" onclick="setSizeUnit('${x.id}')">${x.emoji} ${x.label}</button>`).join('')}
+          ${Object.values(SIZE_UNITS).map(x => `<button type="button" class="opt-card ${sizeUnit===x.id?'active':''}" id="pfUnit_${x.id}" onclick="setSizeUnit('${x.id}')"><span class="opt-emoji">${icon(x.ico)}</span>${x.label}</button>`).join('')}
         </div>
         <input type="hidden" id="pfSizeUnit" value="${sizeUnit}">
       </div>
@@ -9171,6 +9244,7 @@ function saveProductForm(productId){
   } else {
     products.push({ id:uid('p'), name, price: round2(price), cost: cost === null ? null : round2(cost), category, active:true, image: productFormImage, stock: stock, minStock: minStock, sizesOn: sizesOn, sizeUnit: sizeUnit, sizes: sizes,
                     sku: sku || null, wholesalePrice: wholeOk ? wholesalePrice : null, wholesaleMin: wholeOk ? wholesaleMin : null, createdAt: now, updatedAt: now });
+    rememberProductCategory(category);   /* el siguiente producto nuevo sale con esta categoría */
   }
   if(typeof invContext === 'function') invContext({ type:'ajuste', note: productId ? 'Cambio desde el producto' : 'Producto nuevo' });
   DB.saveProducts(products);
@@ -9433,14 +9507,14 @@ Object.assign(ILLUSTRATIONS, {
 
 /* ---------- Países disponibles ---------- */
 const COUNTRIES = [
-  { code:'MX', flag:'🇲🇽', name:'México',              dial:'+52', digits:10 },
-  { code:'US', flag:'🇺🇸', name:'Estados Unidos',      dial:'+1',  digits:10 },
-  { code:'CO', flag:'🇨🇴', name:'Colombia',            dial:'+57', digits:10 },
-  { code:'AR', flag:'🇦🇷', name:'Argentina',           dial:'+54', digits:10 },
-  { code:'PE', flag:'🇵🇪', name:'Perú',                dial:'+51', digits:9  },
-  { code:'CL', flag:'🇨🇱', name:'Chile',               dial:'+56', digits:9  },
-  { code:'GT', flag:'🇬🇹', name:'Guatemala',           dial:'+502', digits:8 },
-  { code:'ES', flag:'🇪🇸', name:'España',              dial:'+34', digits:9  }
+  { code:'MX', name:'México',              dial:'+52', digits:10 },
+  { code:'US', name:'Estados Unidos',      dial:'+1',  digits:10 },
+  { code:'CO', name:'Colombia',            dial:'+57', digits:10 },
+  { code:'AR', name:'Argentina',           dial:'+54', digits:10 },
+  { code:'PE', name:'Perú',                dial:'+51', digits:9  },
+  { code:'CL', name:'Chile',               dial:'+56', digits:9  },
+  { code:'GT', name:'Guatemala',           dial:'+502', digits:8 },
+  { code:'ES', name:'España',              dial:'+34', digits:9  }
 ];
 function countryOf(code){ return COUNTRIES.find(c => c.code === code) || COUNTRIES[0]; }
 
@@ -9653,7 +9727,7 @@ function authSideHTML(screen){
       <div class="auth-side-title">${d.t}</div>
       <div class="auth-side-sub">${d.s}</div>
       <div class="auth-side-chips">
-        <span>🧾 Ventas</span><span>📦 Inventario</span><span>📱 Menú Digital</span>
+        <span>${icx('receipt')}Ventas</span><span>${icx('box')}Inventario</span><span>${icx('mobile')}Menú Digital</span>
       </div>
     </div>`;
 }
@@ -9799,7 +9873,7 @@ function openCountryPicker(){
     <div class="country-list">
       ${COUNTRIES.map(c => `
         <button class="country-item ${c.code === authState.country ? 'active':''}" onclick="pickCountry('${c.code}')">
-          <span class="flag">${c.flag}</span>
+          <span class="cflag">${c.code}</span>
           <span class="cname">${c.name}</span>
           <span class="cdial">${c.dial}</span>
         </button>
@@ -10063,7 +10137,7 @@ function authTrialHTML(){
     <div class="auth-hero">${ILLUSTRATIONS.trialGift}</div>
     <div class="auth-sheet">
       <div class="auth-body">
-        <span class="trial-badge">🎁 Regalo de bienvenida</span>
+        <span class="trial-badge">${icon('gift')}Regalo de bienvenida</span>
         <h1 class="auth-title">1 mes de prueba gratis</h1>
         <p class="auth-sub">Usa ${APP_NAME} sin costo durante <b style="color:var(--ink)">1 mes completo</b>. Cuando termine tu prueba, la membresía cuesta <b style="color:var(--ink)">$${TRIAL_PRECIO} al mes</b>. Te avisaremos antes de que se acabe.</p>
         <div class="trial-card">
@@ -10169,7 +10243,7 @@ function trialWidgetHTML(u){
     <div class="section-title">Membresía</div>
     <div class="trial-widget">
       <div class="trial-widget-top">
-        <span class="trial-widget-ico">🎁</span>
+        <span class="trial-widget-ico">${icon('gift')}</span>
         <div class="trial-widget-txt">
           <span class="trial-widget-label">${t.daysLeft} día${t.daysLeft === 1 ? '' : 's'} gratis restantes</span>
           <span class="trial-widget-sub">Después: $${TRIAL_PRECIO} al mes</span>
@@ -10664,10 +10738,6 @@ function openBusinessForm(){
       <label for="bizAddress">Dirección</label>
       <input id="bizAddress" type="text" value="${escapeHtml(b.address || '')}" placeholder="Calle 10 #25, Centro">
     </div>
-    <div class="field">
-      <label for="bizPhone">Teléfono del negocio</label>
-      <input id="bizPhone" type="tel" inputmode="numeric" value="${escapeHtml(b.phone || '')}" placeholder="981 123 4567">
-    </div>
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="closeModal()">Cancelar</button>
       <button class="btn primary block" onclick="saveBusinessForm()">Guardar</button>
@@ -10679,8 +10749,7 @@ function saveBusinessForm(){
     hours: ((currentUser() || {}).business || {}).hours,   // conserva el horario
     name: document.getElementById('bizName').value.trim(),
     type: document.getElementById('bizType').value,
-    address: document.getElementById('bizAddress').value.trim(),
-    phone: document.getElementById('bizPhone').value.trim()
+    address: document.getElementById('bizAddress').value.trim()
   }});
   closeModal();
   render();
@@ -12372,9 +12441,9 @@ function mdSaveCfg(c){
    mode 'always'   = recibe pedidos a cualquier hora
    Fuera de horario, los clientes ven el menú pero no pueden enviar pedidos. */
 const MD_HOURS_MODES = [
-  { id:'business', emoji:'🏪', label:'Igual que el negocio' },
-  { id:'custom',   emoji:'🕒', label:'Horario propio' },
-  { id:'always',   emoji:'🌙', label:'Siempre abierto' },
+  { id:'business', ico:'store2', label:'Igual que el negocio' },
+  { id:'custom',   ico:'clock', label:'Horario propio' },
+  { id:'always',   ico:'moon', label:'Siempre abierto' },
 ];
 function mdCleanHours(h){
   h = h || {};
@@ -12426,7 +12495,7 @@ function mdRenderHoursForm(){
       <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
     </div>
     <p class="sheet-text" style="margin-bottom:14px;">Fuera de este horario tus clientes pueden ver el menú, pero no enviar pedidos.</p>
-    <div class="hrs-mode">${MD_HOURS_MODES.map(m => `<button class="opt-card ${mdHoursMode === m.id ? 'active' : ''}" onclick="mdSetHoursMode('${m.id}')"><span class="opt-emoji">${m.emoji}</span>${m.label}</button>`).join('')}</div>
+    <div class="hrs-mode">${MD_HOURS_MODES.map(m => `<button class="opt-card ${mdHoursMode === m.id ? 'active' : ''}" onclick="mdSetHoursMode('${m.id}')"><span class="opt-emoji">${icon(m.ico)}</span>${m.label}</button>`).join('')}</div>
     ${cuerpo}
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="closeModal()">Cancelar</button>
@@ -12721,8 +12790,8 @@ function mdColorPreviewHTML(pal, nombre){
       <span class="md-pv-name">${escapeHtml(nombre)}</span>
     </div>
     <div class="md-pv-chips">
-      <span class="md-pv-chip" style="background:${pal.main}; color:${pal.on}; border-color:transparent;">🛒 Productos</span>
-      <span class="md-pv-chip">🥤 Bebidas</span>
+      <span class="md-pv-chip" style="background:${pal.main}; color:${pal.on}; border-color:transparent;"><span class="cat-dot" style="background:currentColor"></span>Productos</span>
+      <span class="md-pv-chip"><span class="cat-dot" style="background:#E8A33D"></span>Bebidas</span>
     </div>
     <div class="md-pv-card" style="border-color:${pal.main}; box-shadow:0 4px 14px rgba(${pal.rgb},.3);">
       <span class="n">Producto de ejemplo<br><span class="md-pv-unit" style="background:${pal.soft}; color:${pal.ink};">Por kilo</span></span>
@@ -12767,7 +12836,7 @@ function mdOpenWhatsappForm(){
     <div class="field">
       <label for="mdWaCountry">País</label>
       <select id="mdWaCountry">
-        ${COUNTRIES.map(c => `<option value="${c.code}" ${c.code === w.country ? 'selected' : ''}>${c.flag} ${c.name} (${c.dial})</option>`).join('')}
+        ${COUNTRIES.map(c => `<option value="${c.code}" ${c.code === w.country ? 'selected' : ''}>${c.name} (${c.dial})</option>`).join('')}
       </select>
     </div>
     <div class="field" id="mdWaField">
@@ -13065,11 +13134,11 @@ function dmRender(){
       ${d.cfg.paused ? `<div class="dm-banner">${icon('pause')}<span><b>Por ahora no estamos recibiendo pedidos</b>Puedes ver el menú; vuelve a intentarlo más tarde.</span></div>`
         : (mdClosedNow(d.cfg) ? `<div class="dm-banner">${icon('clock')}<span><b>Estamos cerrados en este momento</b>Puedes ver el menú${hrsNextOpen(mdMenuHours(d.cfg)) ? '; recibimos pedidos de nuevo ' + hrsNextOpen(mdMenuHours(d.cfg)) : ''}.</span></div>` : '')}
       ${cats.length ? `
-        <nav class="dm-chips" id="dmChips">${cats.map((c, i) => `<button class="dm-chip ${i === 0 ? 'active' : ''}" data-target="dms-${c.id}" onclick="dmGoSection('dms-${c.id}')">${catEmo(c)}${escapeHtml(c.name)}</button>`).join('')}</nav>
+        <nav class="dm-chips" id="dmChips">${cats.map((c, i) => `<button class="dm-chip ${i === 0 ? 'active' : ''}" data-target="dms-${c.id}" onclick="dmGoSection('dms-${c.id}')">${catDot(c)}${escapeHtml(c.name)}</button>`).join('')}</nav>
         ${cats.map(c => {
           const list = d.prods.filter(p => c.id === UNCATEGORIZED.id ? !d.cats.some(x => x.id === p.category) : p.category === c.id);
           return `<section class="dm-sec" id="dms-${c.id}">
-            <div class="dm-sec-head">${c.emoji ? `<span class="dm-sec-emoji">${c.emoji}</span>` : ''}<div><h2 class="dm-sec-title">${escapeHtml(c.name)}</h2><div class="dm-sec-count">${list.length} producto${list.length === 1 ? '' : 's'}</div></div></div>
+            <div class="dm-sec-head"><span class="dm-sec-emoji dm-sec-ini">${escapeHtml(((c.name || '?').trim().charAt(0) || '?').toUpperCase())}</span><div><h2 class="dm-sec-title">${escapeHtml(c.name)}</h2><div class="dm-sec-count">${list.length} producto${list.length === 1 ? '' : 's'}</div></div></div>
             <div class="dm-grid">${list.map(p => dmCardHTML(p, c, mdOrdersBlocked(d.cfg))).join('')}</div>
           </section>`;
         }).join('')}
@@ -13238,7 +13307,7 @@ function dmProductHTML(){
     </div>
     ${(p.description || '').trim() ? `<p class="dm-pd-desc">${escapeHtml(p.description)}</p>` : '<div style="height:12px"></div>'}
     <div class="dm-pd-tags">
-      <span class="dm-unit" style="margin:0;">${catEmo(c)}${escapeHtml(c.name)}</span>
+      <span class="dm-unit" style="margin:0;">${catDot(c)}${escapeHtml(c.name)}</span>
       ${unitTagText(p) ? `<span class="dm-unit" style="margin:0;">${unitTagText(p)}${!hasSizes(p) && u.frac ? ' · de ' + fmtQty(step, u.id) + ' en ' + fmtQty(step, u.id) : ''}</span>` : ''}
       ${out ? '<span class="md-pill st-pendiente">Agotado</span>' : ''}
     </div>
@@ -13284,7 +13353,7 @@ function dmLinesHTML(editable){
       <div class="dm-line-main">
         <div class="dm-line-name">${escapeHtml(p ? p.name : 'Producto')}</div>
         <div class="dm-line-sub">${editable ? unitTxt : escapeHtml(lineQtyLabel(l)) + ' · ' + unitTxt}</div>
-        ${l.note ? `<div class="dm-line-note">📝 ${escapeHtml(l.note)}</div>` : ''}
+        ${l.note ? `<div class="dm-line-note">${icx('note')}${escapeHtml(l.note)}</div>` : ''}
       </div>
       <div class="dm-line-right">
         ${editable ? `<div class="dm-q">
@@ -13345,7 +13414,7 @@ function dmWhatsappMessage(){
     const nombre = (p ? p.name : 'Producto') + (l.sizeLabel ? ' (' + l.sizeLabel + ')' : '');
     const cant = (l.sizeLabel || !l.unit || unitOf(l.unit).plain) ? 'x' + fmtNum(l.qty) : fmtQty(l.qty, l.unit);
     msg += '• ' + nombre + ' ' + cant + ' - ' + formatMoney(l.price * l.qty) + '\n';
-    if(l.note) msg += '   📝 Nota: ' + l.note + '\n';
+    if(l.note) msg += '   Nota: ' + l.note + '\n';
   });
   if(showsTax()){
     msg += '\nSubtotal: ' + formatMoney(t.subtotal);
@@ -13466,37 +13535,37 @@ ICONS.plateSet = `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/
    que se elige en Mi cuenta › Información de mi negocio.
 ========================================================= */
 const GIROS = [
-  { id:'restaurante', label:'Restaurante / Cocina',       emoji:'🍽️', food:true },
-  { id:'cafeteria',   label:'Cafetería',                  emoji:'☕', food:true },
-  { id:'taqueria',    label:'Taquería / Comida rápida',   emoji:'🌮', food:true },
-  { id:'bar',         label:'Bar',                        emoji:'🍺', food:true },
-  { id:'panaderia',   label:'Panadería / Pastelería',     emoji:'🥐', food:true },
-  { id:'abarrotes',   label:'Tienda / Abarrotes',         emoji:'🛒' },
-  { id:'minisuper',   label:'Minisúper',                  emoji:'🏪' },
-  { id:'ropa',        label:'Ropa / Calzado',             emoji:'👕' },
-  { id:'belleza',     label:'Estética / Barbería',        emoji:'💈', kind:'service' },
-  { id:'papeleria',   label:'Papelería',                  emoji:'✏️' },
-  { id:'ferreteria',  label:'Ferretería / Materiales',    emoji:'🔧' },
-  { id:'farmacia',    label:'Farmacia',                   emoji:'💊' },
-  { id:'electronica', label:'Electrónica / Celulares',    emoji:'📱' },
-  { id:'servicios',   label:'Servicios / Taller',         emoji:'🛠️', kind:'service' },
-  { id:'consultorio', label:'Consultorio / Profesionista',emoji:'🩺', kind:'service' },
-  { id:'mayoreo',     label:'Mayoreo / Distribuidora',    emoji:'📦' },
-  { id:'otro',        label:'Otro',                       emoji:'🏷️' },
+  { id:'restaurante', label:'Restaurante / Cocina',       food:true },
+  { id:'cafeteria',   label:'Cafetería',                  food:true },
+  { id:'taqueria',    label:'Taquería / Comida rápida',   food:true },
+  { id:'bar',         label:'Bar',                        food:true },
+  { id:'panaderia',   label:'Panadería / Pastelería',     food:true },
+  { id:'abarrotes',   label:'Tienda / Abarrotes',         },
+  { id:'minisuper',   label:'Minisúper',                  },
+  { id:'ropa',        label:'Ropa / Calzado',             },
+  { id:'belleza',     label:'Estética / Barbería',        kind:'service' },
+  { id:'papeleria',   label:'Papelería',                  },
+  { id:'ferreteria',  label:'Ferretería / Materiales',    },
+  { id:'farmacia',    label:'Farmacia',                   },
+  { id:'electronica', label:'Electrónica / Celulares',    },
+  { id:'servicios',   label:'Servicios / Taller',         kind:'service' },
+  { id:'consultorio', label:'Consultorio / Profesionista',kind:'service' },
+  { id:'mayoreo',     label:'Mayoreo / Distribuidora',    },
+  { id:'otro',        label:'Otro',                       },
 ];
 /* Giros guardados con la versión anterior (texto libre). */
 const GIRO_LEGACY = { 'Restaurante':'restaurante', 'Cafetería':'cafeteria', 'Fonda':'restaurante', 'Taquería':'taqueria', 'Bar':'bar', 'Tienda':'abarrotes', 'Otro':'otro' };
 /* Tipo de negocio: decide qué aparece al cobrar.
    productos → solo ticket sencillo  ·  servicios → ticket o cotización */
 const BIZ_KINDS = [
-  { id:'productos', emoji:'🛍️', label:'Productos', doc:'Solo ticket sencillo' },
-  { id:'servicios', emoji:'🛠️', label:'Servicios', doc:'Ticket o cotización' },
+  { id:'productos', ico:'shop', label:'Productos', doc:'Solo ticket sencillo' },
+  { id:'servicios', ico:'wrench', label:'Servicios', doc:'Ticket o cotización' },
 ];
 /* Tipo de servicio según el giro (se guardan los mismos ids de siempre). */
 const SERVICE_SETS = {
-  food:    { comer:['Comer aquí','🍽️'],  llevar:['Para llevar','🥡'], domicilio:['Domicilio','🛵'] },
-  retail:  { comer:['En tienda','🏪'],   llevar:['Para llevar','🛍️'], domicilio:['A domicilio','🚚'] },
-  service: { comer:['En el local','🏪'], llevar:['Recoge','🛍️'],      domicilio:['A domicilio','🚚'] },
+  food:    { comer:['Comer aquí','dine'],  llevar:['Para llevar','shop'], domicilio:['Domicilio','truck'] },
+  retail:  { comer:['En tienda','store2'],   llevar:['Para llevar','shop'], domicilio:['A domicilio','truck'] },
+  service: { comer:['En el local','store2'], llevar:['Recoge','shop'],      domicilio:['A domicilio','truck'] },
 };
 
 function bizData(){ return (((typeof currentUser === 'function') ? currentUser() : null) || {}).business || {}; }
@@ -13519,7 +13588,7 @@ function bizKindOf(id){ return BIZ_KINDS.find(k => k.id === id) || BIZ_KINDS[0];
 function docMode(b){ return bizKind(b) === 'servicios' ? 'ambos' : 'ticket'; }
 function applyGiroLabels(){
   const set = SERVICE_SETS[giroKind()] || SERVICE_SETS.retail;
-  SERVICE_TYPES.forEach(s => { const x = set[s.id]; if(x){ s.name = x[0]; s.emoji = x[1]; } });
+  SERVICE_TYPES.forEach(s => { const x = set[s.id]; if(x){ s.name = x[0]; s.ico = x[1]; } });
   UNCATEGORIZED.emoji = '';
 }
 
@@ -13549,7 +13618,7 @@ paintChrome = function(){
   const n = document.getElementById('brandName');
   if(n) n.textContent = name || APP_NAME;
   const sub = document.getElementById('brandSub');
-  if(sub){ const g = giroOf(b); sub.textContent = name ? (g ? g.emoji + ' ' + g.label : APP_TAGLINE) : APP_TAGLINE; }
+  if(sub){ const g = giroOf(b); sub.textContent = name ? (g ? g.label : APP_TAGLINE) : APP_TAGLINE; }
   if(typeof mdiPaintBadge === 'function') mdiPaintBadge();
 };
 
@@ -13607,16 +13676,12 @@ openBusinessForm = function(){
       <label for="bizGiro">Giro del negocio</label>
       <select id="bizGiro">
         <option value="">Selecciona uno</option>
-        ${GIROS.map(x => `<option value="${x.id}" ${g && g.id === x.id ? 'selected' : ''}>${x.emoji} ${x.label}</option>`).join('')}
+        ${GIROS.map(x => `<option value="${x.id}" ${g && g.id === x.id ? 'selected' : ''}>${x.label}</option>`).join('')}
       </select>
     </div>
     <div class="field">
       <label for="bizAddress">Dirección</label>
       <input id="bizAddress" type="text" value="${escapeHtml(b.address || '')}" placeholder="Calle 10 #25, Centro">
-    </div>
-    <div class="field">
-      <label for="bizPhone">Teléfono del negocio</label>
-      <input id="bizPhone" type="tel" inputmode="numeric" value="${escapeHtml(b.phone || '')}" placeholder="981 123 4567">
     </div>
 
     <div class="sheet-actions">
@@ -13630,7 +13695,7 @@ function bizKindDuoHTML(sel){
   return BIZ_KINDS.map(k => `
     <button type="button" class="kind-card ${sel === k.id ? 'active' : ''}" onclick="setBizKind('${k.id}')" aria-pressed="${sel === k.id}">
       <span class="kind-radio"></span>
-      <span class="kind-ico">${k.emoji}</span>
+      <span class="kind-ico">${icon(k.ico)}</span>
       <b>${k.label}</b>
       <small>${k.doc}</small>
     </button>`).join('');
@@ -13679,11 +13744,10 @@ saveBusinessForm = function(){
     giro: giroId,
     type: g ? g.label : '',
     address: val('bizAddress'),
-    phone: val('bizPhone'),
     logo: bizFormLogo,
     kind: bizFormKind
   });
-  delete nuevo.docMode; delete nuevo.fiscal;
+  delete nuevo.docMode; delete nuevo.fiscal; delete nuevo.phone;
   updateUser({ business: nuevo });
   applyGiroLabels();
   closeModal();
@@ -13788,12 +13852,12 @@ function mdiMessage(o){
   const lines = o.original || o.lines || [];
   const t = mdTotals(lines);
   let msg = 'Hola, quiero hacer el siguiente pedido:\n';
-  msg += '🧾 Pedido ' + o.code + '\n';
-  if(o.customer && o.customer.name) msg += '👤 Nombre: ' + o.customer.name + '\n';
+  msg += 'Pedido ' + o.code + '\n';
+  if(o.customer && o.customer.name) msg += 'Nombre: ' + o.customer.name + '\n';
   msg += '\n';
   lines.forEach(l => {
     msg += '• ' + mdiLineLabel(l) + ' ' + mdiQtyText(l) + ' - ' + formatMoney(l.price * l.qty) + '\n';
-    if(l.note) msg += '   📝 Nota: ' + l.note + '\n';
+    if(l.note) msg += '   Nota: ' + l.note + '\n';
   });
   if(showsTax()){
     msg += '\nSubtotal: ' + formatMoney(t.subtotal);
@@ -14070,8 +14134,8 @@ function mdiDetailHTML(o){
         <div class="mdi-line-main">
           <div class="mdi-line-name">${escapeHtml(mdiLineLabel(l))}${cambiado && mod ? ' <span class="mdi-tag">' + (origen ? 'Cambiado' : 'Agregado') + '</span>' : ''}</div>
           <div class="mdi-line-sub">${formatMoney(l.price)} ${l.sizeLabel ? 'c/u' : unitPriceWord(l.unit)}${origen && cambiado && mod && Math.abs(origen.qty - l.qty) > 1e-9 ? ' · antes ' + escapeHtml(mdiQtyText(origen)) : ''}</div>
-          ${l.note ? `<div class="dm-line-note">📝 ${escapeHtml(l.note)}</div>` : ''}
-          ${!p ? `<div class="mdi-warn">${icon('alert')} No está en tu catálogo. Toca ✏️ para elegir el producto.</div>` : ''}
+          ${l.note ? `<div class="dm-line-note">${icx('note')}${escapeHtml(l.note)}</div>` : ''}
+          ${!p ? `<div class="mdi-warn">${icon('alert')} No está en tu catálogo. Toca ${icx('edit')} para elegir el producto.</div>` : ''}
           ${priceWarn ? `<div class="mdi-warn soft">${icon('tag')} Tu precio actual es ${formatMoney(catPrice)} <button onclick="mdiUseCatalogPrice('${o.id}', ${i})">Usar</button></div>` : ''}
         </div>
         <div class="mdi-line-right">
@@ -14134,13 +14198,13 @@ function mdiDetailHTML(o){
     ${editable ? `
       <div class="section-title">Tipo de servicio</div>
       <div class="opt-grid">
-        ${SERVICE_TYPES.map(s => `<button class="opt-card ${o.service === s.id ? 'active' : ''}" onclick="mdiSet('${o.id}','service','${s.id}')"><span class="opt-emoji">${s.emoji}</span>${s.name}</button>`).join('')}
+        ${SERVICE_TYPES.map(s => `<button class="opt-card ${o.service === s.id ? 'active' : ''}" onclick="mdiSet('${o.id}','service','${s.id}')"><span class="opt-emoji">${icon(s.ico)}</span>${s.name}</button>`).join('')}
       </div>
       <div class="section-title">Método de pago</div>
       <div class="opt-grid">
-        ${basicPayMethods().map(p => `<button class="opt-card ${o.payment === p.id ? 'active' : ''}" onclick="mdiSet('${o.id}','payment','${p.id}')"><span class="opt-emoji">${p.emoji}</span>${p.name}</button>`).join('')}
+        ${basicPayMethods().map(p => `<button class="opt-card ${o.payment === p.id ? 'active' : ''}" onclick="mdiSet('${o.id}','payment','${p.id}')"><span class="opt-emoji">${icon(p.ico)}</span>${p.name}</button>`).join('')}
       </div>
-      ${faltan ? `<div class="mdi-banner warn">${icon('alert')}<span><b>Falta elegir ${faltan} producto${faltan === 1 ? '' : 's'}</b>Hay productos que no están en tu catálogo. Toca ✏️ para cambiarlos antes de confirmar.</span></div>` : ''}
+      ${faltan ? `<div class="mdi-banner warn">${icon('alert')}<span><b>Falta elegir ${faltan} producto${faltan === 1 ? '' : 's'}</b>Hay productos que no están en tu catálogo. Toca ${icx('edit')} para cambiarlos antes de confirmar.</span></div>` : ''}
       <div class="mdi-decide">
         <button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>
         <button class="btn mdi-confirm" onclick="mdiConfirm('${o.id}')" ${(o.lines || []).length && !faltan ? '' : 'disabled'}>${icon('check')} Confirmar · ${formatMoney(t.total)}</button>
@@ -14283,7 +14347,7 @@ function mdiRenderLineEditor(){
     <div class="field">
       <label for="mdiLeProd">Producto</label>
       <select id="mdiLeProd" onchange="mdiLeProduct(this.value)">
-        ${cats.map(c => { const g = group(c); return g.length ? `<optgroup label="${escapeHtml(catEmo(c) + c.name)}">${g.map(opt).join('')}</optgroup>` : ''; }).join('')}
+        ${cats.map(c => { const g = group(c); return g.length ? `<optgroup label="${escapeHtml(c.name)}">${g.map(opt).join('')}</optgroup>` : ''; }).join('')}
         ${group(null).length ? `<optgroup label="Sin categoría">${group(null).map(opt).join('')}</optgroup>` : ''}
       </select>
     </div>
@@ -14564,14 +14628,14 @@ function mdiNotify(id){
   let msg;
   if(o.status === 'confirmado'){
     const t = mdTotals(o.lines);
-    msg = '¡Hola' + nombre + '! ✅ Confirmamos tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + '.\n';
+    msg = '¡Hola' + nombre + '! Confirmamos tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + '.\n';
     if(mdiIsModified(o)) msg += 'Hicimos unos cambios, así quedó:\n';
     msg += '\n' + o.lines.map(l => '• ' + mdiLineLabel(l) + ' ' + mdiQtyText(l) + ' - ' + formatMoney(l.price * l.qty)).join('\n');
     msg += '\n\n*Total: ' + formatMoney(t.total) + ' MXN*\n¡Gracias por tu compra!';
   }else if(o.status === 'cancelado'){
-    msg = 'Hola' + nombre + ', te avisamos que tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + ' quedó cancelado. Si tienes alguna duda, escríbenos 🙏';
+    msg = 'Hola' + nombre + ', te avisamos que tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + ' quedó cancelado. Si tienes alguna duda, escríbenos.';
   }else{
-    msg = 'Hola' + nombre + ', lo sentimos 🙏 No podemos surtir tu pedido ' + o.code + (o.rejectReason && o.rejectReason !== 'Otro motivo' ? ': ' + o.rejectReason.toLowerCase() + '.' : '.');
+    msg = 'Hola' + nombre + ', lo sentimos. No podemos surtir tu pedido ' + o.code + (o.rejectReason && o.rejectReason !== 'Otro motivo' ? ': ' + o.rejectReason.toLowerCase() + '.' : '.');
     if(o.rejectNote) msg += '\n' + o.rejectNote;
   }
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
@@ -14587,7 +14651,7 @@ function mdiOpenPaste(){
     </div>
     <p class="sheet-text">Copia el mensaje completo que te mandó el cliente y pégalo aquí. Lo convertimos en un pedido para que lo revises y lo confirmes.</p>
     <div class="field">
-      <textarea id="mdiPasteText" class="md-textarea" rows="8" placeholder="Hola, quiero hacer el siguiente pedido:&#10;🧾 Pedido MD-7K2P&#10;• Producto x2 - $44.00&#10;…"></textarea>
+      <textarea id="mdiPasteText" class="md-textarea" rows="8" placeholder="Hola, quiero hacer el siguiente pedido:&#10;Pedido MD-7K2P&#10;• Producto x2 - $44.00&#10;…"></textarea>
     </div>
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="mdiPasteFromClipboard('mdiPasteText')">${icon('paste')} Pegar</button>
@@ -14795,11 +14859,11 @@ renderStats = function(){
       <div class="section-title">Ventas por origen</div>
       <div class="card">
         <div class="bar-row">
-          <div class="bar-row-top"><span>🏪 En caja</span><span class="bv">${formatMoney(sum(caja))} · ${caja.length}</span></div>
+          <div class="bar-row-top"><span>${icx('store2')}En caja</span><span class="bv">${formatMoney(sum(caja))} · ${caja.length}</span></div>
           <div class="bar-track"><div class="bar-fill" style="width:${sum(caja) / max * 100}%; background:var(--sec-stats);"></div></div>
         </div>
         <div class="bar-row">
-          <div class="bar-row-top"><span>📱 Pedido hecho en Menú Digital</span><span class="bv">${formatMoney(sum(menu))} · ${menu.length}</span></div>
+          <div class="bar-row-top"><span>${icx('mobile')}Pedido hecho en Menú Digital</span><span class="bv">${formatMoney(sum(menu))} · ${menu.length}</span></div>
           <div class="bar-track"><div class="bar-fill" style="width:${sum(menu) / max * 100}%; background:var(--sec-menu);"></div></div>
         </div>
       </div>`;
@@ -14920,7 +14984,7 @@ function mdiStatsHTML(){
 
     <div class="section-title">Cómo se resuelven los pedidos</div>
     <div class="card">
-      ${[['✅ Confirmados', conf.length, 'var(--success)'], ['✏️ Confirmados con cambios', modificados, 'var(--sec-menu)'], ['❌ Rechazados', rech.length, 'var(--accent-2)'], ['⏳ Por revisar', pend.length, 'var(--ink-faint)']].map(r => `
+      ${[[icx('check') + 'Confirmados', conf.length, 'var(--success)'], [icx('edit') + 'Confirmados con cambios', modificados, 'var(--sec-menu)'], [icx('close') + 'Rechazados', rech.length, 'var(--accent-2)'], [icx('clock') + 'Por revisar', pend.length, 'var(--ink-faint)']].map(r => `
         <div class="bar-row">
           <div class="bar-row-top"><span>${r[0]}</span><span class="bv">${r[1]} · ${pct(r[1], orders.length)}%</span></div>
           <div class="bar-track"><div class="bar-fill" style="width:${pct(r[1], orders.length)}%; background:${r[2]};"></div></div>
@@ -14967,7 +15031,7 @@ openHistoryFilters = function(){
     <div class="filter-modal-group">
       <div class="filter-modal-label"><span class="fml-icon">${icon('menuBook')}</span>Origen</div>
       <div class="filter-pill-row">
-        ${[['all','Todo origen'],['caja','🏪 En caja'],['menu','📱 Menú Digital']].map(([id, t]) => `<button class="filter-chip ${historyFilters.origin === id ? 'active' : ''}" onclick="setHistoryFilter('origin','${id}')">${t}</button>`).join('')}
+        ${[['all','Todo origen'],['caja',icx('store2') + 'En caja'],['menu',icx('mobile') + 'Menú Digital']].map(([id, t]) => `<button class="filter-chip ${historyFilters.origin === id ? 'active' : ''}" onclick="setHistoryFilter('origin','${id}')">${t}</button>`).join('')}
       </div>
     </div>`;
   if(ref) ref.insertAdjacentHTML('afterend', html);
@@ -15002,8 +15066,8 @@ renderHistoryShell = function(){
 /* Etiqueta del origen en el ticket y en el detalle */
 function saleOriginHTML(sale){
   let h = '';
-  if(saleIsMenu(sale)) h += `<div class="ticket-origin">📱 Pedido hecho en Menú Digital${sale.menuCode ? ' · ' + escapeHtml(sale.menuCode) : ''}${sale.customerName ? '<br>Cliente: ' + escapeHtml(sale.customerName) : ''}</div>`;
-  if(sale.quoteFolio) h += `<div class="ticket-origin q">📋 De la cotización ${escapeHtml(sale.quoteFolio)}${sale.customerName && !saleIsMenu(sale) ? '<br>Cliente: ' + escapeHtml(sale.customerName) : ''}</div>`;
+  if(saleIsMenu(sale)) h += `<div class="ticket-origin">${icx('mobile')}Pedido hecho en Menú Digital${sale.menuCode ? ' · ' + escapeHtml(sale.menuCode) : ''}${sale.customerName ? '<br>Cliente: ' + escapeHtml(sale.customerName) : ''}</div>`;
+  if(sale.quoteFolio) h += `<div class="ticket-origin q">${icx('clipboard')}De la cotización ${escapeHtml(sale.quoteFolio)}${sale.customerName && !saleIsMenu(sale) ? '<br>Cliente: ' + escapeHtml(sale.customerName) : ''}</div>`;
   return h;
 }
 
@@ -15012,8 +15076,8 @@ function saleOriginHTML(sale){
    -------------------------------------------------------------
    · Negocio de productos: al cobrar sale el ticket de siempre.
    · Servicios, o productos y servicios: al tocar "Cobrar" se elige
-       🧾 Ticket      → se cobra y sale el ticket.
-       📋 Cotización  → NO se cobra ni descuenta existencias: se
+       · Ticket      → se cobra y sale el ticket.
+       · Cotización  → NO se cobra ni descuenta existencias: se
                         guarda un presupuesto para el cliente, que
                         después se puede cobrar desde Historial.
 ========================================================= */
@@ -15178,10 +15242,10 @@ function openCobroChooser(){
     <p class="sheet-text" style="margin:-6px 0 16px;">Total ${formatMoney(t.total)} · ${n} artículo${n === 1 ? "" : "s"}</p>
     <div class="doc-choice">
       <button class="doc-big" onclick="cobroTicket()">
-        <span class="doc-big-ico">🧾</span><b>Ticket</b><span>Se cobra la venta y sale su ticket</span>
+        <span class="doc-big-ico">${icon('receipt')}</span><b>Ticket</b><span>Se cobra la venta y sale su ticket</span>
       </button>
       <button class="doc-big" onclick="openQuoteForm()">
-        <span class="doc-big-ico">📋</span><b>Cotización</b><span>No se cobra: es un presupuesto para el cliente</span>
+        <span class="doc-big-ico">${icon('clipboard')}</span><b>Cotización</b><span>No se cobra: es un presupuesto para el cliente</span>
       </button>
     </div>
   `, { dismissible:true });
@@ -15236,7 +15300,7 @@ function openQuoteForm(){
     </div>
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="quoteKeep(); openCobroChooser()">Volver</button>
-      <button class="btn primary block" onclick="saveQuote()">📋 Guardar cotización</button>
+      <button class="btn primary block" onclick="saveQuote()">${icon('clipboard')} Guardar cotización</button>
     </div>
   `, { dismissible:false });
 }
@@ -15306,13 +15370,13 @@ function openQuote(id, opts){
       </div>
       <button class="sheet-close" onclick="closeModal(); render();">${icon('close')}</button>
     </div>
-    <div class="inv-kind datos">📋 ${escapeHtml(q.customer.name || 'Cliente')} · válida hasta ${hasta}</div>
+    <div class="inv-kind datos">${icon('clipboard')}${escapeHtml(q.customer.name || 'Cliente')} · válida hasta ${hasta}</div>
     <div class="inv-preview" id="invPreview"><div class="inv-scale" id="invScale">${quoteDocHTML(q)}</div></div>
     <div class="inv-actions">
       <button class="btn ghost" onclick="quoteShare('${q.id}')">${icon('whatsapp')} WhatsApp</button>
       <button class="btn ghost" onclick="printQuote('${q.id}')">${icon('print')} Imprimir o PDF</button>
       ${q.status !== 'vendida' ? `<button class="btn ghost block" onclick="openQuoteEdit('${q.id}')">${icon('edit')} Editar</button>` : ''}
-      ${q.status !== 'vendida' ? `<button class="btn primary block" onclick="chargeQuote('${q.id}')">💵 Cobrar esta cotización · ${formatMoney(q.total)}</button>` : ''}
+      ${q.status !== 'vendida' ? `<button class="btn primary block" onclick="chargeQuote('${q.id}')">${icon('cash')} Cobrar esta cotización · ${formatMoney(q.total)}</button>` : ''}
       ${q.status === 'vendida' && q.saleId ? `<button class="btn ghost block" onclick="openSaleDetail('${q.saleId}')">${icon('receipt')} Ver la venta</button>` : ''}
       ${!opts.justCreated && isOwner() ? `<button class="btn danger block" onclick="deleteQuote('${q.id}')">${icon('trash')} Eliminar cotización</button>` : ''}
     </div>
@@ -15376,7 +15440,7 @@ function quoteShare(id){
   const hasta = quoteValidUntil(q).toLocaleDateString('es-MX', { day:'numeric', month:'long' });
   const tt = quoteTitle();
   let msg = 'Hola' + (q.customer.name ? ' ' + q.customer.name.split(/\s+/)[0] : '') + ', te comparto tu ' + tt.name.toLowerCase() + (b.name ? ' de ' + b.name : '') + ':\n\n';
-  msg += '📋 ' + tt.name + ' ' + q.folio + '\n\n';
+  msg += tt.name + ' ' + q.folio + '\n\n';
   msg += q.items.map(it => '• ' + it.name.replace(/\s*\(EJEMPLO[^)]*\)/, '') + ' ' + (it.unit && !it.sizeLabel && !unitOf(it.unit).plain ? fmtQty(it.qty, it.unit) : 'x' + fmtNum(it.qty)) + ' - ' + formatMoney(it.price * it.qty)).join('\n');
   const qtax = saleTaxInfo(q);
   if(q.discount > 0) msg += '\n\nDescuento: −' + formatMoney(q.discount);
@@ -15444,7 +15508,6 @@ function quoteDocHTML(q){
             <div class="inv-biz">${escapeHtml(b.name || APP_NAME)}</div>
             ${g ? `<div class="inv-biz-sub">${escapeHtml(g.label)}</div>` : ''}
             ${b.address ? `<div class="inv-muted">${escapeHtml(b.address)}</div>` : ''}
-            ${b.phone ? `<div class="inv-muted">Tel. ${escapeHtml(b.phone)}</div>` : ''}
             ${qp.email.trim() ? `<div class="inv-muted">${escapeHtml(qp.email.trim())}</div>` : ''}
           </div>
         </div>
@@ -15721,7 +15784,7 @@ function quoteEditorHTML(){
           <label for="qeLegal">Condiciones (al pie de la hoja)</label>
           <textarea id="qeLegal" class="md-textarea" rows="3" maxlength="300" placeholder="${escapeHtml(QUOTE_LEGAL_DEFAULT)}" oninput="setQuotePref('legal', this.value)">${escapeHtml(p.legal)}</textarea>
         </div>
-        <button type="button" class="qe-peek" onclick="qePeek()">👁️ Ver cómo queda</button>
+        <button type="button" class="qe-peek" onclick="qePeek()">${icon('eye')} Ver cómo queda</button>
       </div>
     </div>
 
@@ -15880,7 +15943,7 @@ renderHistoryShell = function(){
   const pend = qs.filter(q => quoteStatus(q).id === 'pendiente').length;
   const seg = `<div class="seg hist-seg" role="tablist">
       <button role="tab" class="${historyMode === 'ventas' ? 'active' : ''}" onclick="setHistoryMode('ventas')">${icon('receipt')} Ventas</button>
-      <button role="tab" class="${historyMode === 'cotizaciones' ? 'active' : ''}" onclick="setHistoryMode('cotizaciones')">📋 Cotizaciones${pend ? ` <span class="seg-count">${pend}</span>` : ''}</button>
+      <button role="tab" class="${historyMode === 'cotizaciones' ? 'active' : ''}" onclick="setHistoryMode('cotizaciones')">${icon('clipboard')} Cotizaciones${pend ? ` <span class="seg-count">${pend}</span>` : ''}</button>
     </div>`;
   html = html.replace(/(<p class="page-sub">[\s\S]*?<\/p>)/, '$1' + seg);
   if(historyMode !== 'cotizaciones') return html;
@@ -15901,7 +15964,7 @@ function quotesListHTML(qs){
     const st = quoteStatus(q);
     const hasta = quoteValidUntil(q).toLocaleDateString('es-MX', { day:'numeric', month:'short' });
     return `<button class="sale-row ${st.id === 'vencida' ? 'cancelled' : ''}" onclick="openQuote('${q.id}')">
-      <div class="sale-row-badge q">📋</div>
+      <div class="sale-row-badge q">${icon('clipboard')}</div>
       <div class="sale-row-main">
         <div class="sale-row-num">${escapeHtml(q.folio)} <span class="mdi-pill ${st.cls}">${st.label}</span></div>
         <div class="sale-row-who">${escapeHtml(q.customer.name || 'Cliente sin nombre')}</div>
@@ -16085,13 +16148,13 @@ function openWhatsApp(phoneDigits, text){
    que llamarlo a mano: se detecta al guardar los productos.
 ========================================================= */
 const INV_TYPES = {
-  venta:       { label:'Venta',               emoji:'🛒' },
-  devolucion:  { label:'Devolución',          emoji:'↩️' },
-  cancelacion: { label:'Venta cancelada',     emoji:'✖️' },
-  entrada:     { label:'Llegó mercancía',     emoji:'📦' },
-  ajuste:      { label:'Ajuste / conteo',     emoji:'🔢' },
-  merma:       { label:'Merma / pérdida',     emoji:'🗑️' },
-  inicial:     { label:'Existencia inicial',  emoji:'🏁' },
+  venta:       { label:'Venta',               ico:'cart' },
+  devolucion:  { label:'Devolución',          ico:'undo' },
+  cancelacion: { label:'Venta cancelada',     ico:'close' },
+  entrada:     { label:'Llegó mercancía',     ico:'box' },
+  ajuste:      { label:'Ajuste / conteo',     ico:'hash' },
+  merma:       { label:'Merma / pérdida',     ico:'trash' },
+  inicial:     { label:'Existencia inicial',  ico:'flag' },
 };
 let INV_CTX = null;
 function invContext(ctx){ INV_CTX = ctx; }
@@ -16235,11 +16298,11 @@ function openCustomer(id){
       <button class="sheet-close" onclick="closeModal(); render();">${icon('close')}</button>
     </div>
     <div class="cust-info">
-      ${c.phone ? `<button onclick="openWhatsApp('${escapeHtml(c.phone)}', 'Hola ${escapeHtml((c.name || '').split(/\s+/)[0])} 👋')">${icon('whatsapp')} ${escapeHtml(c.phone)}</button>` : ''}
-      ${c.email ? `<span>✉️ ${escapeHtml(c.email)}</span>` : ''}
-      ${c.rfc ? `<span>🧾 RFC ${escapeHtml(c.rfc)}</span>` : ''}
-      ${c.address ? `<span>📍 ${escapeHtml(c.address)}</span>` : ''}
-      ${c.notes ? `<span>📝 ${escapeHtml(c.notes)}</span>` : ''}
+      ${c.phone ? `<button onclick="openWhatsApp('${escapeHtml(c.phone)}', 'Hola ${escapeHtml((c.name || '').split(/\s+/)[0])}')">${icon('whatsapp')} ${escapeHtml(c.phone)}</button>` : ''}
+      ${c.email ? `<span>${icon('mail')}${escapeHtml(c.email)}</span>` : ''}
+      ${c.rfc ? `<span>${icon('receipt')}RFC ${escapeHtml(c.rfc)}</span>` : ''}
+      ${c.address ? `<span>${icon('pin')}${escapeHtml(c.address)}</span>` : ''}
+      ${c.notes ? `<span>${icon('note')}${escapeHtml(c.notes)}</span>` : ''}
     </div>
     <div class="cust-balance ${b > 0.004 ? 'debe' : ''}">
       <div>
@@ -16263,12 +16326,12 @@ function openCustomer(id){
     <div class="section-title">Movimientos</div>
     ${movs.length ? `<div class="card mov-card">${movs.map(m => m.kind === 'sale' ? `
       <button class="mov-row ${m.s.cancelled ? 'off' : ''}" onclick="openSaleDetail('${m.s.id}')">
-        <span class="mov-ico">${saleIsReturn(m.s) ? '↩️' : (m.s.credit > 0 ? '📒' : '🧾')}</span>
+        <span class="mov-ico">${icon(saleIsReturn(m.s) ? 'undo' : (m.s.credit > 0 ? 'notebook' : 'receipt'))}</span>
         <span class="mov-main"><b>${saleIsReturn(m.s) ? 'Devolución ' + escapeHtml(m.s.folio || '') : 'Compra ' + orderNumberLabel(m.s.number)}${m.s.cancelled ? ' · cancelada' : ''}</b><small>${formatDateTime(m.s.date)} · ${saleIsReturn(m.s) ? escapeHtml(refundMethodName(m.s.paymentMethod)) : paymentOf(m.s.paymentMethod).name}</small></span>
         <span class="mov-amt ${m.s.credit > 0 && !m.s.cancelled ? 'warn' : ''}">${saleIsReturn(m.s) ? '−' : ''}${formatMoney(Math.abs(m.s.total))}</span>
       </button>` : `
       <button class="mov-row ${m.p.cancelled ? 'off' : ''}" onclick="openPaymentDetail('${m.p.id}')">
-        <span class="mov-ico">💵</span>
+        <span class="mov-ico">${icon('cash')}</span>
         <span class="mov-main"><b>Abono${m.p.cancelled ? ' · cancelado' : ''}</b><small>${formatDateTime(m.p.at)} · ${paymentOf(m.p.method).name}${m.p.note ? ' · ' + escapeHtml(m.p.note) : ''}</small></span>
         <span class="mov-amt ok">−${formatMoney(m.p.amount)}</span>
       </button>`).join('')}</div>` : `<div class="todo-empty">Aún no hay compras ni abonos.</div>`}
@@ -16449,7 +16512,7 @@ function openPaymentForm(customerId){
     </div>
     <div class="section-title" style="margin-top:0;">¿Cómo paga?</div>
     <div class="opt-grid" id="pfMethods">
-      ${basicPayMethods().map(p => `<button class="opt-card ${p.id === 'efectivo' ? 'active' : ''}" onclick="payFormMethod='${p.id}'; document.querySelectorAll('#pfMethods .opt-card').forEach(b => b.classList.toggle('active', b.dataset.m === '${p.id}'));" data-m="${p.id}"><span class="opt-emoji">${p.emoji}</span>${p.name}</button>`).join('')}
+      ${basicPayMethods().map(p => `<button class="opt-card ${p.id === 'efectivo' ? 'active' : ''}" onclick="payFormMethod='${p.id}'; document.querySelectorAll('#pfMethods .opt-card').forEach(b => b.classList.toggle('active', b.dataset.m === '${p.id}'));" data-m="${p.id}"><span class="opt-emoji">${icon(p.ico)}</span>${p.name}</button>`).join('')}
     </div>
     <div class="field">
       <label for="pfNote">Nota (opcional)</label>
@@ -16529,7 +16592,7 @@ function sendPaymentWhatsApp(id){
   const c = customerById(p.customerId) || {};
   const b = bizData();
   const t = 'Hola ' + (p.customerName || '').split(/\s+/)[0] + ', recibimos tu abono de *' + formatMoney(p.amount) + '*' + (b.name ? ' en ' + b.name : '') + ' el ' + formatDateTime(p.at) + '.\n' +
-            (p.balanceAfter > 0.004 ? 'Tu saldo pendiente es de *' + formatMoney(p.balanceAfter) + '*.' : '¡Quedaste al corriente! 🎉') + '\n¡Gracias!';
+            (p.balanceAfter > 0.004 ? 'Tu saldo pendiente es de *' + formatMoney(p.balanceAfter) + '*.' : '¡Quedaste al corriente!') + '\n¡Gracias!';
   openWhatsApp(c.phone, t);
 }
 function cancelPayment(id){
@@ -16550,10 +16613,10 @@ function statementText(id){
     .map(s => ({ at:s.date, t:(saleIsReturn(s) ? 'Devolución ' + (s.folio || '') : 'Compra ' + orderNumberLabel(s.number)), v:salePayParts(s).filter(p => p.method === 'credito').reduce((a, p) => a + p.amount, 0) }))
     .concat(DB.getPayments().filter(p => p.customerId === id && !p.cancelled).map(p => ({ at:p.at, t:'Abono', v:-p.amount })))
     .sort((a, b2) => new Date(a.at) - new Date(b2.at)).slice(-20);
-  let t = 'Hola ' + c.name.split(/\s+/)[0] + ' 👋\nEste es tu estado de cuenta' + (biz.name ? ' en *' + biz.name + '*' : '') + ':\n\n';
+  let t = 'Hola ' + c.name.split(/\s+/)[0] + '\nEste es tu estado de cuenta' + (biz.name ? ' en *' + biz.name + '*' : '') + ':\n\n';
   movs.forEach(m => { t += formatDateShort(m.at) + ' · ' + m.t + ': ' + (m.v < 0 ? '−' : '') + formatMoney(Math.abs(m.v)) + '\n'; });
   t += '\n*Saldo pendiente: ' + formatMoney(Math.max(0, b)) + '*';
-  if(b <= 0.004) t += '\n¡Estás al corriente, gracias! 🙌';
+  if(b <= 0.004) t += '\n¡Estás al corriente, gracias!';
   return t;
 }
 function sendStatement(id){
@@ -16588,7 +16651,6 @@ function linesDocPrintHTML(rows){
     <div class="p-center">
       <div class="p-title">${escapeHtml(biz.title)}</div>
       ${biz.address ? `<div class="p-meta">${biz.address}</div>` : ''}
-      ${u.phone ? `<div class="p-meta">Tel. ${escapeHtml(u.phone)}</div>` : ''}
     </div>
     ${rows.map(r => {
       if(r.t === 'title') return `<div class="p-center p-kind">${escapeHtml(r.a)}</div>`;
@@ -16939,8 +17001,8 @@ function renderCash(){
       </button>` : ''}
     <div class="mdi-today" style="margin-top:12px;">
       <div><span>Vendido</span><b>${formatMoney(sum.ventas)}</b><small>${sum.orders} venta${sum.orders === 1 ? '' : 's'}</small></div>
-      <div><span>💵 Efectivo</span><b>${formatMoney(sum.byMethod.efectivo)}</b><small>en ventas</small></div>
-      <div><span>💳 Tarjeta / 📲</span><b>${formatMoney(sum.byMethod.tarjeta + sum.byMethod.transferencia)}</b><small>no entra a la caja</small></div>
+      <div><span>Efectivo</span><b>${formatMoney(sum.byMethod.efectivo)}</b><small>en ventas</small></div>
+      <div><span>Tarjeta y transf.</span><b>${formatMoney(sum.byMethod.tarjeta + sum.byMethod.transferencia)}</b><small>no entra a la caja</small></div>
     </div>
     ${puede ? `
       <div class="cash-actions">
@@ -16956,17 +17018,17 @@ function renderCash(){
     ${(movs.length || exps.length || sum.abonos.efectivo) ? `<div class="card mov-card">
       ${movs.map(m => `
         <div class="mov-row">
-          <span class="mov-ico">${m.type === 'entrada' ? '⬇️' : '⬆️'}</span>
+          <span class="mov-ico">${icon(m.type === 'entrada' ? 'arrowDown' : 'arrowUp')}</span>
           <span class="mov-main"><b>${m.type === 'entrada' ? 'Entrada' : 'Salida'}${m.reason ? ' · ' + escapeHtml(m.reason) : ''}</b><small>${fmtTime(m.at)}${m.by ? ' · ' + escapeHtml(m.by) : ''}${m.note ? ' · ' + escapeHtml(m.note) : ''}</small></span>
           <span class="mov-amt ${m.type === 'entrada' ? 'ok' : 'warn'}">${m.type === 'entrada' ? '+' : '−'}${formatMoney(m.amount)}</span>
         </div>`).join('')}
       ${exps.map(e => `
         <button class="mov-row" onclick="openExpense('${e.id}')">
-          <span class="mov-ico">${expenseCat(e.category).emoji}</span>
+          <span class="mov-ico">${icon(expenseCat(e.category).ico)}</span>
           <span class="mov-main"><b>Gasto · ${escapeHtml(e.concept || expenseCat(e.category).name)}</b><small>${fmtTime(e.date || e.at)} · ${e.fromCash ? 'de la caja' : paymentOf(e.method).name}</small></span>
           <span class="mov-amt exp">${e.fromCash ? '−' : ''}${formatMoney(e.amount)}</span>
         </button>`).join('')}
-      ${sum.abonos.efectivo ? `<div class="mov-row"><span class="mov-ico">💵</span><span class="mov-main"><b>Abonos de clientes</b><small>en efectivo</small></span><span class="mov-amt ok">+${formatMoney(sum.abonos.efectivo)}</span></div>` : ''}
+      ${sum.abonos.efectivo ? `<div class="mov-row"><span class="mov-ico">${icon('cash')}</span><span class="mov-main"><b>Abonos de clientes</b><small>en efectivo</small></span><span class="mov-amt ok">+${formatMoney(sum.abonos.efectivo)}</span></div>` : ''}
     </div>` : `<div class="todo-empty">Sin entradas, salidas ni gastos todavía.</div>`}
   `;
 }
@@ -17087,7 +17149,7 @@ function openCashCut(kind){
     <details class="denoms" id="ccDenoms">
       <summary>${icon('coins')} Contar billetes y monedas</summary>
       <div class="denom-grid">
-        ${MXN_DENOMS.map(d => `<label class="denom"><span>${d >= 20 ? '💵' : '🪙'} ${formatMoney(d).replace('.00', '')}</span><input type="number" inputmode="numeric" min="0" step="1" data-d="${d}" placeholder="0" oninput="denomSum(${sum.expected})"></label>`).join('')}
+        ${MXN_DENOMS.map(d => `<label class="denom"><span>${icx(d >= 20 ? 'cash' : 'coin')}${formatMoney(d).replace('.00', '')}</span><input type="number" inputmode="numeric" min="0" step="1" data-d="${d}" placeholder="0" oninput="denomSum(${sum.expected})"></label>`).join('')}
       </div>
     </details>
     <div class="qp-total" id="ccDiff"><span>Escribe lo que contaste</span><b>—</b></div>
@@ -17120,7 +17182,7 @@ function cutDiff(expected){
   if(raw === '' || raw == null){ box.className = 'qp-total'; box.innerHTML = '<span>Escribe lo que contaste</span><b>—</b>'; return; }
   const d = round2((parseFloat(raw) || 0) - expected);
   box.className = 'qp-total ' + (Math.abs(d) < 0.005 ? 'ok' : 'bad');
-  box.innerHTML = Math.abs(d) < 0.005 ? '<span>¡La caja cuadra!</span><b>✓</b>' : `<span>${d > 0 ? 'Sobran' : 'Faltan'}</span><b>${formatMoney(Math.abs(d))}</b>`;
+  box.innerHTML = Math.abs(d) < 0.005 ? '<span>¡La caja cuadra!</span><b>' + icon('check') + '</b>' : `<span>${d > 0 ? 'Sobran' : 'Faltan'}</span><b>${formatMoney(Math.abs(d))}</b>`;
 }
 function saveCashClose(){
   if(!requirePerm('manejarCaja', 'No tienes permiso para cerrar la caja')) return;
@@ -17177,7 +17239,7 @@ function cutsTabHTML(){
   return list.slice(0, 60).map(s => {
     const d = s.diff || 0;
     return `<button class="sale-row" onclick="openCutDetail('${s.id}')">
-      <div class="sale-row-badge">${Math.abs(d) < 0.005 ? '✅' : (d > 0 ? '➕' : '⚠️')}</div>
+      <div class="sale-row-badge ${Math.abs(d) < 0.005 ? 'cut-ok' : 'cut-off'}">${icon(Math.abs(d) < 0.005 ? 'check' : (d > 0 ? 'plus' : 'alert'))}</div>
       <div class="sale-row-main">
         <div class="sale-row-num">Corte #${String(s.number || '').padStart(3, '0')} · ${fmtDay(s.closedAt)}</div>
         <div class="sale-row-meta">${fmtTime(s.openedAt)} → ${fmtTime(s.closedAt)}${s.closedBy ? ' · ' + escapeHtml(s.closedBy) : ''}</div>
@@ -17192,15 +17254,15 @@ function cutsTabHTML(){
    GASTOS DEL NEGOCIO
 ========================================================= */
 const EXPENSE_CATS = [
-  { id:'mercancia',     name:'Mercancía / proveedores', emoji:'📦' },
-  { id:'renta',         name:'Renta',                   emoji:'🏠' },
-  { id:'servicios',     name:'Luz, agua, gas, internet', emoji:'💡' },
-  { id:'sueldos',       name:'Sueldos',                 emoji:'👥' },
-  { id:'transporte',    name:'Transporte / gasolina',   emoji:'⛽' },
-  { id:'mantenimiento', name:'Mantenimiento',           emoji:'🛠️' },
-  { id:'publicidad',    name:'Publicidad',              emoji:'📣' },
-  { id:'impuestos',     name:'Impuestos y trámites',    emoji:'🧾' },
-  { id:'otros',         name:'Otros',                   emoji:'🏷️' },
+  { id:'mercancia',     name:'Mercancía / proveedores', ico:'box' },
+  { id:'renta',         name:'Renta',                   ico:'home' },
+  { id:'servicios',     name:'Luz, agua, gas, internet', ico:'bulb' },
+  { id:'sueldos',       name:'Sueldos',                 ico:'users' },
+  { id:'transporte',    name:'Transporte / gasolina',   ico:'fuel' },
+  { id:'mantenimiento', name:'Mantenimiento',           ico:'wrench' },
+  { id:'publicidad',    name:'Publicidad',              ico:'megaphone' },
+  { id:'impuestos',     name:'Impuestos y trámites',    ico:'receipt' },
+  { id:'otros',         name:'Otros',                   ico:'tag' },
 ];
 function expenseCat(id){ return EXPENSE_CATS.find(c => c.id === id) || EXPENSE_CATS[EXPENSE_CATS.length - 1]; }
 function expensesBetween(a, b){ return DB.getExpenses().filter(e => !e.cancelled && new Date(e.date || e.at) >= a && new Date(e.date || e.at) < b); }
@@ -17225,13 +17287,13 @@ function expensesTabHTML(){
       <div class="section-title">Por tipo de gasto</div>
       <div class="card">${cats.map(k => `
         <div class="bar-row">
-          <div class="bar-row-top"><span>${expenseCat(k).emoji} ${expenseCat(k).name}</span><span class="bv">${formatMoney(byCat[k])}</span></div>
+          <div class="bar-row-top"><span>${icx(expenseCat(k).ico)}${expenseCat(k).name}</span><span class="bv">${formatMoney(byCat[k])}</span></div>
           <div class="bar-track"><div class="bar-fill" style="width:${byCat[k] / max * 100}%; background:var(--ink);"></div></div>
         </div>`).join('')}</div>` : ''}
     <div class="section-title">Gastos</div>
     ${list.length ? `<div class="card mov-card">${list.map(e => `
       <button class="mov-row" onclick="openExpense('${e.id}')">
-        <span class="mov-ico">${expenseCat(e.category).emoji}</span>
+        <span class="mov-ico">${icon(expenseCat(e.category).ico)}</span>
         <span class="mov-main"><b>${escapeHtml(e.concept || expenseCat(e.category).name)}</b><small>${formatDateTime(e.date || e.at)} · ${e.fromCash ? 'de la caja' : paymentOf(e.method).name}${e.by ? ' · ' + escapeHtml(e.by) : ''}</small></span>
         <span class="mov-amt exp">${formatMoney(e.amount)}</span>
       </button>`).join('')}</div>` : `<div class="todo-empty">Sin gastos en este periodo.</div>`}
@@ -17255,13 +17317,13 @@ function openExpenseForm(prefill){
     <div class="field">
       <label>Tipo de gasto</label>
       <div class="filter-pill-row" id="exCats">
-        ${EXPENSE_CATS.map(c => `<button class="filter-chip ${expDraft.category === c.id ? 'active' : ''}" data-c="${c.id}" onclick="expDraft.category='${c.id}'; document.querySelectorAll('#exCats .filter-chip').forEach(b => b.classList.toggle('active', b.dataset.c === '${c.id}'));">${c.emoji} ${c.name}</button>`).join('')}
+        ${EXPENSE_CATS.map(c => `<button class="filter-chip ${expDraft.category === c.id ? 'active' : ''}" data-c="${c.id}" onclick="expDraft.category='${c.id}'; document.querySelectorAll('#exCats .filter-chip').forEach(b => b.classList.toggle('active', b.dataset.c === '${c.id}'));">${icx(c.ico)}${c.name}</button>`).join('')}
       </div>
     </div>
     <div class="field">
       <label>¿Cómo se pagó?</label>
       <div class="opt-grid" id="exMethods" style="margin-bottom:0;">
-        ${basicPayMethods().map(p => `<button class="opt-card ${expDraft.method === p.id ? 'active' : ''}" data-m="${p.id}" onclick="expSetMethod('${p.id}')"><span class="opt-emoji">${p.emoji}</span>${p.name}</button>`).join('')}
+        ${basicPayMethods().map(p => `<button class="opt-card ${expDraft.method === p.id ? 'active' : ''}" data-m="${p.id}" onclick="expSetMethod('${p.id}')"><span class="opt-emoji">${icon(p.ico)}</span>${p.name}</button>`).join('')}
       </div>
     </div>
     <div class="toggle-row" id="exCashRow" style="display:${expDraft.method === 'efectivo' && sess ? 'flex' : 'none'};">
@@ -17323,7 +17385,7 @@ function openExpense(id){
   const c = expenseCat(e.category);
   openModal(`
     <div class="sheet-header">
-      <h2>${c.emoji} ${escapeHtml(e.concept || c.name)}</h2>
+      <h2>${icx(c.ico)}${escapeHtml(e.concept || c.name)}</h2>
       <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
     </div>
     <div class="card kv-card">
@@ -17940,7 +18002,7 @@ function openReturnForm(saleId){
   const d = retDraft;
   const calc = returnCalc(sale, d.qty);
   const conStock = rows.some(r => { const p = findProduct(r.it.productId); return p && !p.custom && stockInfo(p).control && itemStockTaken(p, r.it) > 0; });
-  const methods = basicPayMethods().concat(sale.customerId ? [{ id:'credito', name:'A su cuenta', emoji:'📒' }] : []);
+  const methods = basicPayMethods().concat(sale.customerId ? [{ id:'credito', name:'A su cuenta', ico:'notebook' }] : []);
   openModal(`
     <div class="sheet-header">
       <div class="sheet-header-left">
@@ -17968,7 +18030,7 @@ function openReturnForm(saleId){
     </div>
     <div class="section-title">¿Cómo se le regresa el dinero?</div>
     <div class="opt-grid pay-grid ${methods.length === 4 ? 'four' : ''}">
-      ${methods.map(m => `<button class="opt-card ${d.method === m.id ? 'active' : ''}" onclick="retDraft.method='${m.id}'; openReturnForm('${sale.id}')"><span class="opt-emoji">${m.emoji}</span>${m.name}</button>`).join('')}
+      ${methods.map(m => `<button class="opt-card ${d.method === m.id ? 'active' : ''}" onclick="retDraft.method='${m.id}'; openReturnForm('${sale.id}')"><span class="opt-emoji">${icon(m.ico)}</span>${m.name}</button>`).join('')}
     </div>
     ${conStock ? `
       <div class="toggle-row">
@@ -18108,7 +18170,7 @@ function inventoryTabHTML(){
       <div class="empty-state">
         ${illustration('boxEmpty')}
         <div class="empty-title">Aún no llevas el conteo de ningún producto</div>
-        <div class="empty-text">Entra a un producto (✏️) y prende “Llevar el conteo”. Así ${APP_NAME} descuenta lo que vendes y te avisa cuando se acaba.</div>
+        <div class="empty-text">Entra a un producto (${icx('edit')}) y prende “Llevar el conteo”. Así ${APP_NAME} descuenta lo que vendes y te avisa cuando se acaba.</div>
       </div>` : `
       <div class="mdi-tabs" role="tablist" style="margin-top:14px;">
         <button class="${invFilter === 'todos' ? 'active' : ''}" onclick="invFilter='todos'; render();">Todos<span>${ctl.length}</span></button>
@@ -18137,7 +18199,7 @@ function movRowHTML(m, withName){
   const p = findProduct(m.productId);
   const q = p ? fmtStock(p, Math.abs(m.qty)) : fmtNum(Math.abs(m.qty));
   return `<div class="mov-row">
-    <span class="mov-ico">${t.emoji}</span>
+    <span class="mov-ico">${icon(t.ico)}</span>
     <span class="mov-main"><b>${withName ? escapeHtml(m.productName || (p ? p.name : 'Producto')) : t.label}</b><small>${withName ? t.label + ' · ' : ''}${formatDateTime(m.at)}${m.ref ? ' · ' + escapeHtml(m.ref) : ''}${m.supplier ? ' · ' + escapeHtml(m.supplier) : ''}${m.note ? ' · ' + escapeHtml(m.note) : ''}${m.by ? ' · ' + escapeHtml(m.by) : ''}</small></span>
     <span class="mov-amt ${m.qty >= 0 ? 'ok' : 'warn'}">${m.qty >= 0 ? '+' : '−'}${q}<small>queda ${p ? fmtStock(p, m.after) : fmtNum(m.after)}</small></span>
   </div>`;
@@ -18319,7 +18381,7 @@ function reportData(){
       const catId = it.category || (p ? p.category : null) || '_none';
       const cat = it.custom ? categoryOf('_libre') : categoryOf(catId);
       const amt = it.price * it.qty;
-      byCat[cat.id] = byCat[cat.id] || { name:cat.name, emoji:cat.emoji, total:0 };
+      byCat[cat.id] = byCat[cat.id] || { name:cat.name, color:cat.color, total:0 };
       byCat[cat.id].total += amt;
       const k = (it.custom ? 'libre|' + it.name : it.productId) + '|' + (it.sizeLabel || '');
       const c = itemCost(it);
@@ -19125,7 +19187,7 @@ function openPosSettings(){
     ${soyDueno ? '' : `<div class="alert-card" style="margin-bottom:14px;"><span class="alert-ico">${icon('key')}</span><span class="alert-txt"><span class="alert-title">Solo puedes consultar</span><span class="alert-sub">Esto lo cambia el Dueño.</span></span></div>`}
     <div class="section-title" style="margin-top:0;">IVA</div>
     <div class="opt-grid tax-grid">
-      ${[['agregar','➕','Se suma al precio'],['incluido','✅','Ya viene en el precio'],['ninguno','🚫','No cobro IVA']].map(([id, e, t]) => `<button class="opt-card ${c.taxMode === id ? 'active' : ''}" ${dis} onclick="setPosCfg('taxMode','${id}')"><span class="opt-emoji">${e}</span>${t}</button>`).join('')}
+      ${[['agregar','plus','Se suma al precio'],['incluido','check','Ya viene en el precio'],['ninguno','ban','No cobro IVA']].map(([id, e, t]) => `<button class="opt-card ${c.taxMode === id ? 'active' : ''}" ${dis} onclick="setPosCfg('taxMode','${id}')"><span class="opt-emoji">${icon(e)}</span>${t}</button>`).join('')}
     </div>
     ${c.taxMode !== 'ninguno' ? `
       <div class="field">
@@ -20004,7 +20066,7 @@ function mdPublicSnapshot(){
   const u = AUTH.getUser() || {};
   const b = u.business || {};
   const pc = posCfg();
-  const cats = DB.getCategories().map(c => ({ id:c.id, name:c.name || '', emoji:c.emoji || '', color:c.color || '' }));
+  const cats = DB.getCategories().map(c => ({ id:c.id, name:c.name || '', color:c.color || '' }));
   const prods = DB.getProducts().filter(p => p && p.active).map(p => {
     const o = { id:p.id, name:p.name || '', price:Number(p.price) || 0, category:p.category || null, active:true };
     if(p.description) o.description = String(p.description).slice(0, 200);
