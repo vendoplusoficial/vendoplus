@@ -3625,6 +3625,13 @@
   .se-clip{ position:absolute; inset:0; overflow:hidden; }
   .se-free{ position:absolute; inset:0; }
 
+  /* Menú Digital (lo que ven los clientes): las mismas figuritas en su encabezado */
+  .dm-top .dm-brand, .dm-top .dm-logo{ position:relative; z-index:1; }
+  .dm-top .dm-mark{ position:relative; }
+  .dm-top .dm-mark .season-acc svg{ width:100%; height:auto; }
+  @media (max-width:699px){ body.season-roomy .dm-top{ padding-top:calc(26px + env(safe-area-inset-top, 0px)); } }
+  @media (min-width:700px){ body.season-roomy .dm-top{ padding-top:32px; } }
+
   /* Un poquito más de aire arriba cuando hay sombrero, guirnalda o desfile */
   @media (max-width:699px){ body.season-roomy .topbar{ padding-top:calc(26px + env(safe-area-inset-top)); } }
   @media (min-width:700px){ body.season-roomy .topbar{ padding-top:22px; } }
@@ -3813,264 +3820,6 @@
   /* Si la persona pidió menos movimiento: solo se quedan las figuras quietas */
   @media (prefers-reduced-motion: reduce){
     .se-anim, .se-p, .se-r{ display:none !important; }
-  }
-</style>
-<style id="modo-prueba-css">
-  /* =========================================================
-     MODO PRUEBA — recorrido guiado de la primera venta
-     Capa encima de todo: oscurece la pantalla, deja "un hueco"
-     iluminado en lo que hay que tocar, un círculo que enseña el
-     gesto (tocar o deslizar) y una tarjetita con la instrucción.
-     No recibe toques salvo la tarjetita y la barra de arriba.
-  ========================================================= */
-  #tut{ position:fixed; inset:0; z-index:640; pointer-events:none; font-family:inherit; color:var(--ink); -webkit-tap-highlight-color:transparent; }
-  #tut *, #tut *::before, #tut *::after{ box-sizing:border-box; }
-
-  /* Hueco iluminado (la sombra gigante oscurece todo lo demás) */
-  .tut-hole{
-    position:fixed; left:0; top:0; width:0; height:0; border-radius:16px;
-    box-shadow:0 0 0 2px #fff, 0 0 0 9999px rgba(9,13,26,.6);
-    transition:opacity .22s ease;
-  }
-  .tut-hole::after{
-    content:''; position:absolute; inset:-2px; border-radius:inherit;
-    animation:tutRing 1.9s ease-out infinite;
-  }
-  .tut-hole.no-ring{ box-shadow:0 0 0 9999px rgba(9,13,26,.6); }
-  .tut-hole.no-ring::after{ display:none; }
-  .tut-hole.is-moving{
-    transition:opacity .22s ease, transform .36s var(--ease-out), width .36s var(--ease-out),
-               height .36s var(--ease-out), border-radius .36s var(--ease-out);
-  }
-  .tut-hole.flash::after{ animation:tutFlash .5s ease-out; }
-  @keyframes tutRing{
-    0%{ box-shadow:0 0 0 0 rgba(var(--brand-rgb),.75); }
-    70%, 100%{ box-shadow:0 0 0 12px rgba(var(--brand-rgb),0); }
-  }
-  @keyframes tutFlash{
-    0%{ box-shadow:0 0 0 0 rgba(255,255,255,.95); }
-    100%{ box-shadow:0 0 0 16px rgba(255,255,255,0); }
-  }
-
-  /* Círculo guía: toca (se aprieta y suelta una onda) o desliza (sube/baja por su riel) */
-  .tut-finger{ position:fixed; left:0; top:0; width:0; height:0; opacity:0; transition:opacity .2s ease; }
-  .tut-finger.is-on{ opacity:1; }
-  .tut-dot{
-    position:absolute; left:-22px; top:-22px; width:44px; height:44px; border-radius:50%;
-    background:rgba(255,255,255,.16); border:2.5px solid #fff;
-    box-shadow:0 6px 18px rgba(9,13,26,.38), 0 0 0 1px rgba(9,13,26,.12);
-  }
-  .tut-dot::after{
-    content:''; position:absolute; inset:-3px; border-radius:50%; border:2.5px solid #fff; opacity:0;
-  }
-  .tut-track{
-    position:absolute; left:-1.5px; top:-78px; width:3px; height:156px; border-radius:2px; opacity:0;
-    background:repeating-linear-gradient(to bottom, rgba(255,255,255,.75) 0 5px, transparent 5px 11px);
-  }
-  .tut-finger.g-tap .tut-dot{ animation:tutPress 1.6s ease-in-out infinite; }
-  .tut-finger.g-tap .tut-dot::after{ animation:tutRipple 1.6s ease-out infinite; }
-  .tut-finger.g-up .tut-track, .tut-finger.g-down .tut-track{ opacity:.8; }
-  .tut-finger.g-up .tut-dot{ animation:tutUp 1.9s cubic-bezier(.45,0,.25,1) infinite; }
-  .tut-finger.g-down .tut-dot{ animation:tutDown 1.9s cubic-bezier(.45,0,.25,1) infinite; }
-  @keyframes tutPress{ 0%, 100%{ transform:scale(1); } 14%{ transform:scale(.78); } 30%{ transform:scale(1); } }
-  @keyframes tutRipple{ 0%, 12%{ opacity:0; transform:scale(.8); } 16%{ opacity:.95; } 65%, 100%{ opacity:0; transform:scale(2.2); } }
-  @keyframes tutUp{
-    0%{ transform:translateY(64px) scale(.8); opacity:0; }
-    14%{ transform:translateY(64px) scale(1); opacity:1; }
-    72%{ transform:translateY(-58px) scale(1); opacity:1; }
-    100%{ transform:translateY(-68px) scale(.85); opacity:0; }
-  }
-  @keyframes tutDown{
-    0%{ transform:translateY(-64px) scale(.8); opacity:0; }
-    14%{ transform:translateY(-64px) scale(1); opacity:1; }
-    72%{ transform:translateY(58px) scale(1); opacity:1; }
-    100%{ transform:translateY(68px) scale(.85); opacity:0; }
-  }
-
-  /* Tarjetita con la instrucción */
-  .tut-tip{
-    position:fixed; left:0; top:0; width:min(330px, calc(100vw - 24px));
-    background:#fff; border-radius:18px; padding:14px 16px;
-    box-shadow:0 22px 48px -14px rgba(9,13,26,.6), 0 2px 6px rgba(9,13,26,.14);
-    pointer-events:auto; opacity:0; transition:opacity .2s ease;
-  }
-  .tut-tip.is-on{ opacity:1; }
-  .tut-tip.is-moving{ transition:opacity .2s ease, transform .36s var(--ease-out); }
-  .tut-arrow{
-    position:absolute; left:var(--ax, 50%); width:14px; height:14px; margin-left:-7px;
-    background:#fff; border-radius:3px; transform:rotate(45deg);
-  }
-  .tut-tip[data-place="below"] .tut-arrow{ top:-6px; }
-  .tut-tip[data-place="above"] .tut-arrow{ bottom:-6px; }
-  .tut-tip[data-place="free"] .tut-arrow{ display:none; }
-  .tut-k{
-    display:flex; align-items:center; gap:7px; margin:0 0 6px;
-    font-size:11px; font-weight:800; letter-spacing:.35px; text-transform:uppercase; color:var(--brand-ink);
-  }
-  .tut-k i{
-    width:19px; height:19px; border-radius:6px; background:var(--brand-soft); color:var(--brand-ink);
-    display:inline-flex; align-items:center; justify-content:center; font-style:normal; font-size:11px;
-  }
-  .tut-k span{ color:var(--ink-soft); font-weight:700; letter-spacing:0; text-transform:none; }
-  .tut-tip h4{ margin:0 0 3px; font-size:16px; font-weight:800; letter-spacing:-.2px; line-height:1.25; color:var(--ink); }
-  .tut-tip p{ margin:0; font-size:13.5px; line-height:1.45; font-weight:500; color:var(--ink-soft); }
-  .tut-tip p b{ color:var(--ink); font-weight:800; }
-  .tut-scroll{ display:none; align-items:center; gap:7px; color:var(--brand-ink) !important; font-weight:700 !important; }
-  .tut-scroll svg{ width:16px; height:16px; flex-shrink:0; }
-  .tut-tip.is-scroll .tut-txt, .tut-tip.is-scroll .tut-act{ display:none; }
-  .tut-tip.is-scroll .tut-scroll{ display:flex; }
-  .tut-act{ display:flex; justify-content:flex-end; margin-top:12px; }
-  .tut-next{
-    display:inline-flex; align-items:center; gap:6px; border:none; border-radius:12px; cursor:pointer;
-    background:var(--brand); color:#fff; font:inherit; font-size:14px; font-weight:800; padding:10px 15px 10px 16px;
-    box-shadow:0 6px 16px -6px rgba(var(--brand-rgb),.8); transition:opacity .2s ease, transform .15s ease;
-  }
-  .tut-next svg{ width:16px; height:16px; }
-  .tut-next:disabled{ opacity:.38; box-shadow:none; cursor:default; }
-  .tut-next:active:not(:disabled){ transform:scale(.97); }
-  .tut-tip.tut-nudge{ animation:tutShake .42s ease; }
-  @keyframes tutShake{ 0%, 100%{ translate:0 0; } 20%{ translate:-6px 0; } 40%{ translate:5px 0; } 60%{ translate:-3px 0; } 80%{ translate:2px 0; } }
-
-  /* Barra de arriba: "Modo prueba" + avance + Saltar */
-  .tut-bar{
-    position:fixed; left:50%; top:calc(env(safe-area-inset-top, 0px) + 10px); transform:translateX(-50%);
-    display:flex; align-items:center; gap:10px; padding:5px 5px 5px 13px; border-radius:999px; white-space:nowrap;
-    background:rgba(22,33,62,.95); color:#fff; box-shadow:0 10px 28px -8px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08);
-    pointer-events:auto; transition:opacity .2s ease;
-  }
-  .tut-bar.at-bottom{ top:auto; bottom:calc(env(safe-area-inset-bottom, 0px) + 10px); }
-  .tut-bar b{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:800; }
-  .tut-bar b::before{
-    content:''; width:7px; height:7px; border-radius:50%; background:var(--brand);
-    box-shadow:0 0 0 3px rgba(var(--brand-rgb),.28); animation:tutBlink 1.6s ease-in-out infinite;
-  }
-  @keyframes tutBlink{ 50%{ box-shadow:0 0 0 5px rgba(var(--brand-rgb),.08); } }
-  .tut-prog{ width:46px; height:4px; border-radius:2px; background:rgba(255,255,255,.18); overflow:hidden; }
-  .tut-prog i{ display:block; width:0; height:100%; border-radius:inherit; background:var(--brand); transition:width .45s var(--ease-out); }
-  .tut-skip{
-    border:none; cursor:pointer; border-radius:999px; padding:7px 12px;
-    background:rgba(255,255,255,.14); color:#fff; font:inherit; font-size:12.5px; font-weight:800;
-    transition:background .2s ease;
-  }
-  .tut-skip:hover{ background:rgba(255,255,255,.24); }
-  #tut.has-screen .tut-hole, #tut.has-screen .tut-finger, #tut.has-screen .tut-tip, #tut.has-screen .tut-bar{ opacity:0 !important; pointer-events:none !important; }
-
-  /* Pantallas: bienvenida, ¿saltar?, ¡felicidades! */
-  .tut-screen{
-    position:fixed; inset:0; display:flex; align-items:center; justify-content:center; overflow:auto;
-    padding:calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px));
-    background:rgba(9,13,26,.62); pointer-events:auto; animation:tutFade .24s ease both;
-  }
-  .tut-card{
-    position:relative; width:100%; max-width:372px; margin:auto; overflow:hidden;
-    background:#fff; border-radius:26px; padding:26px 22px 18px; text-align:center;
-    box-shadow:0 30px 80px -20px rgba(0,0,0,.55); animation:tutPop .42s var(--ease-out) both;
-  }
-  .tut-card.tut-small{ max-width:340px; padding:24px 20px 20px; }
-  @keyframes tutFade{ from{ opacity:0; } }
-  @keyframes tutPop{ from{ opacity:0; transform:translateY(14px) scale(.96); } }
-  .tut-mark{
-    width:60px; height:60px; border-radius:19px; margin:0 auto 14px; position:relative;
-    background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center;
-    box-shadow:0 12px 26px -8px rgba(var(--brand-rgb),.7);
-  }
-  .tut-mark svg{ width:30px; height:30px; }
-  .tut-chip{
-    display:inline-flex; align-items:center; gap:6px; margin:0 0 10px; padding:5px 10px; border-radius:999px;
-    background:var(--brand-soft); color:var(--brand-ink); font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;
-  }
-  .tut-chip svg{ width:13px; height:13px; }
-  .tut-card h2{ margin:0 0 6px; font-size:22px; font-weight:800; letter-spacing:-.4px; line-height:1.2; color:var(--ink); }
-  .tut-card > p{ margin:0 0 16px; font-size:14px; line-height:1.5; color:var(--ink-soft); }
-  .tut-card > p b{ color:var(--ink); }
-  .tut-steps{ list-style:none; margin:0 0 18px; padding:5px; border-radius:18px; background:#F4F6FA; text-align:left; }
-  .tut-steps li{ display:flex; align-items:center; gap:11px; padding:7px 9px; font-size:13.5px; font-weight:700; color:var(--ink); }
-  .tut-steps li span{
-    width:28px; height:28px; border-radius:9px; flex-shrink:0; background:#fff; color:var(--brand-ink);
-    display:flex; align-items:center; justify-content:center; box-shadow:0 1px 2px rgba(22,33,62,.08);
-  }
-  .tut-steps li span svg{ width:15px; height:15px; }
-  .tut-steps li em{ margin-left:auto; font-style:normal; font-size:11.5px; font-weight:800; color:var(--ink-soft); }
-  .tut-go{
-    width:100%; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
-    border:none; border-radius:15px; padding:14px; background:var(--brand); color:#fff;
-    font:inherit; font-size:15.5px; font-weight:800; box-shadow:0 12px 24px -12px rgba(var(--brand-rgb),.95);
-    transition:transform .15s ease;
-  }
-  .tut-go svg{ width:18px; height:18px; }
-  .tut-go:active{ transform:scale(.98); }
-  .tut-link{
-    width:100%; margin-top:6px; padding:10px; border:none; background:none; cursor:pointer;
-    color:var(--ink-soft); font:inherit; font-size:13.5px; font-weight:700;
-  }
-  .tut-row2{ display:flex; gap:10px; }
-  .tut-row2 button{ flex:1; padding:13px 10px; border-radius:14px; font:inherit; font-size:14px; font-weight:800; cursor:pointer; }
-  .tut-ghost{ border:1px solid var(--border); background:#fff; color:var(--ink); }
-  .tut-dark{ border:none; background:var(--ink); color:#fff; }
-
-  /* ¡Felicidades! */
-  .tut-done{
-    width:68px; height:68px; border-radius:50%; margin:4px auto 14px; position:relative; z-index:1;
-    background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center;
-    box-shadow:0 0 0 9px rgba(var(--brand-rgb),.14), 0 14px 28px -10px rgba(var(--brand-rgb),.8);
-    animation:tutPopIn .55s cubic-bezier(.34,1.56,.64,1) .12s both;
-  }
-  .tut-done svg{ width:34px; height:34px; }
-  @keyframes tutPopIn{ from{ transform:scale(.3); opacity:0; } }
-  .tut-final h2, .tut-final > p{ position:relative; z-index:1; }
-  .tut-recap{ position:relative; z-index:1; display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:0 0 16px; }
-  .tut-recap span{
-    display:inline-flex; align-items:center; gap:4px; padding:5px 10px 5px 7px; border-radius:999px;
-    background:var(--brand-soft); color:var(--brand-ink); font-size:12px; font-weight:800;
-  }
-  .tut-recap svg{ width:13px; height:13px; }
-  .tut-clean{
-    position:relative; z-index:1; display:flex; align-items:center; gap:12px; margin:0 0 14px; padding:12px 12px 12px 14px;
-    text-align:left; border:1px solid var(--border); border-radius:16px; background:#fff;
-  }
-  .tut-clean-txt{ flex:1; min-width:0; }
-  .tut-clean b{ display:block; font-size:13.5px; font-weight:800; color:var(--ink); }
-  .tut-clean small{ display:block; margin-top:2px; font-size:12px; line-height:1.4; color:var(--ink-soft); }
-  .tut-final .tut-go{ position:relative; z-index:1; }
-  .tut-confetti{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
-  .tut-confetti i{
-    position:absolute; top:-14px; display:block; border-radius:1.5px; opacity:0;
-    animation:tutConf var(--d, 2.6s) cubic-bezier(.2,.6,.35,1) var(--dl, 0s) forwards;
-  }
-  @keyframes tutConf{
-    0%{ opacity:1; transform:translate(0, 0) rotate(0deg); }
-    85%{ opacity:1; }
-    100%{ opacity:0; transform:translate(var(--dx, 0px), 460px) rotate(var(--r, 360deg)); }
-  }
-
-  /* Formulario de producto en modo prueba: solo lo básico */
-  .tut-hide{ display:none !important; }
-  .tut-form-note{
-    display:flex; align-items:flex-start; gap:10px; margin:0 0 14px; padding:10px 12px; border-radius:14px;
-    background:var(--brand-soft); color:var(--brand-ink); font-size:13px; font-weight:600; line-height:1.4;
-  }
-  .tut-form-note svg{ width:16px; height:16px; flex-shrink:0; margin-top:1px; }
-  body.tut-on .pay-grid .opt-card[onclick*="'credito'"]{ opacity:.35; }
-  /* Los avisos (toasts) quedan debajo de lo oscuro: no tapan la instrucción */
-  body.tut-on .toast{ z-index:630 !important; }
-  body.tut-on #modal-layer .split-link{ display:none; }
-
-  @media (prefers-reduced-motion: reduce){
-    .tut-hole::after, .tut-dot, .tut-dot::after, .tut-bar b::before, .tut-done, .tut-card, .tut-screen{ animation:none !important; }
-    .tut-confetti{ display:none; }
-    .tut-hole.is-moving, .tut-tip.is-moving{ transition:opacity .2s ease; }
-    .tut-finger.g-up .tut-dot{ transform:translateY(30px); }
-    .tut-finger.g-down .tut-dot{ transform:translateY(-30px); }
-  }
-
-  /* Menú Digital: decoraciones de temporada en el encabezado del cliente */
-  .dm-top > .dm-brand, .dm-top > .dm-logo{ position:relative; z-index:1; }
-  .dm-mark, .md-pv-mark{ position:relative; }
-  .dm-top.dm-roomy{ padding-top:calc(30px + env(safe-area-inset-top, 0px)); }
-  .dm-top .se-hang{ right:78px; }
-  @media (min-width:700px){
-    .dm-top.dm-roomy{ padding-top:34px; }
-    .dm-top .se-hang{ right:98px; }
   }
 </style>
 </head>
@@ -4609,8 +4358,13 @@ function basicPayMethods(){ return PAYMENT_METHODS.filter(p => !p.special); }
 const POS_CFG_KEY = 'mesa_pos_cfg';
 function posDefaultCfg(){
   return {
-    taxMode:'agregar',      /* agregar = el IVA se suma al precio · incluido = el precio ya lo trae · ninguno = no cobro IVA */
-    taxRate:16,
+    /* El precio de venta que se escribe en cada producto YA es el precio final:
+       si el negocio cobra IVA, viene incluido ahí y solo se desglosa; nunca se
+       suma aparte. Las cuentas nuevas empiezan sin IVA (0%); el 8% o el 16% se
+       eligen en Mi cuenta › Cobro e IVA.
+       incluido = el precio ya trae el IVA · ninguno = no cobro IVA */
+    taxMode:'ninguno',
+    taxRate:0,
     tipsOn:false,           /* pedir propina al cobrar */
     tipOptions:[10, 15, 20],
     creditOn:true,          /* permitir ventas fiadas */
@@ -4622,9 +4376,13 @@ function posDefaultCfg(){
 }
 function posCfg(){
   const c = Object.assign(posDefaultCfg(), Store.get(POS_CFG_KEY, {}) || {});
-  if(['agregar','incluido','ninguno'].indexOf(c.taxMode) < 0) c.taxMode = 'agregar';
+  /* Antes existía "el IVA se suma al precio": esas cuentas pasan a "ya viene
+     incluido" con la misma tasa, para que el IVA ya no se cobre dos veces. */
+  if(c.taxMode === 'agregar') c.taxMode = 'incluido';
+  if(['incluido','ninguno'].indexOf(c.taxMode) < 0) c.taxMode = 'ninguno';
   c.taxRate = Math.max(0, Math.min(100, Number(c.taxRate)));
-  if(!isFinite(c.taxRate)) c.taxRate = 16;
+  if(!isFinite(c.taxRate)) c.taxRate = 0;
+  if(c.taxMode === 'ninguno' || !(c.taxRate > 0)){ c.taxMode = 'ninguno'; c.taxRate = 0; }
   if(!Array.isArray(c.tipOptions) || !c.tipOptions.length) c.tipOptions = [10, 15, 20];
   if(!Array.isArray(c.quickBills) || !c.quickBills.length) c.quickBills = [50, 100, 200, 500];
   return c;
@@ -4632,8 +4390,10 @@ function posCfg(){
 function savePosCfg(c){ Store.set(POS_CFG_KEY, c); }
 
 /* ---------- Impuestos ----------
-   Los precios se escriben como el negocio los maneja. Según la
-   configuración, el IVA se suma, ya viene incluido o no se cobra. */
+   El precio de venta de cada producto es lo que paga el cliente. Si el
+   negocio cobra IVA (8% o 16%), ese IVA ya viene dentro del precio y solo se
+   desglosa en el ticket; si no, no se cobra. Las ventas viejas que se hicieron
+   con "IVA aparte" conservan sus números (ver saleTaxInfo). */
 function taxInfo(){ const c = posCfg(); return { mode:c.taxMode, rate:c.taxRate / 100 }; }
 /** Datos de impuesto con los que se cobró una venta (las viejas: IVA 16% agregado). */
 function saleTaxInfo(s){ return { mode:(s && s.taxMode) || 'agregar', rate:(s && s.taxRate != null) ? Number(s.taxRate) : 0.16 }; }
@@ -4655,6 +4415,13 @@ function ivaLabel(info){
   return info.mode === 'incluido' ? 'IVA incluido (' + pct + '%)' : 'IVA (' + pct + '%)';
 }
 function showsTax(info){ info = info || taxInfo(); return info.mode !== 'ninguno' && info.rate > 0; }
+/** Aviso debajo del precio de venta al dar de alta un producto. */
+function priceTaxHint(){
+  const t = taxInfo();
+  return showsTax(t)
+    ? 'Es el precio final que paga tu cliente: ya trae el IVA (' + fmtPct(t.rate * 100) + '%), no se le suma nada.'
+    : 'Es el precio final que paga tu cliente.';
+}
 /** Precio sin IVA (para calcular la ganancia real). */
 function netOfTax(amount, info){ info = info || taxInfo(); return info.mode === 'incluido' && info.rate ? amount / (1 + info.rate) : amount; }
 
@@ -8538,7 +8305,7 @@ function renderStats(){
 
   return head + salesPeriodFilterHTML() + `
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">Ventas netas</div><div class="stat-value">${formatMoney(d.net)}</div><div class="stat-label" style="margin-top:4px;">con IVA, sin propinas</div></div>
+      <div class="stat-card"><div class="stat-label">Ventas netas</div><div class="stat-value">${formatMoney(d.net)}</div><div class="stat-label" style="margin-top:4px;">${d.iva ? 'IVA incluido, ' : ''}sin propinas</div></div>
       <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-value">${d.orders.length}</div><div class="stat-label" style="margin-top:4px;">ticket promedio ${formatMoney(ticket)}</div></div>
       ${ver ? `
         <div class="stat-card"><div class="stat-label">Ganancia</div><div class="stat-value" style="${d.prof.profit < 0 ? 'color:var(--accent-2);' : ''}">${formatMoney(d.prof.profit)}</div><div class="stat-label" style="margin-top:4px;">de lo vendido, sin IVA</div></div>
@@ -9256,6 +9023,7 @@ function openProductForm(productId){
     <div class="field" id="pfPriceField" style="display:${sizesOn ? 'none' : 'block'};">
       <label id="pfPriceLabel">${priceFieldLabel('venta', sizesOn, sizeUnit)}</label>
       <input id="pfPrice" type="number" min="0" step="0.5" placeholder="0.00" value="${editing ? editing.price : ''}" oninput="updateProductFormWarnings()">
+      <div class="field-hint" style="color:var(--ink-soft);">${escapeHtml(priceTaxHint())}</div>
     </div>
     <div class="field" id="pfCostField">
       <label id="pfCostLabel">${priceFieldLabel('produccion', sizesOn, sizeUnit)}</label>
@@ -13059,6 +12827,11 @@ function mdChecklist(){
       sub:b.logo ? 'Tu logo se muestra arriba a la derecha' : (u.photo ? 'Se usa tu foto de perfil · sube tu logo en Mi negocio' : 'Opcional · súbelo en la información de tu negocio'), action:'openBusinessForm()' },
     { label:'Horario del menú', ok:true, icon:'clock',
       sub:escapeHtml(mdHoursSub()), action:'mdOpenHoursForm()' },
+    (function(){
+      const se = (typeof Season !== 'undefined' && Season.summary) ? Season.summary() : { on:true, txt:'Aparecen solas en fechas especiales' };
+      return { label:'Decoraciones de temporada', ok:se.on, optional:true, free:true,
+               sub:escapeHtml(se.txt), action:'openSettings()' };
+    })(),
     { label:'WhatsApp del negocio', ok:!!wa,
       sub:wa ? escapeHtml(mdWhatsappLabel()) + (wa.fromAccount ? ' · el de tu cuenta de ' + APP_NAME : ' · aquí llegan los pedidos') : 'Aquí te llegarán los pedidos', action:'mdOpenWhatsappForm()' },
     { label:'Productos del menú', ok:prods.length > 0, free:true,
@@ -13671,7 +13444,7 @@ function dmRenderCartbar(){
   bar.classList.toggle('no-pop', wasShown && Date.now() - (bar._shownAt || 0) > 450);
   bar.innerHTML = `<button class="dm-cartbar-inner" onclick="dmOpenSheet('cart')">
     <span class="dm-cb-left"><span class="dm-cb-ico">${icon('bag')}<span class="dm-cb-count">${n}</span></span><span class="dm-cb-label">Ver pedido</span></span>
-    <span class="dm-cb-total">${formatMoney(t.subtotal)}<span class="cartbar-chevron">${icon('chevronRight')}</span></span>
+    <span class="dm-cb-total">${formatMoney(t.total)}<span class="cartbar-chevron">${icon('chevronRight')}</span></span>
   </button>`;
 }
 
@@ -15744,7 +15517,7 @@ function openQuoteForm(){
       ${cart.map(c => { const p = findProduct(c.productId); if(!p) return ''; const u = c.sizeLabel ? null : productUnit(p);
         return `<div class="q-item"><span>${escapeHtml((u && !u.plain) ? fmtQty(c.qty, u.id) : fmtNum(c.qty) + ' ×')} ${escapeHtml(p.name + (c.sizeLabel ? ' · ' + c.sizeLabel : ''))}</span><b>${formatMoney(cartLineAmount(c))}</b></div>`; }).join('')}
       ${t.orderDisc > 0 ? `<div class="q-item"><span>Descuento</span><b>−${formatMoney(t.orderDisc)}</b></div>` : ''}
-      <div class="q-item total"><span>Total${showsTax() ? (taxInfo().mode === 'incluido' ? ' (IVA incluido)' : ' con IVA') : ''}</span><b>${formatMoney(t.total)}</b></div>
+      <div class="q-item total"><span>Total${showsTax() ? ' (IVA incluido)' : ''}</span><b>${formatMoney(t.total)}</b></div>
     </div>
     <div class="field">
       <label for="qName">Cliente</label>
@@ -15874,17 +15647,22 @@ function chargeQuote(id){
     return;
   }
   customItems = {};
-  q.items.forEach(it => { if(isCustomId(it.productId)) customItems[it.productId] = { name:it.baseName || it.name, price:it.price }; });
+  /* Las cotizaciones hechas cuando el IVA se sumaba aparte guardan sus precios
+     sin IVA: se les pone el IVA para cobrar el mismo total que se cotizó. */
+  const qt = saleTaxInfo(q);
+  const k = qt.mode === 'agregar' && qt.rate > 0 ? 1 + qt.rate : 1;
+  const qp = v => k === 1 ? v : Math.round(v * k * 10000) / 10000;
+  q.items.forEach(it => { if(isCustomId(it.productId)) customItems[it.productId] = { name:it.baseName || it.name, price:qp(it.price) }; });
   checkout = newCheckout();
   if(q.customerId && typeof customerById === 'function' && customerById(q.customerId)) checkout.customerId = q.customerId;
   cart = q.items.map(it => {
     const line = { productId:it.productId, qty:it.qty };
     if(it.sizeId){ line.sizeId = it.sizeId; line.sizeLabel = it.sizeLabel; }
-    line.unitPrice = it.price;   /* se respeta el precio que se cotizó */
+    line.unitPrice = qp(it.price);   /* se respeta el precio que se cotizó */
     if(it.note) line.note = it.note;
     return line;
   });
-  if(q.discount > 0) checkout.discount = { type:'amt', value:q.discount };
+  if(q.discount > 0) checkout.discount = { type:'amt', value:round2(q.discount * k) };
   quoteToCharge = q.id;
   closeModal();
   goTo('sale');
@@ -19653,16 +19431,11 @@ function openPosSettings(){
     ${soyDueno ? '' : `<div class="alert-card" style="margin-bottom:14px;"><span class="alert-ico">${icon('key')}</span><span class="alert-txt"><span class="alert-title">Solo puedes consultar</span><span class="alert-sub">Esto lo cambia el Dueño.</span></span></div>`}
     <div class="section-title" style="margin-top:0;">IVA</div>
     <div class="opt-grid tax-grid">
-      ${[['agregar','plus','Se suma al precio'],['incluido','check','Ya viene en el precio'],['ninguno','ban','No cobro IVA']].map(([id, e, t]) => `<button class="opt-card ${c.taxMode === id ? 'active' : ''}" ${dis} onclick="setPosCfg('taxMode','${id}')"><span class="opt-emoji">${icon(e)}</span>${t}</button>`).join('')}
+      ${[[0,'ban','Sin IVA','No cobro IVA'],[8,'pin','8%','Zona fronteriza'],[16,'receipt','16%','Tasa general']].map(([v, e, t, s]) => `<button class="opt-card ${Number(c.taxRate) === v ? 'active' : ''}" ${dis} onclick="setTaxRate(${v})" aria-pressed="${Number(c.taxRate) === v}"><span class="opt-emoji">${icon(e)}</span>${t}<span class="opt-note">${s}</span></button>`).join('')}
     </div>
-    ${c.taxMode !== 'ninguno' ? `
-      <div class="field">
-        <label>Tasa de IVA</label>
-        <div class="seg" style="max-width:none;">
-          ${[16, 8, 0].map(v => `<button class="${Number(c.taxRate) === v ? 'active' : ''}" ${dis} onclick="setPosCfg('taxRate', ${v})">${v}%${v === 8 ? ' (frontera)' : ''}</button>`).join('')}
-        </div>
-      </div>` : ''}
-    <div class="doc-note">${icon('tag')}<span><b>Así se cobra un producto de $100:</b>${c.taxMode === 'agregar' ? 'Subtotal ' + formatMoney(ejemplo.subtotal) + ' + IVA ' + formatMoney(ejemplo.iva) + ' = <strong>' + formatMoney(ejemplo.total) + '</strong>' : (c.taxMode === 'incluido' ? 'Total <strong>' + formatMoney(ejemplo.total) + '</strong> (de ahí, ' + formatMoney(ejemplo.iva) + ' son de IVA)' : 'Total <strong>' + formatMoney(ejemplo.total) + '</strong>, sin IVA en el ticket')}. Las ventas que ya hiciste no cambian.</span></div>
+    <div class="doc-note">${icon('tag')}<span><b>Así se cobra un producto de $100:</b>${c.taxMode === 'incluido'
+      ? 'El cliente paga <strong>' + formatMoney(ejemplo.total) + '</strong>. El IVA ya viene dentro de tu precio de venta (de ahí, ' + formatMoney(ejemplo.iva) + ' son de IVA y ' + formatMoney(ejemplo.subtotal) + ' es tu venta sin IVA): no se suma nada extra.'
+      : 'El cliente paga <strong>' + formatMoney(ejemplo.total) + '</strong> y el ticket no muestra IVA.'} Las ventas que ya hiciste no cambian.</span></div>
 
     <div class="section-title">Al cobrar</div>
     <div class="qe-card">
@@ -19700,9 +19473,24 @@ function setPosCfg(key, val){
   openPosSettings();
   const sh2 = document.querySelector('#modal-layer .modal-sheet'); if(sh2) sh2.scrollTop = y;
 }
+/** IVA: 0 = sin IVA · 8 o 16 = ya viene incluido en el precio de venta. */
+function setTaxRate(v){
+  if(!requireOwner('Solo el Dueño puede cambiar cómo se cobra')) return;
+  v = Number(v) > 0 ? Number(v) : 0;
+  const c = posCfg();
+  c.taxRate = v;
+  c.taxMode = v > 0 ? 'incluido' : 'ninguno';
+  savePosCfg(c);
+  vibrate(8);
+  const sh = document.querySelector('#modal-layer .modal-sheet'); const y = sh ? sh.scrollTop : 0;
+  openPosSettings();
+  const sh2 = document.querySelector('#modal-layer .modal-sheet'); if(sh2) sh2.scrollTop = y;
+  toast(v > 0 ? 'IVA de ' + v + '% incluido en tus precios' : 'Sin IVA', { icon:icon('check'), variant:'toast-success',
+    subtitle: v > 0 ? 'Tus precios no cambian: el IVA se desglosa en el ticket' : 'El ticket ya no muestra IVA' });
+}
 function posSettingsSub(){
   const c = posCfg();
-  const iva = c.taxMode === 'ninguno' ? 'Sin IVA' : (c.taxMode === 'incluido' ? 'IVA incluido ' + fmtPct(c.taxRate) + '%' : 'IVA ' + fmtPct(c.taxRate) + '% aparte');
+  const iva = c.taxMode === 'ninguno' ? 'Sin IVA' : 'IVA ' + fmtPct(c.taxRate) + '% incluido en el precio';
   return iva + (c.creditOn ? ' · fiado' : '') + (c.tipsOn ? ' · propinas' : '');
 }
 
@@ -20555,6 +20343,8 @@ function mdPublicSnapshot(){
     wa: mdWhatsappDigits(),
     biz:{ name:b.name || '', logo:b.logo || u.photo || null, giro:b.giro || '', type:b.type || '', hours:hrsClean(b.hours) },
     tax:{ taxMode:pc.taxMode, taxRate:pc.taxRate },
+    /* Decoraciones de temporada: las mismas que ve el negocio en su app */
+    season:{ on: userPrefs().seasonDecor !== false, country: u.country || 'MX' },
     cats, prods
   };
 }
@@ -20682,7 +20472,7 @@ function mdPubRefresh(){
 /* =========================================================
    EL LINK DEL CLIENTE: el menú se descarga de internet
 ========================================================= */
-const DMR = { on:false, over:{}, cfg:null, biz:null, wa:'', updated:'', note:null };
+const DMR = { on:false, over:{}, cfg:null, biz:null, wa:'', season:{}, updated:'', note:null };
 const DMR_KEYS = new Set(['mesa_products', 'mesa_categories', POS_CFG_KEY]);
 
 /** Descarga el menú publicado. ok | missing (no existe o no se puede ver) | error (sin internet). */
@@ -20716,6 +20506,7 @@ function dmrApply(row){
   DMR.cfg = row ? Object.assign({}, d.cfg || {}, { active:true, id:row.id }) : { active:false, id:null };
   DMR.biz = (row && d.biz) || {};
   DMR.wa = String(d.wa || '').replace(/\D/g, '');
+  DMR.season = (row && d.season) || {};
   DMR.over = {
     mesa_products: Array.isArray(d.prods) ? d.prods : [],
     mesa_categories: Array.isArray(d.cats) ? d.cats : []
@@ -20733,7 +20524,11 @@ function dmrInstall(sameBiz){
     return peek.call(this, key, fb);
   };
   mdCfg = function(){ const c = Object.assign(mdDefaultCfg(), DMR.cfg || {}); c.hours = mdCleanHours(c.hours); return c; };
-  currentUser = function(){ return { business:Object.assign({}, DMR.biz || {}), photo:null, prefs:{} }; };
+  currentUser = function(){
+    const se = DMR.season || {};
+    return { business:Object.assign({}, DMR.biz || {}), photo:null, country: se.country || 'MX',
+             prefs:{ seasonDecor: se.on !== false } };
+  };
   mdWhatsappDigits = function(){ return DMR.wa || ''; };
   dmSig = function(){ return DMR.updated || ''; };
   /* En el celular de un cliente no se guardan pedidos (solo en el aparato del negocio) */
@@ -21214,7 +21009,7 @@ function dmrStartPoll(id){
   let appliedKey = null, cur = null;
   function decorate(){
     const accId = (cur && cur.theme.acc && ACC[cur.theme.acc]) ? cur.theme.acc : '';
-    document.querySelectorAll('.brand-mark-wrap, #splash .splash-mark, .auth-brand-mark').forEach(el => {
+    document.querySelectorAll('.brand-mark-wrap, #splash .splash-mark, .auth-brand-mark, .dm-top .dm-mark').forEach(el => {
       const old = el.querySelector(':scope > .season-acc');
       if(old && old.dataset.t === accId) return;
       if(old) old.remove();
@@ -21229,27 +21024,49 @@ function dmrStartPoll(id){
       el.appendChild(s);
     });
   }
+  /* Capas donde van las figuritas: el encabezado de la app o, en el link que
+     abren los clientes, el encabezado del Menú Digital. */
+  function layers(){
+    if(!isMenuPage()){ const l = document.getElementById('seasonLayer'); return l ? [l] : []; }
+    const top = document.getElementById('dmTop');
+    if(!top) return [];
+    let l = top.querySelector(':scope > .season-layer');
+    if(!l){
+      l = document.createElement('div');
+      l.className = 'season-layer';
+      l.id = 'dmSeasonLayer';
+      l.setAttribute('aria-hidden', 'true');
+      top.insertBefore(l, top.firstChild);
+    }
+    return [l];
+  }
   function apply(force){
-    if(isMenuPage()) return;
     cur = current();
     const key = cur ? cur.id + (cur.preview ? '*' : '') : '';
-    if(key !== appliedKey || force){
+    const changed = key !== appliedKey;
+    if(changed || force){
       appliedKey = key;
       const cl = document.body.classList;
       Array.from(cl).forEach(c => { if(c.indexOf('season-') === 0) cl.remove(c); });
-      const layer = document.getElementById('seasonLayer');
       if(cur){
         const t = cur.theme;
         cl.add('season-on', 'season-' + cur.id);
         if((t.acc && ACC[t.acc] && ACC[t.acc].top) || t.parade || t.garland) cl.add('season-roomy');
-        if(layer){
-          layer.innerHTML = layerHTML(t);
-          const g = layer.querySelector('.se-garland');
-          if(g) g.style.backgroundImage = garlandURI(t.garland);
-        }
-      }else if(layer) layer.innerHTML = '';
+      }
     }
+    /* Cada capa recuerda qué tema tiene: el menú se vuelve a dibujar seguido
+       (cambios del negocio, horario) y así solo se arma lo que falta. */
+    layers().forEach(layer => {
+      if(!force && layer.dataset.k === key) return;
+      layer.dataset.k = key;
+      if(!cur){ layer.innerHTML = ''; return; }
+      layer.innerHTML = layerHTML(cur.theme);
+      const g = layer.querySelector('.se-garland');
+      if(g) g.style.backgroundImage = garlandURI(cur.theme.garland);
+    });
     decorate();
+    /* El encabezado del menú cambia de alto: el índice de categorías se acomoda */
+    if(isMenuPage() && typeof dmMeasure === 'function') dmMeasure();
   }
 
   /* ---------- Configuración › Decoraciones de temporada ---------- */
@@ -21258,9 +21075,9 @@ function dmrStartPoll(id){
     const pv = previewId();
     const act = activeOn(new Date());
     let sub;
-    if(!on) sub = 'Apagadas. Préndelas para ver figuritas en fechas especiales.';
-    else if(act) sub = 'Ahora: ' + act.theme.name + ', hasta el ' + dateLabel(act.until) + '.';
-    else{ const nx = nextTheme(); sub = 'Aparecen solas en fechas especiales' + (nx ? '. La próxima: ' + nx.theme.name + ', desde el ' + dateLabel(nx.from) : '') + '.'; }
+    if(!on) sub = 'Apagadas. Préndelas para ver figuritas en fechas especiales, en tu app y en tu Menú Digital.';
+    else if(act) sub = 'Ahora: ' + act.theme.name + ', hasta el ' + dateLabel(act.until) + '. También las ven tus clientes en tu Menú Digital.';
+    else{ const nx = nextTheme(); sub = 'Aparecen solas en fechas especiales, en tu app y en tu Menú Digital' + (nx ? '. La próxima: ' + nx.theme.name + ', desde el ' + dateLabel(nx.from) : '') + '.'; }
     /* Una tarjeta por temporada del país, en orden del año */
     const entries = [];
     calendar().forEach(e => { if(!entries.some(x => x.theme === e.theme)) entries.push(e); });
@@ -21351,75 +21168,6 @@ function dmrStartPoll(id){
     refreshSettings();
   }
 
-  /* ---------- Menú Digital (la página que ven los clientes) ----------
-     Mismas figuritas en su encabezado: accesorio en el ícono del negocio y
-     la capa de la temporada (arañita, guirnalda, trineo…). Si el negocio
-     apagó las decoraciones, su menú tampoco las lleva (se publica en cfg.season). */
-  function menuOn(){
-    let pub = true;
-    try{ pub = mdCfg().season !== false; }catch(e){}
-    return pub && enabled();
-  }
-  function menuTheme(){
-    const pv = previewId();
-    if(pv === 'ninguno') return null;
-    if(pv) return { id:pv, theme:SEASON_THEMES[pv] };
-    return menuOn() ? activeOn(new Date()) : null;
-  }
-  function decorateMenu(){
-    const top = document.getElementById('dmTop');
-    if(!top) return;
-    const c = menuTheme();
-    const key = c ? c.id : '';
-    if(top.dataset.season === key && (key === '' || top.querySelector(':scope > .season-layer'))) return;
-    top.dataset.season = key;
-    const mark = top.querySelector('.dm-mark');
-    const old = mark && mark.querySelector(':scope > .season-acc');
-    if(old) old.remove();
-    let layer = top.querySelector(':scope > .season-layer');
-    top.classList.remove('dm-roomy');
-    if(!c){ if(layer) layer.remove(); if(typeof dmMeasure === 'function') dmMeasure(); return; }
-    const t = c.theme;
-    if(!layer){
-      layer = document.createElement('div');
-      layer.className = 'season-layer';
-      layer.setAttribute('aria-hidden', 'true');
-      top.insertBefore(layer, top.firstChild);
-    }
-    layer.innerHTML = layerHTML(t);
-    const g = layer.querySelector('.se-garland');
-    if(g) g.style.backgroundImage = garlandURI(t.garland);
-    if((t.acc && ACC[t.acc] && ACC[t.acc].top) || t.parade || t.garland) top.classList.add('dm-roomy');
-    if(mark && t.acc && ACC[t.acc]){
-      const a = ACC[t.acc], s = document.createElement('span');
-      s.className = 'season-acc'; s.setAttribute('aria-hidden', 'true');
-      s.style.cssText = a.css; s.innerHTML = a.svg;
-      mark.appendChild(s);
-    }
-    if(typeof dmMeasure === 'function') dmMeasure();
-  }
-  if(typeof dmRender === 'function'){
-    const _seDmRender = dmRender;
-    dmRender = function(){ const r = _seDmRender.apply(this, arguments); try{ decorateMenu(); }catch(e){} return r; };
-  }
-  /* El menú publicado lleva si el negocio tiene las decoraciones prendidas */
-  if(typeof mdPublicSnapshot === 'function'){
-    const _seSnap = mdPublicSnapshot;
-    mdPublicSnapshot = function(){ const s = _seSnap.apply(this, arguments); try{ if(s && s.cfg) s.cfg.season = enabled(); }catch(e){} return s; };
-  }
-  /* Vista previa "Así lo verán tus clientes" (Menú Digital › Color) */
-  if(typeof mdColorPreviewHTML === 'function'){
-    const _sePv = mdColorPreviewHTML;
-    mdColorPreviewHTML = function(){
-      let h = _sePv.apply(this, arguments);
-      try{
-        const c = current(), a = c && c.theme.acc && ACC[c.theme.acc];
-        if(a) h = h.replace(/(<span class="md-pv-mark"[^>]*>)/, '$1<span class="season-acc" aria-hidden="true" style="' + a.css + '">' + a.svg + '</span>');
-      }catch(e){}
-      return h;
-    };
-  }
-
   const _seOpenSettings = openSettings;
   openSettings = function(){
     _seOpenSettings.apply(this, arguments);
@@ -21436,7 +21184,20 @@ function dmrStartPoll(id){
   const _seRenderAuth = renderAuth;
   renderAuth = function(){ _seRenderAuth.apply(this, arguments); apply(); };
 
-  window.Season = { apply, preview, toggle, active:activeOn, themes:SEASON_THEMES, calendars:SEASON_CALENDARS };
+  /* El menú del cliente se vuelve a dibujar completo: se le ponen las figuritas otra vez */
+  const _seDmRender = dmRender;
+  dmRender = function(){ _seDmRender.apply(this, arguments); apply(); };
+
+  /* Texto corto para Menú Digital › Opciones */
+  function summary(){
+    if(!enabled()) return { on:false, txt:'Apagadas · actívalas en Configuración' };
+    const a = activeOn(new Date());
+    if(a) return { on:true, txt:'Ahora: ' + a.theme.name + ' · tus clientes la ven hasta el ' + dateLabel(a.until) };
+    const nx = nextTheme();
+    return { on:true, txt:'Aparecen solas en fechas especiales' + (nx ? ' · la próxima: ' + nx.theme.name + ', desde el ' + dateLabel(nx.from) : '') };
+  }
+
+  window.Season = { apply, preview, toggle, summary, active:activeOn, themes:SEASON_THEMES, calendars:SEASON_CALENDARS };
   window.seasonPreview = preview;
   window.seasonToggle = toggle;
 
@@ -21448,693 +21209,9 @@ function dmrStartPoll(id){
   }catch(e){}
 
   apply();
-  if(isMenuPage()) decorateMenu();
   /* Si la app se queda abierta de un día para otro, cambia sola de tema */
-  const refrescar = () => { if(isMenuPage()) decorateMenu(); else apply(); };
-  setInterval(refrescar, 10 * 60 * 1000);
-  document.addEventListener('visibilitychange', () => { if(!document.hidden) refrescar(); });
-})();
-</script>
-<script>
-/* =========================================================================
-   MODO PRUEBA
-   -------------------------------------------------------------------------
-   La primera vez que alguien crea su cuenta, Vendo plus le enseña a hacer
-   su primera venta, paso a paso:
-     categoría → producto (nombre, precio de venta, precio de producción y
-     categoría) → Nueva venta → abrir caja → producto → carrito → método
-     de entrega → método de pago → cobrar → Ventas (gráficas) → ¡listo!
-
-   · Se oscurece todo menos lo que hay que tocar, y un círculo enseña el
-     gesto (tocar o deslizar). Lo demás no responde mientras dura.
-   · Arriba siempre está "Saltar modo prueba".
-   · Si se recarga la página a la mitad, sigue donde iba.
-   · Al terminar se puede borrar la venta (y la caja) de prueba para
-     empezar en $0. La categoría y el producto se quedan.
-   · Se puede repetir desde Mi cuenta › Modo prueba, o abriendo la app
-     con ?modoprueba=1 en la dirección.
-========================================================================= */
-(function(){
-  if(typeof dmRoute === 'function' && dmRoute()) return;     /* Menú Digital del cliente: nada */
-
-  const KEY = 'vendo_tut';
-  const STAGES = ['Categoría', 'Producto', 'Caja', 'Venta', 'Gráficas'];
-  const VIEW_NAME = { products:'Inventarios', sale:'Nueva venta', stats:'Ventas', home:'Inicio' };
-
-  let T = null;               /* estado guardado */
-  let active = false, paused = false, raf = 0, root = null, el = {};
-  let cur = null, curKey = '', screen = '', stepIndex = 0;
-  let allowList = [];
-  let offSince = 0, lastHole = '', lastFinger = '', lastTip = '', moveTimer = 0;
-
-  /* ---------- Estado ---------- */
-  function fresh(){ return { v:1, on:true, at:new Date().toISOString(), f:{}, catId:null, prodId:null, cashId:null, saleId:null }; }
-  function load(){ try{ const x = JSON.parse(localStorage.getItem(KEY) || 'null'); return x && x.on ? x : null; }catch(e){ return null; } }
-  function save(){ try{ if(T) localStorage.setItem(KEY, JSON.stringify(T)); else localStorage.removeItem(KEY); }catch(e){} }
-  function canRun(){
-    try{ return AUTH.isLogged() && (typeof isOwner !== 'function' || isOwner()); }catch(e){ return false; }
-  }
-
-  /* ---------- Ayudantes ---------- */
-  const q = (s, r) => (r || document).querySelector(s);
-  const arr = x => (Array.isArray(x) ? x : [x]).filter(Boolean);
-  const res = x => (typeof x === 'function' ? x() : x);
-  function shown(e){ if(!e || !e.isConnected) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
-  function firstShown(s, r){ const all = (r || document).querySelectorAll(s); for(let i = 0; i < all.length; i++) if(shown(all[i])) return all[i]; return null; }
-  function sheet(){ return q('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet'); }
-  function sheetTitle(){ const s = sheet(); return s ? sheetTitleOf(s) : ''; }
-  function confCard(){ return q('#confirm-layer .conf-card'); }
-  function anyModal(){ return !!sheet() || !!confCard(); }
-  function navBtn(v){ return q('.bottomnav .navbtn[data-view="' + v + '"]'); }
-  function fieldOf(sel){ const i = q(sel); return i ? (i.closest('.field') || i) : null; }
-  function val(sel){ const i = q(sel); return i ? String(i.value == null ? '' : i.value).trim() : ''; }
-  function num(sel){ const v = val(sel); return v === '' ? NaN : parseFloat(v); }
-  function fl(id){ return !!(T && T.f && T.f[id]); }
-  function catOk(){ return !!(T.catId && DB.getCategories().some(c => c.id === T.catId)); }
-  function prodOk(){ return !!(T.prodId && DB.getProducts().some(p => p.id === T.prodId)); }
-  function saleOk(){ return !!T.saleId; }
-  function inCart(){ return !!T.prodId && cart.some(c => c.productId === T.prodId); }
-  function prodCard(){
-    if(!T.prodId) return null;
-    const cards = document.querySelectorAll('#view .product-card');
-    for(let i = 0; i < cards.length; i++) if(cards[i].querySelector('[onclick*="\'' + T.prodId + '\'"]')) return cards[i];
-    return null;
-  }
-  function chooser(){ return firstShown('#modal-layer .doc-big[onclick="cobroTicket()"]'); }
-  function finePointer(){ try{ return matchMedia('(pointer:fine)').matches; }catch(e){ return false; } }
-
-  /* ---------- Los pasos ----------
-     done() dice si ese paso ya quedó (o si ya se pasó de él). El paso que se
-     muestra siempre es el primero que falta: así, si algo se cierra o se
-     recarga la página, el recorrido se acomoda solo. */
-  const STEPS = [
-    /* 1 · Categoría */
-    { id:'goProducts', stage:1, title:'Empieza en Inventarios', text:'Ahí guardas tus productos. Toca <b>Inventarios</b>.',
-      hole:() => navBtn('products'), done:() => currentView === 'products' || catOk() },
-    { id:'openCats', stage:1, view:'products', title:'Primero, una categoría', text:'Las categorías agrupan tus productos, por ejemplo Bebidas o Ropa. Toca <b>Categorías</b>.',
-      hole:() => firstShown('#view button[onclick="openCategoryManager()"]'), done:() => catOk() || sheetTitle() === 'Categorías' || !!q('#cfName') },
-    { id:'newCat', stage:1, title:'Crea tu categoría', text:'Toca <b>Nueva categoría</b>.',
-      hole:() => firstShown('#modal-layer button[onclick="openCategoryForm()"]'), done:() => catOk() || !!q('#cfName') },
-    { id:'catName', stage:1, kind:'type', prefer:'above', title:'Ponle nombre', text:'Escribe cómo se llama. Ej. Bebidas, Ropa o Tacos.',
-      hole:() => fieldOf('#cfName'), field:() => q('#cfName'), valid:() => val('#cfName') !== '', btn:'Siguiente',
-      done:() => catOk() || fl('catName') },
-    { id:'saveCat', stage:1, title:'Guárdala', text:'Toca <b>Crear categoría</b>.',
-      hole:() => firstShown('#modal-layer button[onclick^="saveCategoryForm"]'), done:() => catOk() },
-    { id:'closeCats', stage:1, title:'¡Categoría lista!', text:'Ya quedó guardada. Cierra esta ventana para seguir.',
-      hole:() => firstShown('#modal-layer .sheet-close'), done:() => prodOk() || !!q('#pfName') || (catOk() && !anyModal()) },
-
-    /* 2 · Producto */
-    { id:'newProd', stage:2, view:'products', title:'Ahora, tu producto', text:'Toca <b>Nuevo producto</b>.',
-      hole:() => firstShown('#view .fab-row button[onclick="openProductForm()"]') || firstShown('#view button[onclick="openProductForm()"]'),
-      done:() => prodOk() || !!q('#pfName') },
-    { id:'pName', stage:2, kind:'type', prefer:'above', title:'¿Cómo se llama?', text:'Escribe el nombre del producto. Ej. Refresco de 600 ml.',
-      hole:() => q('#pfNameField'), field:() => q('#pfName'), valid:() => val('#pfName') !== '', btn:'Siguiente',
-      done:() => prodOk() || fl('pName') },
-    { id:'pPrice', stage:2, kind:'type', prefer:'above', title:'Precio de venta', text:'Lo que te paga tu cliente por él.',
-      hole:() => q('#pfPriceField'), field:() => q('#pfPrice'), valid:() => num('#pfPrice') >= 0, btn:'Siguiente',
-      done:() => prodOk() || fl('pPrice') },
-    { id:'pCost', stage:2, kind:'type', prefer:'above', title:'Precio de producción', text:'Lo que a ti te cuesta. Con esto Vendo plus calcula tu ganancia.',
-      hole:() => [q('#pfCostField'), firstShown('#pfConsistencyHint')], field:() => q('#pfCost'), valid:() => num('#pfCost') >= 0, btn:'Siguiente',
-      done:() => prodOk() || fl('pCost') },
-    { id:'pCat', stage:2, kind:'pick', prefer:'above', title:'Escoge su categoría', text:'Elige en qué categoría va. Ya está la que creaste.',
-      hole:() => fieldOf('#pfCategory'), field:() => q('#pfCategory'), valid:() => val('#pfCategory') !== '', btn:'Siguiente',
-      done:() => prodOk() || fl('pCat') },
-    { id:'saveProd', stage:2, title:'Guárdalo', text:'Toca <b>Agregar producto</b>.',
-      hole:() => firstShown('#modal-layer button[onclick^="saveProductForm"]'), done:() => prodOk() },
-
-    /* 3 · Caja */
-    { id:'goSale', stage:3, title:'¡A venderlo!', text:'Tu producto ya está listo. Regresa a <b>Nueva venta</b>.',
-      hole:() => navBtn('sale'), done:() => saleOk() || currentView === 'sale' },
-    { id:'openCash', stage:3, view:'sale', title:'Abre tu caja', text:'Cada día, antes de vender, se abre la caja con el efectivo que tienes para dar cambio. Toca aquí.',
-      hole:() => firstShown('#view .alert-card[onclick^="cashGate"]'), done:() => saleOk() || cashReadyForSale() || !!confCard() },
-    { id:'cashFund', stage:3, title:'¿Con cuánto empiezas?',
-      text:() => q('#cgOpening') ? 'Escribe el efectivo que tienes en la caja (puede ser $0) y toca <b>Abrir caja</b>.' : 'Sigue los pasos para dejar lista la caja de hoy.',
-      hole:() => confCard() || sheet(), point:() => q('#confYes'), allow:() => [confCard(), q('#cgOpening') ? null : sheet()],
-      done:() => saleOk() || cashReadyForSale() },
-
-    /* 4 · Venta */
-    { id:'addProd', stage:4, view:'sale', title:'Agrega tu producto', text:'Toca tu producto para ponerlo en la venta.',
-      hole:() => prodCard(), point:() => { const c = prodCard(); return c && (c.querySelector('.pc-photo') || c); },
-      done:() => saleOk() || inCart() },
-    { id:'openCart', stage:4, view:'sale', title:'Abre tu carrito', text:'Aquí se junta lo que vas a cobrar. Toca <b>Ver carrito</b>.',
-      hole:() => firstShown('.cartbar-inner'), done:() => saleOk() || sheetTitle() === 'Carrito' || !!q('#btnCobrar') || !!chooser() },
-    { id:'goPay', stage:4, title:'Revisa el pedido', text:'Aquí puedes cambiar cantidades. Toca <b>Continuar</b>.',
-      hole:() => firstShown('#modal-layer .cart-actions .btn.primary'), done:() => saleOk() || !!q('#btnCobrar') || !!chooser() },
-    { id:'service', stage:4, title:'Método de entrega', text:'¿Cómo se lleva el pedido tu cliente? Elige una opción.',
-      hole:() => firstShown('#modal-layer .opt-grid:not(.pay-grid)'),
-      point:() => firstShown('#modal-layer .opt-grid:not(.pay-grid) .opt-card:not(.active)') || firstShown('#modal-layer .opt-grid:not(.pay-grid) .opt-card'),
-      done:() => saleOk() || fl('service') || !!chooser() },
-    { id:'payment', stage:4, title:'Método de pago', text:'¿Cómo te paga? Elige efectivo, tarjeta o transferencia.',
-      hole:() => firstShown('#modal-layer .pay-grid'), point:() => firstShown('#modal-layer .pay-grid .opt-card'),
-      done:() => saleOk() || fl('payment') || !!chooser() },
-    { id:'charge', stage:4,
-      title:() => chooser() ? 'Elige Ticket' : '¡Cóbrala!',
-      text:() => chooser() ? 'Así se cobra la venta y sale su ticket.' : 'Toca <b>Cobrar</b> para registrar tu primera venta.',
-      hole:() => chooser() || q('#btnCobrar'),
-      allow:() => [chooser() || q('#btnCobrar'), fieldOf('#cashInput'), fieldOf('#payRef')],
-      done:() => saleOk() },
-    { id:'closeTicket', stage:4, title:'¡Primera venta cobrada!', text:'Este es su ticket. Ciérralo para seguir.',
-      hole:() => firstShown('#modal-layer .sheet-close'), done:() => fl('charts') || (saleOk() && !anyModal()) },
-
-    /* 5 · Gráficas */
-    { id:'goStats', stage:5, title:'Mira cómo vas', text:'Toca <b>Ventas</b> para ver tus gráficas.',
-      hole:() => navBtn('stats'), done:() => fl('charts') || currentView === 'stats' },
-    { id:'charts', stage:5, view:'stats', kind:'look', title:'Tus gráficas', text:'Aquí ves cuánto vendes por día, semana o mes. Cada venta que cobres aparece aquí sola.',
-      hole:() => q('#statsCharts'), allow:() => [q('#statsCharts')], btn:'Terminar', valid:() => true,
-      done:() => fl('charts') }
-  ];
-
-  function pick(){
-    for(let i = 0; i < STEPS.length; i++) if(!STEPS[i].done()) return { s:STEPS[i], i };
-    return null;
-  }
-  /* Si se salió de la sección donde va el paso, primero se le regresa ahí */
-  function viewStep(s){
-    return { id:'go-' + s.view + '-' + s.id, stage:s.stage, title:'Sigue por aquí',
-             text:'Toca <b>' + VIEW_NAME[s.view] + '</b> para continuar.', hole:() => navBtn(s.view) };
-  }
-
-  /* ---------- Capa ---------- */
-  function build(){
-    if(root) root.remove();
-    root = document.createElement('div');
-    root.id = 'tut';
-    root.innerHTML =
-      '<div class="tut-hole no-ring"></div>' +
-      '<div class="tut-finger"><span class="tut-track"></span><span class="tut-dot"></span></div>' +
-      '<div class="tut-tip" role="dialog" aria-live="polite"></div>' +
-      '<div class="tut-bar"><b>Modo prueba</b><span class="tut-prog"><i></i></span><button type="button" class="tut-skip">Saltar modo prueba</button></div>' +
-      '<div class="tut-layer"></div>';
-    document.body.appendChild(root);
-    el = { hole:q('.tut-hole', root), finger:q('.tut-finger', root), tip:q('.tut-tip', root), bar:q('.tut-bar', root),
-           prog:q('.tut-prog i', root), layer:q('.tut-layer', root) };
-    q('.tut-skip', root).onclick = () => askSkip();
-    el.layer.addEventListener('click', onScreenClick);
-    cur = null; curKey = ''; screen = ''; lastHole = lastFinger = lastTip = ''; offSince = 0;
-  }
-
-  function start(){
-    if(active) return;
-    if(!T) T = load();
-    if(!T || !canRun()) return;
-    if(document.body.classList.contains('auth-open') || document.body.classList.contains('dm-mode')) return;
-    T.f = T.f || {};
-    active = true;
-    build();
-    document.body.classList.add('tut-on');
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(tick);
-  }
-  function stop(){
-    active = false; paused = false;
-    cancelAnimationFrame(raf);
-    T = null; save();
-    if(root){ root.remove(); root = null; }
-    document.body.classList.remove('tut-on');
-  }
-  function restart(){
-    if(!canRun()) return;
-    stop();
-    T = fresh(); save();
-    if(typeof closeModal === 'function') closeModal();
-    start();
-  }
-
-  /* ---------- Cada cuadro ---------- */
-  function tick(){
-    raf = requestAnimationFrame(tick);
-    if(!active || !root) return;
-    paused = document.body.classList.contains('auth-open') || !!document.getElementById('paywall');
-    root.style.display = paused ? 'none' : '';
-    if(paused) return;
-    root.classList.toggle('has-screen', !!screen);
-    if(screen) return;
-    if(!T.f.intro){ showIntro(); return; }
-    const p = pick();
-    if(!p){ showFinal(); return; }
-    let s = p.s;
-    if(s.view && currentView !== s.view && !anyModal()) s = viewStep(s);
-    if(s.id !== curKey) enter(s, p.i);
-    layout(s);
-  }
-
-  function enter(s, i){
-    cur = s; curKey = s.id; stepIndex = i; offSince = 0; lastTip = '';
-    s._t = s._ti = null;
-    el.tip.classList.remove('tut-nudge', 'is-scroll');
-    el.tip.innerHTML =
-      '<span class="tut-arrow"></span>' +
-      '<div class="tut-k"><i>' + s.stage + '</i>' + STAGES[s.stage - 1] + '<span>· ' + s.stage + ' de ' + STAGES.length + '</span></div>' +
-      '<h4 class="tut-ttl"></h4><p class="tut-txt"></p>' +
-      '<p class="tut-scroll">' + icon('arrowDown') + '<span></span></p>' +
-      (s.btn ? '<div class="tut-act"><button type="button" class="tut-next">' + s.btn + icon('arrowRight') + '</button></div>' : '');
-    const b = q('.tut-next', el.tip);
-    if(b){
-      /* No le quita el foco al campo: en el celular el teclado no se cierra */
-      ['pointerdown', 'mousedown'].forEach(t => b.addEventListener(t, e => e.preventDefault()));
-      b.onclick = next;
-    }
-    el.prog.style.width = Math.round(i / STEPS.length * 100) + '%';
-    moving();
-  }
-  function moving(){
-    el.hole.classList.add('is-moving'); el.tip.classList.add('is-moving');
-    clearTimeout(moveTimer);
-    moveTimer = setTimeout(() => { if(el.hole){ el.hole.classList.remove('is-moving'); el.tip.classList.remove('is-moving'); } }, 380);
-  }
-
-  function viewport(){
-    const vv = window.visualViewport;
-    if(vv) return { top:vv.offsetTop, bottom:vv.offsetTop + vv.height, left:vv.offsetLeft, right:vv.offsetLeft + vv.width };
-    return { top:0, bottom:innerHeight, left:0, right:innerWidth };
-  }
-  const radii = new WeakMap();
-  function radiusOf(e){
-    let r = radii.get(e);
-    if(r == null){
-      const cs = getComputedStyle(e), b = e.getBoundingClientRect();
-      const z = e.offsetWidth ? b.width / e.offsetWidth : 1;
-      r = Math.min((parseFloat(cs.borderTopLeftRadius) || 0) * z, b.height / 2);
-      radii.set(e, r);
-    }
-    return r;
-  }
-  /* ¿Lo de hasta arriba en ese punto es el objetivo? (no lo tapa la barra de abajo, el encabezado…) */
-  function hits(x, y, els){
-    if(x < 0 || y < 0 || x > innerWidth || y > innerHeight) return false;
-    const stack = document.elementsFromPoint(x, y);
-    for(let i = 0; i < stack.length; i++){
-      const n = stack[i];
-      if(root.contains(n) || (n.closest && n.closest('.toast'))) continue;
-      return els.some(e => e && e.contains(n));
-    }
-    return false;
-  }
-
-  function layout(s){
-    const holes = arr(res(s.hole)).filter(shown);
-    allowList = holes.concat(arr(res(s.allow)));
-
-    /* Textos (algunos cambian según lo que haya en pantalla) */
-    const ti = res(s.title), tx = res(s.text);
-    if(ti !== s._ti){ s._ti = ti; const h = q('.tut-ttl', el.tip); if(h) h.innerHTML = ti; }
-    if(tx !== s._t){ s._t = tx; const p = q('.tut-txt', el.tip); if(p) p.innerHTML = tx; }
-    const nb = q('.tut-next', el.tip);
-    if(nb){ const ok = !s.valid || !!s.valid(); if(nb.disabled === ok) nb.disabled = !ok; }
-
-    if(!holes.length){
-      /* Todavía se está abriendo (o cerrando) algo: solo se oscurece */
-      setHole(null); setFinger(null); showTip(false);
-      return;
-    }
-
-    let L = Infinity, Tp = Infinity, R = -Infinity, B = -Infinity;
-    holes.forEach(h => { const r = h.getBoundingClientRect(); L = Math.min(L, r.left); Tp = Math.min(Tp, r.top); R = Math.max(R, r.right); B = Math.max(B, r.bottom); });
-    const pad = s.kind === 'look' ? 8 : 6;
-    const rect = { l:L - pad, t:Tp - pad, r:R + pad, b:B + pad };
-    const rad = holes.length === 1 ? radiusOf(holes[0]) + pad : 16;
-
-    /* ¿Se alcanza a ver? Si no, se enseña a deslizar */
-    const vp = viewport();
-    const pt = res(s.point) || holes[0];
-    const pr = pt.getBoundingClientRect();
-    const need = Math.min(B - Tp, (vp.bottom - vp.top) * .7);
-    const visH = Math.min(B, vp.bottom) - Math.max(Tp, vp.top);
-    let off = visH < need - 2;
-    let below = (Tp + B) / 2 > (vp.top + vp.bottom) / 2;
-    if(!off && s.kind !== 'look'){
-      const cx = pr.left + pr.width / 2, cy = pr.top + pr.height / 2;
-      if(!hits(cx, cy, allowList)){ off = true; below = cy > (vp.top + vp.bottom) / 2; }
-    }
-    const now = performance.now();
-    if(off){ if(!offSince) offSince = now; } else offSince = 0;
-    const scrollMode = off && now - offSince > 260;
-
-    setHole(rect, rad);
-    placeBar(rect, scrollMode, vp);
-
-    if(scrollMode){
-      /* Círculo que se desliza por su riel, en medio de lo que se mueve */
-      const box = (pt.closest && pt.closest('.modal-sheet')) || null;
-      const bx = box ? box.getBoundingClientRect() : { left:0, right:innerWidth };
-      setFinger((bx.left + bx.right) / 2, (vp.top + vp.bottom) / 2 + (below ? 10 : -10), below ? 'up' : 'down');
-      const msg = finePointer()
-        ? (below ? 'Baja con la rueda del mouse para verlo.' : 'Sube con la rueda del mouse para verlo.')
-        : (below ? 'Desliza hacia arriba para bajar y verlo.' : 'Desliza hacia abajo para subir y verlo.');
-      const sp = q('.tut-scroll', el.tip);
-      if(sp){
-        const span = q('span', sp); if(span && span.textContent !== msg) span.textContent = msg;
-        const svg = q('svg', sp); if(svg) svg.style.transform = below ? '' : 'rotate(180deg)';
-      }
-      el.tip.classList.add('is-scroll');
-      showTip(true);
-      placeTipFree(vp, below);
-      return;
-    }
-    el.tip.classList.remove('is-scroll');
-
-    /* Círculo: toca aquí (en campos se quita en cuanto ya estás escribiendo) */
-    const f = s.field ? s.field() : null;
-    if(s.kind === 'look' || (f && document.activeElement === f)) setFinger(null);
-    else setFinger(pr.left + pr.width / 2, pr.top + pr.height / 2, 'tap');
-
-    showTip(true);
-    placeTip(rect, s.prefer, vp);
-  }
-
-  function setHole(r, rad){
-    const key = r ? [r.l, r.t, r.r - r.l, r.b - r.t, rad].map(v => Math.round(v)).join(',') : 'none';
-    if(key === lastHole) return;
-    lastHole = key;
-    const h = el.hole;
-    if(!r){
-      h.classList.add('no-ring');
-      h.style.transform = 'translate(' + Math.round(innerWidth / 2) + 'px,' + Math.round(innerHeight / 2) + 'px)';
-      h.style.width = h.style.height = '0px';
-      return;
-    }
-    h.classList.remove('no-ring');
-    h.style.transform = 'translate(' + Math.round(r.l) + 'px,' + Math.round(r.t) + 'px)';
-    h.style.width = Math.round(r.r - r.l) + 'px';
-    h.style.height = Math.round(r.b - r.t) + 'px';
-    h.style.borderRadius = Math.round(rad) + 'px';
-  }
-  function setFinger(x, y, mode){
-    const key = mode ? Math.round(x) + ',' + Math.round(y) + ',' + mode : 'none';
-    if(key === lastFinger) return;
-    const prevMode = lastFinger.split(',')[2] || '';
-    lastFinger = key;
-    const f = el.finger;
-    if(!mode){ f.classList.remove('is-on'); return; }
-    f.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
-    if(prevMode !== mode){ f.classList.remove('g-tap', 'g-up', 'g-down'); f.classList.add('g-' + mode); }
-    f.classList.add('is-on');
-  }
-  function showTip(on){ el.tip.classList.toggle('is-on', !!on); }
-
-  function barH(){ return el.bar.offsetHeight || 40; }
-  function placeBar(rect, scrollMode, vp){
-    const bh = barH(), bw = el.bar.offsetWidth || 300;
-    const bl = innerWidth / 2 - bw / 2, br = innerWidth / 2 + bw / 2;
-    const xOver = rect.r > bl && rect.l < br;
-    let bottom = false;
-    if(!scrollMode && xOver && rect.t < vp.top + bh + 22 && rect.b > vp.top){
-      bottom = !(rect.b > vp.bottom - bh - 22);
-    }
-    if(el.bar.classList.contains('at-bottom') !== bottom) el.bar.classList.toggle('at-bottom', bottom);
-  }
-  function tipLimits(vp){
-    const m = 12, bh = barH() + 10;
-    const atBottom = el.bar.classList.contains('at-bottom');
-    return { top:vp.top + m + (atBottom ? 0 : bh), bottom:vp.bottom - m - (atBottom ? bh : 0) };
-  }
-  function putTip(x, y, place, ax){
-    const key = Math.round(x) + ',' + Math.round(y) + ',' + place + ',' + Math.round(ax);
-    if(key === lastTip) return;
-    lastTip = key;
-    el.tip.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
-    el.tip.dataset.place = place;
-    el.tip.style.setProperty('--ax', Math.round(ax) + 'px');
-  }
-  function placeTip(rect, prefer, vp){
-    const lim = tipLimits(vp), gap = 14, m = 12;
-    const w = el.tip.offsetWidth, h = el.tip.offsetHeight;
-    const fitsBelow = rect.b + gap + h <= lim.bottom, fitsAbove = rect.t - gap - h >= lim.top;
-    let place, y;
-    if(prefer === 'above' && fitsAbove) place = 'above';
-    else if(fitsBelow) place = 'below';
-    else if(fitsAbove) place = 'above';
-    else place = 'free';
-    if(place === 'below') y = rect.b + gap;
-    else if(place === 'above') y = rect.t - gap - h;
-    else y = (rect.t - lim.top > lim.bottom - rect.b) ? lim.top : lim.bottom - h;
-    const cx = (rect.l + rect.r) / 2;
-    const x = Math.max(m, Math.min(innerWidth - w - m, cx - w / 2));
-    putTip(x, y, place, Math.max(22, Math.min(w - 22, cx - x)));
-  }
-  function placeTipFree(vp, below){
-    const lim = tipLimits(vp), w = el.tip.offsetWidth, h = el.tip.offsetHeight;
-    const x = Math.max(12, (innerWidth - w) / 2);
-    const mid = (vp.top + vp.bottom) / 2;
-    /* Lejos del círculo: arriba si hay que bajar, abajo si hay que subir */
-    const y = below ? Math.max(lim.top, mid - 120 - h) : Math.min(lim.bottom - h, mid + 120);
-    putTip(x, y, 'free', w / 2);
-  }
-
-  /* ---------- Botón "Siguiente" de los campos ---------- */
-  function next(){
-    const s = cur;
-    if(!s || !s.btn || screen) return;
-    if(s.valid && !s.valid()){
-      nudge();
-      const f = s.field && s.field(); if(f) f.focus();
-      return;
-    }
-    T.f[s.id] = true; save();
-    vibrate(8);
-    if(s.id === 'charts'){ showFinal(); return; }
-    const p = pick();
-    const f = p && p.s.field && p.s.field();
-    if(f && f.tagName !== 'SELECT'){ try{ f.focus(); }catch(e){} }
-    else if(document.activeElement && document.activeElement !== document.body && document.activeElement.blur) document.activeElement.blur();
-  }
-  function nudge(){
-    vibrate(12);
-    if(!el.tip) return;
-    el.tip.classList.remove('tut-nudge'); void el.tip.offsetWidth; el.tip.classList.add('tut-nudge');
-    el.hole.classList.remove('flash'); void el.hole.offsetWidth; el.hole.classList.add('flash');
-  }
-
-  /* ---------- Pantallas ---------- */
-  function setScreen(name, html){
-    screen = name;
-    el.layer.innerHTML = html;
-    root.classList.toggle('has-screen', !!name);
-    setFinger(null);
-    const b = q('[data-a="go"], [data-a="finish"], [data-a="stay"]', el.layer);
-    if(b) setTimeout(() => { try{ b.focus({ preventScroll:true }); }catch(e){} }, 60);
-  }
-  function closeScreen(){
-    screen = ''; el.layer.innerHTML = ''; root.classList.remove('has-screen');
-    curKey = ''; lastHole = lastFinger = lastTip = '';
-  }
-  function showIntro(){
-    if(screen === 'intro') return;
-    const items = [['tag', 'Crea una categoría'], ['box', 'Agrega tu producto'], ['cashbox', 'Abre tu caja'], ['cart', 'Cobra tu primera venta'], ['chart', 'Mira tus gráficas']];
-    setScreen('intro',
-      '<div class="tut-screen"><div class="tut-card" role="dialog" aria-modal="true" aria-labelledby="tutTitle">' +
-        '<span class="tut-mark">' + ICONS.logo + '</span>' +
-        '<span class="tut-chip">' + icon('sparkle') + 'Modo prueba</span>' +
-        '<h2 id="tutTitle">Aprende a vender en 1 minuto</h2>' +
-        '<p>Te guiamos paso a paso con tu primera venta. Solo toca lo que se ilumina.</p>' +
-        '<ol class="tut-steps">' + items.map((x, i) => '<li><span>' + icon(x[0]) + '</span>' + x[1] + '<em>' + (i + 1) + '</em></li>').join('') + '</ol>' +
-        '<button type="button" class="tut-go" data-a="go">Empezar' + icon('arrowRight') + '</button>' +
-        '<button type="button" class="tut-link" data-a="skip">Saltar modo prueba</button>' +
-      '</div></div>');
-  }
-  function askSkip(){
-    if(screen === 'skip' || screen === 'final') return;
-    const back = screen;
-    setScreen('skip',
-      '<div class="tut-screen"><div class="tut-card tut-small" role="alertdialog" aria-modal="true" aria-labelledby="tutSkipT">' +
-        '<h2 id="tutSkipT">¿Saltar el modo prueba?</h2>' +
-        '<p>Puedes verlo cuando quieras en <b>Mi cuenta › Modo prueba</b>.</p>' +
-        '<div class="tut-row2"><button type="button" class="tut-ghost" data-a="stay">Seguir aprendiendo</button><button type="button" class="tut-dark" data-a="skipYes">Sí, saltar</button></div>' +
-      '</div></div>');
-    el.layer.dataset.back = back;
-  }
-  function confetti(){
-    const cols = ['#25D366', '#F5BF3C', '#3B82C4', '#E1594C', '#8E6CD1', '#F28C28'];
-    let h = '';
-    for(let i = 0; i < 34; i++){
-      const w = 5 + Math.random() * 4;
-      h += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;width:' + w.toFixed(1) + 'px;height:' + (w * 1.6).toFixed(1) + 'px;background:' + cols[i % cols.length] +
-           ';--d:' + (2.2 + Math.random() * 1.6).toFixed(2) + 's;--dl:' + (Math.random() * .7).toFixed(2) + 's;--dx:' + (Math.random() * 80 - 40).toFixed(0) + 'px;--r:' + (Math.random() * 720 - 360).toFixed(0) + 'deg"></i>';
-    }
-    return h;
-  }
-  function practiceCash(){
-    if(!T || !T.cashId) return null;
-    const k = DB.getCash().find(c => c.id === T.cashId);
-    if(!k || k.closedAt || (k.movements || []).length) return null;
-    const otras = DB.getSales().some(s => s.cashId === k.id && s.id !== T.saleId);
-    const gastos = (DB.getExpenses() || []).some(e => e.cashId === k.id);
-    return (otras || gastos) ? null : k;
-  }
-  function showFinal(){
-    if(screen === 'final') return;
-    const venta = T.saleId && DB.getSales().some(s => s.id === T.saleId);
-    const caja = venta && practiceCash();
-    setScreen('final',
-      '<div class="tut-screen"><div class="tut-card tut-final" role="dialog" aria-modal="true" aria-labelledby="tutFin">' +
-        '<div class="tut-confetti" aria-hidden="true">' + confetti() + '</div>' +
-        '<span class="tut-done">' + icon('check') + '</span>' +
-        '<h2 id="tutFin">¡Felicidades!</h2>' +
-        '<p>Terminaste el modo prueba. Ya sabes crear productos, abrir tu caja y cobrar.</p>' +
-        '<div class="tut-recap">' + STAGES.map(x => '<span>' + icon('check') + x + '</span>').join('') + '</div>' +
-        (venta ? '<div class="tut-clean"><span class="tut-clean-txt"><b>Borrar la venta' + (caja ? ' y la caja' : '') + ' de prueba</b>' +
-                 '<small>Así empiezas tu negocio en $0. Tu categoría y tu producto se quedan.</small></span>' +
-                 '<label class="switch"><input type="checkbox" id="tutClean" checked aria-label="Borrar la venta de prueba"><span class="track"></span></label></div>' : '') +
-        '<button type="button" class="tut-go" data-a="finish">Empezar con mi negocio' + icon('arrowRight') + '</button>' +
-      '</div></div>');
-    vibrate([15, 60, 15]);
-  }
-  function onScreenClick(e){
-    const b = e.target.closest && e.target.closest('[data-a]');
-    if(!b) return;
-    const a = b.dataset.a;
-    if(a === 'go'){ T.f.intro = true; save(); closeScreen(); vibrate(8); }
-    else if(a === 'skip') askSkip();
-    else if(a === 'stay'){ const back = el.layer.dataset.back; closeScreen(); if(back === 'intro') showIntro(); }
-    else if(a === 'skipYes'){
-      stop();
-      toast('Saltaste el modo prueba', { subtitle:'Puedes verlo otra vez en Mi cuenta', icon:icon('check') });
-    }
-    else if(a === 'finish') finish();
-  }
-
-  /* Borra la venta (y la caja, si solo se usó para esto) de prueba */
-  function cleanup(){
-    const caja = practiceCash();
-    if(T.saleId){
-      const sales = DB.getSales();
-      const s = sales.find(x => x.id === T.saleId);
-      if(s){
-        DB.saveSales(sales.filter(x => x.id !== T.saleId));
-        const n = parseInt(localStorage.getItem('mesa_counter') || '0', 10);
-        if(n === s.number) localStorage.setItem('mesa_counter', String(n - 1));
-      }
-    }
-    if(caja){
-      DB.saveCash(DB.getCash().filter(c => c.id !== caja.id));
-      const n = parseInt(localStorage.getItem('mesa_cash_counter') || '0', 10);
-      if(n === caja.number) localStorage.setItem('mesa_cash_counter', String(n - 1));
-    }
-  }
-  function finish(){
-    const c = q('#tutClean', root);
-    const clean = !!(c && c.checked);
-    if(clean) cleanup();
-    stop();
-    if(typeof closeModal === 'function') closeModal();
-    goTo('home');
-    toast('¡Listo! Ya puedes vender', { subtitle:clean ? 'Tus ventas empiezan en $0' : 'Tu negocio está listo', variant:'toast-success', icon:icon('check') });
-  }
-
-  /* ---------- Mientras dura, solo responde lo que se pide ---------- */
-  function allowed(t){
-    if(!active || paused) return true;
-    if(root && root.contains(t)) return true;
-    if(screen) return false;
-    if(!allowList.some(e => e && e.contains(t))) return false;
-    const oc = t.closest('[onclick]');
-    if(oc && /setPaymentMethod\('(credito|mixto)'\)/.test(oc.getAttribute('onclick') || '')) return false;
-    return true;
-  }
-  function block(e){
-    if(!active || !e.isTrusted) return;
-    let t = e.target;
-    if(t && t.nodeType !== 1) t = t.parentElement;
-    if(!t || allowed(t)) return;
-    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
-    if(e.type === 'click') nudge();
-  }
-  ['pointerdown', 'mousedown', 'click', 'dblclick', 'auxclick', 'contextmenu'].forEach(t => window.addEventListener(t, block, true));
-  window.addEventListener('keydown', e => {
-    if(!active || paused) return;
-    if(['Escape', 'F2', 'F4', 'F8', 'F9'].indexOf(e.key) >= 0){
-      e.preventDefault(); e.stopImmediatePropagation();
-      if(e.key === 'Escape' && screen === 'skip') onScreenClick({ target:q('[data-a="stay"]', el.layer) });
-      return;
-    }
-    if(e.key === 'Enter' && !screen && cur && cur.btn && cur.field && e.target === cur.field()){
-      e.preventDefault(); e.stopImmediatePropagation();
-      next();
-    }
-  }, true);
-
-  /* ---------- Lo que pasa en la app ---------- */
-  function wrap(name, after, before){
-    const orig = window[name];
-    if(typeof orig !== 'function') return;
-    window[name] = function(){
-      const ctx = before ? before.apply(this, arguments) : null;
-      const r = orig.apply(this, arguments);
-      try{ if(after) after(r, ctx, arguments); }catch(e){ console.error(e); }
-      return r;
-    };
-  }
-  wrap('saveCategoryForm', (r, antes) => {
-    if(!active) return;
-    const n = DB.getCategories().find(c => antes.indexOf(c.id) < 0);
-    if(n){ T.catId = n.id; save(); }
-  }, () => active ? DB.getCategories().map(c => c.id) : []);
-  wrap('saveProductForm', (r, antes) => {
-    if(!active) return;
-    const n = DB.getProducts().find(p => antes.indexOf(p.id) < 0);
-    if(n){ T.prodId = n.id; save(); }
-  }, () => active ? DB.getProducts().map(p => p.id) : []);
-  wrap('cashOpenNow', r => { if(active && r && r.id){ T.cashId = r.id; save(); } });
-  wrap('muRealCobro', (r, antes) => {
-    if(!active) return;
-    const s = DB.getSales();
-    if(s.length > antes){ T.saleId = s[s.length - 1].id; save(); }
-  }, () => active ? DB.getSales().length : 0);
-  wrap('setServiceType', () => { if(active){ T.f.service = true; save(); } });
-  wrap('setPaymentMethod', (r, c, args) => { if(active && args[0] !== 'credito' && args[0] !== 'mixto'){ T.f.payment = true; save(); } });
-
-  /* Producto en modo prueba: solo nombre, precios y categoría */
-  wrap('openProductForm', () => { if(active) liteForm(); });
-  function liteForm(){
-    const sh = sheet();
-    if(!sh || !q('#pfName', sh)) return;
-    const keep = [q('.sheet-grip', sh), q('.sheet-header', sh), q('#pfNameField', sh), q('#pfPriceField', sh), q('#pfCostField', sh),
-                  q('#pfConsistencyHint', sh), fieldOf('#pfCategory'), q('button[onclick^="saveProductForm"]', sh)].filter(Boolean);
-    Array.from(sh.children).forEach(ch => { if(!keep.some(k => k === ch || ch.contains(k))) ch.classList.add('tut-hide'); });
-    const head = q('.sheet-header', sh);
-    if(head && !q('.tut-form-note', sh)){
-      head.insertAdjacentHTML('afterend', '<div class="tut-form-note">' + icon('sparkle') +
-        '<span><b>Modo prueba:</b> solo lo básico. Después puedes agregarle foto, existencias, código de barras y más.</span></div>');
-    }
-  }
-
-  /* Cuenta nueva: al aceptar el mes gratis empieza el modo prueba */
-  wrap('acceptTrialAndEnter', () => { T = fresh(); save(); setTimeout(start, 450); });
-  /* Si se cerró la sesión a la mitad, sigue al volver a entrar */
-  wrap('hideAuth', () => { if(!active && load()) setTimeout(start, 450); });
-
-  /* Mi cuenta › Ayuda › Modo prueba */
-  (function(){
-    const base = window.renderAccount;
-    window.renderAccount = function(){
-      const h = base.apply(this, arguments);
-      if(!canRun() || typeof h !== 'string') return h;
-      const row = '<div class="section-title">Ayuda</div><div class="acc-list">' +
-        '<button class="acc-row" onclick="Tut.restart()">' +
-          '<span class="acc-ico green">' + icon('bulb') + '</span>' +
-          '<span class="acc-txt"><span class="acc-label">Modo prueba</span><span class="acc-sub">Aprende a hacer una venta paso a paso</span></span>' +
-          '<span class="acc-chev">' + icon('chevronRight') + '</span>' +
-        '</button></div>';
-      return h.replace('<div class="section-title">Sesión</div>', row + '<div class="section-title">Sesión</div>');
-    };
-  })();
-
-  window.Tut = { start, restart, stop, get active(){ return active; }, get step(){ return screen || curKey; } };
-
-  /* ---------- Arranque ---------- */
-  let forzar = false;
-  try{
-    const sp = new URLSearchParams(location.search);
-    forzar = sp.get('modoprueba') === '1';
-    if(forzar){ sp.delete('modoprueba'); const qs = sp.toString(); history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash); }
-  }catch(e){}
-  const guardado = load();
-  if(forzar) T = fresh();
-  else if(guardado){
-    /* Al recargar, los pasos de "escribe aquí" se vuelven a pedir */
-    T = guardado; T.f = { intro:!!(guardado.f && guardado.f.intro) };
-  }
-  if(T){ save(); setTimeout(start, 650); }
+  setInterval(() => apply(), 10 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) apply(); });
 })();
 </script>
 </body>
