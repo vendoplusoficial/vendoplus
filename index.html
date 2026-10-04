@@ -3599,9 +3599,116 @@
   .hist-seg button svg, .seg button .ic svg{ width:15px; height:15px; }
   @media (min-width:700px){ .opt-card .opt-emoji svg{ width:18px; height:18px; } }
 </style>
+<style id="temporadas-css">
+  /* =========================================================
+     DECORACIONES DE TEMPORADA
+     Figuritas chiquitas que aparecen solas en fechas especiales
+     (Halloween, Día de Muertos, Navidad, Reyes…). Nunca tapan
+     botones: no reciben toques (pointer-events:none).
+  ========================================================= */
+  .brand-mark-wrap{ position:relative; display:inline-flex; flex-shrink:0; }
+  #splash .splash-mark, .auth-brand-mark{ position:relative; }
 
+  /* Accesorio sobre el logo (sombrerito, corona, moño…) */
+  .season-acc{
+    position:absolute; z-index:2; display:block; line-height:0; pointer-events:none;
+    transform-origin:50% 100%;
+    filter:drop-shadow(0 1.5px 1.2px rgba(22,33,62,.22));
+  }
+  .season-acc svg{ display:block; width:100%; height:auto; overflow:visible; transform-origin:50% 85%; animation:seWobble 9s ease-in-out infinite; }
+  @keyframes seWobble{ 0%, 86%, 100%{ transform:rotate(0deg); } 90%{ transform:rotate(-7deg); } 94%{ transform:rotate(5deg); } 97%{ transform:rotate(-2deg); } }
 
+  /* Capa dentro del encabezado: detrás del logo y de los botones */
+  .topbar .brand, .topbar .topbar-right{ position:relative; z-index:1; }
+  .season-layer{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+  .season-layer:empty{ display:none; }
+  .se-clip{ position:absolute; inset:0; overflow:hidden; }
+  .se-free{ position:absolute; inset:0; }
 
+  /* Un poquito más de aire arriba cuando hay sombrero, guirnalda o desfile */
+  @media (max-width:699px){ body.season-roomy .topbar{ padding-top:calc(26px + env(safe-area-inset-top)); } }
+  @media (min-width:700px){ body.season-roomy .topbar{ padding-top:22px; } }
+
+  /* Papel picado */
+  .se-garland{
+    position:absolute; left:0; right:0; top:env(safe-area-inset-top); height:17px;
+    background-repeat:repeat-x; background-size:auto 17px; background-position:left top;
+  }
+  @media (min-width:700px){ .se-garland{ top:0; height:15px; background-size:auto 15px; } }
+
+  /* Desfile que cruza arriba (trineo, murciélagos, Reyes Magos) */
+  .se-parade{
+    position:absolute; left:100%; top:calc(4px + env(safe-area-inset-top));
+    height:var(--h); width:var(--w); animation:seCross 46s linear infinite;
+  }
+  .se-parade .se-bob{ display:block; width:100%; height:100%; animation:seBob 1.3s ease-in-out infinite alternate; }
+  .se-parade svg{ display:block; width:100%; height:100%; overflow:visible; }
+  @media (min-width:700px){ .se-parade{ top:3px; } }
+  @keyframes seCross{ 0%{ transform:translateX(0); } 45%, 100%{ transform:translateX(calc(-120vw - 220px)); } }
+  @keyframes seBob{ from{ transform:translateY(-1.5px); } to{ transform:translateY(1.5px); } }
+  .se-flap{ transform-box:fill-box; transform-origin:50% 60%; animation:seFlap .26s ease-in-out infinite alternate; }
+  @keyframes seFlap{ from{ transform:scaleY(1); } to{ transform:scaleY(.35); } }
+  .se-twinkle{ transform-box:fill-box; transform-origin:center; animation:seTwinkle 1.2s ease-in-out infinite alternate; }
+  @keyframes seTwinkle{ from{ opacity:.55; transform:scale(.85); } to{ opacity:1; transform:scale(1.08); } }
+
+  /* Algo que baja colgando de un hilo y vuelve a subir (arañita, piñata) */
+  .se-hang{
+    position:absolute; top:0; right:3px; height:100%;
+    transform-origin:50% 0; animation:seSwing 3.4s ease-in-out infinite alternate;
+  }
+  @media (min-width:700px){ .se-hang{ right:12px; } }
+  .se-drop{
+    position:absolute; left:0; right:0; top:0; height:calc(100% + var(--len, 30px));
+    transform:translateY(calc(-100% - 30px)); animation:seDrop 20s ease-in-out infinite;
+  }
+  .se-thread{ position:absolute; left:50%; top:0; bottom:0; width:1px; transform:translateX(-50%); background:rgba(70,76,96,.5); }
+  .se-hanger{ position:absolute; top:100%; left:50%; margin-top:-3px; display:block; line-height:0; }
+  .se-hanger svg{ display:block; width:100%; height:auto; transform-origin:50% 0; animation:seWiggle 1.8s ease-in-out infinite alternate; }
+  @keyframes seSwing{ from{ transform:rotate(calc(var(--swing, 3deg) * -1)); } to{ transform:rotate(var(--swing, 3deg)); } }
+  @keyframes seWiggle{ from{ transform:rotate(-6deg); } to{ transform:rotate(6deg); } }
+  @keyframes seDrop{
+    0%, 14%{ transform:translateY(calc(-100% - 30px)); }
+    32%{ transform:translateY(0); }
+    35%{ transform:translateY(-5px); }
+    38%, 58%{ transform:translateY(0); }
+    61%{ transform:translateY(-12px); }
+    64%{ transform:translateY(-6px); }
+    80%, 100%{ transform:translateY(calc(-100% - 30px)); }
+  }
+
+  /* Telaraña en la esquina */
+  .se-corner{ position:absolute; top:0; right:0; width:58px; height:58px; line-height:0; }
+  .se-corner svg{ display:block; width:100%; height:100%; }
+  @media (min-width:700px){ .se-corner{ width:66px; height:66px; } }
+
+  /* Partículas: nieve, confeti y pétalos caen; corazones y globos suben */
+  .se-p{ position:absolute; top:-14px; display:block; opacity:0; animation:seFall 9s linear infinite; }
+  .se-r{ position:absolute; bottom:-26px; display:block; opacity:0; animation:seRise 10s ease-in-out infinite; }
+  .se-p svg, .se-r svg{ display:block; width:100%; height:auto; }
+  @keyframes seFall{
+    0%{ transform:translate(0,0) rotate(0deg); opacity:0; }
+    12%{ opacity:.9; } 80%{ opacity:.9; }
+    100%{ transform:translate(var(--dx, 0px), 130px) rotate(var(--rot, 0deg)); opacity:0; }
+  }
+  @keyframes seRise{
+    0%{ transform:translate(0,0); opacity:0; }
+    15%{ opacity:.85; } 75%{ opacity:.85; }
+    100%{ transform:translate(var(--dx, 0px), -130px); opacity:0; }
+  }
+
+  /* Configuración › Decoraciones de temporada */
+  #seasonSettings .toggle-row{ border-bottom:none; }
+  .season-try{ padding:0 0 12px 54px; border-bottom:1px solid var(--border); }
+  .season-try-k{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin:0 0 8px; }
+  .season-try .filter-pill-row{ gap:7px; }
+  .season-try .filter-chip{ padding:7px 12px; font-size:12.5px; }
+  @media (min-width:700px){ .season-try{ padding-left:43px; } }
+
+  /* Si la persona pidió menos movimiento: solo se quedan las figuras quietas */
+  @media (prefers-reduced-motion: reduce){
+    .se-anim, .se-p, .se-r{ display:none !important; }
+  }
+</style>
 </head>
 <body>
 
@@ -3641,8 +3748,10 @@
 
 <div class="app">
   <header class="topbar">
+    <!-- Decoraciones de temporada (Halloween, Navidad, Reyes…). Se llena sola por fecha. -->
+    <div class="season-layer" id="seasonLayer" aria-hidden="true"></div>
     <div class="brand">
-      <span class="brand-mark" id="brandMark"></span>
+      <span class="brand-mark-wrap"><span class="brand-mark" id="brandMark"></span></span>
       <span class="brand-txt">
         <span class="brand-name" id="brandName">Vendo plus</span>
         <span class="brand-sub" id="brandSub">Punto de venta</span>
@@ -20416,6 +20525,448 @@ function dmrStartPoll(id){
   }
 })();
 
+</script>
+<script>
+/* =========================================================================
+   DECORACIONES DE TEMPORADA
+   -------------------------------------------------------------------------
+   Figuritas pequeñas que aparecen solas en fechas especiales y se quitan
+   solas cuando pasan: sombrerito de bruja y arañita en Halloween, Santa con
+   sus renos en Navidad, los Reyes Magos en enero, etc.
+
+   · El calendario depende del país de la cuenta (por ahora México).
+   · Para otro país: agrega sus fechas en SEASON_CALENDARS (ej. US, CO) y,
+     si hace falta, temas nuevos en SEASON_THEMES. Los países sin calendario
+     solo ven Navidad y Año Nuevo.
+   · Se apagan en Mi cuenta › Configuración › Decoraciones de temporada.
+   · Para ver un tema antes de su fecha: abre la app con ?tema=navidad
+     (o desde Configuración › "Ver cómo se ve"). ?tema=hoy lo quita.
+========================================================================= */
+(function(){
+  const PV_KEY = 'vendo_tema_preview';
+
+  /* ---------- Figuritas (SVG pequeños, sin imágenes externas) ---------- */
+  const S = (vb, body) => '<svg viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + body + '</svg>';
+  const n2 = v => Number(v).toFixed(2);
+  const HEART = 'M15 26.2 C5.2 19.4 2.2 13.4 5 8.6 C7.8 4.4 12.8 5.2 15 9 C17.2 5.2 22.2 4.4 25 8.6 C27.8 13.4 24.8 19.4 15 26.2 Z';
+
+  function flowerSVG(n, outer, inner, center, leaf){
+    let b = '';
+    if(leaf) b += '<path d="M14 21 Q8 27 3.6 24.4 Q7.6 18.6 14 21 Z" fill="#3E9B57"/>';
+    for(let i = 0; i < n; i++){ const a = i / n * Math.PI * 2; b += '<circle cx="' + n2(15 + 6.4 * Math.cos(a)) + '" cy="' + n2(15 + 6.4 * Math.sin(a)) + '" r="4.6" fill="' + outer + '"/>'; }
+    for(let i = 0; i < n; i++){ const a = (i + .5) / n * Math.PI * 2; b += '<circle cx="' + n2(15 + 3.6 * Math.cos(a)) + '" cy="' + n2(15 + 3.6 * Math.sin(a)) + '" r="3.4" fill="' + inner + '"/>'; }
+    return S('0 0 30 30', b + '<circle cx="15" cy="15" r="2.6" fill="' + center + '"/>');
+  }
+  function balloonSVG(c){
+    return S('0 0 24 44',
+      '<path d="M12 23 Q8.6 29 12.6 34 Q16 39 11.4 44" stroke="#9AA3B8" stroke-width=".9" fill="none"/>' +
+      '<path d="M10.6 21 L13.4 21 L12 23.2 Z" fill="' + c + '"/>' +
+      '<ellipse cx="12" cy="11" rx="9" ry="10.5" fill="' + c + '"/>' +
+      '<ellipse cx="8.6" cy="7" rx="2.2" ry="3.2" fill="#fff" opacity=".35"/>');
+  }
+  function pinataSVG(){
+    const cols = ['#E4007C', '#F28C28', '#25A55F', '#3B82C4', '#8E6CD1', '#F5BF3C', '#E1594C'];
+    const p = (ang, r) => n2(14 + r * Math.cos(ang)) + ' ' + n2(14 + r * Math.sin(ang));
+    let b = '';
+    for(let k = 0; k < 7; k++){
+      const a = (-90 + k * 360 / 7) * Math.PI / 180, w = 0.42;
+      b += '<path d="M' + p(a - w, 5) + ' L' + p(a, 13) + ' L' + p(a + w, 5) + ' Z" fill="' + cols[k] + '"/>';
+      b += '<circle cx="' + n2(14 + 13.2 * Math.cos(a)) + '" cy="' + n2(14 + 13.2 * Math.sin(a)) + '" r="1.1" fill="#FFF3C4"/>';
+    }
+    return S('0 0 28 28', b + '<circle cx="14" cy="14" r="5.8" fill="#F5BF3C" stroke="#E0A11B" stroke-width=".8"/>');
+  }
+  function reindeer(x, nose){
+    return '<g transform="translate(' + x + ' 3)">' +
+      '<path d="M6 1 L7 3.4 M7.6 .4 L7.2 2.6 M8.6 1.4 L7.4 2.4" stroke="#7A4A27" stroke-width=".9" stroke-linecap="round"/>' +
+      '<path d="M10.6 14 L8.4 18.5 M12.6 14.6 L12.6 19 M17.6 14.4 L16 19 M20.2 13.8 L22.4 17.6" stroke="#8A5530" stroke-width="1.3" stroke-linecap="round"/>' +
+      '<path d="M10.5 11 L6.4 6" stroke="#A0673B" stroke-width="3.2" stroke-linecap="round"/>' +
+      '<ellipse cx="4.9" cy="5.2" rx="3" ry="2" fill="#A0673B"/>' +
+      '<circle cx="2.2" cy="5.6" r="1.1" fill="' + nose + '"/>' +
+      '<circle cx="5.4" cy="4.5" r=".55" fill="#2B2F3A"/>' +
+      '<ellipse cx="15" cy="11.6" rx="7.2" ry="3.6" fill="#A0673B"/>' +
+      '<path d="M21.8 10.4 L23.6 9.2" stroke="#A0673B" stroke-width="1.4" stroke-linecap="round"/></g>';
+  }
+  function bat(x, y, s){
+    return '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')">' +
+      '<g class="se-flap"><path d="M10 5.6 C7 1.6 3.4 1.6 0 4.4 C2 4.9 3 6 3 7.4 C4.2 6.4 5.8 6.6 6.6 8 C7.6 6.9 9 7 9.6 8.4 Z M10 5.6 C13 1.6 16.6 1.6 20 4.4 C18 4.9 17 6 17 7.4 C15.8 6.4 14.2 6.6 13.4 8 C12.4 6.9 11 7 10.4 8.4 Z" fill="#3B2A5E"/></g>' +
+      '<ellipse cx="10" cy="6.8" rx="1.9" ry="2.7" fill="#2B1F47"/>' +
+      '<path d="M8.7 4.9 L9 3.1 L9.9 4.4 Z M11.3 4.9 L11 3.1 L10.1 4.4 Z" fill="#2B1F47"/></g>';
+  }
+  function camel(x, robe){
+    return '<g transform="translate(' + x + ' 9)">' +
+      '<path d="M11.6 13 L10.6 20.4 M14 13.2 L14.6 20.6 M20 13.2 L19 20.6 M22.4 12.8 L23.6 20.2" stroke="#A97C43" stroke-width="1.2" stroke-linecap="round"/>' +
+      '<path d="M10.6 10.2 L6.4 4.6" stroke="#C99A5B" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<ellipse cx="5" cy="4" rx="2.6" ry="1.5" fill="#C99A5B"/>' +
+      '<path d="M9.5 9 Q12 3.4 15.2 6.4 Q17.2 3.2 20.4 6.6 Q23.4 6.6 24 10.4 Q24.4 13 22 13.4 L11.2 13.4 Q8.4 13.4 9.5 9 Z" fill="#C99A5B"/>' +
+      '<path d="M14.2 6.6 L17.6 -2.4 L21 6.6 Z" fill="' + robe + '"/>' +
+      '<circle cx="17.6" cy="-3.6" r="1.8" fill="#E2B48C"/>' +
+      '<path d="M15.9 -4.9 L16.2 -7.2 L17 -5.7 L17.6 -7.6 L18.2 -5.7 L19 -7.2 L19.3 -4.9 Z" fill="#F5BF3C"/></g>';
+  }
+
+  /* Accesorios para el logo. css = dónde va respecto al logo (en % de su tamaño).
+     top = sobresale hacia arriba (el encabezado deja un poco más de aire). */
+  const ACC = {
+    witchHat: { top:1, css:'width:88%;left:-4%;top:-54%;transform:rotate(-14deg)', svg:S('0 0 40 34',
+      '<ellipse cx="20" cy="28.6" rx="18.4" ry="4.4" fill="#2B1F47"/>' +
+      '<path d="M11 27.5 L18.2 9.5 Q21.5 1.8 30 3.6 Q25 5.6 23.6 11 L29.4 27.5 Z" fill="#3B2A5E"/>' +
+      '<path d="M12.6 23.4 H27.9 L29.1 26.6 H11.3 Z" fill="#F28C28"/>' +
+      '<rect x="17.6" y="23" width="5" height="4" rx=".8" fill="none" stroke="#FFD666" stroke-width="1.3"/>') },
+    santaHat: { top:1, css:'width:90%;left:0%;top:-50%;transform:rotate(-10deg)', svg:S('0 0 40 32',
+      '<path d="M8.5 24 C9.5 13 16.5 5.6 25.6 5 C31 4.7 34.6 8.2 35 13.6 C33 11.6 30.2 11.4 28.8 12.8 C30.4 16.4 31.4 20.2 31.8 24 Z" fill="#E23B3B"/>' +
+      '<path d="M25.6 5 C31 4.7 34.6 8.2 35 13.6 C33.6 11.2 31.4 9 27.4 8.6 Z" fill="#C42B2B"/>' +
+      '<circle cx="35" cy="15.6" r="3.6" fill="#FFFFFF" stroke="#E3E7EF" stroke-width=".8"/>' +
+      '<rect x="6" y="21.6" width="28.6" height="7" rx="3.5" fill="#FFFFFF" stroke="#E3E7EF" stroke-width=".8"/>') },
+    partyHat: { top:1, css:'width:56%;left:10%;top:-60%;transform:rotate(-16deg)', svg:S('0 0 30 38',
+      '<path d="M5 33 L15 5 L25 33 Z" fill="#8E6CD1"/>' +
+      '<path d="M8.6 23 L21.4 23 L22.8 27 L7.2 27 Z" fill="#FFD666"/>' +
+      '<path d="M11.4 15 L18.6 15 L19.3 17 L10.7 17 Z" fill="#FFD666"/>' +
+      '<path d="M4.5 33 Q15 36.5 25.5 33" stroke="#E1594C" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="15" cy="5" r="3.4" fill="#F5BF3C"/>') },
+    crown: { top:1, css:'width:78%;left:6%;top:-46%;transform:rotate(-10deg)', svg:S('0 0 40 30',
+      '<path d="M7 25 L5 10 L13.2 16.5 L20 5.5 L26.8 16.5 L35 10 L33 25 Z" fill="#F5BF3C" stroke="#D9A21B" stroke-width="1" stroke-linejoin="round"/>' +
+      '<rect x="6.6" y="22" width="26.8" height="5" rx="1.6" fill="#E8A33D"/>' +
+      '<circle cx="20" cy="18.6" r="2.1" fill="#E1594C"/><circle cx="12.6" cy="20" r="1.4" fill="#3B82C4"/><circle cx="27.4" cy="20" r="1.4" fill="#25A55F"/>' +
+      '<circle cx="5" cy="10" r="1.9" fill="#FFE29A"/><circle cx="20" cy="5.5" r="1.9" fill="#FFE29A"/><circle cx="35" cy="10" r="1.9" fill="#FFE29A"/>') },
+    rosette: { css:'width:50%;left:64%;top:52%;transform:rotate(10deg)', svg:S('0 0 30 32',
+      '<path d="M10.5 17 L6.5 30 L10.2 28 L12.6 31.5 L15.2 19 Z" fill="#1E8E4E"/>' +
+      '<path d="M19.5 17 L23.5 30 L19.8 28 L17.4 31.5 L14.8 19 Z" fill="#D52B1E"/>' +
+      '<circle cx="15" cy="13" r="10" fill="#1E8E4E"/><circle cx="15" cy="13" r="7" fill="#FFFFFF"/><circle cx="15" cy="13" r="4" fill="#D52B1E"/>') },
+    cempasuchil: { top:1, css:'width:58%;left:62%;top:-26%', svg:flowerSVG(10, '#F28C28', '#F9A63A', '#D9661A', false) },
+    flower:      { top:1, css:'width:56%;left:62%;top:-24%', svg:flowerSVG(6, '#F07AA5', '#F7B2CB', '#FFD666', true) },
+    heart:       { top:1, css:'width:48%;left:66%;top:-24%;transform:rotate(14deg)', svg:S('0 0 30 30',
+      '<path d="' + HEART + '" fill="#E5484D"/><ellipse cx="9.6" cy="10.8" rx="2" ry="2.8" fill="#fff" opacity=".35" transform="rotate(-30 9.6 10.8)"/>') },
+    balloon:     { top:1, css:'width:34%;left:76%;top:-58%;transform:rotate(8deg)', svg:balloonSVG('#3B82C4') },
+    bowtie:      { css:'width:58%;left:21%;top:80%', svg:S('0 0 30 18',
+      '<path d="M2.6 3.2 Q1.4 9 2.6 14.8 L13 10.4 L13 7.6 Z" fill="#2B3A67"/>' +
+      '<path d="M27.4 3.2 Q28.6 9 27.4 14.8 L17 10.4 L17 7.6 Z" fill="#2B3A67"/>' +
+      '<rect x="12" y="5.8" width="6" height="6.4" rx="1.8" fill="#1F2A4D"/>' +
+      '<g fill="#8FB0E0"><circle cx="6" cy="9" r=".95"/><circle cx="9.2" cy="7.4" r=".8"/><circle cx="9.2" cy="10.6" r=".8"/><circle cx="24" cy="9" r=".95"/><circle cx="20.8" cy="7.4" r=".8"/><circle cx="20.8" cy="10.6" r=".8"/></g>') }
+  };
+
+  /* Desfiles que cruzan por arriba del encabezado (de derecha a izquierda) */
+  const PARADES = {
+    sleigh: { h:18, ratio:100 / 30, dur:48, delay:4, bob:1.3, svg:S('0 0 100 30',
+      reindeer(2, '#E23B3B') + reindeer(28, '#6B4423') +
+      '<path d="M17 15 Q30 17 43 15 Q56 18 66 18" stroke="#7A4A27" stroke-width=".7" fill="none"/>' +
+      '<g transform="translate(62 5)">' +
+        '<ellipse cx="25" cy="9" rx="4" ry="3.6" fill="#8A5530"/>' +
+        '<circle cx="15" cy="9.6" r="4.6" fill="#E23B3B"/>' +
+        '<circle cx="13.6" cy="4.2" r="2.4" fill="#F5C6A3"/>' +
+        '<path d="M11.2 4.6 Q13.6 9.8 16 4.8 Z" fill="#FFFFFF"/>' +
+        '<path d="M11.4 3.4 Q13 -1.6 17.4 1.4 L15.8 3.4 Z" fill="#E23B3B"/>' +
+        '<rect x="11" y="2.8" width="5.4" height="1.4" rx=".7" fill="#FFFFFF"/>' +
+        '<circle cx="17.6" cy="1.4" r="1" fill="#FFFFFF"/>' +
+        '<path d="M4 12 L30 12 Q32 12 32 14 L32 17.5 Q32 19.6 29.8 19.6 L9 19.6 Q4.4 19.6 4 15.4 Z" fill="#E23B3B"/>' +
+        '<path d="M.6 21 Q.4 23 2.5 23 L31 23 Q34.5 23 34.5 19.8" stroke="#F5BF3C" stroke-width="1.3" fill="none" stroke-linecap="round"/>' +
+      '</g>') },
+    bats: { h:13, ratio:46 / 16, dur:56, delay:12, bob:.9, svg:S('0 0 46 16', bat(2, 4, 1) + bat(26, 1, .75)) },
+    kings: { h:18, ratio:104 / 30, dur:72, delay:4, bob:.5, svg:S('0 0 104 30',
+      '<g class="se-twinkle"><circle cx="6" cy="6.6" r="5.4" fill="#FFE29A" opacity=".45"/>' +
+      '<path d="M6 2 L7.3 5.3 L10.8 5.5 L8.1 7.7 L9 11.1 L6 9.2 L3 11.1 L3.9 7.7 L1.2 5.5 L4.7 5.3 Z" fill="#F5BF3C"/></g>' +
+      camel(14, '#8E6CD1') + camel(44, '#25A55F') + camel(74, '#E1594C')) }
+  };
+
+  /* Cosas que bajan colgando de un hilo y vuelven a subir */
+  const HANGS = {
+    spider: { w:16, len:32, dur:20, delay:3, swing:3, thread:'rgba(70,76,96,.5)', tw:1, svg:S('0 0 20 22',
+      '<g stroke="#2B2F3A" stroke-width="1.2" fill="none" stroke-linecap="round">' +
+        '<path d="M7 10 Q3 7.4 2 4.2 M6.5 11.6 Q2.6 10.6 1 9.2 M6.6 13.2 Q2.6 14.2 1.4 17.4 M7.6 14.8 Q4.6 17.2 4.2 20.6"/>' +
+        '<path d="M13 10 Q17 7.4 18 4.2 M13.5 11.6 Q17.4 10.6 19 9.2 M13.4 13.2 Q17.4 14.2 18.6 17.4 M12.4 14.8 Q15.4 17.2 15.8 20.6"/></g>' +
+      '<circle cx="10" cy="12.4" r="4.3" fill="#2B2F3A"/><circle cx="10" cy="7.2" r="2.7" fill="#2B2F3A"/>' +
+      '<circle cx="9" cy="6.9" r=".75" fill="#fff"/><circle cx="11" cy="6.9" r=".75" fill="#fff"/>') },
+    pinata: { w:22, len:26, dur:22, delay:6, swing:8, thread:'#B08452', tw:1.6, svg:pinataSVG() }
+  };
+
+  /* Telaraña de esquina (arriba a la derecha) */
+  const CORNERS = {
+    cobweb: S('0 0 60 60', '<g fill="none" stroke="#8A93AC" stroke-width=".8" stroke-linecap="round" opacity=".8">' +
+      '<path d="M60 0 L8.3 21.4 M60 0 L20.4 39.6 M60 0 L38.6 51.7"/>' +
+      '<path d="M44 0 Q47.15 2.55 45.22 6.13 Q49.11 7.28 48.69 11.31 Q52.72 10.89 53.87 14.78 Q57.45 12.85 60 16"/>' +
+      '<path d="M30 0 Q35.28 4.91 32.28 11.49 Q39.06 14.01 38.79 21.21 Q45.99 20.94 48.51 27.72 Q55.09 24.72 60 30"/>' +
+      '<path d="M16 0 Q23.31 7.29 19.34 16.85 Q28.92 20.79 28.89 31.11 Q39.21 31.08 43.15 40.66 Q52.71 36.69 60 44"/></g>')
+  };
+
+  /* Partículas */
+  const PARTS = {
+    snow:       { mode:'fall', n:12, kind:'dot',     colors:['#C6D1E5', '#B3C1DB', '#D2DAEA'], size:[3, 6],  dur:[7, 12], rot:0 },
+    confetti:   { mode:'fall', n:14, kind:'rect',    colors:['#E1594C', '#F5BF3C', '#25D366', '#3B82C4', '#8E6CD1', '#E07A9B'], size:[5, 8], dur:[5, 9], rot:540 },
+    petals:     { mode:'fall', n:10, kind:'petal',   colors:['#F28C28', '#F7A23B', '#E8761E'], size:[6, 9],  dur:[7, 11], rot:300 },
+    petalsPink: { mode:'fall', n:10, kind:'petal',   colors:['#F07AA5', '#F7A8C4', '#E85D8F'], size:[6, 9],  dur:[7, 11], rot:300 },
+    hearts:     { mode:'rise', n:7,  kind:'heart',   colors:['#E5484D', '#F07AA5', '#E07A9B'], size:[8, 12], dur:[8, 12] },
+    balloons:   { mode:'rise', n:6,  kind:'balloon', colors:['#3B82C4', '#E1594C', '#F5BF3C', '#25D366', '#8E6CD1'], size:[9, 12], dur:[9, 13] }
+  };
+
+  /* ---------- Temas (un tema = qué figuritas lleva) ---------- */
+  const SEASON_THEMES = {
+    reyes:     { name:'Día de Reyes',           acc:'crown',       parade:'kings' },
+    amor:      { name:'Amor y Amistad',         acc:'heart',       parts:'hearts' },
+    nino:      { name:'Día del Niño',           acc:'balloon',     parts:'balloons' },
+    madres:    { name:'Día de las Madres',      acc:'flower',      parts:'petalsPink' },
+    padre:     { name:'Día del Padre',          acc:'bowtie' },
+    patrias:   { name:'Fiestas Patrias',        acc:'rosette',     garland:['#1E8E4E', '#FFFFFF', '#D52B1E'] },
+    halloween: { name:'Halloween',              acc:'witchHat',    corner:'cobweb', hang:'spider', parade:'bats' },
+    muertos:   { name:'Día de Muertos',         acc:'cempasuchil', garland:['#E4007C', '#F28C28', '#7C3AED', '#1FA36A', '#F5BF3C'], parts:'petals' },
+    posadas:   { name:'Posadas',                acc:'santaHat',    parade:'sleigh', parts:'snow', hang:'pinata' },
+    navidad:   { name:'Navidad',                acc:'santaHat',    parade:'sleigh', parts:'snow' },
+    anionuevo: { name:'Año Nuevo',              acc:'partyHat',    parts:'confetti' }
+  };
+
+  /* ---------- Fechas por país ----------
+     from/to = [mes, día] (incluidos). Si "from" es mayor que "to", cruza
+     el año nuevo. "when" calcula fechas que cambian cada año. Si dos
+     fechas se enciman, gana la que está primero en la lista. */
+  const SEASON_CALENDARS = {
+    MX: [
+      { theme:'reyes',     from:[1, 3],   to:[1, 6] },
+      { theme:'amor',      from:[2, 10],  to:[2, 14] },
+      { theme:'nino',      from:[4, 27],  to:[4, 30] },
+      { theme:'madres',    from:[5, 7],   to:[5, 10] },
+      { theme:'padre',     when:y => { const d = nthWeekday(y, 6, 0, 3); return [addDays(d, -3), d]; } },   /* 3er domingo de junio */
+      { theme:'patrias',   from:[9, 1],   to:[9, 16] },
+      { theme:'halloween', from:[10, 1],  to:[10, 31] },
+      { theme:'muertos',   from:[11, 1],  to:[11, 2] },
+      { theme:'posadas',   from:[12, 16], to:[12, 24] },
+      { theme:'navidad',   from:[12, 1],  to:[12, 26] },
+      { theme:'anionuevo', from:[12, 27], to:[1, 2] }
+    ],
+    /* Países que aún no tienen su calendario */
+    _otros: [
+      { theme:'navidad',   from:[12, 1],  to:[12, 26] },
+      { theme:'anionuevo', from:[12, 27], to:[1, 2] }
+    ]
+  };
+
+  /* ---------- Fechas ---------- */
+  function dayOnly(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function nthWeekday(y, m, wd, n){
+    const first = new Date(y, m - 1, 1);
+    return new Date(y, m - 1, 1 + ((wd - first.getDay() + 7) % 7) + (n - 1) * 7);
+  }
+  function rangeOf(e, today){
+    const y = today.getFullYear();
+    if(e.when){
+      for(const yy of [y - 1, y]){ const r = e.when(yy); if(today >= r[0] && today <= r[1]) return r; }
+      return null;
+    }
+    let start = new Date(y, e.from[0] - 1, e.from[1]), end = new Date(y, e.to[0] - 1, e.to[1]);
+    if(e.from[0] * 100 + e.from[1] > e.to[0] * 100 + e.to[1]){
+      if(today >= start) end = new Date(y + 1, e.to[0] - 1, e.to[1]);
+      else start = new Date(y - 1, e.from[0] - 1, e.from[1]);
+    }
+    return (today >= start && today <= end) ? [start, end] : null;
+  }
+  function country(){
+    try{ return ((typeof currentUser === 'function' && currentUser()) || {}).country || 'MX'; }catch(e){ return 'MX'; }
+  }
+  function calendar(){ return SEASON_CALENDARS[country()] || SEASON_CALENDARS._otros; }
+  function activeOn(date){
+    const today = dayOnly(date || new Date());
+    for(const e of calendar()){
+      const r = rangeOf(e, today);
+      if(r && SEASON_THEMES[e.theme]) return { id:e.theme, theme:SEASON_THEMES[e.theme], from:r[0], until:r[1] };
+    }
+    return null;
+  }
+  function nextTheme(){
+    const today = dayOnly(new Date());
+    const cur = (activeOn(today) || {}).id;
+    for(let i = 1; i <= 370; i++){
+      const a = activeOn(addDays(today, i));
+      if(a && a.id !== cur) return a;
+    }
+    return null;
+  }
+  function dateLabel(d){ return d.toLocaleDateString('es-MX', { day:'numeric', month:'long' }); }
+
+  /* ---------- ¿Qué se muestra ahorita? ---------- */
+  function previewId(){
+    let v = '';
+    try{ v = sessionStorage.getItem(PV_KEY) || ''; }catch(e){}
+    return (v === 'ninguno' || SEASON_THEMES[v]) ? v : '';
+  }
+  function enabled(){
+    try{ return userPrefs().seasonDecor !== false; }catch(e){ return true; }
+  }
+  function current(){
+    const pv = previewId();
+    if(pv === 'ninguno') return null;
+    if(pv) return { id:pv, theme:SEASON_THEMES[pv], preview:true };
+    return enabled() ? activeOn(new Date()) : null;
+  }
+  function isMenuPage(){
+    return document.body.classList.contains('dm-mode') || (typeof dmRoute === 'function' && !!dmRoute());
+  }
+
+  /* ---------- Armado de la capa del encabezado ---------- */
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function partsHTML(id){
+    const P = PARTS[id]; if(!P) return '';
+    let h = '';
+    for(let i = 0; i < P.n; i++){
+      const s = rnd(P.size[0], P.size[1]), dur = rnd(P.dur[0], P.dur[1]), c = P.colors[i % P.colors.length];
+      const rot = P.rot ? rnd(P.rot * .5, P.rot) * (Math.random() < .5 ? -1 : 1) : 0;
+      let st = 'left:' + n2((i + rnd(.1, .9)) / P.n * 100) + '%;animation-duration:' + n2(dur) + 's;animation-delay:' + n2(-rnd(0, dur)) + 's;--dx:' + n2(rnd(-18, 18)) + 'px;--rot:' + n2(rot) + 'deg;';
+      let inner = '';
+      if(P.kind === 'dot') st += 'width:' + n2(s) + 'px;height:' + n2(s) + 'px;border-radius:50%;background:' + c + ';';
+      else if(P.kind === 'rect') st += 'width:' + n2(s * .55) + 'px;height:' + n2(s) + 'px;border-radius:1px;background:' + c + ';';
+      else if(P.kind === 'petal') st += 'width:' + n2(s * .7) + 'px;height:' + n2(s) + 'px;border-radius:70% 0 70% 0;background:' + c + ';';
+      else if(P.kind === 'heart'){ st += 'width:' + n2(s) + 'px;'; inner = S('0 0 30 30', '<path d="' + HEART + '" fill="' + c + '"/>'); }
+      else if(P.kind === 'balloon'){ st += 'width:' + n2(s) + 'px;'; inner = balloonSVG(c); }
+      h += '<i class="' + (P.mode === 'rise' ? 'se-r' : 'se-p') + '" style="' + st + '">' + inner + '</i>';
+    }
+    return h;
+  }
+  /* Papel picado: cada bandera con su diamante y sus hoyitos */
+  function garlandURI(colors){
+    const W = colors.length * 24;
+    const hole = (cx, cy, r) => 'M' + n2(cx - r) + ' ' + cy + ' a' + r + ' ' + r + ' 0 1 0 ' + 2 * r + ' 0 a' + r + ' ' + r + ' 0 1 0 ' + (-2 * r) + ' 0Z';
+    let b = '<path d="M0 1.8 H' + W + '" stroke="#8A93AC" stroke-width=".7"/>';
+    colors.forEach((c, i) => {
+      const x = i * 24;
+      let d = 'M' + (x + 3) + ' 2 H' + (x + 21) + ' V13';
+      for(let k = 0; k < 6; k++){ const xx = x + 21 - k * 3; d += ' L' + (xx - 1.5) + ' 15.4 L' + (xx - 3) + ' 13'; }
+      d += 'Z M' + (x + 12) + ' 4.6 L' + n2(x + 14.8) + ' 7.5 L' + (x + 12) + ' 10.4 L' + n2(x + 9.2) + ' 7.5Z';
+      d += ' ' + hole(x + 6.4, 5.4, 1) + ' ' + hole(x + 17.6, 5.4, 1) + ' ' + hole(x + 6.4, 9.8, 1) + ' ' + hole(x + 17.6, 9.8, 1);
+      const light = c.toUpperCase() === '#FFFFFF';
+      b += '<path d="' + d + '" fill="' + c + '" fill-rule="evenodd"' + (light ? ' stroke="#D3D9E5" stroke-width=".6"' : '') +
+           ' transform="rotate(' + (i % 2 ? 2.5 : -2.5) + ' ' + (x + 12) + ' 2)"/>';
+    });
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="18" viewBox="0 0 ' + W + ' 18">' + b + '</svg>';
+    return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  }
+  function layerHTML(t){
+    let clip = '', free = '';
+    if(t.garland) clip += '<div class="se-garland"></div>';
+    if(t.parade && PARADES[t.parade]){
+      const p = PARADES[t.parade];
+      clip += '<div class="se-parade se-anim" style="--h:' + p.h + 'px;--w:' + n2(p.h * p.ratio) + 'px;animation-duration:' + p.dur + 's;animation-delay:' + p.delay + 's">' +
+              '<span class="se-bob" style="animation-duration:' + p.bob + 's">' + p.svg + '</span></div>';
+    }
+    if(t.parts) clip += partsHTML(t.parts);
+    if(t.corner && CORNERS[t.corner]) free += '<div class="se-corner">' + CORNERS[t.corner] + '</div>';
+    if(t.hang && HANGS[t.hang]){
+      const h = HANGS[t.hang];
+      free += '<div class="se-hang se-anim" style="width:' + h.w + 'px;--swing:' + h.swing + 'deg">' +
+                '<div class="se-drop" style="--len:' + h.len + 'px;animation-duration:' + h.dur + 's;animation-delay:' + h.delay + 's">' +
+                  '<i class="se-thread" style="background:' + h.thread + ';width:' + h.tw + 'px"></i>' +
+                  '<span class="se-hanger" style="width:' + h.w + 'px;margin-left:' + (-h.w / 2) + 'px">' + h.svg + '</span>' +
+                '</div></div>';
+    }
+    return '<div class="se-clip">' + clip + '</div><div class="se-free">' + free + '</div>';
+  }
+
+  /* ---------- Aplicar ---------- */
+  let appliedKey = null, cur = null;
+  function decorate(){
+    const accId = (cur && cur.theme.acc && ACC[cur.theme.acc]) ? cur.theme.acc : '';
+    document.querySelectorAll('.brand-mark-wrap, #splash .splash-mark, .auth-brand-mark').forEach(el => {
+      const old = el.querySelector(':scope > .season-acc');
+      if(old && old.dataset.t === accId) return;
+      if(old) old.remove();
+      if(!accId) return;
+      const a = ACC[accId];
+      const s = document.createElement('span');
+      s.className = 'season-acc';
+      s.dataset.t = accId;
+      s.setAttribute('aria-hidden', 'true');
+      s.style.cssText = a.css;
+      s.innerHTML = a.svg;
+      el.appendChild(s);
+    });
+  }
+  function apply(force){
+    if(isMenuPage()) return;
+    cur = current();
+    const key = cur ? cur.id + (cur.preview ? '*' : '') : '';
+    if(key !== appliedKey || force){
+      appliedKey = key;
+      const cl = document.body.classList;
+      Array.from(cl).forEach(c => { if(c.indexOf('season-') === 0) cl.remove(c); });
+      const layer = document.getElementById('seasonLayer');
+      if(cur){
+        const t = cur.theme;
+        cl.add('season-on', 'season-' + cur.id);
+        if((t.acc && ACC[t.acc] && ACC[t.acc].top) || t.parade || t.garland) cl.add('season-roomy');
+        if(layer){
+          layer.innerHTML = layerHTML(t);
+          const g = layer.querySelector('.se-garland');
+          if(g) g.style.backgroundImage = garlandURI(t.garland);
+        }
+      }else if(layer) layer.innerHTML = '';
+    }
+    decorate();
+  }
+
+  /* ---------- Configuración › Decoraciones de temporada ---------- */
+  function settingsHTML(){
+    const on = enabled();
+    const pv = previewId();
+    const act = activeOn(new Date());
+    let sub;
+    if(!on) sub = 'Apagadas. Préndelas para ver figuritas en fechas especiales.';
+    else if(act) sub = 'Ahora: ' + act.theme.name + ', hasta el ' + dateLabel(act.until) + '.';
+    else{ const nx = nextTheme(); sub = 'Aparecen solas en fechas especiales' + (nx ? '. La próxima: ' + nx.theme.name + ', desde el ' + dateLabel(nx.from) : '') + '.'; }
+    const ids = [];
+    calendar().forEach(e => { if(ids.indexOf(e.theme) < 0) ids.push(e.theme); });
+    return '<div id="seasonSettings">' +
+      '<div class="toggle-row">' +
+        '<span class="acc-ico gold">' + icon('sparkle') + '</span>' +
+        '<span class="acc-txt"><span class="acc-label">Decoraciones de temporada</span><span class="acc-sub">' + escapeHtml(sub) + '</span></span>' +
+        '<label class="switch"><input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="seasonToggle(this.checked)"><span class="track"></span></label>' +
+      '</div>' +
+      '<div class="season-try">' +
+        '<span class="season-try-k">' + (pv ? 'Vista previa: ' + escapeHtml(pv === 'ninguno' ? 'sin decoración' : SEASON_THEMES[pv].name) + ' · cierra esta ventana para verla' : 'Ver cómo se ve') + '</span>' +
+        '<div class="filter-pill-row">' +
+          ids.map(id => '<button class="filter-chip ' + (pv === id ? 'active' : '') + '" onclick="seasonPreview(\'' + id + '\')">' + escapeHtml(SEASON_THEMES[id].name) + '</button>').join('') +
+          (pv ? '<button class="filter-chip" onclick="seasonPreview(\'\')">' + icx('close') + 'Quitar vista previa</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  function refreshSettings(){ const box = document.getElementById('seasonSettings'); if(box) box.outerHTML = settingsHTML(); }
+  function toggle(on){
+    setPref('seasonDecor', !!on);
+    vibrate(8);
+    apply(true);
+    refreshSettings();
+  }
+  function preview(id){
+    try{ if(id) sessionStorage.setItem(PV_KEY, id); else sessionStorage.removeItem(PV_KEY); }catch(e){}
+    vibrate(8);
+    apply(true);
+    refreshSettings();
+  }
+
+  const _seOpenSettings = openSettings;
+  openSettings = function(){
+    _seOpenSettings.apply(this, arguments);
+    const sheet = document.querySelector('#modal-layer .modal-sheet');
+    if(!sheet) return;
+    const anchor = sheet.querySelector('.btn.ghost.block');
+    if(anchor) anchor.insertAdjacentHTML('beforebegin', settingsHTML());
+  };
+  const _sePaintChrome = paintChrome;
+  paintChrome = function(){ _sePaintChrome.apply(this, arguments); apply(); };
+  const _seRenderAuth = renderAuth;
+  renderAuth = function(){ _seRenderAuth.apply(this, arguments); apply(); };
+
+  window.Season = { apply, preview, toggle, active:activeOn, themes:SEASON_THEMES, calendars:SEASON_CALENDARS };
+  window.seasonPreview = preview;
+  window.seasonToggle = toggle;
+
+  /* ?tema=navidad en la dirección = vista previa (para probar antes de la fecha) */
+  try{
+    const t = new URLSearchParams(location.search).get('tema');
+    if(t === 'hoy') sessionStorage.removeItem(PV_KEY);
+    else if(t && (SEASON_THEMES[t] || t === 'ninguno')) sessionStorage.setItem(PV_KEY, t);
+  }catch(e){}
+
+  apply();
+  /* Si la app se queda abierta de un día para otro, cambia sola de tema */
+  setInterval(() => apply(), 10 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) apply(); });
+})();
 </script>
 </body>
 </html>
