@@ -3521,6 +3521,30 @@
     .navbtn.nav-2l span:last-child{ white-space:normal; line-height:1.15; text-align:center; }
     .tool-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); }
   }
+
+  /* ---------- Nueva venta agrupada por categoría ----------
+     Un título por categoría (emoji, nombre y cuántos productos tiene)
+     y debajo sus productos, con la misma cuadrícula de siempre. */
+  .sale-sec{ margin-bottom:24px; }
+  .sale-sec:last-of-type{ margin-bottom:8px; }
+  .sale-sec-head{ display:flex; align-items:center; gap:10px; margin:0 0 11px; }
+  .sale-sec-head::after{ content:''; flex:1; height:2px; border-radius:2px; margin-left:2px;
+    background:linear-gradient(90deg, var(--border), transparent); }
+  .sale-sec-ico{ width:30px; height:30px; border-radius:10px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1;
+    background:var(--surface);
+    background:color-mix(in srgb, var(--cat) 15%, var(--surface));
+    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--cat) 30%, transparent); }
+  .sale-sec-ico:empty::before{ content:''; width:10px; height:10px; border-radius:50%; background:var(--cat); }
+  .sale-sec-name{ margin:0; font-size:16px; font-weight:800; color:var(--ink); letter-spacing:-.1px; line-height:1.2; }
+  .sale-sec-count{ font-size:11.5px; font-weight:700; color:var(--ink-soft); line-height:1;
+    background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:4px 8px; }
+  @media (min-width:700px){
+    .sale-sec{ margin-bottom:20px; }
+    .sale-sec-head{ margin-bottom:9px; gap:9px; }
+    .sale-sec-ico{ width:26px; height:26px; border-radius:8px; font-size:14px; }
+    .sale-sec-name{ font-size:14.5px; }
+  }
 </style>
 
 </head>
@@ -4936,57 +4960,7 @@ function renderSale(){
         <div class="empty-title">Sin productos aquí</div>
         <div class="empty-text">No hay productos activos en esta categoría.</div>
       </div>
-    `) : `<div class="product-grid">
-      ${list.map(p => {
-        const cat = categoryOf(p.category);
-        const sized = hasSizes(p);
-        const frac = isFracProduct(p);
-        const qty = inCartQty(p.id);
-        const usado = cartStockUse(p.id);   // lo que de verdad se descontará (con tamaños: 0.5 L, 2 L…)
-        const st = stockInfo(p);
-        const agotado = st.level === 'out';
-        const step = frac ? productStep(p) : 1;
-        const sinMas = !sized && st.control && (st.stock - usado) < step - 1e-9;   // ya no quedan libres
-        const tapAction = sized ? `openSizePicker('${p.id}')` : (frac ? `openQtyPad('${p.id}')` : `addToCart('${p.id}')`);
-        const wp = Number(p.wholesalePrice), wm = Number(p.wholesaleMin);
-        return `<div class="product-card ${qty > 0 ? 'in-cart' : ''} ${agotado ? 'is-out' : ''}">
-          ${agotado ? `<span class="pc-flag">Agotado</span>`
-            : (st.level === 'low' ? `<span class="pc-flag low">Quedan ${fmtStock(p, st.stock)}</span>` : '')}
-          <div class="pc-tap" onclick="${tapAction}">
-            <div class="pc-top" style="background:${cat.color}"></div>
-            <div class="pc-photo ${p.image ? '' : 'is-placeholder'}">
-              ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" decoding="async">` : icon('plateSet')}
-            </div>
-            <div class="pc-inner">
-              <div class="pc-cat">${escapeHtml(cat.name)}</div>
-              <div class="pc-name">${escapeHtml(p.name)}</div>
-              ${st.control ? `<div class="pc-stock ${st.level}">${agotado ? 'Sin existencias' : fmtStock(p, st.stock) + ' en existencia'}</div>` : ''}
-              ${(wp > 0 && wm > 0 && !sized) ? `<div class="pc-stock whole">Mayoreo ${formatMoney(wp)} desde ${fmtNum(wm)}</div>` : ''}
-            </div>
-          </div>
-          ${sized ? `
-            <div class="pc-pricebar" onclick="openSizePicker('${p.id}')" style="cursor:pointer;">
-              ${qty > 0
-                ? `<div class="pc-qty-total">${st.control ? fmtStock(p, usado) : fmtNum(qty)} · ${formatMoney(cartAmountForProduct(p.id))}</div>`
-                : `<div class="pc-price">Desde ${formatMoney(Math.min.apply(null, p.sizes.map(s => s.price)))}</div>`}
-            </div>
-          ` : qty > 0 ? `
-            <div class="pc-qtybar">
-              <div class="qty-control mini">
-                <button class="qty-btn" onclick="changeQtyFromGrid('${p.id}', -1)">−</button>
-                <span class="qty-val" ${frac ? `onclick="openQtyPad('${p.id}')" style="cursor:pointer"` : ''}>${frac ? fmtQty(qty, productUnit(p).id) : fmtNum(qty)}</span>
-                <button class="qty-btn" ${sinMas ? 'disabled style="opacity:.35"' : ''} onclick="changeQtyFromGrid('${p.id}', 1)">+</button>
-              </div>
-              <div class="pc-qty-total">${formatMoney(cartAmountForProduct(p.id))}</div>
-            </div>
-          ` : `
-            <div class="pc-pricebar">
-              <div class="pc-price">${formatMoney(p.price)}${mdUnitSuffix(p)}</div>
-            </div>
-          `}
-        </div>`;
-      }).join('')}
-    </div>`;
+    `) : saleGroups(list, categories).map(g => saleSectionHTML(g.cat, g.items)).join('');
 
   const cartCount = cartUnitsCount();
   const totals = computeTotals();
@@ -5038,6 +5012,77 @@ function renderSale(){
       </div>
     ` : ''}
   `;
+}
+
+/* ---------- Nueva venta agrupada por categoría ----------
+   Los productos se muestran en secciones, una por categoría, en el
+   mismo orden que tienen las categorías (Inventarios > Categorías).
+   Un producto nuevo cae solo dentro de la sección de su categoría;
+   lo que no tiene categoría va al final, en "Sin categoría". */
+function saleGroups(list, categories){
+  const groups = categories.map(c => ({ cat:c, items:list.filter(p => p.category === c.id) }));
+  const sueltos = list.filter(p => !categories.some(c => c.id === p.category));
+  if(sueltos.length) groups.push({ cat:UNCATEGORIZED, items:sueltos });
+  return groups.filter(g => g.items.length);
+}
+function saleSectionHTML(cat, items){
+  return `<section class="sale-sec">
+    <div class="sale-sec-head">
+      <span class="sale-sec-ico" style="--cat:${cat.color || '#8A93AC'}">${cat.emoji ? escapeHtml(cat.emoji) : ''}</span>
+      <h2 class="sale-sec-name">${escapeHtml(cat.name)}</h2>
+      <span class="sale-sec-count">${items.length}</span>
+    </div>
+    <div class="product-grid">${items.map(saleCardHTML).join('')}</div>
+  </section>`;
+}
+/** Tarjeta de un producto en Nueva venta (la misma de siempre). */
+function saleCardHTML(p){
+  const cat = categoryOf(p.category);
+  const sized = hasSizes(p);
+  const frac = isFracProduct(p);
+  const qty = inCartQty(p.id);
+  const usado = cartStockUse(p.id);   // lo que de verdad se descontará (con tamaños: 0.5 L, 2 L…)
+  const st = stockInfo(p);
+  const agotado = st.level === 'out';
+  const step = frac ? productStep(p) : 1;
+  const sinMas = !sized && st.control && (st.stock - usado) < step - 1e-9;   // ya no quedan libres
+  const tapAction = sized ? `openSizePicker('${p.id}')` : (frac ? `openQtyPad('${p.id}')` : `addToCart('${p.id}')`);
+  const wp = Number(p.wholesalePrice), wm = Number(p.wholesaleMin);
+  return `<div class="product-card ${qty > 0 ? 'in-cart' : ''} ${agotado ? 'is-out' : ''}">
+    ${agotado ? `<span class="pc-flag">Agotado</span>`
+      : (st.level === 'low' ? `<span class="pc-flag low">Quedan ${fmtStock(p, st.stock)}</span>` : '')}
+    <div class="pc-tap" onclick="${tapAction}">
+      <div class="pc-top" style="background:${cat.color}"></div>
+      <div class="pc-photo ${p.image ? '' : 'is-placeholder'}">
+        ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" decoding="async">` : icon('plateSet')}
+      </div>
+      <div class="pc-inner">
+        <div class="pc-name">${escapeHtml(p.name)}</div>
+        ${st.control ? `<div class="pc-stock ${st.level}">${agotado ? 'Sin existencias' : fmtStock(p, st.stock) + ' en existencia'}</div>` : ''}
+        ${(wp > 0 && wm > 0 && !sized) ? `<div class="pc-stock whole">Mayoreo ${formatMoney(wp)} desde ${fmtNum(wm)}</div>` : ''}
+      </div>
+    </div>
+    ${sized ? `
+      <div class="pc-pricebar" onclick="openSizePicker('${p.id}')" style="cursor:pointer;">
+        ${qty > 0
+          ? `<div class="pc-qty-total">${st.control ? fmtStock(p, usado) : fmtNum(qty)} · ${formatMoney(cartAmountForProduct(p.id))}</div>`
+          : `<div class="pc-price">Desde ${formatMoney(Math.min.apply(null, p.sizes.map(s => s.price)))}</div>`}
+      </div>
+    ` : qty > 0 ? `
+      <div class="pc-qtybar">
+        <div class="qty-control mini">
+          <button class="qty-btn" onclick="changeQtyFromGrid('${p.id}', -1)">−</button>
+          <span class="qty-val" ${frac ? `onclick="openQtyPad('${p.id}')" style="cursor:pointer"` : ''}>${frac ? fmtQty(qty, productUnit(p).id) : fmtNum(qty)}</span>
+          <button class="qty-btn" ${sinMas ? 'disabled style="opacity:.35"' : ''} onclick="changeQtyFromGrid('${p.id}', 1)">+</button>
+        </div>
+        <div class="pc-qty-total">${formatMoney(cartAmountForProduct(p.id))}</div>
+      </div>
+    ` : `
+      <div class="pc-pricebar">
+        <div class="pc-price">${formatMoney(p.price)}${mdUnitSuffix(p)}</div>
+      </div>
+    `}
+  </div>`;
 }
 
 function setSaleCategory(id){ saleCategoryFilter = id; render(); }
