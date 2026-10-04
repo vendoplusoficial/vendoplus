@@ -3545,7 +3545,27 @@
     .sale-sec-ico{ width:26px; height:26px; border-radius:8px; font-size:14px; }
     .sale-sec-name{ font-size:14.5px; }
   }
+  /* ---------- Menú Digital publicado en internet ---------- */
+  .md-pub{ display:flex; align-items:flex-start; gap:10px; margin-top:12px; padding:10px 12px; border-radius:12px;
+    font-size:12.5px; font-weight:600; line-height:1.45; background:var(--surface-alt); color:var(--ink-soft); }
+  .md-pub:empty{ display:none; }
+  .md-pub .md-pub-dot{ width:9px; height:9px; border-radius:50%; background:currentColor; flex-shrink:0; margin-top:5px; }
+  .md-pub.busy .md-pub-dot{ animation:scPulse 1.2s ease-in-out infinite; }
+  .md-pub.ok{ background:var(--success-bg); color:#1F7350; }
+  .md-pub.warn{ background:var(--danger-bg); color:#8A3A32; }
+  .md-pub-txt{ flex:1; min-width:0; }
+  .md-pub-txt b{ display:block; font-size:13px; font-weight:800; }
+  .md-pub button{ flex-shrink:0; border:none; border-radius:999px; padding:6px 12px; font-family:inherit; font-size:12px; font-weight:800;
+    background:#fff; color:inherit; box-shadow:0 1px 3px rgba(22,33,62,.12); }
+  .md-compact .md-pub{ margin-top:10px; }
+  .dm-spin{ width:38px; height:38px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--dm-main, var(--brand));
+    animation:dmSpin .8s linear infinite; margin:0 auto 16px; }
+  @keyframes dmSpin{ to{ transform:rotate(360deg); } }
+  .dm-boot .dm-empty .btn{ margin-top:18px; }
+  .dm-boot .dm-empty .btn svg{ width:17px; height:17px; padding:0; margin:0; background:none; color:inherit; border-radius:0; }
+  .dm-owner-note{ margin-bottom:14px; }
 </style>
+
 
 </head>
 <body>
@@ -12560,6 +12580,7 @@ function mdConfigHTML(cfg){
           <button class="btn ghost" onclick="mdOpenLink()">${icon('external')} Abrir</button>
           <button class="btn ghost" onclick="mdShareLink()">${icon('share')} Compartir</button>
         </div>
+        ${typeof mdPubStatusHTML === 'function' ? mdPubStatusHTML() : ''}
         <p class="md-hint">Este es el link único de tu negocio. Compártelo con tus clientes para que vean tus productos y te manden su pedido por WhatsApp.</p>
       ` : ''}
     </div>
@@ -12638,11 +12659,21 @@ function mdRegenerate(){
     render();
   });
 }
-function mdCopyLink(){ mdCopy(mdLink(mdCfg()), 'Link copiado'); }
-function mdOpenLink(){ window.open(mdLink(mdCfg()), '_blank'); }
+function mdCopyLink(){ if(typeof MenuPub !== 'undefined') MenuPub.run(); mdCopy(mdLink(mdCfg()), 'Link copiado'); }
+function mdOpenLink(){
+  const url = mdLink(mdCfg());
+  /* Si hay cambios sin publicar, primero se publican y luego se abre */
+  if(typeof MenuPub !== 'undefined' && (MenuPub.t || MenuPub.busy)){
+    const w = window.open('', '_blank');
+    MenuPub.run().finally(() => { if(w && !w.closed) w.location.href = url; else window.open(url, '_blank'); });
+    return;
+  }
+  window.open(url, '_blank');
+}
 function mdShareLink(){
   const b = ((currentUser() || {}).business || {});
   const data = { title:(b.name || 'Nuestro menú'), text:'Mira nuestro menú y haz tu pedido por WhatsApp:', url:mdLink(mdCfg()) };
+  if(typeof MenuPub !== 'undefined') MenuPub.run();
   if(navigator.share){ navigator.share(data).catch(() => {}); }
   else mdCopy(data.url, 'Link copiado para compartir');
 }
@@ -12777,7 +12808,10 @@ function mdShortLink(cfg){
   const l = mdLink(cfg);
   return l.length > 40 ? '…/#menu/' + cfg.id : l;
 }
-function mdLink(cfg){ return location.href.split('#')[0] + '#menu/' + encodeURIComponent(cfg.id); }
+function mdLink(cfg){
+  const base = location.protocol === 'file:' ? location.href.split(/[?#]/)[0] : location.origin + location.pathname;
+  return base + '#menu/' + encodeURIComponent(cfg.id);
+}
 
 /* ---------- Utilidades compartidas ---------- */
 function mdCopy(text, okMsg, toastFn){
@@ -14656,6 +14690,7 @@ function mdCompactHTML(cfg){
         <button class="btn ghost" onclick="mdShareLink()">${icon('share')} Compartir</button>
         <button class="btn ghost" onclick="mdSetCfgVisible(true)">${icon('gear')} ${can('gestionarProductos') ? 'Configurar' : 'Detalles'}</button>
       </div>
+      ${typeof mdPubStatusHTML === 'function' ? mdPubStatusHTML() : ''}
     </div>`;
 }
 renderMenuDigital = function(){
@@ -19938,6 +19973,344 @@ bootApp = async function(){
   Cloud.gate();
   Cloud.afterPayment();
 };
+
+</script>
+<script>
+/* =========================================================================
+   MENÚ DIGITAL EN INTERNET
+   -------------------------------------------------------------------------
+   Antes el link del menú leía los productos de la memoria del navegador
+   (localStorage): solo abría en el aparato donde está el punto de venta.
+   En cualquier otro celular salía "Este menú no está disponible".
+
+   Ahora:
+     · El punto de venta publica en Supabase (tabla public_menus) una copia
+       con SOLO lo que el cliente necesita ver: nombre y logo del negocio,
+       color, horario, WhatsApp, IVA, categorías y productos activos.
+       Nunca se publican costos, ventas, clientes, correos ni usuarios.
+     · Se vuelve a publicar sola cuando cambian productos, categorías,
+       existencias, datos del negocio, IVA o la configuración del menú.
+     · El link (#menu/<id>) descarga esa copia de internet, así abre en
+       cualquier celular, y se actualiza sola cada minuto.
+   Requiere correr menu_publico.sql en Supabase una sola vez.
+========================================================================= */
+const MENU_TABLE = 'public_menus';
+const MENU_WATCH = {};
+[MD_CFG_KEY, 'mesa_products', 'mesa_categories', 'mesa_user', POS_CFG_KEY].forEach(k => MENU_WATCH[k] = 1);
+
+/* ---------- Lo que se publica (nada privado) ---------- */
+function mdPublicSnapshot(){
+  const cfg = mdCfg();
+  const u = AUTH.getUser() || {};
+  const b = u.business || {};
+  const pc = posCfg();
+  const cats = DB.getCategories().map(c => ({ id:c.id, name:c.name || '', emoji:c.emoji || '', color:c.color || '' }));
+  const prods = DB.getProducts().filter(p => p && p.active).map(p => {
+    const o = { id:p.id, name:p.name || '', price:Number(p.price) || 0, category:p.category || null, active:true };
+    if(p.description) o.description = String(p.description).slice(0, 200);
+    if(p.image) o.image = p.image;
+    if(p.unit) o.unit = p.unit;
+    if(p.unitStep) o.unitStep = p.unitStep;
+    if(p.sizesOn && Array.isArray(p.sizes) && p.sizes.length){
+      o.sizesOn = true;
+      o.sizeUnit = p.sizeUnit || 'litro';
+      o.sizes = p.sizes.map(z => ({ id:z.id, label:z.label, price:Number(z.price) || 0, unitQty:z.unitQty == null ? null : z.unitQty }));
+    }
+    /* Existencias: para marcar "Agotado" y no dejar pedir de más */
+    if(p.stock !== null && p.stock !== undefined){ o.stock = Number(p.stock); o.minStock = p.minStock == null ? 2 : Number(p.minStock); }
+    else o.stock = null;
+    return o;
+  });
+  return {
+    v:1,
+    cfg:{ paused:!!cfg.paused, color:cfg.color, hours:cfg.hours },
+    wa: mdWhatsappDigits(),
+    biz:{ name:b.name || '', logo:b.logo || u.photo || null, giro:b.giro || '', type:b.type || '', hours:hrsClean(b.hours) },
+    tax:{ taxMode:pc.taxMode, taxRate:pc.taxRate },
+    cats, prods
+  };
+}
+
+/** Errores de la publicación, en palabras claras. */
+function mdPubErr(e){
+  const m = String((e && (e.message || e.error || e.details)) || e || '');
+  const code = (e && e.code) || '';
+  if(code === 'PGRST205' || code === '42P01' || /public_menus/i.test(m) && /(does not exist|could not find|schema cache)/i.test(m) || /permission denied for (table|function)/i.test(m))
+    return { t:'Falta preparar Supabase', s:'Corre el archivo menu_publico.sql en el SQL Editor de Supabase (una sola vez) y toca Reintentar.' };
+  if(code === '42501' || /row-level security/i.test(m))
+    return { t:'Supabase no dejó publicar el menú', s:'Si tu prueba o membresía venció, actívala. Si no, toca «Generar link nuevo» en las opciones del menú.' };
+  if(/failed to fetch|networkerror|network|load failed|timeout/i.test(m))
+    return { t:'Sin conexión a internet', s:'Se publica solo en cuanto vuelva el internet.' };
+  return { t:'No se pudo publicar el menú', s:m.slice(0, 140) || 'Inténtalo otra vez en un momento.' };
+}
+
+/* ---------- Publicación desde el punto de venta ---------- */
+const MenuPub = {
+  t:null, busy:false, again:false, sig:'', state:'idle', at:null, err:null, p:null,
+  canRun(){ return Cloud.ready && !!Cloud.uid && !document.body.classList.contains('dm-mode'); },
+  schedule(ms){
+    if(!this.canRun()) return;
+    clearTimeout(this.t);
+    this.t = setTimeout(() => this.run(), ms == null ? 1500 : ms);
+  },
+  run(force){
+    clearTimeout(this.t); this.t = null;
+    if(!this.canRun()) return Promise.resolve(false);
+    if(this.busy){ this.again = true; return this.p || Promise.resolve(false); }
+    this.busy = true;
+    if(this.state !== 'ok') this.set('busy');
+    this.p = (async () => {
+      try{
+        const cfg = mdCfg();
+        if(!cfg.active || !cfg.id){
+          /* Menú apagado: se quita de internet y el link deja de abrir */
+          if(this.sig !== 'off' || force){
+            const { error } = await Cloud.sb.from(MENU_TABLE).delete().eq('user_id', Cloud.uid);
+            if(error) throw error;
+            this.sig = 'off';
+          }
+          this.set('off');
+          return true;
+        }
+        /* Las fotos se suben a Storage: solo viajan links. Se compara ya con los
+           links, así no se vuelve a publicar cuando una foto del aparato se
+           cambia por su link de Storage (es la misma foto). */
+        const data = await Cloud.photos(mdPublicSnapshot());
+        const sig = cfg.id + '|' + JSON.stringify(data);
+        if(sig === this.sig && !force){ this.set('ok'); return true; }
+        const now = new Date().toISOString();
+        const { error } = await Cloud.sb.from(MENU_TABLE).upsert({ id:cfg.id, user_id:Cloud.uid, data, updated_at:now });
+        if(error) throw error;
+        /* Si se generó un link nuevo, el anterior deja de abrir */
+        await Cloud.sb.from(MENU_TABLE).delete().eq('user_id', Cloud.uid).neq('id', cfg.id);
+        this.sig = sig; this.at = now; this.err = null;
+        this.set('ok');
+        return true;
+      }catch(e){
+        console.error('Vendo plus · menú digital', e);
+        this.err = mdPubErr(e);
+        this.set('error');
+        clearTimeout(this.t);
+        this.t = setTimeout(() => this.run(), 30000);   /* se reintenta solo */
+        return false;
+      }finally{
+        this.busy = false;
+        if(this.again){ this.again = false; setTimeout(() => this.run(), 60); }
+      }
+    })();
+    return this.p;
+  },
+  set(state){ this.state = state; mdPubRefresh(); }
+};
+
+function mdLinkIsLocal(){
+  return location.protocol === 'file:' || /^(localhost|127\.|0\.0\.0\.0|\[?::1\]?$|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname);
+}
+function mdPubStatusHTML(){
+  const cfg = mdCfg();
+  if(!cfg.active) return '<div class="md-pub" id="mdPubStatus"></div>';
+  let cls = '', t = '', s = '', btn = '';
+  if(!Cloud.ready){
+    cls = 'warn'; t = 'Este link solo abre en este aparato';
+    s = 'Falta conectar Supabase (VENDO_CONFIG) para que tus clientes vean tu menú desde su celular.';
+  }else if(mdLinkIsLocal()){
+    cls = 'warn'; t = 'Este link apunta a tu computadora';
+    s = 'Abre ' + APP_NAME + ' desde la dirección donde lo publicaste (https://…) y comparte ese link.';
+  }else if(MenuPub.state === 'ok'){
+    cls = 'ok'; t = 'Publicado en internet';
+    s = 'Tus clientes lo abren desde cualquier celular' + (MenuPub.at ? ' · actualizado ' + mdiAgo(MenuPub.at) : '') + '.';
+  }else if(MenuPub.state === 'error'){
+    const e = MenuPub.err || mdPubErr('');
+    cls = 'warn'; t = e.t; s = e.s;
+    btn = `<button onclick="MenuPub.run(true)">Reintentar</button>`;
+  }else{
+    cls = 'busy'; t = 'Publicando tu menú…'; s = 'En unos segundos tus clientes ya lo pueden abrir.';
+  }
+  return `<div class="md-pub ${cls}" id="mdPubStatus" role="status"><span class="md-pub-dot"></span><span class="md-pub-txt"><b>${t}</b>${escapeHtml(s)}</span>${btn}</div>`;
+}
+function mdPubRefresh(){
+  const el = document.getElementById('mdPubStatus');
+  if(el) el.outerHTML = mdPubStatusHTML();
+}
+
+/* Cada cambio en lo que ve el cliente programa una publicación */
+(function(){
+  const prev = Store._changed;
+  Store._changed = function(k){ prev.call(this, k); if(MENU_WATCH[k]) MenuPub.schedule(); };
+  window.addEventListener('online', () => { if(MenuPub.state === 'error' || MenuPub.t) MenuPub.run(); });
+  window.addEventListener('pagehide', () => { if(MenuPub.t) MenuPub.run(); });
+})();
+
+/* Al abrir la app y al iniciar sesión: se publica lo que haya */
+(function(){
+  const prevBoot = bootApp;
+  bootApp = async function(){ const r = await prevBoot.apply(this, arguments); MenuPub.schedule(500); return r; };
+  const prevLogin = Cloud.afterLogin;
+  Cloud.afterLogin = async function(){ const r = await prevLogin.apply(this, arguments); MenuPub.sig = ''; MenuPub.schedule(500); return r; };
+  const prevLogout = doLogout;
+  doLogout = async function(){ clearTimeout(MenuPub.t); MenuPub.t = null; MenuPub.sig = ''; MenuPub.state = 'idle'; return prevLogout.apply(this, arguments); };
+})();
+
+/* =========================================================
+   EL LINK DEL CLIENTE: el menú se descarga de internet
+========================================================= */
+const DMR = { on:false, over:{}, cfg:null, biz:null, wa:'', updated:'', note:null };
+const DMR_KEYS = new Set(['mesa_products', 'mesa_categories', POS_CFG_KEY]);
+
+/** Descarga el menú publicado. ok | missing (no existe o no se puede ver) | error (sin internet). */
+async function dmrFetch(id){
+  const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = setTimeout(() => { if(ctrl) ctrl.abort(); }, 12000);
+  const key = VENDO_CONFIG.SUPABASE_ANON_KEY;
+  try{
+    const url = VENDO_CONFIG.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/' + MENU_TABLE +
+                '?select=id,data,updated_at&limit=1&id=eq.' + encodeURIComponent(id);
+    const r = await fetch(url, {
+      headers:{ apikey:key, Authorization:'Bearer ' + key, Accept:'application/json' },
+      cache:'no-store', signal: ctrl ? ctrl.signal : undefined
+    });
+    if(!r.ok){
+      let body = null; try{ body = await r.json(); }catch(e){}
+      /* 4xx = la tabla no existe o no hay permiso: no se arregla reintentando */
+      if(r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429) return { status:'missing', setup:true, err:body };
+      return { status:'error', err: body || { message:'HTTP ' + r.status } };
+    }
+    const rows = await r.json();
+    return (Array.isArray(rows) && rows[0]) ? { status:'ok', row:rows[0] } : { status:'missing' };
+  }catch(e){
+    return { status:'error', err:e };
+  }finally{ clearTimeout(timer); }
+}
+
+function dmrApply(row){
+  const d = (row && row.data) || {};
+  DMR.updated = row ? String(row.updated_at || 'x') : 'none';
+  DMR.cfg = row ? Object.assign({}, d.cfg || {}, { active:true, id:row.id }) : { active:false, id:null };
+  DMR.biz = (row && d.biz) || {};
+  DMR.wa = String(d.wa || '').replace(/\D/g, '');
+  DMR.over = {
+    mesa_products: Array.isArray(d.prods) ? d.prods : [],
+    mesa_categories: Array.isArray(d.cats) ? d.cats : []
+  };
+  DMR.over[POS_CFG_KEY] = d.tax || undefined;
+}
+
+/** A partir de aquí, la página del menú lee lo descargado y no la memoria del navegador. */
+function dmrInstall(sameBiz){
+  if(DMR.on) return;
+  DMR.on = true;
+  const peek = Store.peek;
+  Store.peek = function(key, fb){
+    if(DMR_KEYS.has(key)){ const v = DMR.over[key]; return v === undefined ? fb : v; }
+    return peek.call(this, key, fb);
+  };
+  mdCfg = function(){ const c = Object.assign(mdDefaultCfg(), DMR.cfg || {}); c.hours = mdCleanHours(c.hours); return c; };
+  currentUser = function(){ return { business:Object.assign({}, DMR.biz || {}), photo:null, prefs:{} }; };
+  mdWhatsappDigits = function(){ return DMR.wa || ''; };
+  dmSig = function(){ return DMR.updated || ''; };
+  /* En el celular de un cliente no se guardan pedidos (solo en el aparato del negocio) */
+  if(!sameBiz) mdiReceive = function(o){ return { order:o, isNew:true }; };
+}
+
+/* Aviso solo para el dueño, cuando abre su link en el aparato del negocio */
+(function(){
+  const base = dmRender;
+  dmRender = function(){
+    base.apply(this, arguments);
+    if(!DMR.note) return;
+    const v = document.querySelector('#dmRoot .dm-view');
+    if(v) v.insertAdjacentHTML('afterbegin',
+      `<div class="dm-banner dm-owner-note">${icon('alert')}<span><b>${escapeHtml(DMR.note.t)}</b>${escapeHtml(DMR.note.s)}</span></div>`);
+  };
+})();
+
+function dmrBootScreen(kind, retry){
+  let el = document.getElementById('dmBoot');
+  if(!kind){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement('div'); el.id = 'dmBoot'; el.className = 'dm dmx dm-boot'; document.body.appendChild(el); }
+  el.innerHTML = kind === 'loading'
+    ? `<main class="dm-view"><div class="dm-empty" role="status"><div class="dm-spin"></div><h2>Cargando el menú…</h2></div></main>`
+    : `<main class="dm-view"><div class="dm-empty">${icon('alert')}
+         <h2>No pudimos cargar el menú</h2>
+         <p>Revisa tu conexión a internet e inténtalo otra vez.</p>
+         <button class="btn dm-green" id="dmRetry">${icon('refresh')} Reintentar</button>
+       </div></main>`;
+  const b = document.getElementById('dmRetry');
+  if(b && retry) b.onclick = retry;
+}
+
+/** Sin internet: se queda en la pantalla de error hasta que cargue. */
+function dmrUntilLoaded(id){
+  return new Promise(resolve => {
+    const intento = async () => {
+      dmrBootScreen('loading');
+      const r = await dmrFetch(id);
+      if(r.status !== 'error'){ window.removeEventListener('online', intento); resolve(r); return; }
+      dmrBootScreen('error', intento);
+    };
+    window.addEventListener('online', intento);
+    dmrBootScreen('error', intento);
+  });
+}
+
+function dmrStartPoll(id){
+  let busy = false;
+  const tick = async () => {
+    if(document.hidden || busy) return;
+    busy = true;
+    try{
+      const r = await dmrFetch(id);
+      if(r.status === 'error') return;
+      const upd = r.status === 'ok' ? String(r.row.updated_at || 'x') : 'none';
+      if(upd === DMR.updated) return;
+      dmrApply(r.status === 'ok' ? r.row : null);
+      dm.sig = dmSig();
+      const y = window.scrollY;
+      dmRender(); window.scrollTo(0, y);
+      if(dm.sheet === 'cart') dmOpenSheet('cart');
+    }finally{ busy = false; }
+  };
+  setInterval(tick, 60000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) tick(); });
+  window.addEventListener('online', tick);
+}
+
+(function(){
+  const bootLocal = bootMenu;
+  bootMenu = async function(route){
+    /* Sin Supabase configurado: como antes (solo abre en este aparato) */
+    if(!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY)) return bootLocal(route);
+    document.body.classList.add('dm-mode');
+    const sp = document.getElementById('splash'); if(sp) sp.remove();
+
+    let localCfg = null;
+    try{ localCfg = JSON.parse(localStorage.getItem(MD_CFG_KEY) || 'null'); }catch(e){}
+    const sameBiz = !!(localCfg && localCfg.id === route.id);     /* ¿es el aparato del negocio? */
+    const localOk = sameBiz && !!localCfg.active;
+
+    dmrBootScreen('loading');
+    let r = await dmrFetch(route.id);
+    if(r.status === 'error' && !localOk) r = await dmrUntilLoaded(route.id);
+    dmrBootScreen(null);
+
+    if(r.status === 'ok'){
+      dmrApply(r.row); dmrInstall(sameBiz); bootLocal(route); dmrStartPoll(route.id);
+      return;
+    }
+    if(localOk){
+      /* El dueño abrió su link en su aparato: se le enseña su copia, pero se le avisa */
+      DMR.note = r.status === 'error'
+        ? { t:'Sin internet: estás viendo la copia de este aparato', s:'Tus clientes ven el menú que se publicó la última vez.' }
+        : (r.setup
+          ? { t:'Tus clientes todavía no pueden ver este menú', s:'Falta preparar Supabase: corre menu_publico.sql en el SQL Editor. Por ahora solo se ve en este aparato.' }
+          : { t:'Tus clientes todavía no pueden ver este menú', s:'Lo ves porque estás en el aparato del negocio, pero aún no se publica. Abre ' + APP_NAME + ' › Menú Digital para ver por qué.' });
+      bootLocal(route);
+      return;
+    }
+    /* No existe o está desactivado: "no disponible", sin datos de este navegador */
+    dmrApply(null); dmrInstall(sameBiz); bootLocal(route); dmrStartPoll(route.id);
+  };
+})();
 
 </script>
 <script>

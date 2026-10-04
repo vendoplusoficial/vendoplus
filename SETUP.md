@@ -5,7 +5,8 @@ Ya **no se usa Twilio ni SMS**: todos los códigos (crear cuenta, recuperar cont
 
 ## 1. Supabase
 1. Crea un proyecto en supabase.com.
-2. **SQL Editor** → pega `schema.sql` → Run. (Crea tablas, seguridad y el bucket de fotos.)
+2. **SQL Editor** → pega `schema.sql` → Run. (Crea tablas, seguridad, el bucket de fotos y el Menú Digital público.)
+   > **¿Ya tenías el proyecto creado?** No vuelvas a correr `schema.sql`: corre solo **`menu_publico.sql`** (una vez). Sin eso, el link del Menú Digital solo abre en tu aparato y a tus clientes les sale "Este menú no está disponible".
 3. **Authentication → Sign In / Providers**:
    - **Email**: actívalo y deja **Confirm email** encendido.
    - **Email OTP Length**: **6** (si pones otro número, cambia también `CODIGO_DIGITOS` en `index.html`).
@@ -104,6 +105,7 @@ Si no llega nada: en Supabase revisa **Logs → Auth**. Lo más común es la cla
 - **Cambiar contraseña:** Mi cuenta → Seguridad → Cambiar contraseña (código al correo).
 - **Olvidé mi NIP:** el código le llega al correo del Dueño (sirve para el NIP de cualquiera del equipo).
 - **Datos:** todo se guarda en Supabase; las fotos en Storage (bucket `fotos`).
+- **Menú Digital:** al activarlo, el punto de venta publica una copia en la tabla `public_menus` (nombre, logo, color, horario, WhatsApp, IVA y productos activos; **nunca** costos, ventas, clientes ni correos). Se vuelve a publicar sola cuando cambias productos, precios, existencias o datos del negocio. Quien abre el link la descarga de ahí, desde cualquier celular. En *Menú Digital* ves si dice **Publicado en internet** o por qué no se pudo. Si la cuenta se pausa por falta de pago, el menú también deja de verse.
 - **Cobro:** al terminar el mes gratis la cuenta se pausa y sale la pantalla de pago con Stripe ($149 MXN al mes). Al pagar, el webhook la reactiva sola (la app revisa cada 30 s, no hace falta recargar). Si no se renueva, vuelve a pausarse. El bloqueo también lo pone Supabase: sin acceso, no se puede guardar nada ni subir fotos aunque alguien se brinque la pantalla.
 - **Datos que ya tenías en el navegador:** al crear tu cuenta nueva se suben solos a Supabase.
 - **Cuentas de prueba creadas antes con celular:** ya no pueden entrar; bórralas en *Authentication → Users* y crea la cuenta con tu correo.
