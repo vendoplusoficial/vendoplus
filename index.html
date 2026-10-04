@@ -10607,7 +10607,7 @@ function renderAccount(){
         <span class="acc-ico blue">${icon('gear')}</span>
         <span class="acc-txt">
           <span class="acc-label">Configuración</span>
-          <span class="acc-sub">${soyDueno ? 'Vibración, datos del ticket e impresión' : 'Vibración e impresión'}</span>
+          <span class="acc-sub">Vibración y decoraciones de temporada</span>
         </span>
         <span class="acc-chev">${icon('chevronRight')}</span>
       </button>
@@ -10988,17 +10988,6 @@ function openSettings(){
       </span>
       <label class="switch"><input type="checkbox" ${p.haptics ? 'checked':''} onchange="setPref('haptics', this.checked)"><span class="track"></span></label>
     </div>
-    ${isOwner() ? `<div class="toggle-row">
-      <span class="acc-ico gold">${icon('receipt')}</span>
-      <span class="acc-txt">
-        <span class="acc-label">Mostrar mi negocio en el ticket</span>
-        <span class="acc-sub">Usa el nombre y la dirección que registraste.</span>
-      </span>
-      <label class="switch"><input type="checkbox" ${p.bizOnTicket ? 'checked':''} onchange="setPref('bizOnTicket', this.checked)"><span class="track"></span></label>
-    </div>` : ''}
-    <button class="btn ghost block" style="margin-top:16px;" onclick="openPrintSettings()">
-      ${icon('print')} Impresi\u00f3n de tickets
-    </button>
     <div class="sheet-actions">
       <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
     </div>
@@ -12496,7 +12485,7 @@ function ticketBusiness(){
   const u = (typeof currentUser === 'function') ? currentUser() : null;
   const p = userPrefs();
   const b = (u && u.business) || {};
-  if(p.bizOnTicket && b.name){
+  if(b.name){   /* el nombre del negocio siempre va en el ticket */
     return {
       title: b.name.toUpperCase(),
       sub: (b.type || 'Negocio') + ' · Ticket de venta',
@@ -13816,7 +13805,7 @@ ticketBusiness = function(){
   const u = (typeof currentUser === 'function') ? currentUser() : null;
   const p = userPrefs();
   const b = (u && u.business) || {};
-  if(p.bizOnTicket && b.name){
+  if(b.name){   /* el nombre del negocio siempre va en el ticket */
     const g = giroOf(b);
     return { title: b.name.toUpperCase(), sub: (g ? g.label : (b.type || 'Negocio')) + (bizKind(b) === 'servicios' ? ' · Ticket de servicio' : ' · Ticket de venta'), address: b.address ? escapeHtml(b.address) : '' };
   }
@@ -21109,7 +21098,7 @@ function dmrStartPoll(id){
     _seOpenSettings.apply(this, arguments);
     const sheet = document.querySelector('#modal-layer .modal-sheet');
     if(!sheet) return;
-    const anchor = sheet.querySelector('.btn.ghost.block');
+    const anchor = sheet.querySelector('.sheet-actions');
     if(anchor){
       anchor.insertAdjacentHTML('beforebegin', settingsHTML());
       revealCard(document.getElementById('seasonSettings'));
