@@ -2677,7 +2677,9 @@
   .qe-item-row > b{ font-size:14px; font-weight:800; white-space:nowrap; padding-bottom:10px; min-width:74px; text-align:right; }
 
   /* ---------- Cotización: firmas e IVA incluido ---------- */
-  .inv-sign{ display:grid; grid-template-columns:1fr 1fr; gap:60px; margin:56px 30px 0; }
+  /* Las firmas van hasta abajo de la hoja, justo arriba del pie */
+  .inv-sign{ display:grid; grid-template-columns:1fr 1fr; gap:60px; margin:auto 30px 0; padding:64px 0 28px; }
+  .inv-sign + .inv-end{ margin-top:0; }
   .inv-sign-box{ text-align:center; }
   .inv-sign-line{ border-top:1.5px solid #1B2033; margin-bottom:8px; }
   .inv-sign-box b{ display:block; font-size:12.5px; color:#12162B; }
@@ -4246,7 +4248,8 @@ Object.assign(ICONS, {
   hash: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4 8 20M16 4l-1.5 16M4.5 9h15M4 15h15"/></svg>`,
   shop: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>`
 });
-ICONS.clipboard = ICONS.paste;
+/* Ícono de cotización (antes se copiaba de "paste" antes de que existiera y salía vacío) */
+ICONS.clipboard = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="4.5" width="14" height="16" rx="2.2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4.5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 function icx(name){ return '<span class="ic">' + icon(name) + '</span>'; }
 function catDot(c){ return '<span class="cat-dot" style="background:' + ((c && c.color) || '#8A93AC') + '"></span>'; }
 
