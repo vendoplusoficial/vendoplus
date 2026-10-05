@@ -5,8 +5,10 @@ Ya **no se usa Twilio ni SMS**: todos los códigos (crear cuenta, recuperar cont
 
 ## 1. Supabase
 1. Crea un proyecto en supabase.com.
-2. **SQL Editor** → pega `schema.sql` → Run. (Crea tablas, seguridad, el bucket de fotos y el Menú Digital público.)
-   > **¿Ya tenías el proyecto creado?** No vuelvas a correr `schema.sql`: corre solo **`menu_publico.sql`** (una vez). Sin eso, el link del Menú Digital solo abre en tu aparato y a tus clientes les sale "Este menú no está disponible".
+2. **SQL Editor** → pega `schema.sql` → Run. (Crea tablas, seguridad, el bucket de fotos, el Menú Digital público y los pedidos del menú.)
+   > **¿Ya tenías el proyecto creado?** No vuelvas a correr `schema.sql`. Corre solo lo que te falte, una vez cada uno:
+   > - **`menu_publico.sql`**: sin esto, el link del Menú Digital solo abre en tu aparato y a tus clientes les sale "Este menú no está disponible".
+   > - **`menu_pedidos.sql`** (nuevo): sin esto, los pedidos que hacen tus clientes desde su celular no llegan solos a la caja (solo por WhatsApp). En *Menú Digital › Pedidos entrantes* sale **Recibiendo pedidos en línea** cuando ya quedó.
 3. **Authentication → Sign In / Providers**:
    - **Email**: actívalo y deja **Confirm email** encendido.
    - **Email OTP Length**: **6** (si pones otro número, cambia también `CODIGO_DIGITOS` en `index.html`).
@@ -106,6 +108,14 @@ Si no llega nada: en Supabase revisa **Logs → Auth**. Lo más común es la cla
 - **Olvidé mi NIP:** el código le llega al correo del Dueño (sirve para el NIP de cualquiera del equipo).
 - **Datos:** todo se guarda en Supabase; las fotos en Storage (bucket `fotos`).
 - **Menú Digital:** al activarlo, el punto de venta publica una copia en la tabla `public_menus` (nombre, logo, color, horario, WhatsApp, IVA y productos activos; **nunca** costos, ventas, clientes ni correos). Se vuelve a publicar sola cuando cambias productos, precios, existencias o datos del negocio. Quien abre el link la descarga de ahí, desde cualquier celular. En *Menú Digital* ves si dice **Publicado en internet** o por qué no se pudo. Si la cuenta se pausa por falta de pago, el menú también deja de verse.
+- **Pedidos del Menú Digital:** cuando el cliente toca *Confirmar*, su celular manda el pedido a la tabla `menu_orders` (por la función `submit_menu_order`) y luego abre WhatsApp como siempre. La caja lo recibe al instante (Realtime) y además revisa cada 20 s; entra a *Pedidos entrantes* como **Nuevo**, con aviso. Los precios se toman del catálogo de la caja, así que nadie puede mandar precios inventados. El cliente solo puede *mandar* pedidos: no puede leer ni cambiar los de nadie. *Pegar pedido de WhatsApp* sigue funcionando y no duplica.
+- **Impresora térmica** (*Mi cuenta › Impresión de tickets*): se guarda en cada aparato y se reconecta sola al abrir la app y al regresar a ella (Chrome corta el Bluetooth cada vez que cambias de app o de pestaña). Si cerraste la página, al imprimir el primer ticket Chrome puede pedir **un toque** en la ventanita, que ya sale con tu impresora: **ya no hay que borrarla y volverla a agregar**. Formas de conectar:
+  - **Bluetooth BLE**: Chrome/Edge en Android, PC y Mac.
+  - **Bluetooth clásico**: Chrome en Android (versión 137 o más nueva) y en PC/Mac. Vincula la impresora primero en los ajustes de Bluetooth del aparato (PIN casi siempre `0000` o `1234`).
+  - **USB**: Chrome/Edge en PC, Mac y Android con cable OTG. En Windows, si ya instalaste el driver de la impresora, usa **Puerto COM** o el diálogo de impresión.
+  - **RawBT** (Android): app gratis que imprime en casi cualquier térmica, incluidas las de Wi-Fi.
+  - **Wi-Fi**: en la app de iPhone (puerto 9100). Un navegador no puede abrir ese puerto.
+  - **iPhone**: Safari no tiene Bluetooth para páginas web. Usa la app (plugin `MesaPrinter`, solo impresoras BLE o Wi-Fi) o el navegador Bluefy. En la app, agrega a `Info.plist`: `NSBluetoothAlwaysUsageDescription` y `NSLocalNetworkUsageDescription`.
 - **Cobro:** al terminar el mes gratis la cuenta se pausa y sale la pantalla de pago con Stripe ($149 MXN al mes). Al pagar, el webhook la reactiva sola (la app revisa cada 30 s, no hace falta recargar). Si no se renueva, vuelve a pausarse. El bloqueo también lo pone Supabase: sin acceso, no se puede guardar nada ni subir fotos aunque alguien se brinque la pantalla.
 - **Datos que ya tenías en el navegador:** al crear tu cuenta nueva se suben solos a Supabase.
 - **Cuentas de prueba creadas antes con celular:** ya no pueden entrar; bórralas en *Authentication → Users* y crea la cuenta con tu correo.

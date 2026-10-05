@@ -818,6 +818,14 @@
     background:var(--danger-bg); color:var(--accent-2);
   }
   .pr-state.on{ background:var(--success-bg); color:var(--success); }
+  .pr-state.wait{ background:var(--surface-alt); color:var(--ink-soft); }
+  .pr-state.wait .pr-dot{ animation:prPulse 1s ease-in-out infinite; }
+  @keyframes prPulse{ 50%{ opacity:.25; } }
+  .pr-item .acc-txt{ flex:1; min-width:0; }
+  .pr-item .acc-chev{ margin-left:auto; color:var(--ink-faint); display:flex; flex-shrink:0; }
+  .pr-item .acc-chev svg{ width:16px; height:16px; }
+  button.pr-item{ cursor:pointer; font:inherit; }
+  .toast.toast-wrap .toast-sub{ white-space:normal; max-width:270px; overflow:visible; }
   .pr-dot{ width:7px; height:7px; border-radius:50%; background:currentColor; }
   .pr-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
   .pr-actions .btn{ flex:1 1 45%; padding:11px 10px; font-size:13px; min-width:0; }
@@ -1143,7 +1151,7 @@
   .auth-illu{ display:flex; justify-content:center; margin:6px 0 28px; }
   .auth-illu svg{ width:190px; height:190px; }
 
-  /* ---- Oferta de bienvenida: 3 meses gratis ---- */
+  /* ---- Oferta de bienvenida: 1 mes gratis ---- */
   .trial-badge{
     display:inline-flex; align-items:center; gap:6px;
     background:var(--accent-soft); color:#8A6A18;
@@ -1162,6 +1170,8 @@
   .trial-card-row:last-child{ border-bottom:none; }
   .trial-card-row b{ color:var(--ink); font-size:15px; font-weight:800; }
   .trial-card-row.highlight b{ color:#8A6A18; }
+  .trial-card-row small{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-faint); margin-top:1px; }
+  .trial-fine{ font-size:12.5px; font-weight:600; color:var(--ink-soft); line-height:1.5; margin:10px 2px 0; }
 
   .auth-foot{
     text-align:center; font-size:14px; font-weight:600;
@@ -3553,6 +3563,7 @@
   .md-pub{ display:flex; align-items:flex-start; gap:10px; margin-top:12px; padding:10px 12px; border-radius:12px;
     font-size:12.5px; font-weight:600; line-height:1.45; background:var(--surface-alt); color:var(--ink-soft); }
   .md-pub:empty{ display:none; }
+  #mdiCloudStatus.md-pub{ margin:0 0 12px; }
   .md-pub .md-pub-dot{ width:9px; height:9px; border-radius:50%; background:currentColor; flex-shrink:0; margin-top:5px; }
   .md-pub.busy .md-pub-dot{ animation:scPulse 1.2s ease-in-out infinite; }
   .md-pub.ok{ background:var(--success-bg); color:#1F7350; }
@@ -6806,15 +6817,17 @@ function resolveSale(venta){
   return sale;
 }
 
-/** Puerta de entrada de SIEMPRE. Si hay una impresora fisica conectada
-    manda el ticket por ESC/POS; si no, usa el dialogo del navegador. */
+/** Puerta de entrada de SIEMPRE. Si hay una impresora fisica guardada
+    manda el ticket por ESC/POS (si se desconecto, se vuelve a conectar
+    sola con este mismo toque); si no hay, usa el dialogo del navegador. */
 function printTicket(venta){
   const sale = resolveSale(venta);
   if(!sale){ toast('No encontramos ese ticket'); return; }
   vibrate(HAPTIC_PRINT);
-  if(typeof printerIsConnected === 'function' && printerIsConnected()){
-    printerPrintSale(sale).then(function(ok){
-      if(!ok) printTicketBrowser(sale);
+  if(typeof printerReady === 'function' && printerReady()){
+    printerPrintSale(sale).then(function(r){
+      /* La impresora no contesto: sale el dialogo del sistema para no quedarse sin ticket */
+      if(r === 'fail') setTimeout(function(){ printTicketBrowser(sale); }, 900);
     });
     return;
   }
@@ -6866,47 +6879,89 @@ function printTestTicket(){ vibrate(HAPTIC_PRINT); printTicketBrowser(printDemoS
    copias, papel extra y mensaje final).
 
    Nada aqui simula una conexion: el estado "Conectada" sale
-   del objeto real (GATT / interfaz USB / puente nativo). Si
-   no hay comunicacion real, dice Desconectada.
+   del objeto real (GATT, puerto serie, interfaz USB o puente
+   nativo). Si no hay comunicacion real, dice Desconectada.
 
-   Rutas reales de impresion, en orden:
-     1) Puente nativo (Capacitor)  -> window.MesaPrinter
-     2) Web Bluetooth (BLE GATT)   -> Chrome/Edge Android y PC
-     3) WebUSB                     -> Chrome PC y Android (OTG)
-     4) Wi-Fi                      -> puente nativo o agente HTTP
-     5) Si no hay ninguna          -> window.print() de siempre
+   Rutas reales, segun lo que deja cada aparato:
+     · App de iPhone (puente nativo) ... Bluetooth BLE y Wi-Fi (puerto 9100)
+     · Bluetooth BLE (Web Bluetooth) ... Chrome/Edge en Android, PC y Mac; Bluefy en iPhone
+     · Bluetooth clasico (Web Serial) .. Chrome 117+ en PC/Mac y Chrome 137+ en Android
+     · USB (WebUSB) .................... Chrome/Edge en PC, Mac y Android con cable OTG
+     · USB puerto COM (Web Serial) ..... Chrome/Edge en PC y Mac
+     · Wi-Fi ........................... app nativa, o agente local si la pagina no es https
+     · App RawBT (Android) ............. cualquier impresora que esa app maneje (Bluetooth
+                                         clasico o BLE, USB, Wi-Fi o red)
+     · Si nada de eso se puede ......... dialogo de impresion del sistema (window.print)
+
+   Reconexion (lo que antes obligaba a borrar la impresora):
+     · Chrome CORTA el Bluetooth BLE cuando la pagina se oculta
+       (cambias de app o de pestana). Al volver se reconecta solo.
+     · Si la pagina se recargo, el navegador ya no deja abrir el
+       Bluetooth BLE sin un toque. Al tocar "Imprimir" o "Conectar"
+       sale la ventanita de Chrome YA filtrada con tu impresora: un
+       toque y sigue. Si el navegador tiene permisos permanentes
+       (getDevices), ni eso. USB, puerto serie y la app nativa se
+       reconectan solos.
+     · Si el navegador le da otro id a la misma impresora, se
+       reemplaza la guardada en vez de duplicarla.
 ========================================================= */
 const PRINTER_KEY = 'mesa_printer';
 
 const DEFAULT_PRINTER = {
-  conn:    'bt',     /* bt | wifi | usb */
+  conn:    'bt',     /* bt | usb | wifi | rawbt */
   mainId:  null,     /* impresora principal */
   devices: [],       /* impresoras guardadas EN ESTE dispositivo */
   cut:     true,     /* corte de papel al final, si la impresora lo trae */
   charset: 'cp437',  /* cp437 | cp850 | plano */
+  noChino: false,    /* manda FS . : apaga el modo chino de impresoras genericas */
   host:    '',       /* Wi-Fi: IP de la impresora o del agente */
   port:    9100
 };
 
-/* Servicios GATT que anuncian las termicas ESC/POS BLE mas comunes.
+/* Perfil de puerto serie (SPP) del Bluetooth clasico */
+const SPP_UUID = '00001101-0000-1000-8000-00805f9b34fb';
+
+/* Servicios GATT de las termicas ESC/POS BLE mas comunes.
    Web Bluetooth solo deja ver los servicios declarados aqui. */
 const BT_PRINT_SERVICES = [
   '000018f0-0000-1000-8000-00805f9b34fb', /* el mas usado (char 2AF1) */
   '0000ff00-0000-1000-8000-00805f9b34fb',
   '0000ffe0-0000-1000-8000-00805f9b34fb', /* modulos tipo HM-10 */
+  '0000fff0-0000-1000-8000-00805f9b34fb',
+  '0000ffe5-0000-1000-8000-00805f9b34fb',
   '0000ffb0-0000-1000-8000-00805f9b34fb',
   '0000fee7-0000-1000-8000-00805f9b34fb',
   '0000ae30-0000-1000-8000-00805f9b34fb',
-  '49535343-fe7d-4ae5-8fa9-9fafd205e455', /* UART transparente (ISSC) */
-  'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', /* UART transparente (ISSC / Microchip) */
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e'  /* Nordic UART */
+];
+/* Caracteristicas de escritura conocidas: se prefieren sobre cualquier otra
+   (asi nunca se manda el ticket a un canal que no es de impresion). */
+const BT_WRITE_CHARS = [
+  '00002af1-0000-1000-8000-00805f9b34fb',
+  '0000ff02-0000-1000-8000-00805f9b34fb',
+  '0000ffe1-0000-1000-8000-00805f9b34fb',
+  '0000fff2-0000-1000-8000-00805f9b34fb',
+  '0000ffe9-0000-1000-8000-00805f9b34fb',
+  '49535343-8841-43f4-a8d4-ecbe34729bb3',
+  'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',
+  '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+  '0000ae01-0000-1000-8000-00805f9b34fb'
 ];
 
-/* Estado vivo. No se guarda: si se recarga la pagina, se reconecta. */
+/* Estado vivo. No se guarda: lo que se guarda es la impresora (mesa_printer). */
 const printerRT = {
-  device:null, chr:null, noResp:false,
-  usb:null, usbEp:0, usbIface:0,
-  nativeOn:false,
-  connected:false, busy:false, error:''
+  device:null, chr:null, noResp:false,     /* Bluetooth BLE */
+  serial:null,                             /* Bluetooth clasico / puerto COM */
+  usb:null, usbEp:0, usbIface:0,           /* USB */
+  nativeOn:false,                          /* app nativa (BLE) */
+  connected:false, state:'off',            /* off | connecting | on */
+  busy:false, error:'',
+  pending:null,                            /* conexion en curso: nunca se conecta dos veces a la vez */
+  manualOff:false,                         /* el usuario desconecto a mano: no reconectar solo */
+  closing:false, needsTap:false, lastCancel:false, askAll:false,
+  retries:0, retryT:null, listening:false
 };
 
 function printerPrefs(){
@@ -6914,6 +6969,7 @@ function printerPrefs(){
   try{ g = JSON.parse(localStorage.getItem(PRINTER_KEY) || '{}') || {}; }catch(e){ g = {}; }
   const cfg = Object.assign({}, DEFAULT_PRINTER, g);
   if(!Array.isArray(cfg.devices)) cfg.devices = [];
+  if(['bt', 'usb', 'wifi', 'rawbt'].indexOf(cfg.conn) < 0) cfg.conn = 'bt';
   return cfg;
 }
 function savePrinterPrefs(cfg){
@@ -6946,11 +7002,26 @@ function printerEnv(){
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   return {
     iOS: iOS,
+    android: /Android/i.test(ua),
     native: !!printerNative(),
     webBT: !!(navigator.bluetooth && navigator.bluetooth.requestDevice),
     webUSB: !!(navigator.usb && navigator.usb.requestDevice),
+    webSerial: !!(navigator.serial && navigator.serial.requestPort),
     secure: !!window.isSecureContext
   };
+}
+/** Desde una pagina https el navegador bloquea http://IP (contenido mixto).
+    El agente Wi-Fi solo sirve si la app se abre en local, o si el agente
+    corre en la misma computadora (localhost). */
+function printerAgentOK(host){
+  const local = h => /^(localhost|127\.0\.0\.1|\[?::1\]?)$/i.test(String(h || ''));
+  return location.protocol === 'http:' || location.protocol === 'file:' ||
+         local(location.hostname) || local(host);
+}
+/** RawBT: app gratuita de Android que imprime en casi cualquier termica. */
+function printerRawBTOK(){
+  const env = printerEnv();
+  return env.android && !env.native;
 }
 
 /* ---------- Impresoras guardadas ---------- */
@@ -6958,49 +7029,95 @@ function printerMain(){
   const cfg = printerPrefs();
   return cfg.devices.find(d => d.id === cfg.mainId) || null;
 }
-function printerSetMain(id){
-  const cfg = printerPrefs();
-  cfg.mainId = id;
-  const d = cfg.devices.find(x => x.id === id);
-  if(d && d.conn) cfg.conn = d.conn;
-  savePrinterPrefs(cfg);
-  vibrate(10);
-  printerRefresh();
+/** ¿Este aparato tiene con que hablarle a esa impresora? */
+function printerUsable(rec){
+  rec = rec || printerMain();
+  if(!rec) return false;
+  const env = printerEnv();
+  if(rec.conn === 'rawbt') return printerRawBTOK();
+  if(rec.conn === 'wifi') return env.native || printerAgentOK(rec.host);
+  if(rec.via === 'native') return env.native;
+  if(env.native) return false;
+  if(rec.via === 'serial') return env.webSerial;
+  if(rec.conn === 'usb') return env.webUSB;
+  return env.webBT;
 }
-function printerRemember(rec){
+/** ¿Imprimir debe ir a la impresora fisica? (si no, dialogo del sistema)
+    Si esta desconectada se conecta sola al imprimir; solo se brinca si
+    el usuario la desconecto a mano. */
+function printerReady(){
+  const rec = printerMain();
+  return !!rec && printerUsable(rec) && (printerRT.connected || !printerRT.manualOff);
+}
+function printerSameDevice(a, b){
+  if(!a || !b || a.via !== b.via || a.conn !== b.conn) return false;
+  if(a.via === 'serial') return !!a.sKey && a.sKey === b.sKey && (a.sIdx || 0) === (b.sIdx || 0);
+  if(a.conn === 'bt' && a.via === 'web') return !!a.name && a.name !== 'Impresora Bluetooth' && a.name === b.name;
+  return false;
+}
+/** Guarda (o actualiza) una impresora y la deja como principal.
+    replaceId: la misma impresora con el id viejo (no se duplica). */
+function printerRemember(rec, replaceId){
   const cfg = printerPrefs();
-  const i = cfg.devices.findIndex(d => d.id === rec.id);
-  if(i >= 0) cfg.devices[i] = Object.assign({}, cfg.devices[i], rec);
-  else cfg.devices.push(rec);
+  const i = cfg.devices.findIndex(d => d.id === rec.id || (replaceId && d.id === replaceId) || printerSameDevice(d, rec));
+  if(i >= 0){
+    const prev = cfg.devices[i];
+    cfg.devices[i] = Object.assign({}, prev, rec);
+    cfg.devices = cfg.devices.filter((d, k) => k === i || !(d.id === rec.id || (replaceId && d.id === replaceId) || printerSameDevice(d, rec)));
+  }else{
+    cfg.devices.push(rec);
+  }
   cfg.mainId = rec.id;
   cfg.conn = rec.conn;
   savePrinterPrefs(cfg);
 }
-function printerForget(id){
+/** Tocar una impresora de la lista: la vuelve principal y la conecta. */
+async function printerSetMain(id){
   const cfg = printerPrefs();
-  cfg.devices = cfg.devices.filter(d => d.id !== id);
-  if(cfg.mainId === id){
-    cfg.mainId = cfg.devices.length ? cfg.devices[0].id : null;
-    printerDisconnect(true);
+  const d = cfg.devices.find(x => x.id === id);
+  if(!d) return;
+  vibrate(10);
+  if(cfg.mainId !== id){
+    await printerDropLink();
+    printerSetState('off');
+    cfg.mainId = id;
+    cfg.conn = d.conn;
+    savePrinterPrefs(cfg);
+    printerRT.error = '';
+    printerRefresh();
   }
+  if(!printerRT.connected) printerConnect({ gesture:true });
+}
+async function printerForget(id){
+  const cfg = printerPrefs();
+  const eraMain = cfg.mainId === id;
+  cfg.devices = cfg.devices.filter(d => d.id !== id);
+  if(eraMain) cfg.mainId = cfg.devices.length ? cfg.devices[0].id : null;
   savePrinterPrefs(cfg);
+  if(eraMain){
+    await printerDropLink();
+    printerRT.device = null;
+    printerRT.error = '';
+    printerSetState('off');
+  }
   toast('Impresora quitada de este dispositivo');
   printerRefresh();
 }
 /** "Cambiar impresora": suelta la actual y abre la busqueda otra vez. */
 async function printerChange(){
-  await printerDisconnect(true);
+  await printerDropLink();
+  printerSetState('off');
   printerScan();
 }
 
-/** false cuando NO existe forma real de buscar con ese tipo de conexion
-    (Safari en iPhone/iPad). En Bluefy o con el puente nativo sigue activo. */
+/** false cuando NO existe forma real de buscar con ese tipo de conexion. */
 function printerCanScan(tipo){
   const env = printerEnv();
-  if(env.native) return true;
-  if(tipo === 'bt')  return env.webBT;
-  if(tipo === 'usb') return env.webUSB;
-  return true; /* Wi-Fi siempre: solo hace falta escribir la IP */
+  if(tipo === 'rawbt') return printerRawBTOK();
+  if(env.native) return tipo === 'bt' || tipo === 'wifi';
+  if(tipo === 'bt')  return env.webBT || env.webSerial;
+  if(tipo === 'usb') return env.webUSB || env.webSerial;
+  return true;   /* Wi-Fi: se valida al guardar */
 }
 
 function printerIsConnected(){ return !!printerRT.connected; }
@@ -7008,268 +7125,588 @@ function printerLabel(){
   const d = printerMain();
   return d ? d.name : 'Sin impresora';
 }
+function printerSetState(s){
+  printerRT.state = s;
+  printerRT.connected = (s === 'on');
+  if(s === 'on'){ printerRT.needsTap = false; printerRT.retries = 0; }
+  printerRefresh();
+}
+
+/* ---------- Errores en palabras claras ---------- */
+function printerCancelled(e){
+  return !!e && e.name === 'NotFoundError' && /cancel|selected|chooser/i.test(String(e.message || ''));
+}
+function printerErr(e){
+  const n = (e && e.name) || '';
+  const m = String((e && e.message) || e || '');
+  if(printerCancelled(e)) return 'No elegiste ninguna impresora.';
+  if(/adapter not available|adapter is not|bluetooth.*(off|disabled)|powered off/i.test(m)) return 'Prende el Bluetooth de este aparato y vuelve a intentar.';
+  if(/gesture|user activation/i.test(m)) return 'Toca otra vez el botón para conectar.';
+  if(/Access denied|Unable to claim/i.test(m)) return 'Tu computadora ya tiene esta impresora instalada con su propio programa (driver). Imprime con «Prueba en hoja» (diálogo del sistema) o conéctala como puerto COM.';
+  if(n === 'InvalidStateError' || /already open|is locked/i.test(m)) return 'Otro programa o pestaña ya está usando la impresora. Ciérralo y vuelve a intentar.';
+  if(/Failed to open serial port/i.test(m)) return 'No se pudo abrir la impresora. Revisa que esté prendida, vinculada en el Bluetooth del aparato y que ningún otro programa la use.';
+  if(/No Services|no expone|GATT operation not permitted|not supported by this device/i.test(m)) return 'Esa impresora no recibe datos por Bluetooth BLE. Usa «Conéctala como Bluetooth clásico».';
+  if(n === 'TimeoutError' || n === 'NetworkError' || /timed? ?out|out of range|no longer in range|GATT Server is disconnected|Connection failed|Device disconnected/i.test(m)) return 'La impresora no contestó. Revisa que esté prendida, con papel y cerca.';
+  if(m === 'mixed') return printerEnv().android
+    ? 'El navegador no puede abrir impresoras Wi-Fi. En Android elige la opción «RawBT».'
+    : 'El navegador no puede abrir impresoras Wi-Fi. Conéctala por USB o Bluetooth, o instálala en la computadora (sale en el diálogo de impresión).';
+  if(/agente/i.test(m)) return m;
+  if(n === 'SecurityError') return 'El navegador bloqueó la conexión. Abre la app desde https y vuelve a intentar.';
+  if(n === 'NotSupportedError') return m || 'Este navegador no puede usar esa impresora.';
+  return m.slice(0, 120) || 'Algo falló con la impresora.';
+}
+function printerFail(title, e){
+  printerRT.error = printerErr(e);
+  toast(title, { icon:icon('alert'), variant:'toast-danger toast-wrap', subtitle:printerRT.error, duration:4200 });
+  printerRefresh();
+}
+function printerTimeout(p, ms, msg){
+  let t;
+  return Promise.race([
+    p,
+    new Promise((_, rej) => { t = setTimeout(() => { const e = new Error(msg || 'timed out'); e.name = 'TimeoutError'; rej(e); }, ms); })
+  ]).finally(() => clearTimeout(t));
+}
+function printerSleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+function printerLooksLikePrinter(name){
+  return /print|impres|pos|mpt|mtp|pt-?\d|rpp|xp-|zj|goojprt|bt-?(58|80)|58mm|80mm|thermal|term|spp|inner|bixolon|epson|star|sunmi|rongta|xprinter|munbyn|netum|hprt|ctp|peripage|phomemo/i.test(name || '');
+}
 
 /* =========================================================
-   CONEXION REAL
+   BUSCAR
 ========================================================= */
 async function printerScan(){
   const cfg = printerPrefs();
   const env = printerEnv();
   try{
-    if(env.native && typeof printerNative().scan === 'function'){
-      toast('Buscando impresoras…');
-      const r = await printerNative().scan({ type: cfg.conn });
-      const lista = (r && r.devices) || [];
-      if(!lista.length){ toast('No encontramos impresoras cerca', { variant:'toast-danger' }); return; }
-      lista.forEach(d => printerRemember({
-        id: d.id, name: d.name || 'Impresora', conn: cfg.conn, via: 'native'
-      }));
-      printerRefresh();
-      toast('Listo, ya aparece en la lista', { icon:icon('check'), variant:'toast-success' });
-      return;
+    if(cfg.conn === 'rawbt') return await printerUseRawBT();
+    if(env.native) return await printerScanNative(cfg.conn);
+    if(cfg.conn === 'wifi') return await printerSaveWifi();
+    if(cfg.conn === 'usb'){
+      if(env.webUSB) return await printerScanUSB(false);
+      if(env.webSerial) return await printerScanSerial('usb');
+      return toast('Este navegador no permite USB', { variant:'toast-danger toast-wrap', subtitle:'Usa Chrome o Edge en PC, Mac o Android' });
     }
-    if(cfg.conn === 'bt')   return await printerScanBT();
-    if(cfg.conn === 'usb')  return await printerScanUSB();
-    if(cfg.conn === 'wifi') return printerSaveWifi();
+    if(env.webBT) return await printerScanBT();
+    if(env.webSerial) return await printerScanSerial('bt');
+    printerNoBT();
   }catch(e){
-    if(e && e.name === 'NotFoundError'){ toast('No elegiste ninguna impresora'); return; }
-    toast('No pudimos buscar', { variant:'toast-danger', subtitle:String(e && e.message || e) });
+    if(printerCancelled(e)) return;
+    printerFail('No pudimos buscar', e);
   }
 }
 
 async function printerScanBT(){
-  const env = printerEnv();
-  if(!env.webBT){ printerNoBT(); return; }
   const dev = await navigator.bluetooth.requestDevice({
     acceptAllDevices: true,
     optionalServices: BT_PRINT_SERVICES
   });
-  printerRemember({
-    id: dev.id,
-    name: dev.name || 'Impresora Bluetooth',
-    conn: 'bt', via: 'web'
-  });
+  await printerDropLink();
+  printerRemember({ id:dev.id, name:(dev.name || '').trim() || 'Impresora Bluetooth', conn:'bt', via:'web' });
   printerRT.device = dev;
+  printerRT.error = '';
   printerRefresh();
-  await printerConnect();
+  return printerConnect({ gesture:true });
+}
+
+/* ---------- Puerto serie: Bluetooth clasico (SPP) o USB "puerto COM" ---------- */
+function printerSerialKey(port){
+  try{
+    const i = (port && port.getInfo && port.getInfo()) || {};
+    return [i.usbVendorId || '', i.usbProductId || '', i.bluetoothServiceClassId || ''].join(':');
+  }catch(e){ return '::'; }
+}
+function printerIsScannerPort(port){
+  return typeof serialPort !== 'undefined' && !!serialPort && port === serialPort;
+}
+async function printerRequestSerial(kind){
+  if(kind === 'bt'){
+    try{
+      return await navigator.serial.requestPort({ filters:[{ bluetoothServiceClassId:SPP_UUID }], allowedBluetoothServiceClassIds:[SPP_UUID] });
+    }catch(e){
+      /* Navegadores sin Bluetooth en Web Serial: se muestran todos los puertos */
+      if(e && e.name === 'TypeError') return navigator.serial.requestPort();
+      throw e;
+    }
+  }
+  return navigator.serial.requestPort();
+}
+async function printerScanSerial(kind){
+  try{
+    if(!printerEnv().webSerial){
+      return toast('Este navegador no puede usar Bluetooth clásico ni puerto COM', { variant:'toast-danger toast-wrap', subtitle:'Usa Chrome en PC, Mac o Android' });
+    }
+    const port = await printerRequestSerial(kind);
+    if(printerIsScannerPort(port)){
+      return toast('Ese es tu lector de códigos', { icon:icon('alert'), subtitle:'Elige la impresora' });
+    }
+    await printerDropLink();
+    const rec = await printerSerialRecord(port, kind);
+    printerRemember(rec);
+    printerRT.serial = port;
+    printerRT.error = '';
+    printerRefresh();
+    return printerConnect({ gesture:true });
+  }catch(e){
+    if(printerCancelled(e)) return;
+    printerFail('No pudimos buscar', e);
+  }
+}
+async function printerSerialRecord(port, kind){
+  const key = printerSerialKey(port);
+  let info = {};
+  try{ info = port.getInfo() || {}; }catch(e){}
+  const all = await navigator.serial.getPorts();
+  const same = all.filter(p => !printerIsScannerPort(p) && printerSerialKey(p) === key);
+  const idx = Math.max(0, same.indexOf(port));
+  const bt = !!info.bluetoothServiceClassId || kind === 'bt';
+  const prev = printerPrefs().devices.find(d => d.via === 'serial' && d.sKey === key && (d.sIdx || 0) === idx);
+  let name = bt ? 'Impresora Bluetooth (clásico)'
+                : (info.usbVendorId ? 'Impresora USB ' + info.usbVendorId.toString(16).toUpperCase().padStart(4, '0') : 'Impresora en puerto COM');
+  if(idx > 0) name += ' ' + (idx + 1);
+  return {
+    id: prev ? prev.id : 'ser:' + uid(''),
+    name: prev ? prev.name : name,
+    conn: bt ? 'bt' : 'usb', via:'serial', sKey:key, sIdx:idx,
+    baud: (prev && prev.baud) || 9600
+  };
 }
 
 async function printerScanUSB(){
-  const env = printerEnv();
-  if(!env.webUSB){
-    toast('Este navegador no permite USB', { variant:'toast-danger', subtitle:'Usa Chrome en PC o Android' });
-    return;
-  }
-  let dev = null;
   try{
-    dev = await navigator.usb.requestDevice({ filters:[{ classCode:7 }] }); /* clase impresora */
+    /* Se muestran TODOS los aparatos USB: hay termicas de marcas que no se
+       anuncian como impresora. Las conocidas salen con su nombre. */
+    const dev = await navigator.usb.requestDevice({ filters:[] });
+    await printerDropLink();
+    printerRemember({
+      id: 'usb:' + dev.vendorId + ':' + dev.productId,
+      name: dev.productName || ('Impresora USB ' + dev.vendorId.toString(16).toUpperCase().padStart(4, '0')),
+      conn:'usb', via:'web', vendorId:dev.vendorId, productId:dev.productId
+    });
+    printerRT.usb = dev;
+    printerRT.error = '';
+    printerRefresh();
+    return printerConnect({ gesture:true });
   }catch(e){
-    if(e && e.name === 'NotFoundError') dev = await navigator.usb.requestDevice({ filters:[] });
-    else throw e;
+    if(printerCancelled(e)) return;
+    printerFail('No pudimos buscar', e);
   }
-  const id = 'usb:' + dev.vendorId + ':' + dev.productId;
-  printerRemember({
-    id: id,
-    name: dev.productName || ('Impresora USB ' + dev.vendorId.toString(16)),
-    conn: 'usb', via:'web', vendorId: dev.vendorId, productId: dev.productId
-  });
-  printerRT.usb = dev;
-  printerRefresh();
-  await printerConnect();
 }
 
-function printerSaveWifi(){
+async function printerSaveWifi(){
+  const env = printerEnv();
   const h = document.getElementById('prHost');
   const p = document.getElementById('prPort');
-  const host = (h ? h.value : '').trim();
-  const port = Number(p ? p.value : 9100) || 9100;
-  if(!host){ toast('Escribe la IP de la impresora', { variant:'toast-danger' }); return; }
-  printerRemember({
-    id: 'net:' + host + ':' + port,
-    name: 'Impresora en red ' + host,
-    conn: 'wifi', via:'net', host: host, port: port
-  });
+  const host = (h ? h.value : '').trim().replace(/^https?:\/\//i, '').replace(/[\/:].*$/, '');
+  const port = Math.round(Number(p ? p.value : 9100) || 9100);
+  if(!host || !/^[a-z0-9.\-]+$/i.test(host)){ toast('Escribe la IP de la impresora', { variant:'toast-danger', subtitle:'Ejemplo: 192.168.1.50' }); return; }
+  if(port < 1 || port > 65535){ toast('Revisa el puerto', { variant:'toast-danger', subtitle:'Casi siempre es 9100' }); return; }
+  if(!env.native && !printerAgentOK(host)){
+    printerFail('Wi-Fi no disponible en el navegador', new Error('mixed'));
+    return;
+  }
+  await printerDropLink();
+  printerRemember({ id:'net:' + host + ':' + port, name:'Impresora en red ' + host, conn:'wifi', via:'net', host, port });
   const cfg = printerPrefs();
   cfg.host = host; cfg.port = port;
   savePrinterPrefs(cfg);
-  printerRefresh();
-  printerConnect();
-}
-
-/** Conecta de verdad con la impresora principal. Devuelve true/false. */
-async function printerConnect(){
-  const rec = printerMain();
-  if(!rec){ toast('Primero busca y elige tu impresora'); return false; }
-  if(printerRT.connected) return true;
   printerRT.error = '';
-  try{
-    if(rec.via === 'native' || printerEnv().native) return await printerConnectNative(rec);
-    if(rec.conn === 'bt')   return await printerConnectBT(rec);
-    if(rec.conn === 'usb')  return await printerConnectUSB(rec);
-    if(rec.conn === 'wifi') return await printerConnectNet(rec);
-    return false;
-  }catch(e){
-    printerRT.connected = false;
-    printerRT.error = String(e && e.message || e);
-    printerRefresh();
-    toast('No se pudo conectar', { variant:'toast-danger', icon:icon('alert'), subtitle: printerRT.error.slice(0, 70) });
-    return false;
-  }
+  printerRefresh();
+  return printerConnect({ gesture:true });
 }
 
+/* ---------- App RawBT (Android) ----------
+   El ticket se le pasa a la app RawBT ya armado en ESC/POS, y ella lo
+   manda a la impresora que tenga configurada (Bluetooth clasico o BLE,
+   USB, Wi-Fi o red). Si no esta instalada, Android abre su pagina en
+   Play Store. No hay "conexion" que vigilar: el estado dice "Lista". */
+const RAWBT_PKG = 'ru.a402d.rawbtprinter';
+async function printerUseRawBT(){
+  if(!printerRawBTOK()){
+    toast('RawBT solo existe en Android', { variant:'toast-danger toast-wrap', subtitle:'En este aparato usa Bluetooth, USB o Wi-Fi' });
+    return;
+  }
+  await printerDropLink();
+  printerRemember({ id:'rawbt', name:'App RawBT', conn:'rawbt', via:'rawbt' });
+  printerRT.error = '';
+  printerRefresh();
+  const ok = await printerConnect({ gesture:true, quiet:true });
+  if(ok) toast('Listo: los tickets se mandan a RawBT', { icon:icon('check'), variant:'toast-success toast-wrap', subtitle:'Elige tu impresora dentro de RawBT y toca «Ticket de prueba»', duration:4200 });
+}
+function printerRawBTUrl(data){
+  return 'intent:base64,' + printerB64(data) + '#Intent;scheme=rawbt;package=' + RAWBT_PKG + ';end;';
+}
+
+/* ---------- App nativa (iPhone): lista para elegir ---------- */
+let printerPickList = [];
+async function printerScanNative(tipo){
+  if(tipo === 'wifi') return printerSaveWifi();
+  if(tipo === 'usb') return toast('La app de iPhone no usa USB', { subtitle:'Conecta la impresora por Bluetooth o Wi-Fi' });
+  const nat = printerNative();
+  toast('Buscando impresoras…', { icon:icon('search'), duration:6500 });
+  const r = await printerTimeout(nat.scan({ type:'bt' }), 20000, 'timed out');
+  const lista = ((r && r.devices) || []).filter(d => d && d.id);
+  if(!lista.length){
+    printerFail('No encontramos impresoras cerca', new Error('Prende la impresora, acércala y vuelve a buscar. Las de Bluetooth clásico no funcionan en iPhone: usa Wi-Fi.'));
+    return;
+  }
+  printerPickList = lista.map(d => Object.assign({}, d, { likely: d.likely || printerLooksLikePrinter(d.name) }))
+    .sort((a, b) => (b.likely ? 1 : 0) - (a.likely ? 1 : 0) || (Number(b.rssi) || -999) - (Number(a.rssi) || -999));
+  openModal(`
+    <div class="sheet-header">
+      <div class="sheet-header-left">
+        <button class="sheet-back" onclick="openPrintSettings()" aria-label="Volver">${icon('chevronLeft')}</button>
+        <h2>Elige tu impresora</h2>
+      </div>
+      <button class="sheet-close" onclick="openPrintSettings()" aria-label="Cerrar">${icon('close')}</button>
+    </div>
+    <p class="sheet-text" style="margin-top:-6px;">Estos aparatos Bluetooth están cerca. Las que parecen impresoras salen primero.</p>
+    <div class="pr-list">${printerPickList.map((d, i) => `
+      <button class="pr-item" onclick="printerPickNative(${i})">
+        <span class="acc-ico ${d.likely ? 'green' : ''}">${icon(d.likely ? 'print' : 'bluetooth')}</span>
+        <span class="acc-txt"><span class="acc-label">${escapeHtml(d.name || 'Sin nombre')}</span>
+          <span class="acc-sub">${d.likely ? 'Parece impresora' : 'Aparato Bluetooth'}${d.rssi ? ' · señal ' + (d.rssi > -60 ? 'fuerte' : (d.rssi > -80 ? 'media' : 'débil')) : ''}</span></span>
+        <span class="acc-chev">${icon('chevronRight')}</span>
+      </button>`).join('')}</div>
+    <button class="btn ghost block" style="margin-top:12px;" onclick="printerScan()">${icon('search')} Buscar otra vez</button>
+  `, { dismissible:true });
+}
+async function printerPickNative(i){
+  const d = printerPickList[i];
+  if(!d) return;
+  await printerDropLink();
+  printerRemember({ id:d.id, name:(d.name || 'Impresora Bluetooth'), conn:'bt', via:'native' });
+  printerRT.error = '';
+  openPrintSettings();
+  printerConnect({ gesture:true });
+}
+
+/* =========================================================
+   CONECTAR
+   opts.gesture = viene de un toque (puede abrir la ventanita del navegador)
+   opts.quiet   = sin avisos (reconexion automatica)
+========================================================= */
+function printerConnect(opts){
+  opts = opts || {};
+  if(printerRT.pending) return printerRT.pending;
+  const rec = printerMain();
+  if(!rec){
+    if(!opts.quiet) toast('Primero busca y elige tu impresora');
+    return Promise.resolve(false);
+  }
+  if(printerRT.connected) return Promise.resolve(true);
+  if(!printerUsable(rec)){
+    if(!opts.quiet) printerFail('Este aparato no puede usar esa impresora', new Error(printerEnv().native ? 'En la app de iPhone usa Bluetooth BLE o Wi-Fi.' : 'Ábrela desde Chrome o Edge, o búscala otra vez.'));
+    return Promise.resolve(false);
+  }
+  printerRT.manualOff = false;
+  printerRT.lastCancel = false;
+  clearTimeout(printerRT.retryT);
+  printerSetState('connecting');
+  printerRT.pending = (async () => {
+    try{
+      const env = printerEnv();
+      let ok = false;
+      if(rec.conn === 'rawbt') ok = printerRawBTOK();
+      else if(env.native) ok = await printerConnectNative(rec);
+      else if(rec.conn === 'wifi') ok = await printerConnectNet(rec);
+      else if(rec.via === 'serial') ok = await printerConnectSerial(rec, opts);
+      else if(rec.conn === 'usb') ok = await printerConnectUSB(rec, opts);
+      else ok = await printerConnectBT(rec, opts);
+      printerRT.pending = null;
+      if(ok) printerRT.error = '';
+      printerSetState(ok ? 'on' : 'off');
+      if(ok && !opts.quiet){
+        toast(rec.conn === 'rawbt' ? 'RawBT listo' : 'Impresora conectada', { icon:icon('check'), variant:'toast-success', subtitle:(printerMain() || rec).name });
+      }
+      return ok;
+    }catch(e){
+      printerRT.pending = null;
+      printerSetState('off');
+      if(printerCancelled(e)){
+        printerRT.lastCancel = true;
+        /* Si en la lista filtrada no aparecio, la proxima vez se muestran todas */
+        if(rec.conn === 'bt' && rec.via === 'web') printerRT.askAll = true;
+        return false;
+      }
+      printerRT.error = printerErr(e);
+      if(!opts.quiet) printerFail('No se pudo conectar', e);
+      else printerRefresh();
+      return false;
+    }finally{
+      printerRT.pending = null;
+    }
+  })();
+  return printerRT.pending;
+}
+
+/* ---------- App nativa ---------- */
+function printerNativeListen(){
+  const nat = printerNative();
+  if(!nat || printerRT.listening || typeof nat.addListener !== 'function') return;
+  printerRT.listening = true;
+  try{ nat.addListener('printerDisconnected', () => printerOnDrop()); }catch(e){}
+}
 async function printerConnectNative(rec){
   const nat = printerNative();
   if(!nat) return false;
-  toast('Conectando…');
-  const r = await nat.connect({ id: rec.id, type: rec.conn, host: rec.host, port: rec.port });
+  printerNativeListen();
+  if(rec.conn === 'wifi'){
+    const r = nat.netProbe ? await printerTimeout(nat.netProbe({ host:rec.host, port:rec.port }), 8000, 'timed out')
+                           : await printerTimeout(nat.connect({ type:'wifi', host:rec.host, port:rec.port }), 8000, 'timed out');
+    if(!(r && (r.ok || r.connected))) throw Object.assign(new Error('No responde la impresora en ' + rec.host + ':' + rec.port), { name:'NetworkError' });
+    return true;
+  }
+  const r = await printerTimeout(nat.connect({ id:rec.id, type:'bt' }), 25000, 'timed out');
   printerRT.nativeOn = !!(r && r.connected !== false);
-  printerRT.connected = printerRT.nativeOn;
-  printerRefresh();
-  if(printerRT.connected) toast('Impresora conectada', { icon:icon('check'), variant:'toast-success' });
-  return printerRT.connected;
+  return printerRT.nativeOn;
 }
 
-/** Recupera el objeto BluetoothDevice ya autorizado, sin volver a pedir permiso. */
+/* ---------- Bluetooth BLE (Web Bluetooth) ---------- */
+/** El objeto de la impresora ya autorizado, sin volver a pedir permiso. */
 async function printerBTDevice(rec){
-  if(printerRT.device && printerRT.device.id === rec.id) return printerRT.device;
+  const d = printerRT.device;
+  if(d && (d.id === rec.id || (rec.name && rec.name !== 'Impresora Bluetooth' && d.name === rec.name))) return d;
   if(navigator.bluetooth && navigator.bluetooth.getDevices){
     try{
       const list = await navigator.bluetooth.getDevices();
-      const hit = list.find(d => d.id === rec.id);
-      if(hit) return hit;
-    }catch(e){ /* el navegador no lo soporta */ }
+      return list.find(x => x.id === rec.id) ||
+             list.find(x => rec.name && rec.name !== 'Impresora Bluetooth' && x.name === rec.name) || null;
+    }catch(e){ /* el navegador no lo permite */ }
   }
   return null;
 }
-
-async function printerConnectBT(rec){
-  if(!printerEnv().webBT){ printerNoBT(); return false; }
+/** Ventanita del navegador ya filtrada con la impresora guardada. */
+function printerAskBTDevice(rec){
+  const opts = { optionalServices: BT_PRINT_SERVICES };
+  const name = (rec.name || '').trim();
+  if(!name || name === 'Impresora Bluetooth' || printerRT.askAll) opts.acceptAllDevices = true;
+  else opts.filters = [{ name }, { namePrefix: name.slice(0, Math.min(name.length, 6)) }];
+  return navigator.bluetooth.requestDevice(opts);
+}
+/** Despues de reiniciar el navegador hay que "verla" antes de conectar. */
+function printerWaitAdv(dev, ms){
+  return new Promise(res => {
+    if(!dev.watchAdvertisements){ res(false); return; }
+    let done = false;
+    const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    const fin = ok => {
+      if(done) return; done = true;
+      dev.removeEventListener('advertisementreceived', on);
+      try{ if(ctrl) ctrl.abort(); }catch(e){}
+      res(ok);
+    };
+    const on = () => fin(true);
+    dev.addEventListener('advertisementreceived', on);
+    Promise.resolve().then(() => dev.watchAdvertisements(ctrl ? { signal:ctrl.signal } : undefined)).catch(() => fin(false));
+    setTimeout(() => fin(false), ms);
+  });
+}
+async function printerConnectBT(rec, opts){
+  if(!printerEnv().webBT){
+    throw Object.assign(new Error('Este navegador no tiene Bluetooth. Usa Chrome en Android o PC, o Bluefy en iPhone.'), { name:'NotSupportedError' });
+  }
   let dev = await printerBTDevice(rec);
   if(!dev){
-    toast('Vuelve a enlazarla', { subtitle:'Toca "Buscar impresoras" y eligela' });
-    return false;
+    /* La pagina se recargo y el navegador ya no recuerda el permiso:
+       sin un toque no se puede (lo exige Chrome). */
+    if(!opts.gesture){ printerRT.needsTap = true; return false; }
+    dev = await printerAskBTDevice(rec);
+    if(dev.id !== rec.id || ((dev.name || '') && dev.name !== rec.name)){
+      printerRemember({ id:dev.id, name:(dev.name || rec.name), conn:'bt', via:'web' }, rec.id);
+    }
   }
-  toast('Conectando…');
-  const server = await dev.gatt.connect();
-  const svcs = await server.getPrimaryServices();
-  let chr = null;
+  printerRT.device = dev;
+  printerRT.needsTap = false;
+  printerRT.askAll = false;
+  dev.removeEventListener('gattserverdisconnected', printerOnDrop);
+  dev.addEventListener('gattserverdisconnected', printerOnDrop);
+
+  /* Android a veces falla la primera vez: se reintenta */
+  let last = null;
+  for(let i = 0; i < 3; i++){
+    try{
+      const server = dev.gatt.connected ? dev.gatt : await printerTimeout(dev.gatt.connect(), 12000, 'Connection timed out');
+      const pick = await printerPickChar(server);
+      printerRT.chr = pick.chr;
+      printerRT.noResp = pick.noResp;
+      return true;
+    }catch(e){
+      last = e;
+      if(e && e.name === 'NotSupportedError') throw e;
+      printerRT.closing = true;
+      try{ if(dev.gatt.connected) dev.gatt.disconnect(); }catch(x){}
+      printerRT.closing = false;
+      if(i === 0) await printerWaitAdv(dev, 6000);
+      else await printerSleep(600 * i);
+    }
+  }
+  throw last;
+}
+/** Escoge el canal de escritura correcto (nunca uno que no sea de impresion). */
+async function printerPickChar(server){
+  let svcs = [];
+  try{ svcs = await server.getPrimaryServices(); }catch(e){ svcs = []; }
+  if(!svcs.length){
+    for(const u of BT_PRINT_SERVICES){ try{ svcs.push(await server.getPrimaryService(u)); }catch(e){} }
+  }
+  let best = null, bestScore = -1;
   for(const s of svcs){
     let chars = [];
     try{ chars = await s.getCharacteristics(); }catch(e){ continue; }
-    const w = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
-    if(w){ chr = w; break; }
+    const si = BT_PRINT_SERVICES.indexOf(String(s.uuid).toLowerCase());
+    for(const c of chars){
+      const pr = c.properties || {};
+      if(!(pr.write || pr.writeWithoutResponse)) continue;
+      const ci = BT_WRITE_CHARS.indexOf(String(c.uuid).toLowerCase());
+      let score = 10;
+      if(ci >= 0) score = 1000 - ci;
+      else if(si >= 0) score = 500 - si;
+      if(pr.writeWithoutResponse) score += 1;
+      if(score > bestScore){ best = c; bestScore = score; }
+    }
   }
-  if(!chr){
-    try{ dev.gatt.disconnect(); }catch(e){}
-    throw new Error('La impresora no expone un canal de escritura BLE');
+  if(!best) throw Object.assign(new Error('La impresora no expone un canal de escritura BLE'), { name:'NotSupportedError' });
+  return { chr:best, noResp:!!(best.properties && best.properties.writeWithoutResponse) };
+}
+
+/* ---------- Bluetooth clasico / puerto COM (Web Serial) ---------- */
+async function printerFindSerial(rec){
+  const ports = await navigator.serial.getPorts();
+  const same = ports.filter(p => !printerIsScannerPort(p) && printerSerialKey(p) === rec.sKey);
+  return same[rec.sIdx || 0] || same[0] || null;
+}
+async function printerConnectSerial(rec, opts){
+  if(!printerEnv().webSerial) throw Object.assign(new Error('Este navegador no tiene puerto serie. Usa Chrome.'), { name:'NotSupportedError' });
+  let port = printerRT.serial || await printerFindSerial(rec);
+  if(!port){
+    if(!opts.gesture){ printerRT.needsTap = true; return false; }
+    port = await printerRequestSerial(rec.conn === 'bt' ? 'bt' : 'usb');
+    if(printerIsScannerPort(port)) throw new Error('Ese es tu lector de códigos. Elige la impresora.');
+    const nuevo = await printerSerialRecord(port, rec.conn);
+    printerRemember(Object.assign(nuevo, { id:rec.id, name:rec.name }));
   }
-  printerRT.device = dev;
-  printerRT.chr = chr;
-  printerRT.noResp = !!chr.properties.writeWithoutResponse;
-  printerRT.connected = true;
-  dev.removeEventListener('gattserverdisconnected', printerOnDrop);
-  dev.addEventListener('gattserverdisconnected', printerOnDrop);
-  printerRemember(Object.assign({}, rec, { svc: chr.service.uuid, chr: chr.uuid }));
-  printerRefresh();
-  toast('Impresora conectada', { icon:icon('check'), variant:'toast-success', subtitle: rec.name });
+  printerRT.serial = port;
+  if(!port.writable){
+    /* Bluetooth clasico tarda unos segundos en abrir */
+    await printerTimeout(port.open({ baudRate:Number(rec.baud) || 9600 }), 20000, 'Connection timed out');
+  }
+  printerRT.needsTap = false;
   return true;
 }
 
-async function printerConnectUSB(rec){
-  if(!printerEnv().webUSB) return false;
+/* ---------- USB (WebUSB) ---------- */
+async function printerConnectUSB(rec, opts){
+  if(!printerEnv().webUSB) throw Object.assign(new Error('Este navegador no permite USB. Usa Chrome o Edge.'), { name:'NotSupportedError' });
   let dev = printerRT.usb;
   if(!dev){
     const list = await navigator.usb.getDevices();
     dev = list.find(d => d.vendorId === rec.vendorId && d.productId === rec.productId) || null;
   }
-  if(!dev){ toast('Vuelve a enlazarla', { subtitle:'Toca "Buscar impresoras"' }); return false; }
-  await dev.open();
+  if(!dev){
+    if(!opts.gesture){ printerRT.needsTap = true; return false; }
+    dev = await navigator.usb.requestDevice({ filters:[{ vendorId:rec.vendorId, productId:rec.productId }] });
+  }
+  if(!dev.opened) await dev.open();
   if(!dev.configuration) await dev.selectConfiguration(1);
-  let iface = null, ep = 0;
-  for(const i of dev.configuration.interfaces){
-    for(const alt of i.alternates){
+  /* La interfaz de impresora (clase 7) manda; si no hay, la primera con salida "bulk" */
+  let pick = null;
+  for(const itf of dev.configuration.interfaces){
+    for(const alt of itf.alternates){
       const out = alt.endpoints.find(e => e.direction === 'out' && e.type === 'bulk');
-      if(out && (alt.interfaceClass === 7 || !iface)){ iface = i.interfaceNumber; ep = out.endpointNumber; }
-      if(out && alt.interfaceClass === 7) break;
+      if(!out) continue;
+      const score = alt.interfaceClass === 7 ? 3 : (alt.interfaceClass === 0xFF ? 2 : 1);
+      if(!pick || score > pick.score){
+        pick = { iface:itf.interfaceNumber, alt:alt.alternateSetting, ep:out.endpointNumber, score, claimed:itf.claimed };
+      }
     }
   }
-  if(iface === null) throw new Error('No encontramos la salida USB de la impresora');
-  await dev.claimInterface(iface);
+  if(!pick) throw new Error('No encontramos la salida USB de la impresora');
+  if(!pick.claimed) await dev.claimInterface(pick.iface);
+  if(pick.alt){ try{ await dev.selectAlternateInterface(pick.iface, pick.alt); }catch(e){} }
   printerRT.usb = dev;
-  printerRT.usbIface = iface;
-  printerRT.usbEp = ep;
-  printerRT.connected = true;
-  printerRefresh();
-  toast('Impresora conectada', { icon:icon('check'), variant:'toast-success', subtitle: rec.name });
+  printerRT.usbIface = pick.iface;
+  printerRT.usbEp = pick.ep;
+  printerRT.needsTap = false;
   return true;
 }
 
-/** Wi-Fi: el navegador NO abre sockets TCP. Se comprueba el agente/puente. */
+/* ---------- Wi-Fi desde el navegador (solo con agente local) ---------- */
 async function printerConnectNet(rec){
-  const nat = printerNative();
-  if(nat && typeof nat.netProbe === 'function'){
-    const r = await nat.netProbe({ host: rec.host, port: rec.port });
-    printerRT.connected = !!(r && r.ok);
-  }else{
-    const url = 'http://' + rec.host + ':' + rec.port + '/status';
-    const corte = new AbortController();
-    const reloj = setTimeout(function(){ corte.abort(); }, 2500);
-    try{
-      await fetch(url, { method:'GET', mode:'no-cors', cache:'no-store', signal: corte.signal });
-      printerRT.connected = true; /* algo contesto de verdad en esa IP */
-    }catch(e){
-      printerRT.connected = false;
-      throw new Error('No responde el agente en ' + rec.host + ':' + rec.port);
-    }finally{
-      clearTimeout(reloj);
-    }
-  }
-  printerRefresh();
-  if(printerRT.connected) toast('Impresora conectada', { icon:icon('check'), variant:'toast-success' });
-  return printerRT.connected;
-}
-
-function printerOnDrop(){
-  printerRT.chr = null;
-  printerRT.connected = false;
-  printerRefresh();
-  toast('Se perdio la conexion con la impresora', { variant:'toast-danger', icon:icon('alert') });
-}
-
-async function printerDisconnect(silencio){
+  if(!printerAgentOK(rec.host)) throw new Error('mixed');
+  const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+  const t = setTimeout(() => { if(ctrl) ctrl.abort(); }, 3000);
   try{
-    const nat = printerNative();
-    if(printerRT.nativeOn && nat && nat.disconnect) await nat.disconnect();
-    if(printerRT.device && printerRT.device.gatt && printerRT.device.gatt.connected){
-      printerRT.device.removeEventListener('gattserverdisconnected', printerOnDrop);
-      printerRT.device.gatt.disconnect();
-    }
-    if(printerRT.usb && printerRT.usb.opened){
-      try{ await printerRT.usb.releaseInterface(printerRT.usbIface); }catch(e){}
-      await printerRT.usb.close();
-    }
-  }catch(e){ /* silencioso */ }
+    await fetch('http://' + rec.host + ':' + rec.port + '/status', { method:'GET', mode:'no-cors', cache:'no-store', signal: ctrl ? ctrl.signal : undefined });
+    return true;   /* algo contesto de verdad en esa IP */
+  }catch(e){
+    throw Object.assign(new Error('No responde el agente en ' + rec.host + ':' + rec.port), { name:'NetworkError' });
+  }finally{ clearTimeout(t); }
+}
+
+/* =========================================================
+   SE CAYO LA CONEXION / RECONECTAR SOLA
+========================================================= */
+function printerOnDrop(){
+  if(printerRT.closing || printerRT.state === 'connecting') return;
+  const estaba = printerRT.connected;
   printerRT.chr = null;
   printerRT.nativeOn = false;
+  printerSetState('off');
+  if(estaba && !printerRT.manualOff) printerScheduleReconnect();
+}
+function printerScheduleReconnect(){
+  clearTimeout(printerRT.retryT);
+  /* Pagina oculta: Chrome no deja reconectar; se hace al volver (visibilitychange) */
+  if(document.hidden) return;
+  const espera = [700, 2500, 6000, 15000][printerRT.retries];
+  if(espera == null){
+    printerRT.retries = 0;
+    toast('Se perdió la conexión con la impresora', { icon:icon('alert'), variant:'toast-danger toast-wrap', subtitle:'Se vuelve a conectar sola al tocar Imprimir', duration:3600 });
+    return;
+  }
+  printerRT.retries++;
+  printerRT.retryT = setTimeout(async () => {
+    if(printerRT.connected || printerRT.manualOff) return;
+    const ok = await printerConnect({ quiet:true });
+    if(!ok && !printerRT.manualOff && !printerRT.needsTap) printerScheduleReconnect();
+  }, espera);
+}
+/** Suelta la conexion actual sin marcarla como "desconectada a mano". */
+async function printerDropLink(){
+  clearTimeout(printerRT.retryT);
+  printerRT.closing = true;
+  try{
+    const nat = printerNative();
+    if(printerRT.nativeOn && nat && nat.disconnect){ try{ await nat.disconnect(); }catch(e){} }
+    if(printerRT.device && printerRT.device.gatt && printerRT.device.gatt.connected){ try{ printerRT.device.gatt.disconnect(); }catch(e){} }
+    if(printerRT.serial){ try{ if(printerRT.serial.writable || printerRT.serial.readable) await printerRT.serial.close(); }catch(e){} }
+    if(printerRT.usb && printerRT.usb.opened){
+      try{ await printerRT.usb.releaseInterface(printerRT.usbIface); }catch(e){}
+      try{ await printerRT.usb.close(); }catch(e){}
+    }
+  }catch(e){ /* silencioso */ }
+  printerRT.closing = false;
+  printerRT.chr = null;
+  printerRT.nativeOn = false;
+  printerRT.serial = null;
+  printerRT.usb = null;
   printerRT.connected = false;
-  printerRefresh();
+  printerRT.state = 'off';
+}
+async function printerDisconnect(silencio){
+  printerRT.manualOff = true;
+  await printerDropLink();
+  printerSetState('off');
   if(!silencio) toast('Impresora desconectada');
 }
 
-/** Reconecta sola al abrir la app, sin molestar si no se puede. */
+/** Reconexion silenciosa (al abrir la app, al volver a la pagina, al conectar el cable). */
 async function printerAutoConnect(){
+  if(document.body.classList.contains('dm-mode')) return;
   const rec = printerMain();
-  if(!rec || printerRT.connected) return;
-  try{
-    if(printerEnv().native){ await printerConnectNative(rec); return; }
-    if(rec.conn === 'bt'){
-      const dev = await printerBTDevice(rec);
-      if(dev) await printerConnectBT(rec);
-    }else if(rec.conn === 'usb'){
-      const list = await navigator.usb.getDevices();
-      if(list.some(d => d.vendorId === rec.vendorId)) await printerConnectUSB(rec);
-    }
-  }catch(e){ /* que el usuario lo haga a mano */ }
+  if(!rec || printerRT.connected || printerRT.pending || printerRT.manualOff || !printerUsable(rec)) return;
+  try{ await printerConnect({ quiet:true }); }catch(e){}
 }
 
 /* =========================================================
@@ -7280,49 +7717,127 @@ function printerB64(bytes){
   for(let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i] & 0xFF);
   return btoa(s);
 }
-function printerSleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+async function printerWriteBLE(data){
+  const chr = printerRT.chr;
+  const paso = 20;   /* las termicas BLE baratas no aguantan mas por paquete */
+  for(let i = 0, n = 0; i < data.length; i += paso, n++){
+    const trozo = data.slice(i, i + paso);
+    for(let intento = 0; ; intento++){
+      try{
+        if(printerRT.noResp && chr.writeValueWithoutResponse) await chr.writeValueWithoutResponse(trozo);
+        else if(chr.writeValueWithResponse) await chr.writeValueWithResponse(trozo);
+        else await chr.writeValue(trozo);
+        break;
+      }catch(e){
+        if(intento >= 2 || !(printerRT.device && printerRT.device.gatt && printerRT.device.gatt.connected)) throw e;
+        /* "GATT operation already in progress" o el canal no acepta escribir sin respuesta */
+        if(intento === 1 && printerRT.noResp && chr.properties && chr.properties.write) printerRT.noResp = false;
+        await printerSleep(80);
+      }
+    }
+    /* Sin respuesta no hay control de flujo: se le da tiempo a la impresora */
+    if(printerRT.noResp) await printerSleep(n % 24 === 23 ? 70 : 18);
+  }
+}
+async function printerWriteSerial(data){
+  const port = printerRT.serial;
+  if(!port || !port.writable) throw Object.assign(new Error('Device disconnected'), { name:'NetworkError' });
+  const w = port.writable.getWriter();
+  try{
+    const paso = 512;
+    for(let i = 0; i < data.length; i += paso){
+      await w.ready;
+      await w.write(data.slice(i, i + paso));
+      if(data.length > paso) await printerSleep(30);
+    }
+    await w.ready;
+  }finally{
+    try{ w.releaseLock(); }catch(e){}
+  }
+}
+async function printerWriteUSB(data){
+  const dev = printerRT.usb;
+  const paso = 4096;
+  for(let i = 0; i < data.length; i += paso){
+    const trozo = data.slice(i, i + paso);
+    let r = await dev.transferOut(printerRT.usbEp, trozo);
+    if(r.status === 'stall'){
+      await dev.clearHalt('out', printerRT.usbEp);
+      r = await dev.transferOut(printerRT.usbEp, trozo);
+    }
+    if(r.status !== 'ok') throw Object.assign(new Error('La impresora USB no recibió los datos'), { name:'NetworkError' });
+  }
+}
 
 async function printerWrite(bytes){
-  const cfg = printerPrefs();
   const rec = printerMain();
   const nat = printerNative();
-  const data = Uint8Array.from(bytes);
+  const data = bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes);
 
-  if(printerRT.nativeOn && nat){
-    await nat.write({ data: printerB64(data) });
-    return 'native';
+  /* App RawBT: Android abre la app con el ticket ya armado */
+  if(rec && rec.conn === 'rawbt'){
+    location.href = printerRawBTUrl(data);
+    return 'app';
   }
-  if(printerRT.chr){
-    const paso = 20; /* las termicas BLE baratas no aguantan mas por paquete */
-    for(let i = 0; i < data.length; i += paso){
-      const trozo = data.slice(i, i + paso);
-      if(printerRT.noResp && printerRT.chr.writeValueWithoutResponse){
-        await printerRT.chr.writeValueWithoutResponse(trozo);
-      }else{
-        await printerRT.chr.writeValue(trozo);
-      }
-      await printerSleep(printerRT.noResp ? 18 : 6);
-    }
-    return 'ble';
-  }
-  if(printerRT.usb){
-    await printerRT.usb.transferOut(printerRT.usbEp, data);
-    return 'usb';
-  }
+  /* Wi-Fi: en la app nativa es un socket nuevo por ticket */
   if(rec && rec.conn === 'wifi'){
     if(nat && nat.netPrint){
-      await nat.netPrint({ host: rec.host, port: rec.port, data: printerB64(data) });
+      await printerTimeout(nat.netPrint({ host:rec.host, port:rec.port, data:printerB64(data) }), 20000, 'timed out');
       return 'native';
     }
-    const url = 'http://' + rec.host + ':' + rec.port + '/print';
-    await fetch(url, {
+    if(!printerAgentOK(rec.host)) throw new Error('mixed');
+    await fetch('http://' + rec.host + ':' + rec.port + '/print', {
       method:'POST', mode:'no-cors', cache:'no-store',
       headers:{ 'Content-Type':'application/octet-stream' },
       body: data
     });
     return 'http';
   }
-  throw new Error('No hay ninguna impresora conectada');
+  if(printerRT.nativeOn && nat){
+    await printerTimeout(nat.write({ data:printerB64(data) }), 60000, 'timed out');
+    return 'native';
+  }
+  if(printerRT.serial){ await printerWriteSerial(data); return 'serial'; }
+  if(printerRT.chr){ await printerWriteBLE(data); return 'ble'; }
+  if(printerRT.usb){ await printerWriteUSB(data); return 'usb'; }
+  throw Object.assign(new Error('Device disconnected'), { name:'NetworkError' });
+}
+
+/** Manda bytes a la impresora principal. Si no esta conectada la conecta
+    (desde el mismo toque) y si se cae a medio camino reconecta y reintenta
+    UNA vez. Regresa 'ok' | 'sent' | 'cancel' | 'busy' | 'fail'. */
+async function printerPrintBytes(makeBytes){
+  if(printerRT.busy){ toast('Espera, se está imprimiendo'); return 'busy'; }
+  printerRT.busy = true;
+  try{
+    for(let intento = 0; intento < 2; intento++){
+      if(!printerRT.connected){
+        let ok = await printerConnect({ gesture:true, quiet:true });
+        /* Si habia una reconexion automatica en curso (sin toque), se
+           vuelve a intentar ahora que si hay toque */
+        if(!ok && printerRT.needsTap && !printerRT.lastCancel) ok = await printerConnect({ gesture:true, quiet:true });
+        if(!ok) return printerRT.lastCancel ? 'cancel' : 'fail';
+      }
+      try{
+        const bytes = typeof makeBytes === 'function' ? await makeBytes() : makeBytes;
+        const ruta = await printerWrite(bytes);
+        return (ruta === 'http' || ruta === 'app') ? 'sent' : 'ok';
+      }catch(e){
+        printerRT.error = printerErr(e);
+        if(intento === 1) return 'fail';
+        /* Se cayo: se suelta, se reconecta y se reintenta */
+        const keep = printerRT.device;
+        await printerDropLink();
+        printerRT.device = keep;
+        printerSetState('off');
+        await printerSleep(400);
+      }
+    }
+    return 'fail';
+  }finally{
+    printerRT.busy = false;
+  }
 }
 
 /* =========================================================
@@ -7471,6 +7986,7 @@ async function escposTicketBytes(sale){
   const fila = (a, c) => ln(escPad(a, c, cols));
 
   raw([0x1B, 0x40]);                                   /* reiniciar */
+  if(cfg.noChino) raw([0x1C, 0x2E]);                   /* apagar modo chino (FS .) */
   raw([0x1B, 0x74, cs === 'cp850' ? 0x02 : 0x00]);     /* tabla de caracteres */
   raw([0x1B, 0x52, 0x0C]);                             /* juego: Latinoamerica */
 
@@ -7541,73 +8057,87 @@ async function escposTicketBytes(sale){
 /* =========================================================
    IMPRIMIR DE VERDAD
 ========================================================= */
+/** Regresa 'ok' | 'sent' | 'cancel' | 'busy' | 'fail' */
 async function printerPrintSale(sale, opts){
   opts = opts || {};
-  if(printerRT.busy){ toast('Espera, se esta imprimiendo'); return false; }
-  if(!printerIsConnected()){
-    const ok = await printerConnect();
-    if(!ok) return false;
-  }
-  printerRT.busy = true;
-  try{
-    const p = printPrefs();
-    const copias = Math.max(1, Math.min(3, Number(p.copies) || 1));
+  const p = printPrefs();
+  const copias = Math.max(1, Math.min(3, Number(p.copies) || 1));
+  const r = await printerPrintBytes(async function(){
     let bytes = [];
-    for(let i = 0; i < copias; i++){
-      const t = await escposTicketBytes(sale);
-      bytes = bytes.concat(t);
-    }
-    const ruta = await printerWrite(bytes);
+    for(let i = 0; i < copias; i++) bytes = bytes.concat(await escposTicketBytes(sale));
+    return bytes;
+  });
+  printerAfterPrint(r, opts.testing ? 'Ticket de prueba' : 'Ticket');
+  return r;
+}
+/** Aviso claro de como salio la impresion. */
+function printerAfterPrint(r, que){
+  const main = printerMain();
+  if(r === 'ok' || r === 'sent'){
     vibrate(12);
-    /* Por agente HTTP no hay acuse de la impresora: se dice "enviado", no "impreso". */
-    const seguro = ruta !== 'http';
-    toast(opts.testing ? 'Ticket de prueba enviado' : (seguro ? 'Ticket impreso' : 'Ticket enviado al agente'),
-          { icon:icon('print'), variant:'toast-success', subtitle: printerLabel() });
-    return true;
-  }catch(e){
-    printerRT.connected = false;
-    printerRefresh();
-    toast('No se pudo imprimir', {
-      icon: icon('alert'), variant:'toast-danger',
-      subtitle: String(e && e.message || e).slice(0, 70), duration: 2600
-    });
-    return false;
-  }finally{
-    printerRT.busy = false;
+    /* Por agente o por RawBT no hay acuse de la impresora: se dice "enviado", no "impreso". */
+    const titulo = r === 'ok' ? que + ' impreso'
+                 : (main && main.conn === 'rawbt' ? que + ' enviado a RawBT' : que + ' enviado al agente');
+    toast(titulo, { icon:icon('print'), variant:'toast-success', subtitle:printerLabel() });
+  }else if(r === 'cancel'){
+    toast('No se imprimió', { icon:icon('alert'), variant:'toast-wrap', subtitle:'Para imprimir, toca tu impresora en la ventanita que aparece', duration:3600 });
+  }else if(r === 'fail'){
+    toast('No se pudo imprimir', { icon:icon('alert'), variant:'toast-danger toast-wrap', subtitle:printerRT.error || 'Revisa que la impresora esté prendida, con papel y cerca', duration:4200 });
   }
 }
 
 /** Prueba real por la impresora fisica (no abre el dialogo del navegador). */
-function printerTestPrint(){
+async function printerTestPrint(){
   vibrate(HAPTIC_PRINT);
-  printerPrintSale(printDemoSale(), { testing:true });
+  if(!printerMain()){ toast('Primero busca y elige tu impresora'); return; }
+  printerRT.manualOff = false;
+  await printerPrintSale(printDemoSale(), { testing:true });
 }
 
 /* =========================================================
    PANTALLA: bloque de impresora dentro de "Impresion de tickets"
 ========================================================= */
+function printerStateInfo(){
+  const main = printerMain();
+  if(main && main.conn === 'rawbt' && printerRawBTOK()) return { txt:'Lista', cls:'on' };
+  if(printerRT.state === 'connecting') return { txt:'Conectando…', cls:'wait' };
+  if(printerRT.connected) return { txt:'Conectada', cls:'on' };
+  return { txt:'Desconectada', cls:'' };
+}
 function printerRefresh(){
   const box = document.getElementById('printerBox');
   if(box) box.innerHTML = printerBoxHTML();
   const sub = document.getElementById('lblPrinterState');
-  if(sub) sub.textContent = printerIsConnected() ? 'Conectada' : 'Desconectada';
+  if(sub) sub.textContent = printerStateInfo().txt;
 }
 function printerNoBT(){
   toast('Este navegador no permite Bluetooth', {
-    icon: icon('alert'), variant:'toast-danger',
-    subtitle:'Prueba con Bluefy en iPhone, o Chrome en Android y PC', duration: 3000
+    icon: icon('alert'), variant:'toast-danger toast-wrap',
+    subtitle:'Usa Chrome en Android o PC, o Bluefy en iPhone', duration: 3200
   });
 }
 
 function printerConnIcon(tipo){
-  if(tipo === 'wifi') return icon('wifi');
-  if(tipo === 'usb')  return icon('usb');
+  if(tipo === 'wifi')  return icon('wifi');
+  if(tipo === 'usb')   return icon('usb');
+  if(tipo === 'rawbt') return icon('mobile');
   return icon('bluetooth');
 }
 function printerConnName(tipo){
-  if(tipo === 'wifi') return 'Wi-Fi';
-  if(tipo === 'usb')  return 'USB';
+  if(tipo === 'wifi')  return 'Wi-Fi';
+  if(tipo === 'usb')   return 'USB';
+  if(tipo === 'rawbt') return 'RawBT';
   return 'Bluetooth';
+}
+/** Como esta conectada esa impresora, en palabras. */
+function printerViaName(d){
+  if(!d) return '';
+  if(d.conn === 'rawbt') return 'App RawBT (Android)';
+  if(d.conn === 'wifi') return 'Wi-Fi · ' + d.host + ':' + d.port;
+  if(d.via === 'serial') return d.conn === 'bt' ? 'Bluetooth clásico' : 'USB · puerto COM';
+  if(d.via === 'native') return 'Bluetooth (app)';
+  if(d.conn === 'usb') return 'USB';
+  return 'Bluetooth BLE';
 }
 
 /** Nota honesta segun lo que este dispositivo puede hacer de verdad. */
@@ -7615,114 +8145,159 @@ function printerNoteHTML(){
   const cfg = printerPrefs();
   const env = printerEnv();
 
+  if(cfg.conn === 'rawbt'){
+    if(!printerRawBTOK()) return `<div class="pr-note warn"><b>RawBT solo funciona en Android.</b> En este aparato usa Bluetooth, USB o Wi-Fi.</div>`;
+    return `<div class="pr-note">
+      <b>Sirve con casi cualquier térmica</b>, incluso las de Wi-Fi o Bluetooth clásico.
+      1) Instala <b>RawBT</b> (gratis en Play Store). 2) Ábrela y elige ahí tu impresora.
+      3) Toca <b>Usar RawBT</b> y luego <b>Ticket de prueba</b>. Cada ticket se manda a RawBT y ella lo imprime.
+    </div>`;
+  }
   if(env.native){
+    if(cfg.conn === 'usb') return `<div class="pr-note warn">La app de iPhone no usa USB. Conecta la impresora por <b>Bluetooth</b> o <b>Wi-Fi</b>.</div>`;
     return `<div class="pr-note ok">
-      <b>Puente nativo activo.</b> Esta app corre dentro del contenedor nativo,
-      así que se conecta directo con la impresora y manda ESC/POS sin pasar por el navegador.
+      <b>App nativa activa.</b> Se conecta directo con la impresora${cfg.conn === 'wifi' ? ' por la red (puerto 9100)' : ' por Bluetooth BLE'}
+      y se vuelve a conectar sola. Las impresoras de Bluetooth clásico no funcionan en iPhone: para esas usa Wi-Fi.
     </div>`;
   }
   if(!env.secure){
     return `<div class="pr-note warn">
       <b>Falta HTTPS.</b> El navegador solo deja usar Bluetooth y USB en páginas
-      seguras (https:// o localhost). Abre la app desde una dirección https y vuelve a intentar.
-    </div>`;
-  }
-  if(env.iOS && cfg.conn === 'bt'){
-    return `<div class="pr-note warn">
-      <b>iPhone / iPad:</b> Safari no incluye Web Bluetooth, así que esta página
-      no puede hablar con la impresora por Bluetooth. No es un error de la app: es un límite de iOS.
-      El ticket se imprime igual desde el diálogo del sistema.
-    </div>`;
-  }
-  if(cfg.conn === 'bt' && !env.webBT){
-    return `<div class="pr-note warn">
-      <b>Este navegador no tiene Web Bluetooth.</b> Usa Chrome o Edge en Android o PC,
-      o conecta la impresora por Wi-Fi o USB.
-    </div>`;
-  }
-  if(cfg.conn === 'usb' && !env.webUSB){
-    return `<div class="pr-note warn">
-      <b>Este navegador no permite USB.</b> Funciona en Chrome o Edge, en PC y en Android con OTG.
-      El ticket se imprime igual desde el diálogo del sistema.
+      seguras (https://). Abre la app desde su dirección https y vuelve a intentar.
     </div>`;
   }
   if(cfg.conn === 'wifi'){
+    if(env.android) return `<div class="pr-note warn">
+      <b>El navegador no puede abrir impresoras Wi-Fi</b> (no tiene acceso al puerto 9100).
+      En Android usa la opción <b>RawBT</b>: es gratis y manda los tickets a tu impresora de red.
+    </div>`;
     return `<div class="pr-note">
-      <b>Wi-Fi:</b> un navegador no puede abrir el puerto 9100 directo. Escribe la IP y el
-      puerto de tu impresora: si ${APP_NAME} corre dentro del contenedor nativo, se envía por socket;
-      si corre en el navegador, necesita un pequeño agente en la red que reciba los bytes
-      ESC/POS en <code>/print</code>.
+      <b>Wi-Fi:</b> el navegador no puede abrir el puerto 9100 de la impresora. Funciona en la app de iPhone,
+      o si en esta computadora corre un agente que reciba los tickets en <code>http://localhost:PUERTO/print</code>.
+      Si no, conéctala por USB, o instálala en la computadora y usa <b>Prueba en hoja</b>.
+    </div>`;
+  }
+  if(cfg.conn === 'bt'){
+    if(!env.webBT && !env.webSerial){
+      if(env.iOS) return `<div class="pr-note warn">
+        <b>iPhone / iPad:</b> Safari no trae Bluetooth para páginas web (es un límite de Apple, no de la app).
+        Abre ${APP_NAME} en el navegador <b>Bluefy</b> (gratis en App Store) para conectar impresoras BLE,
+        o usa una impresora Wi-Fi con la app. Mientras, el ticket sale con el diálogo del sistema.
+      </div>`;
+      return `<div class="pr-note warn">
+        <b>Este navegador no tiene Bluetooth.</b> Usa Chrome o Edge en Android o PC${env.android ? ', o la opción RawBT' : ''}.
+      </div>`;
+    }
+    const clasico = env.webSerial
+      ? ` ¿No aparece? Muchas térmicas son <b>Bluetooth clásico</b>: vincúlala primero en los ajustes de Bluetooth del aparato
+          (el PIN casi siempre es 0000 o 1234) y toca <b>Bluetooth clásico</b>.`
+      : (env.android ? ` ¿No aparece? Es Bluetooth clásico: actualiza Chrome o usa la opción <b>RawBT</b>.` : '');
+    return `<div class="pr-note">
+      Prende la impresora y toca <b>${env.webBT ? 'Buscar impresora' : 'Bluetooth clásico'}</b>. Se guarda en este aparato
+      y se vuelve a conectar sola.${clasico}
+    </div>`;
+  }
+  /* USB */
+  if(!env.webUSB && !env.webSerial){
+    return `<div class="pr-note warn">
+      <b>Este navegador no permite USB.</b> Funciona en Chrome o Edge, en PC y en Android con cable OTG.
     </div>`;
   }
   return `<div class="pr-note">
-    Toca <b>Buscar impresoras</b> y elige la tuya. Se guarda en este dispositivo,
-    porque la impresora cambia en cada caja o celular.
+    Conecta el cable y toca <b>${env.webUSB ? 'Buscar USB' : 'Puerto COM'}</b>.${env.webSerial ? `
+    Si tu impresora aparece como puerto COM (o ya le instalaste su programa en Windows), usa <b>Puerto COM</b>.` : ''}
   </div>`;
 }
 
 function printerBoxHTML(){
-  const cfg = printerPrefs();
-  const env = printerEnv();
+  const cfg  = printerPrefs();
+  const env  = printerEnv();
   const main = printerMain();
-  const on  = printerIsConnected();
-  const puedeBuscar = printerCanScan(cfg.conn);
+  const on   = printerIsConnected();
+  const st   = printerStateInfo();
+  const conectando = printerRT.state === 'connecting';
 
+  const tipos = ['bt', 'wifi', 'usb'];
+  if(printerRawBTOK() || cfg.conn === 'rawbt') tipos.push('rawbt');
   const connBtn = (id) =>
     `<button class="${cfg.conn === id ? 'active' : ''}" onclick="printerSetConn('${id}')">${printerConnName(id)}</button>`;
+
+  const btn = (cls, fn, ico, txt, off) =>
+    `<button class="btn ${cls}" onclick="${fn}" ${off ? 'disabled' : ''}>${icon(ico)} ${txt}</button>`;
+
+  const acts = [];
+  if(cfg.conn === 'bt'){
+    if(env.native || env.webBT || !env.webSerial) acts.push(btn('ghost', 'printerScan()', 'search', 'Buscar impresora', !printerCanScan('bt')));
+    if(!env.native && env.webSerial) acts.push(btn('ghost', "printerScanSerial('bt')", 'bluetooth', 'Bluetooth clásico', false));
+  }else if(cfg.conn === 'usb'){
+    if(env.native || env.webUSB || !env.webSerial) acts.push(btn('ghost', 'printerScanUSB()', 'search', 'Buscar USB', env.native || !env.webUSB));
+    if(!env.native && env.webSerial) acts.push(btn('ghost', "printerScanSerial('usb')", 'usb', 'Puerto COM', false));
+  }else if(cfg.conn === 'wifi'){
+    acts.push(btn('ghost', 'printerScan()', 'check', 'Guardar impresora', false));
+  }else{
+    acts.push(btn('ghost', 'printerScan()', 'mobile', 'Usar RawBT', !printerRawBTOK()));
+  }
+  if(main){
+    if(main.conn !== 'rawbt'){
+      if(on) acts.push(btn('ghost', 'printerDisconnect()', 'close', 'Desconectar', false));
+      else   acts.push(btn('dark', 'printerConnect({ gesture:true })', main.conn === 'wifi' ? 'wifi' : (main.conn === 'usb' ? 'usb' : 'bluetooth'),
+                           conectando ? 'Conectando…' : 'Conectar', conectando || !printerUsable(main)));
+    }
+    acts.push(btn('primary', 'printerTestPrint()', 'print', 'Ticket de prueba', conectando || !printerUsable(main)));
+  }
 
   const item = (d) => `
     <div class="pr-item ${cfg.mainId === d.id ? 'active' : ''}">
       <button class="acc-ico ${d.conn === 'wifi' ? 'blue' : (d.conn === 'usb' ? 'violet' : 'green')}"
-              style="border:none;" onclick="printerSetMain('${d.id}')">${printerConnIcon(d.conn)}</button>
+              style="border:none;" onclick="printerSetMain('${escapeHtml(d.id)}')" aria-label="Usar esta impresora">${printerConnIcon(d.conn)}</button>
       <button class="acc-txt" style="background:none;border:none;text-align:left;padding:0;"
-              onclick="printerSetMain('${d.id}')">
+              onclick="printerSetMain('${escapeHtml(d.id)}')">
         <span class="acc-label">${escapeHtml(d.name)}</span>
-        <span class="acc-sub">${printerConnName(d.conn)}${d.host ? ' · ' + escapeHtml(d.host) + ':' + d.port : ''}</span>
+        <span class="acc-sub">${escapeHtml(printerViaName(d))}${printerUsable(d) ? '' : ' · no disponible aquí'}</span>
       </button>
       ${cfg.mainId === d.id ? `<span class="tag ok">Principal</span>` : ''}
-      <button class="pr-forget" onclick="printerForget('${d.id}')" title="Quitar">${icon('trash')}</button>
+      <button class="pr-forget" onclick="printerForget('${escapeHtml(d.id)}')" title="Quitar" aria-label="Quitar impresora">${icon('trash')}</button>
     </div>`;
 
+  /* Aviso: guardada pero sin conexion (paso al cerrar la pagina o al apagarla) */
+  let aviso = '';
+  if(main && !on && !conectando && main.conn !== 'rawbt'){
+    if(printerRT.error){
+      aviso = `<div class="pr-note warn" style="margin:12px 0 0;">${escapeHtml(printerRT.error)}</div>`;
+    }else if(printerRT.needsTap){
+      aviso = `<div class="pr-note" style="margin:12px 0 0;">
+        Tu impresora sigue guardada. Toca <b>Conectar</b> (o imprime un ticket) y, si sale la ventanita,
+        elígela. <b>No hace falta borrarla.</b></div>`;
+    }
+  }
+
   return `
-    <div class="pr-card ${on ? 'on' : ''}">
+    <div class="pr-card ${st.cls === 'on' ? 'on' : ''}">
       <div class="pr-head">
-        <span class="acc-ico ${on ? 'green' : ''}">${icon('print')}</span>
+        <span class="acc-ico ${st.cls === 'on' ? 'green' : ''}">${icon('print')}</span>
         <span class="acc-txt">
           <span class="acc-label">${main ? escapeHtml(main.name) : 'Sin impresora principal'}</span>
-          <span class="acc-sub">${main
-            ? printerConnName(main.conn) + (main.chr ? ' · ESC/POS' : '')
-            : 'Elige la impresora que usa esta caja'}</span>
+          <span class="acc-sub">${main ? escapeHtml(printerViaName(main)) : 'Elige la impresora que usa esta caja'}</span>
         </span>
-        <span class="pr-state ${on ? 'on' : ''}">
-          <span class="pr-dot"></span><span id="lblPrinterState">${on ? 'Conectada' : 'Desconectada'}</span>
+        <span class="pr-state ${st.cls}">
+          <span class="pr-dot"></span><span id="lblPrinterState">${st.txt}</span>
         </span>
       </div>
 
       <div class="seg" style="max-width:none; margin:13px 0 0;">
-        ${connBtn('bt')}${connBtn('wifi')}${connBtn('usb')}
+        ${tipos.map(connBtn).join('')}
       </div>
 
       ${cfg.conn === 'wifi' ? `
         <div class="pr-wifi">
-          <input id="prHost" type="text" inputmode="decimal" placeholder="192.168.1.50"
-                 value="${escapeHtml(cfg.host || '')}">
-          <input id="prPort" type="number" placeholder="9100" value="${cfg.port || 9100}">
+          <input id="prHost" type="text" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false"
+                 placeholder="192.168.1.50" aria-label="IP de la impresora" value="${escapeHtml(cfg.host || '')}">
+          <input id="prPort" type="number" inputmode="numeric" placeholder="9100" aria-label="Puerto" value="${Number(cfg.port) || 9100}">
         </div>` : ''}
 
-      <div class="pr-actions">
-        <button class="btn ghost" onclick="printerScan()" ${puedeBuscar ? '' : 'disabled'}>
-          ${icon('search')} ${cfg.conn === 'wifi' ? 'Guardar impresora' : 'Buscar impresoras'}
-        </button>
-        ${on
-          ? `<button class="btn ghost" onclick="printerDisconnect()">${icon('close')} Desconectar</button>`
-          : `<button class="btn dark" onclick="printerConnect()" ${(main && puedeBuscar) ? '' : 'disabled'}>${printerConnIcon(cfg.conn)} Enlazar</button>`}
-        <button class="btn ghost" onclick="printerChange()" ${main ? '' : 'disabled'}>
-          ${icon('swap')} Cambiar impresora
-        </button>
-        <button class="btn primary" onclick="printerTestPrint()" ${main ? '' : 'disabled'}>
-          ${icon('print')} Ticket de prueba
-        </button>
-      </div>
+      ${aviso}
+
+      <div class="pr-actions">${acts.join('')}</div>
 
       ${cfg.devices.length ? `<div class="pr-list">${cfg.devices.map(item).join('')}</div>` : ''}
     </div>
@@ -7750,10 +8325,82 @@ function printerBoxHTML(){
       </div>
       <div class="field-hint">Si en el papel salen símbolos raros donde va la ñ o un acento, cambia de tabla.</div>
     </div>
+
+    <div class="toggle-row">
+      <span class="acc-ico blue">${icon('alert')}</span>
+      <span class="acc-txt">
+        <span class="acc-label">Salen letras chinas</span>
+        <span class="acc-sub" style="white-space:normal;">Actívalo si en vez de acentos o ñ salen caracteres chinos (pasa en algunas impresoras genéricas).</span>
+      </span>
+      <label class="switch">
+        <input type="checkbox" ${cfg.noChino ? 'checked' : ''} onchange="setPrinterPref('noChino', this.checked)">
+        <span class="track"></span>
+      </label>
+    </div>
+
+    ${main && main.via === 'serial' && main.conn === 'usb' ? `
+    <div class="field" style="margin-top:14px;">
+      <label>Velocidad del puerto COM</label>
+      <div class="seg" style="max-width:none; margin-bottom:0;">
+        ${[9600, 19200, 38400, 115200].map(b => `<button class="${(Number(main.baud) || 9600) === b ? 'active' : ''}" onclick="printerSetBaud(${b})">${b}</button>`).join('')}
+      </div>
+      <div class="field-hint">Casi todas usan 9600. Si sale basura en el papel, prueba 115200.</div>
+    </div>` : ''}
   `;
 }
 
-/* Reconexion silenciosa al abrir la app. */
+/** Puerto COM: cambia la velocidad y reconecta. */
+async function printerSetBaud(b){
+  const cfg = printerPrefs();
+  const d = cfg.devices.find(x => x.id === cfg.mainId);
+  if(!d || d.via !== 'serial') return;
+  d.baud = b;
+  savePrinterPrefs(cfg);
+  await printerDropLink();
+  printerSetState('off');
+  printerConnect({ gesture:true });
+}
+
+/* =========================================================
+   RECONEXION AUTOMATICA
+   · Al abrir la app.
+   · Al volver a la pagina (Chrome corta el Bluetooth cuando
+     cambias de app o de pestana: aqui se vuelve a conectar).
+   · Al volver a conectar el cable USB o encender el puerto.
+========================================================= */
+function printerWakeUp(){
+  if(document.hidden) return;
+  clearTimeout(printerWakeUp._t);
+  printerWakeUp._t = setTimeout(function(){ try{ printerAutoConnect(); }catch(e){} }, 450);
+}
+document.addEventListener('visibilitychange', printerWakeUp);
+window.addEventListener('pageshow', printerWakeUp);
+window.addEventListener('focus', printerWakeUp);
+window.addEventListener('online', printerWakeUp);
+try{
+  if(navigator.usb && navigator.usb.addEventListener){
+    navigator.usb.addEventListener('connect', function(e){
+      const m = printerMain();
+      if(m && m.conn === 'usb' && m.via !== 'serial' && e.device &&
+         e.device.vendorId === m.vendorId && e.device.productId === m.productId){
+        printerRT.manualOff = false;
+        printerAutoConnect();
+      }
+    });
+    navigator.usb.addEventListener('disconnect', function(e){
+      if(printerRT.usb && e.device === printerRT.usb){ printerRT.usb = null; printerOnDrop(); }
+    });
+  }
+  if(navigator.serial && navigator.serial.addEventListener){
+    navigator.serial.addEventListener('connect', function(){
+      const m = printerMain();
+      if(m && m.via === 'serial'){ printerRT.manualOff = false; setTimeout(printerAutoConnect, 300); }
+    });
+    navigator.serial.addEventListener('disconnect', function(e){
+      if(printerRT.serial && e.target === printerRT.serial){ printerRT.serial = null; printerOnDrop(); }
+    });
+  }
+}catch(e){ /* navegador sin esos eventos */ }
 setTimeout(function(){ try{ printerAutoConnect(); }catch(e){} }, 1500);
 
 /* =========================================================
@@ -9733,7 +10380,7 @@ Object.assign(ILLUSTRATIONS, {
     <circle cx="122" cy="62" r="13" fill="#25D366" stroke="#FFFFFF" stroke-width="3"/>
     <path d="M116.5 62.4l3.8 3.8 7-7.4" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
-  // Escena de bienvenida al regalo de 3 meses gratis
+  // Escena de bienvenida al regalo de 1 mes gratis
   trialGift: `
   <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
@@ -10185,7 +10832,7 @@ function openTerms(){
     <div class="terms-doc">
       <p><b>1. Uso del servicio.</b> ${APP_NAME} es una herramienta para administrar ventas, inventario y clientes de tu negocio. Eres responsable de la información que captures y de usar la cuenta de forma legal.</p>
       <p><b>2. Tu cuenta.</b> Tu correo electrónico y tu contraseña son tu acceso. Cuida tu contraseña, no la compartas y no compartas los códigos que te lleguen por correo.</p>
-      <p><b>3. Prueba y pago.</b> Tienes 1 mes de prueba gratis. Después, la membresía cuesta $${TRIAL_PRECIO} MXN al mes y se cobra con Stripe. Si no se renueva, tu cuenta se pausa; tus datos se conservan y se reactiva al pagar.</p>
+      <p><b>3. Mes gratis y pago.</b> Al crear tu cuenta tienes 1 mes gratis, sin tarjeta. Después, la membresía cuesta $${TRIAL_PRECIO} MXN al mes y se cobra con Stripe. Si el pago no se renueva, tu cuenta se pausa: tus datos se conservan y la cuenta se reactiva al pagar.</p>
       <p><b>4. Disponibilidad.</b> Hacemos lo posible por que el servicio funcione siempre, pero puede haber interrupciones por mantenimiento o fallas de terceros.</p>
       <h3 class="sheet-title" style="margin-top:18px;">Tratamiento de datos personales</h3>
       <p><b>Qué guardamos.</b> Tu correo electrónico, tu nombre, los datos de tu negocio (productos, ventas, clientes) y las fotos que subas.</p>
@@ -10424,20 +11071,23 @@ function saveRegistrationName(){
 
 /* ---------- Pantalla única: regalo de bienvenida (solo primer registro) ---------- */
 function authTrialHTML(){
+  /* La fecha en que termina el mes gratis (la de Supabase si ya cargó) */
+  const t = trialInfo(currentUser());
+  const fin = t && t.end && !isNaN(t.end) ? t.end.toLocaleDateString('es-MX', { day:'numeric', month:'long' }) : '';
   return `
     <div class="auth-hero">${ILLUSTRATIONS.trialGift}</div>
     <div class="auth-sheet">
       <div class="auth-body">
         <span class="trial-badge">${icon('gift')}Regalo de bienvenida</span>
-        <h1 class="auth-title">1 mes de prueba gratis</h1>
-        <p class="auth-sub">Usa ${APP_NAME} sin costo durante <b style="color:var(--ink)">1 mes completo</b>. Cuando termine tu prueba, la membresía cuesta <b style="color:var(--ink)">$${TRIAL_PRECIO} al mes</b>. Te avisaremos antes de que se acabe.</p>
+        <h1 class="auth-title">Tu primer mes es gratis</h1>
+        <p class="auth-sub">Usa todo ${APP_NAME} sin pagar nada durante un mes, y sin poner tarjeta. Al terminar, la membresía cuesta <b style="color:var(--ink)">$${TRIAL_PRECIO} MXN al mes</b>.</p>
         <div class="trial-card">
-          <div class="trial-card-row"><span>Hoy</span><b>Gratis</b></div>
-          <div class="trial-card-row"><span>Durante 1 mes</span><b>$0</b></div>
-          <div class="trial-card-row highlight"><span>Después</span><b>$${TRIAL_PRECIO}/mes</b></div>
+          <div class="trial-card-row"><span>${fin ? 'Hoy y hasta el ' + fin : 'Hoy y durante un mes'}</span><b>Gratis</b></div>
+          <div class="trial-card-row highlight"><span>Después</span><b>$${TRIAL_PRECIO} MXN al mes</b></div>
         </div>
+        <p class="trial-fine">Si al terminar el mes no pagas, tu cuenta se pausa y tus datos se quedan guardados. En Mi cuenta ves cuántos días te quedan.</p>
         <div class="auth-actions">
-          <button class="btn dark xl block" onclick="acceptTrialAndEnter()">Empezar mi prueba gratis</button>
+          <button class="btn dark xl block" onclick="acceptTrialAndEnter()">Empezar mi mes gratis</button>
         </div>
       </div>
     </div>
@@ -10509,7 +11159,7 @@ function trialWidgetHTML(u){
         <span class="trial-widget-ico paid">${icon('shield')}</span>
         <div class="trial-widget-txt">
           <span class="trial-widget-label">Membresía activa</span>
-          <span class="trial-widget-sub">$${TRIAL_PRECIO} al mes</span>
+          <span class="trial-widget-sub">$${TRIAL_PRECIO} MXN al mes · se cobra sola cada mes</span>
         </div>
       </div>
     </div>`;
@@ -10522,8 +11172,8 @@ function trialWidgetHTML(u){
       <div class="trial-widget-top">
         <span class="trial-widget-ico warn">${icon('bell')}</span>
         <div class="trial-widget-txt">
-          <span class="trial-widget-label">${t.lapsed ? 'Tu membresía venció' : 'Tu prueba gratis terminó'}</span>
-          <span class="trial-widget-sub">Activa tu membresía para seguir usando ${APP_NAME}</span>
+          <span class="trial-widget-label">${t.lapsed ? 'Tu membresía venció' : 'Tu mes gratis terminó'}</span>
+          <span class="trial-widget-sub">Paga tu membresía para seguir usando ${APP_NAME}</span>
         </div>
       </div>
       <button class="btn dark block" style="margin-top:12px;" onclick="openMembershipPay()">Pagar membresía · $${TRIAL_PRECIO}/mes</button>
@@ -10536,8 +11186,8 @@ function trialWidgetHTML(u){
       <div class="trial-widget-top">
         <span class="trial-widget-ico">${icon('gift')}</span>
         <div class="trial-widget-txt">
-          <span class="trial-widget-label">${t.daysLeft} día${t.daysLeft === 1 ? '' : 's'} gratis restantes</span>
-          <span class="trial-widget-sub">Después: $${TRIAL_PRECIO} al mes</span>
+          <span class="trial-widget-label">${t.daysLeft === 1 ? 'Te queda 1 día gratis' : 'Te quedan ' + t.daysLeft + ' días gratis'}</span>
+          <span class="trial-widget-sub">Después, $${TRIAL_PRECIO} MXN al mes</span>
         </div>
       </div>
       <div class="trial-bar"><div class="trial-bar-fill" style="width:${t.pct}%"></div></div>
@@ -12850,7 +13500,7 @@ function renderMenuDigital(){
   const cfg = mdCfg();
   return `
     <h1 class="page-title">Menú Digital</h1>
-    <p class="page-sub">Tus clientes ven tu menú y te mandan su pedido por WhatsApp</p>
+    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>
 
     <div class="section-title">Configuración del Menú Digital</div>
     ${mdConfigHTML(cfg)}
@@ -12923,7 +13573,7 @@ function mdConfigHTML(cfg){
         <span class="md-status-ico ${cfg.active ? 'on' : ''}">${icon('menuBook')}</span>
         <span class="md-status-txt">
           <span class="md-status-title">${cfg.active ? 'Tu Menú Digital está activo' : 'Menú Digital desactivado'}</span>
-          <span class="md-status-sub">${cfg.active ? (cfg.paused ? 'Tus clientes ven el menú, pero no pueden enviar pedidos' : (mdClosedNow(cfg) ? 'Fuera de horario: ven el menú, pero no pueden pedir' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') : 'Los pedidos llegan a tu WhatsApp')) : 'Confirma estas opciones y actívalo'}</span>
+          <span class="md-status-sub">${cfg.active ? (cfg.paused ? 'Tus clientes ven el menú, pero no pueden enviar pedidos' : (mdClosedNow(cfg) ? 'Fuera de horario: ven el menú, pero no pueden pedir' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') : 'Los pedidos llegan aquí y a tu WhatsApp')) : 'Confirma estas opciones y actívalo'}</span>
         </span>
         <span class="md-pill ${estado.cls}">${estado.txt}</span>
       </div>
@@ -14322,7 +14972,8 @@ function mdiSectionHTML(){
 
   return `
     <div class="section-title mdi-title" id="mdiSection">Pedidos entrantes ${c.nuevo ? `<span class="mdi-count">${c.nuevo} nuevo${c.nuevo === 1 ? '' : 's'}</span>` : ''}</div>
-    <p class="md-hint" style="margin:-6px 2px 12px;">Los pedidos que tus clientes mandan a tu WhatsApp. Tócalos para revisarlos, cambiar algo si hace falta y confirmarlos o rechazarlos.</p>
+    <p class="md-hint" style="margin:-6px 2px 12px;">Los pedidos de tu Menú Digital llegan aquí solos, desde el celular de cualquier cliente. Tócalos para revisarlos, cambiar algo si hace falta y confirmarlos o rechazarlos.</p>
+    ${typeof mdiCloudStatusHTML === 'function' ? mdiCloudStatusHTML() : ''}
 
     <div class="mdi-today">
       <div><span>Hoy</span><b>${hoy.length}</b><small>pedido${hoy.length === 1 ? '' : 's'}</small></div>
@@ -14345,7 +14996,7 @@ function mdiSectionHTML(){
       <button class="btn ghost" onclick="mdiOpenPaste()">${icon('paste')} Pegar pedido de WhatsApp</button>
       <button class="btn ghost" onclick="statsOrigin='menu'; statsSel=null; goTo('stats');">${icon('chart')} Estadísticas del menú</button>
     </div>
-    <p class="md-hint">¿El pedido te llegó al WhatsApp de otro teléfono? Copia el mensaje y usa <b>Pegar pedido de WhatsApp</b>.</p>
+    <p class="md-hint">¿Te llegó un pedido a tu WhatsApp y no aparece aquí? Copia el mensaje y usa <b>Pegar pedido de WhatsApp</b>; si ya estaba, no se duplica.</p>
   `;
 }
 function mdiCardHTML(o){
@@ -14994,15 +15645,7 @@ function mdiWatch(){
     try{ antes = JSON.parse(e.oldValue || '[]'); }catch(x){}
     try{ ahora = JSON.parse(e.newValue || '[]'); }catch(x){}
     const nuevos = ahora.filter(o => o.status === 'nuevo' && !antes.some(a => a.id === o.id));
-    mdiPaintBadge();
-    if(nuevos.length){
-      const o = nuevos[nuevos.length - 1];
-      vibrate([30, 60, 30]);
-      toast('Nuevo pedido del Menú Digital', { icon:icon('inbox'), variant:'toast-success toast-top', subtitle:o.code + ' · ' + formatMoney(mdTotals(o.lines || []).total) + ((o.customer && o.customer.name) ? ' · ' + o.customer.name : ''), duration:3200 });
-      if(currentView === 'menu' || currentView === 'home'){
-        if(document.querySelector('#modal-layer .modal-sheet')) renderBgKeepModal(); else render();
-      }
-    }
+    mdiAnnounce(nuevos);
   });
 }
 
@@ -15023,7 +15666,7 @@ function mdCompactHTML(cfg){
   const cerrado = mdClosedNow(cfg);
   const estado = cfg.paused ? { cls:'paused', txt:'Pausado', sub:'Pedidos pausados · tus clientes solo ven el menú' }
                : cerrado ? { cls:'paused', txt:'Cerrado', sub:'Fuera de horario' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') }
-               : { cls:'on', txt:'Activo', sub:'Recibiendo pedidos por WhatsApp' };
+               : { cls:'on', txt:'Activo', sub:'Recibiendo pedidos aquí y en tu WhatsApp' };
   return `
     <div class="md-compact">
       <div class="md-compact-top">
@@ -15047,7 +15690,7 @@ renderMenuDigital = function(){
   const verCfg = !cfg.active || mdCfgVisible();
   return `
     <h1 class="page-title">Menú Digital</h1>
-    <p class="page-sub">Tus clientes ven tu menú y te mandan su pedido por WhatsApp</p>
+    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>
     ${verCfg ? `
       <div class="section-title">Configuración del Menú Digital
         ${cfg.active ? `<button class="md-hide-btn" onclick="mdSetCfgVisible(false)">Ocultar ${icon('chevronDown')}</button>` : ''}
@@ -15092,6 +15735,9 @@ dmSendWhatsApp = function(){
   order.waText = mdiMessage(order);
   /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
   mdiReceive(order, 'menu');
+  /* Desde CUALQUIER celular: el pedido viaja por internet a la caja del negocio.
+     Se manda antes de abrir WhatsApp y termina aunque WhatsApp tape la página. */
+  const envio = typeof mdiCloudSend === 'function' ? mdiCloudSend(order) : Promise.resolve(false);
   const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
   if(navigator.vibrate) try{ navigator.vibrate([60, 40, 60]); }catch(e){}
   const win = window.open(url, '_blank');
@@ -15100,6 +15746,7 @@ dmSendWhatsApp = function(){
   dmCloseSheet();
   dmRefreshCards();
   dmToast('Pedido ' + order.code + ' listo en WhatsApp');
+  envio.then(ok => { if(ok) dmToast('El negocio ya recibió tu pedido ' + order.code); });
 };
 dmWhatsappMessage = function(){ return mdiMessage(mdiBuildFromCart(dm.cart, '')); };
 
@@ -15175,7 +15822,7 @@ function mdiStatsHTML(){
       <div class="empty-state">
         ${illustration('chartEmpty')}
         <div class="empty-title">Aún no hay pedidos del Menú Digital</div>
-        <div class="empty-text">Cuando cobres los pedidos que te lleguen por WhatsApp, aquí verás sus ventas, gráficas y estadísticas.</div>
+        <div class="empty-text">Cuando cobres los pedidos de tu Menú Digital, aquí verás sus ventas, gráficas y estadísticas.</div>
       </div>
       <button class="btn primary block" onclick="goTo('menu')">${icon('menuBook')} Ir al Menú Digital</button>`;
   }
@@ -16959,7 +17606,7 @@ function linesDocBytes(rows){
   const out = [];
   const raw = a => { for(let i = 0; i < a.length; i++) out.push(a[i]); };
   const ln = s => { raw(escEncode(s == null ? '' : s, cs)); out.push(0x0A); };
-  raw([0x1B, 0x40]); raw([0x1B, 0x74, cs === 'cp850' ? 0x02 : 0x00]); raw([0x1B, 0x52, 0x0C]);
+  raw([0x1B, 0x40]); if(cfg.noChino) raw([0x1C, 0x2E]); raw([0x1B, 0x74, cs === 'cp850' ? 0x02 : 0x00]); raw([0x1B, 0x52, 0x0C]);
   raw([0x1B, 0x61, 0x01]); raw([0x1B, 0x45, 1]); escWrap(stripEmoji(biz.title), cols).forEach(ln); raw([0x1B, 0x45, 0]);
   raw([0x1B, 0x61, 0x00]);
   rows.forEach(r => {
@@ -16975,9 +17622,11 @@ function linesDocBytes(rows){
 }
 async function printLinesDoc(rows, title){
   vibrate(HAPTIC_PRINT);
-  if(typeof printerIsConnected === 'function' && printerIsConnected()){
-    try{ await printerWrite(linesDocBytes(rows)); toast((title || 'Documento') + ' impreso', { icon:icon('print'), variant:'toast-success' }); return; }
-    catch(e){ /* si falla, se imprime por el navegador */ }
+  if(typeof printerReady === 'function' && printerReady()){
+    const r = await printerPrintBytes(function(){ return linesDocBytes(rows); });
+    printerAfterPrint(r, title || 'Documento');
+    if(r !== 'fail') return;
+    /* si falla, se imprime por el navegador */
   }
   applyPrintVars();
   let root = document.getElementById('printRoot');
@@ -17968,13 +18617,23 @@ async function serialConnect(ask){
   serialBusy = true;
   try{
     let port = null;
-    if(ask) port = await navigator.serial.requestPort();
-    else { const ports = await navigator.serial.getPorts(); port = ports[0] || null; }
-    if(!port) return false;
     const c = scannerCfg();
+    /* El puerto de la impresora (Bluetooth clasico o COM) nunca es el lector */
+    const esImpresora = p => typeof printerRT !== 'undefined' && p === printerRT.serial;
+    if(ask){
+      port = await navigator.serial.requestPort();
+      if(esImpresora(port)){ toast('Ese puerto es tu impresora', { icon:icon('alert'), subtitle:'Elige el del lector' }); return false; }
+    }else{
+      const ports = (await navigator.serial.getPorts()).filter(p => !esImpresora(p));
+      /* El mismo lector de la vez pasada; si no, el primero que no sea una impresora guardada */
+      const deImpresora = printerPrefs().devices.filter(d => d.via === 'serial').map(d => d.sKey);
+      port = (c.serialKey && ports.find(p => printerSerialKey(p) === c.serialKey)) ||
+             ports.find(p => deImpresora.indexOf(printerSerialKey(p)) < 0) || null;
+    }
+    if(!port) return false;
     if(!port.readable) await port.open({ baudRate:Number(c.baud) || 9600 });
     serialPort = port;
-    c.serialOn = true; saveScannerCfg(c);
+    c.serialOn = true; c.serialKey = printerSerialKey(port); saveScannerCfg(c);
     serialReadLoop(port);
     if(ask) toast('Lector enlazado por puerto COM', { icon:icon('check'), variant:'toast-success', subtitle:'Escanea un código para probarlo' });
     return true;
@@ -19790,14 +20449,14 @@ const Cloud = {
     if(!bloquear){ if(el) el.remove(); return; }
     if(el) return;
     /* ¿Nunca ha pagado (se acabó el mes gratis) o ya había pagado y no renovó? */
-    const motivo = this.sub.paid_until ? 'Tu membresía venció.' : 'Tu mes de prueba gratis terminó.';
+    const motivo = this.sub.paid_until ? 'Tu membresía venció.' : 'Tu mes gratis terminó.';
     el = document.createElement('div');
     el.id = 'paywall';
     el.style.cssText = 'position:fixed;inset:0;z-index:9000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
     el.innerHTML = `<div style="max-width:380px;width:100%;text-align:center;">
       <span class="brand-mark" style="width:68px;height:68px;border-radius:21px;margin:0 auto 18px;">${ICONS.logo.replace('<svg ', '<svg style="width:34px;height:34px" ')}</span>
       <h1 class="auth-title" style="font-size:24px;margin:0 0 8px;">Tu cuenta está pausada</h1>
-      <p class="auth-sub" style="margin:0 0 20px;">${motivo} Paga tu membresía de <b style="color:var(--ink)">$${TRIAL_PRECIO} MXN al mes</b> y tu cuenta se libera al momento. Tus datos siguen guardados.</p>
+      <p class="auth-sub" style="margin:0 0 20px;">${motivo} Para seguir usando ${APP_NAME}, paga la membresía de <b style="color:var(--ink)">$${TRIAL_PRECIO} MXN al mes</b>. Tu cuenta se reactiva en cuanto se confirma el pago, y tus datos siguen guardados.</p>
       <button class="btn primary xl block" id="payBtn" onclick="Cloud.checkout()">Pagar con Stripe · $${TRIAL_PRECIO}/mes</button>
       <button class="btn ghost block" style="margin-top:10px;" onclick="doLogout()">Cerrar sesión</button>
     </div>`;
@@ -20681,6 +21340,225 @@ function dmrStartPoll(id){
     }
     /* No existe o está desactivado: "no disponible", sin datos de este navegador */
     dmrApply(null); dmrInstall(sameBiz); bootLocal(route); dmrStartPoll(route.id);
+  };
+})();
+
+/* =========================================================================
+   PEDIDOS DEL MENÚ DIGITAL QUE LLEGAN SOLOS A LA CAJA
+   -------------------------------------------------------------------------
+   Antes el pedido solo entraba a "Pedidos entrantes" si el cliente usaba
+   el MISMO aparato del negocio; desde otro celular había que copiar el
+   WhatsApp y pegarlo en la caja.
+
+   Ahora:
+     · Al tocar "Confirmar", el celular del cliente manda el pedido a
+       Supabase (función submit_menu_order) y luego abre WhatsApp como
+       siempre. El cliente solo puede MANDAR: no lee ni cambia nada.
+     · La caja lo recibe al instante (Realtime) y, por si acaso, revisa
+       cada 20 s y al volver a la app. Entra como "Nuevo" con aviso.
+     · Los precios se toman del catálogo de la caja (igual que al pegar un
+       WhatsApp): nadie puede mandar un pedido con precios inventados.
+     · "Pegar pedido de WhatsApp" sigue funcionando y no duplica.
+   Requiere correr menu_pedidos.sql en Supabase una sola vez.
+========================================================================= */
+const MDI_TABLE = 'menu_orders';
+
+/* ---------- Celular del cliente: mandar el pedido ---------- */
+function mdiCloudSend(order){
+  if(!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY) || !dm.id) return Promise.resolve(false);
+  const key = VENDO_CONFIG.SUPABASE_ANON_KEY;
+  const body = JSON.stringify({
+    p_menu_id: dm.id,
+    p_order: {
+      v:1, id:order.id, code:order.code, createdAt:order.createdAt,
+      customer:{ name:mdiStr(order.customer && order.customer.name, 60) },
+      original:(order.original || []).slice(0, 150)
+    }
+  });
+  try{
+    return fetch(VENDO_CONFIG.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/rpc/submit_menu_order', {
+      method:'POST',
+      /* keepalive: el envío termina aunque WhatsApp tape la página */
+      keepalive: body.length < 60000,
+      headers:{ apikey:key, Authorization:'Bearer ' + key, 'Content-Type':'application/json', Accept:'application/json' },
+      body
+    }).then(r => r.ok).catch(() => false);
+  }catch(e){ return Promise.resolve(false); }
+}
+
+/* ---------- Caja: armar el pedido que llegó (limpio y con precios del catálogo) ---------- */
+function mdiRepriceLine(l){
+  const p = l.productId ? findProduct(l.productId) : null;
+  if(!p) return l;
+  l.name = mdiStr(p.name, 120) || l.name;
+  if(l.sizeId){
+    const z = (Array.isArray(p.sizes) ? p.sizes : []).find(s => s.id === l.sizeId);
+    if(z){ l.price = Math.max(0, round2(Number(z.price) || 0)); l.sizeLabel = mdiStr(z.label, 60) || l.sizeLabel; }
+  }else{
+    l.price = Math.max(0, round2(Number(p.price) || 0));
+  }
+  return l;
+}
+function mdiFromCloud(row){
+  try{
+    if(!row || !/^o[a-z0-9]{6,24}$/.test(row.id || '')) return null;
+    const d = row.data || {};
+    const lines = (Array.isArray(d.original) ? d.original : []).slice(0, 150)
+      .map(mdiCleanLine).filter(l => l.qty > 0).map(mdiRepriceLine);
+    if(!lines.length) return null;
+    const when = new Date(row.created_at || Date.now());
+    return {
+      id: row.id,
+      code: /^MD-[A-Z0-9]{4,6}$/.test(row.code || '') ? row.code : mdiNewCode(),
+      createdAt: isNaN(when) ? new Date().toISOString() : when.toISOString(),
+      customer: { name: mdiStr(d.customer && d.customer.name, 60) },
+      original: lines,
+      lines: lines.map(l => Object.assign({}, l)),
+      status:'nuevo', service:'llevar', payment:'efectivo', online:true
+    };
+  }catch(e){ return null; }
+}
+
+/* ---------- Aviso de pedido nuevo (lo usan Realtime, la revisión y otra pestaña) ---------- */
+function mdiAnnounce(nuevos){
+  mdiPaintBadge();
+  if(!nuevos || !nuevos.length) return;
+  const o = nuevos[nuevos.length - 1];
+  vibrate([30, 60, 30]);
+  const titulo = nuevos.length > 1 ? nuevos.length + ' pedidos nuevos del Menú Digital' : 'Nuevo pedido del Menú Digital';
+  toast(titulo, { icon:icon('inbox'), variant:'toast-success toast-top', subtitle:o.code + ' · ' + formatMoney(mdTotals(o.lines || []).total) + ((o.customer && o.customer.name) ? ' · ' + o.customer.name : ''), duration:3600 });
+  if(currentView === 'menu' || currentView === 'home'){
+    if(document.querySelector('#modal-layer .modal-sheet')) renderBgKeepModal(); else render();
+  }
+}
+
+/** Errores de la recepción, en palabras claras. */
+function mdiCloudErr(e){
+  const m = String((e && (e.message || e.error || e.details)) || e || '');
+  const code = (e && e.code) || '';
+  if(code === 'PGRST205' || code === '42P01' || (/menu_orders/i.test(m) && /(does not exist|could not find|schema cache)/i.test(m)) || /permission denied for (table|function)/i.test(m))
+    return { t:'Falta preparar Supabase', s:'Corre menu_pedidos.sql en el SQL Editor de Supabase (una sola vez). Mientras, usa «Pegar pedido de WhatsApp».' };
+  if(/failed to fetch|networkerror|network|load failed|timeout/i.test(m))
+    return { t:'Sin conexión a internet', s:'Los pedidos llegan en cuanto vuelva el internet.' };
+  return { t:'No se pudieron revisar los pedidos', s:m.slice(0, 140) || 'Se vuelve a intentar sola en unos segundos.' };
+}
+
+const MdiCloud = {
+  armed:false, busy:false, again:false, state:'idle', err:null, ch:null, chUid:null, t:null,
+  canRun(){
+    return this.armed && Cloud.ready && !!Cloud.uid && !document.body.classList.contains('dm-mode') &&
+           !(typeof AUTH !== 'undefined' && AUTH.isLogged && !AUTH.isLogged());
+  },
+  /** Guarda en "Pedidos entrantes" los que lleguen y los marca como recibidos. */
+  async take(rows){
+    const nuevos = [], ids = [];
+    (rows || []).forEach(row => {
+      if(row && row.id) ids.push(row.id);
+      const o = mdiFromCloud(row);
+      if(!o) return;
+      const r = mdiReceive(o, 'menu');
+      if(r.isNew) nuevos.push(r.order);
+    });
+    if(ids.length){
+      try{ await Cloud.sb.from(MDI_TABLE).update({ received_at:new Date().toISOString() }).in('id', ids).is('received_at', null); }
+      catch(e){ /* si no se marca, se vuelve a bajar y no se duplica */ }
+    }
+    if(nuevos.length) mdiAnnounce(nuevos);
+    return nuevos.length;
+  },
+  /** Baja los pedidos que todavía no recibe ninguna caja. */
+  pull(){
+    if(!this.canRun()) return Promise.resolve(false);
+    if(this.busy){ this.again = true; return Promise.resolve(false); }
+    this.busy = true;
+    return (async () => {
+      try{
+        this.listen();
+        const { data, error } = await Cloud.sb.from(MDI_TABLE)
+          .select('id,code,data,created_at').is('received_at', null)
+          .order('created_at', { ascending:true }).limit(100);
+        if(error) throw error;
+        await this.take(data);
+        this.ok();
+        return true;
+      }catch(e){
+        console.warn('Vendo plus · pedidos del menú', e);
+        this.err = mdiCloudErr(e);
+        this.setState('error');
+        return false;
+      }finally{
+        this.busy = false;
+        if(this.again){ this.again = false; setTimeout(() => this.pull(), 300); }
+      }
+    })();
+  },
+  ok(){ this.err = null; this.setState('ok'); },
+  setState(s){
+    const cambio = s !== this.state;
+    this.state = s;
+    if(cambio) mdiCloudPaint();
+  },
+  /** Realtime: cada pedido nuevo llega al instante (a todas las cajas abiertas de la cuenta). */
+  listen(){
+    if(this.ch && this.chUid === Cloud.uid) return;
+    this.unlisten();
+    if(!Cloud.sb || !Cloud.sb.channel) return;
+    try{
+      const uid = Cloud.uid;
+      this.chUid = uid;
+      this.ch = Cloud.sb.channel('vendo-pedidos-' + uid)
+        .on('postgres_changes', { event:'INSERT', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
+            payload => { if(this.canRun() && Cloud.uid === uid && payload && payload.new) this.take([payload.new]).then(() => this.ok()); })
+        .subscribe(status => {
+          /* Al reconectar el Realtime se revisa por si algo llegó mientras */
+          if(status === 'SUBSCRIBED') setTimeout(() => this.pull(), 400);
+        });
+    }catch(e){ this.ch = null; this.chUid = null; }
+  },
+  unlisten(){
+    if(this.ch){ try{ Cloud.sb.removeChannel(this.ch); }catch(e){} }
+    this.ch = null; this.chUid = null;
+  },
+  start(){
+    if(this.t) return;
+    /* Respaldo: cada 20 s con la app a la vista */
+    this.t = setInterval(() => { if(!document.hidden) this.pull(); }, 20000);
+    document.addEventListener('visibilitychange', () => { if(!document.hidden) this.pull(); });
+    window.addEventListener('online', () => this.pull());
+    window.addEventListener('focus', () => this.pull());
+  }
+};
+
+/* Estado en "Pedidos entrantes" */
+function mdiCloudStatusHTML(){
+  if(!Cloud.ready || !mdCfg().active) return '<div id="mdiCloudStatus"></div>';
+  if(MdiCloud.state === 'error' && MdiCloud.err){
+    return `<div class="md-pub warn" id="mdiCloudStatus" role="status"><span class="md-pub-dot"></span><span class="md-pub-txt"><b>${escapeHtml(MdiCloud.err.t)}</b>${escapeHtml(MdiCloud.err.s)}</span><button onclick="MdiCloud.pull()">Reintentar</button></div>`;
+  }
+  if(MdiCloud.state === 'ok'){
+    return `<div class="md-pub ok" id="mdiCloudStatus" role="status"><span class="md-pub-dot"></span><span class="md-pub-txt"><b>Recibiendo pedidos en línea</b>Llegan aquí solos, desde el celular de cualquier cliente.</span></div>`;
+  }
+  return '<div id="mdiCloudStatus"></div>';
+}
+function mdiCloudPaint(){
+  const el = document.getElementById('mdiCloudStatus');
+  if(el) el.outerHTML = mdiCloudStatusHTML();
+}
+
+/* Se arma DESPUÉS de cargar la cuenta (si no, la descarga inicial de datos
+   pisaría los pedidos recién bajados) y se apaga al cerrar sesión. */
+(function(){
+  const arm = () => { MdiCloud.armed = true; MdiCloud.start(); MdiCloud.pull(); };
+  const prevBoot = bootApp;
+  bootApp = async function(){ const r = await prevBoot.apply(this, arguments); arm(); return r; };
+  const prevLogin = Cloud.afterLogin;
+  Cloud.afterLogin = async function(){ MdiCloud.armed = false; const r = await prevLogin.apply(this, arguments); arm(); return r; };
+  const prevLogout = doLogout;
+  doLogout = async function(){
+    MdiCloud.armed = false; MdiCloud.unlisten(); MdiCloud.state = 'idle';
+    const r = await prevLogout.apply(this, arguments);
+    if(Cloud.uid) arm();          /* no se pudo cerrar la sesión: sigue recibiendo */
+    return r;
   };
 })();
 
