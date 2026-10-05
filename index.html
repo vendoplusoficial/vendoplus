@@ -15132,14 +15132,6 @@ function mdiDetailHTML(o){
     </div>`}
 
     ${editable ? `
-      <div class="section-title">Tipo de servicio</div>
-      <div class="opt-grid">
-        ${SERVICE_TYPES.map(s => `<button class="opt-card ${o.service === s.id ? 'active' : ''}" onclick="mdiSet('${o.id}','service','${s.id}')"><span class="opt-emoji">${icon(s.ico)}</span>${s.name}</button>`).join('')}
-      </div>
-      <div class="section-title">Método de pago</div>
-      <div class="opt-grid">
-        ${basicPayMethods().map(p => `<button class="opt-card ${o.payment === p.id ? 'active' : ''}" onclick="mdiSet('${o.id}','payment','${p.id}')"><span class="opt-emoji">${icon(p.ico)}</span>${p.name}</button>`).join('')}
-      </div>
       ${faltan ? `<div class="mdi-banner warn">${icon('alert')}<span><b>Falta elegir ${faltan} producto${faltan === 1 ? '' : 's'}</b>Hay productos que no están en tu catálogo. Toca ${icx('edit')} para cambiarlos antes de confirmar.</span></div>` : ''}
       <div class="mdi-decide">
         <button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>
