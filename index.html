@@ -4901,12 +4901,56 @@ function toast(msg, opts){
    previa del chat, algunos navegadores/iframes bloquean la vibración por
    política de permisos; para probarla de verdad, abre el archivo .html
    directamente en el navegador del teléfono Android. */
+/* Menos de ~12 ms y muchos motores de vibración de Android ni se mueven:
+   cualquier vibración corta se sube a ese mínimo para que sí se sienta. */
+const HAPTIC_MIN_MS = 12;
+const HAPTIC_TAP_MS = 15;
+const HAPTIC_PRINT = [20, 45, 20];
+/* La preferencia se lee de la cuenta; se guarda un momento para no
+   volver a leerla en cada toque. */
+const hapticPrefCache = { at:0, on:true };
+function hapticsOn(){
+  const now = Date.now();
+  if(now - hapticPrefCache.at > 1500){
+    hapticPrefCache.at = now;
+    try{ hapticPrefCache.on = !(typeof userPrefs === 'function' && userPrefs().haptics === false); }
+    catch(e){ hapticPrefCache.on = true; }
+  }
+  return hapticPrefCache.on;
+}
 function vibrate(pattern){
   try{
-    if(typeof userPrefs === 'function' && userPrefs().haptics === false) return;
-    if(navigator.vibrate){ navigator.vibrate(pattern); }
+    if(!navigator.vibrate || !hapticsOn()) return;
+    if(typeof pattern === 'number') pattern = Math.max(HAPTIC_MIN_MS, pattern);
+    navigator.vibrate(pattern);
   }catch(e){ /* silencioso */ }
 }
+
+/* ---------- Vibración en TODOS los botones ----------
+   Cualquier cosa que se toca (botones, tarjetas de producto, carrito,
+   chips, interruptores, filas de listas, el Menú Digital del cliente…)
+   da una vibración corta en Android. Escucha en la fase de captura, así
+   vibra antes de que el botón haga lo suyo; si ese botón trae su propia
+   vibración (cobrar, agregar al carrito, un error, imprimir), esa
+   reemplaza a esta y se siente la suya. */
+(function(){
+  const TAP = 'button, a[href], [role="button"], [onclick], label.switch, label.photo-upload, summary, input[type="checkbox"], input[type="radio"]';
+  const TYPING = /^(text|search|email|tel|number|password|url|date|time|datetime-local|month|week|color|range|file)$/i;
+  let last = 0;
+  document.addEventListener('click', function(e){
+    if(!e.isTrusted || e.defaultPrevented) return;          /* clics del código o bloqueados por el anti doble clic */
+    const t = e.target;
+    if(!t || !t.closest) return;
+    if(t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && TYPING.test(t.type || 'text'))) return;
+    const el = t.closest(TAP);
+    if(!el || el.closest('[data-no-haptic]')) return;
+    if(el.disabled || el.getAttribute('aria-disabled') === 'true') return;
+    const now = Date.now();
+    if(now - last < 70) return;                              /* la etiqueta del interruptor y su casilla mandan dos clics */
+    last = now;
+    vibrate(HAPTIC_TAP_MS);
+  }, true);
+})();
 
 /* ---------- Navegación ---------- */
 /* Secciones nuevas (Caja y gastos, Clientes y crédito…): se registran aquí con su
@@ -6767,6 +6811,7 @@ function resolveSale(venta){
 function printTicket(venta){
   const sale = resolveSale(venta);
   if(!sale){ toast('No encontramos ese ticket'); return; }
+  vibrate(HAPTIC_PRINT);
   if(typeof printerIsConnected === 'function' && printerIsConnected()){
     printerPrintSale(sale).then(function(ok){
       if(!ok) printTicketBrowser(sale);
@@ -6810,7 +6855,7 @@ function printTicketBrowser(venta){
   }, conLogo ? 400 : 80);
 }
 
-function printTestTicket(){ printTicketBrowser(printDemoSale()); }
+function printTestTicket(){ vibrate(HAPTIC_PRINT); printTicketBrowser(printDemoSale()); }
 
 /* =========================================================
    IMPRESORA FISICA (ESC/POS)
@@ -7534,6 +7579,7 @@ async function printerPrintSale(sale, opts){
 
 /** Prueba real por la impresora fisica (no abre el dialogo del navegador). */
 function printerTestPrint(){
+  vibrate(HAPTIC_PRINT);
   printerPrintSale(printDemoSale(), { testing:true });
 }
 
@@ -11009,10 +11055,10 @@ function openSettings(){
     <div class="toggle-row">
       <span class="acc-ico blue">${icon('card')}</span>
       <span class="acc-txt">
-        <span class="acc-label">Vibración al cobrar</span>
-        <span class="acc-sub">Una vibración corta al confirmar una venta (Android).</span>
+        <span class="acc-label">Vibración al tocar</span>
+        <span class="acc-sub">Vibra en todos los botones: agregar productos, abrir el carrito, cobrar, imprimir… (Android. En iPhone, Safari no lo permite.)</span>
       </span>
-      <label class="switch"><input type="checkbox" ${p.haptics ? 'checked':''} onchange="setPref('haptics', this.checked)"><span class="track"></span></label>
+      <label class="switch"><input type="checkbox" ${p.haptics ? 'checked':''} onchange="setPref('haptics', this.checked); hapticPrefCache.at = 0; if(this.checked) vibrate(30);"><span class="track"></span></label>
     </div>
     <div class="sheet-actions">
       <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
@@ -15828,6 +15874,7 @@ function printQuote(id){
   printQuoteDoc(q);
 }
 function printQuoteDoc(q){
+  vibrate(HAPTIC_PRINT);
   applyPrintVars();
   let root = document.getElementById('printRoot');
   if(!root){ root = document.createElement('div'); root.id = 'printRoot'; document.body.appendChild(root); }
@@ -16927,6 +16974,7 @@ function linesDocBytes(rows){
   return out;
 }
 async function printLinesDoc(rows, title){
+  vibrate(HAPTIC_PRINT);
   if(typeof printerIsConnected === 'function' && printerIsConnected()){
     try{ await printerWrite(linesDocBytes(rows)); toast((title || 'Documento') + ' impreso', { icon:icon('print'), variant:'toast-success' }); return; }
     catch(e){ /* si falla, se imprime por el navegador */ }
@@ -18734,6 +18782,7 @@ function openExpPeriod(){
 }
 
 function printReport(){
+  vibrate(HAPTIC_PRINT);
   const d = reportData();
   const b = bizData();
   const ver = can('verGanancias');
