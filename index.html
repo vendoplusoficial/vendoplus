@@ -5214,6 +5214,7 @@ function render(){
   else { currentView = 'home'; document.body.dataset.section = 'home'; put(renderHome()); }
   const chip = document.getElementById('userChip');
   if(chip) chip.classList.toggle('active', currentView === 'account');
+  if(typeof mdCfgSheetSync === 'function') mdCfgSheetSync();
 }
 
 /* ---------- Repintado ligero ----------
@@ -15876,12 +15877,53 @@ function mdiWatch(){
 /* Con el menú activo, la configuración se oculta y la vista queda
    limpia para los pedidos. Se abre con "Configurar" y se vuelve a
    ocultar con "Ocultar". Se recuerda en este dispositivo. */
-function mdCfgVisible(){ try{ return localStorage.getItem('mesa_md_cfg_visible') === '1'; }catch(e){ return false; } }
+/* La configuración se abre como hoja flotante ENCIMA de la pantalla
+   (ya no empuja los pedidos hacia abajo). Los formularios internos
+   (color, WhatsApp, horario…) se abren sobre ella y al cerrarlos
+   se regresa a la configuración. */
+var mdCfgSheetOn = false;
+var MD_CFG_TITLE = 'Configuración del Menú Digital';
+function mdCfgVisible(){ return mdCfgSheetOn; }
+function mdCfgSheetHTML(){
+  return `
+    <div class="sheet-header">
+      <h2>${MD_CFG_TITLE}</h2>
+      <button class="sheet-close" onclick="mdSetCfgVisible(false)" aria-label="Cerrar">${icon('close')}</button>
+    </div>
+    ${mdConfigHTML(mdCfg())}`;
+}
+function mdOpenCfgSheet(){
+  if(!mdCfg().active){ mdCfgSheetOn = false; return; }
+  mdCfgSheetOn = true;
+  openModal(mdCfgSheetHTML(), { dismissible:true });
+}
+function mdCfgSheetShowing(){
+  const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
+  return !!sh && sheetTitleOf(sh) === MD_CFG_TITLE;
+}
+/* Se llama al final de render(): mantiene la hoja al día (conserva el scroll) */
+function mdCfgSheetSync(){
+  if(!mdCfgSheetOn) return;
+  if(currentView !== 'menu' || !mdCfg().active){
+    mdCfgSheetOn = false;
+    if(mdCfgSheetShowing()) _mdCloseModalBase();
+    return;
+  }
+  if(mdCfgSheetShowing()) openModal(mdCfgSheetHTML(), { dismissible:true });
+}
+var _mdCloseModalBase = closeModal;
+closeModal = function(){
+  const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
+  const eraCfg = !!sh && sheetTitleOf(sh) === MD_CFG_TITLE;
+  _mdCloseModalBase();
+  if(eraCfg){ mdCfgSheetOn = false; return; }
+  /* se cerró un formulario o confirmación que estaba sobre la configuración */
+  if(mdCfgSheetOn && currentView === 'menu' && mdCfg().active) mdOpenCfgSheet();
+};
 function mdSetCfgVisible(v){
-  try{ if(v) localStorage.setItem('mesa_md_cfg_visible', '1'); else localStorage.removeItem('mesa_md_cfg_visible'); }catch(e){}
   vibrate(8);
-  render();
-  window.scrollTo({ top:0, behavior:'smooth' });
+  if(v) mdOpenCfgSheet();
+  else { mdCfgSheetOn = false; _mdCloseModalBase(); }
 }
 function mdCompactHTML(cfg){
   const cerrado = mdClosedNow(cfg);
@@ -15908,14 +15950,11 @@ function mdCompactHTML(cfg){
 }
 renderMenuDigital = function(){
   const cfg = mdCfg();
-  const verCfg = !cfg.active || mdCfgVisible();
   return `
     <h1 class="page-title">Menú Digital</h1>
     <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>
-    ${verCfg ? `
-      <div class="section-title">Configuración del Menú Digital
-        ${cfg.active ? `<button class="md-hide-btn" onclick="mdSetCfgVisible(false)">Ocultar ${icon('chevronDown')}</button>` : ''}
-      </div>
+    ${!cfg.active ? `
+      <div class="section-title">Configuración del Menú Digital</div>
       ${mdConfigHTML(cfg)}` : mdCompactHTML(cfg)}
     ${mdiSectionHTML()}`;
 };
