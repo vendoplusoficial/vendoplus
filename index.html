@@ -1622,6 +1622,14 @@
   .md-sub-actions .btn{ flex:1; padding:11px 10px; font-size:13px; }
   .md-toggles{ margin-top:6px; }
   .md-toggles .toggle-row:last-child{ border-bottom:none; padding-bottom:0; }
+  /* ---- Configuración ordenada en bloques ---- */
+  .md-group{ margin-top:20px; }
+  .md-group-head{ display:flex; align-items:center; gap:8px; margin:0 4px 3px; }
+  .md-group-title{ font-size:14px; font-weight:800; color:var(--ink); }
+  .md-group-sub{ font-size:12px; font-weight:600; color:var(--ink-soft); margin:0 4px 9px; line-height:1.4; }
+  .md-group-chip{ margin-left:auto; font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; }
+  .md-group-chip.ok{ background:var(--success-bg); color:var(--success); }
+  .md-group-chip.miss{ background:var(--danger-bg); color:var(--accent-2); }
   /* ---- Color del menú ---- */
   .md-swatch-dot{ width:24px; height:24px; border-radius:50%; flex-shrink:0; border:2px solid var(--surface); box-shadow:0 0 0 1.5px var(--border); }
   .md-swatches{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px; }
@@ -13749,7 +13757,7 @@ function mdConfigHTML(cfg){
      · El Empleado solo consulta, comparte el link y atiende los pedidos. */
   const puedeMenu = can('gestionarProductos');
   const soyDueno = isOwner();
-  const rows = list.map(x => {
+  const rowHTML = x => {
     const tap = x.free || (x.owner ? soyDueno : puedeMenu);
     const inner = `
       <span class="md-check ${x.ok ? '' : (x.optional ? 'opt' : 'miss')}">${x.ok ? icon('check') : (x.optional ? '–' : '!')}</span>
@@ -13761,6 +13769,41 @@ function mdConfigHTML(cfg){
     return tap
       ? `<button class="acc-row" onclick="${x.action}">${inner}<span class="acc-chev">${icon('chevronRight')}</span></button>`
       : `<div class="acc-row md-ro">${inner}</div>`;
+  };
+
+  /* Las mismas opciones de siempre, ahora en bloques con sentido */
+  const toggleRow = `
+    <div class="acc-row md-ro">
+      <span class="acc-ico green">${icon('whatsapp')}</span>
+      <span class="acc-txt">
+        <span class="acc-label">Recibir pedidos</span>
+        <span class="acc-sub">Apágalo para pausar los pedidos sin quitar tu menú.</span>
+      </span>
+      <label class="switch"><input type="checkbox" ${cfg.paused ? '' : 'checked'} onchange="mdSetPaused(!this.checked)"><span class="track"></span></label>
+    </div>`;
+  const GROUPS = [
+    { title:'Lo esencial',       sub:'Lo mínimo para que tu menú funcione',
+      labels:['Nombre del negocio', 'WhatsApp del negocio', 'Productos del menú'] },
+    { title:'Apariencia',        sub:'Cómo ven tu menú tus clientes',
+      labels:['Diseño del menú', 'Color del menú', 'Logo del negocio', 'Decoraciones de temporada'] },
+    { title:'Pedidos y horario', sub:'Cuándo y cómo te llegan los pedidos',
+      labels:['Horario del menú'], pre:(cfg.active && puedeMenu) ? toggleRow : '' },
+  ];
+  const usados = new Set(GROUPS.reduce((acc, g) => acc.concat(g.labels), []));
+  const otras = list.filter(x => !usados.has(x.label));
+  if(otras.length) GROUPS.push({ title:'Otras opciones', sub:'', labels:otras.map(x => x.label) });
+  const groupsHTML = GROUPS.map(g => {
+    const items = g.labels.map(l => list.find(x => x.label === l)).filter(Boolean);
+    if(!items.length && !g.pre) return '';
+    const req = items.filter(x => !x.optional);
+    const faltan = req.filter(x => !x.ok).length;
+    const chip = req.length ? (faltan ? `<span class="md-group-chip miss">Falta${faltan > 1 ? 'n ' + faltan : ' 1'}</span>` : `<span class="md-group-chip ok">Listo</span>`) : '';
+    return `
+      <div class="md-group">
+        <div class="md-group-head"><span class="md-group-title">${g.title}</span>${chip}</div>
+        ${g.sub ? `<div class="md-group-sub">${g.sub}</div>` : ''}
+        <div class="acc-list md-checklist">${g.pre || ''}${items.map(rowHTML).join('')}</div>
+      </div>`;
   }).join('');
 
   return `
@@ -13793,39 +13836,21 @@ function mdConfigHTML(cfg){
       ` : ''}
     </div>
 
-    ${cfg.active ? `
-      <div class="acc-list">
-        <button class="acc-row" onclick="mdToggleCfg()" aria-expanded="${mdCfgOpen}">
-          <span class="acc-ico">${icon('gear')}</span>
-          <span class="acc-txt">
-            <span class="acc-label">Opciones del Menú Digital</span>
-            <span class="acc-sub">${ready ? 'Todo listo' : 'Falta completar algo'} · color, horario, WhatsApp, logo y pedidos</span>
-          </span>
-          <span class="acc-chev" style="transform:rotate(${mdCfgOpen ? 180 : 0}deg); transition:transform .2s;">${icon('chevronDown')}</span>
-        </button>
-      </div>` : ''}
-
-    ${(!cfg.active || mdCfgOpen) ? `<div class="acc-list md-checklist" ${cfg.active ? 'style="margin-top:10px;"' : ''}>${rows}</div>` : ''}
+    ${groupsHTML}
 
     ${!cfg.active ? (puedeMenu ? `
       <button class="btn md-green block" style="margin-top:14px;" onclick="mdActivate()" ${ready ? '' : 'disabled'}>${icon('check')} Activar Menú Digital</button>
       <p class="md-hint">${ready ? 'Al activarlo se genera el link único de tu negocio con tus productos.' : 'Completa lo marcado con <b>!</b> para poder activarlo.'}</p>
     ` : `
       <p class="md-hint">Cuando el Dueño o el Administrador lo activen, aquí verás el link para compartirlo.</p>
-    `) : (mdCfgOpen && puedeMenu ? `
-      <div class="card md-toggles" style="margin-top:14px; padding-top:4px; padding-bottom:14px;">
-        <div class="toggle-row">
-          <span class="acc-ico green">${icon('whatsapp')}</span>
-          <span class="acc-txt">
-            <span class="acc-label">Recibir pedidos</span>
-            <span class="acc-sub">Apágalo para pausar los pedidos sin quitar tu menú.</span>
-          </span>
-          <label class="switch"><input type="checkbox" ${cfg.paused ? '' : 'checked'} onchange="mdSetPaused(!this.checked)"><span class="track"></span></label>
+    `) : (puedeMenu ? `
+      <div class="md-group">
+        <div class="md-group-head"><span class="md-group-title">Link del menú</span></div>
+        <div class="md-group-sub">Acciones sobre el link que compartes con tus clientes</div>
+        <div class="md-sub-actions" style="margin-top:0;">
+          <button class="btn ghost" onclick="mdRegenerate()">${icon('refresh')} Generar link nuevo</button>
+          <button class="btn danger" onclick="mdDeactivate()">Desactivar</button>
         </div>
-      </div>
-      <div class="md-sub-actions">
-        <button class="btn ghost" onclick="mdRegenerate()">${icon('refresh')} Generar link nuevo</button>
-        <button class="btn danger" onclick="mdDeactivate()">Desactivar</button>
       </div>
     ` : '')}
   `;
