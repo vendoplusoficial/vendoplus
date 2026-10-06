@@ -19497,7 +19497,7 @@ const Cloud = {
       if(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY && window.supabase){
         /* Si alguien abre un enlace de un correo viejo, se guarda aquí para atenderlo al arrancar */
         if(/(^#|&)(access_token|error_code|error_description)=/.test(location.hash)) this.linkHash = location.hash;
-        this.sb = supabase.createClient(VENDO_CONFIG.SUPABASE_URL, VENDO_CONFIG.SUPABASE_ANON_KEY);
+        this.sb = supabase.createClient(VENDO_CONFIG.SUPABASE_URL, VENDO_CONFIG.SUPABASE_ANON_KEY, { auth:{ persistSession:true, autoRefreshToken:true } });
         this.ready = true;
       }
     }catch(e){ console.error(e); }
@@ -20152,19 +20152,49 @@ doDeleteAccount = async function(){
 const _bootApp = bootApp;
 bootApp = async function(){
   if(!Cloud.ready) return _bootApp();
+  /* Si la sesión se renueva más tarde (volvió el internet), se retoma sola */
+  if(!Cloud._authWatch){
+    Cloud._authWatch = true;
+    Cloud.sb.auth.onAuthStateChange((ev, s) => {
+      if(s && s.user && (ev === 'TOKEN_REFRESHED' || ev === 'SIGNED_IN') && !Cloud.uid && AUTH.isLogged()){
+        Cloud.uid = s.user.id;
+        setTimeout(async () => { await Cloud.refreshSub(); Cloud.gate(); }, 0);
+      }
+    });
+    const reintentar = async () => {
+      if(!Cloud.uid && AUTH.isLogged() && document.visibilityState === 'visible'){
+        try{ await Cloud.sb.auth.getSession(); }catch(e){}
+      }
+    };
+    document.addEventListener('visibilitychange', reintentar);
+    window.addEventListener('online', reintentar);
+  }
+  const tuvoSesion = localStorage.getItem('mesa_session') === '1';
+  let vencida = false;
   try{
-    const { data:{ session } } = await Cloud.sb.auth.getSession();
+    const { data:{ session }, error } = await Cloud.sb.auth.getSession();
     if(session){
       Cloud.uid = session.user.id;
       try{ await Cloud.hydrate(); }catch(e){ console.error('sin conexión, se usa la copia local', e); }
       await Cloud.refreshSub();
       Cloud.syncEmail(session.user);
       if(AUTH.getUser()) AUTH.openSession();
-    }else{ Cloud.uid = null; AUTH.closeSession(); }
+    }else{
+      /* ¿La sesión de verdad venció, o solo falló el internet al renovarla? */
+      const pasajero = !!error && (error.name === 'AuthRetryableFetchError' || error.status === 0 || !navigator.onLine);
+      if(pasajero && tuvoSesion && AUTH.getUser()){
+        console.warn('[auth] no se pudo renovar la sesión por falta de internet; se conserva y se reintenta', error);
+        Cloud.uid = null;           /* sin sincronizar hasta que se renueve; la sesión local sigue abierta */
+      }else{
+        if(error) console.warn('[auth] sesión no recuperada', error);
+        Cloud.uid = null; AUTH.closeSession(); vencida = tuvoSesion;
+      }
+    }
   }catch(e){ console.error(e); }
   _bootApp();
   Cloud.gate();
   Cloud.afterPayment();
+  if(vencida) toast('Tu sesión venció', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') });
 };
 
 </script>
