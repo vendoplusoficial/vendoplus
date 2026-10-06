@@ -2973,6 +2973,8 @@
   ========================================================= */
   #confirm-layer{ zoom:var(--z, .9); position:relative; z-index:520; }
   #confirm-layer .modal-overlay{ z-index:520; }
+  #scan-layer{ zoom:var(--z, .9); position:relative; z-index:510; }
+  #scan-layer .modal-overlay{ z-index:510; }
   .conf-card{ max-width:400px; padding:22px 20px 20px; text-align:left; }
   .conf-card .sheet-title{ margin-top:2px; }
   .conf-card .sheet-text{ margin-bottom:12px; }
@@ -17650,6 +17652,11 @@ function handleScannedCode(code, src){
   if(document.getElementById('scTest')){ scannerTestShow(code, src === 'serial' ? 'serial' : 'lector'); return; }
   if(document.body.classList.contains('dm-mode') || document.body.classList.contains('auth-open')) return;
   if(document.querySelector('#confirm-layer .modal-overlay')) return;
+  /* Formulario de producto abierto: el código siempre va al campo de código de barras */
+  const pfSkuEl = document.getElementById('pfSku');
+  if(pfSkuEl && !scanStream){
+    pfSkuEl.value = code.slice(0, 40); pfSkuEl.dispatchEvent(new Event('input', { bubbles:true })); scanBeep(); return;
+  }
   /* Con el cursor en otro campo (ej. el código de un producto): se escribe ahí */
   const ae = document.activeElement;
   if(src === 'serial' && ae && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && ae.id !== 'saleSearch' && !/checkbox|radio|range|file/.test(ae.type || '')){
@@ -17690,6 +17697,7 @@ document.addEventListener('keydown', function(e){
     else if(cart.length) openCartSheet('checkout');
     return;
   }
+  if(e.key === 'Escape' && document.querySelector('#scan-layer .modal-overlay')){ e.preventDefault(); closeScanner(); return; }
   if(e.key === 'Escape' && !document.querySelector('#confirm-layer .modal-overlay')){
     const ov = document.querySelector('#modal-layer .modal-overlay');
     if(ov && !ov.dataset.lock && !scanStream){ e.preventDefault(); closeModal(); if(currentView === 'sale') render(); return; }
@@ -17990,7 +17998,7 @@ function openScanner(targetField){
     toast('Este navegador no puede leer códigos con la cámara', { icon:icon('alert'), variant:'toast-danger', subtitle:'Usa un lector USB/Bluetooth o escribe el código en la búsqueda', duration:3400 });
     return;
   }
-  openModal(`
+  const scanHTML = `
     <div class="sheet-header">
       <h2>${scanTarget ? 'Escanear código' : 'Escanear productos'}</h2>
       <button class="sheet-close" onclick="closeScanner()">${icon('close')}</button>
@@ -18000,7 +18008,15 @@ function openScanner(targetField){
     <div class="sheet-actions">
       <button class="btn dark block" onclick="closeScanner()">Listo</button>
     </div>
-  `, { dismissible:false });
+  `;
+  if(scanTarget){
+    /* Desde el formulario de un producto: el escáner va ENCIMA, el formulario sigue abierto con todo lo escrito */
+    let sl = document.getElementById('scan-layer');
+    if(!sl){ sl = document.createElement('div'); sl.id = 'scan-layer'; document.body.appendChild(sl); }
+    sl.innerHTML = '<div class="modal-overlay" data-lock="1"><div class="modal-sheet"><div class="sheet-grip"></div>' + scanHTML + '</div></div>';
+  }else{
+    openModal(scanHTML, { dismissible:false });
+  }
   navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' }, audio:false }).then(stream => {
     scanStream = stream;
     const v = document.getElementById('scanVideo'); if(!v){ closeScanner(); return; }
@@ -18034,12 +18050,8 @@ function closeScanner(keepModal){
   clearTimeout(scanTimer);
   if(scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
   const t = scanTarget; scanTarget = null;
-  if(t && keepModal){
-    /* Se vuelve al formulario del producto: se reabre con el código escrito */
-    const open = document.getElementById(t);
-    if(!open){ closeModal(); }
-    return;
-  }
+  const sl = document.getElementById('scan-layer'); if(sl) sl.innerHTML = '';
+  if(t) return;                                  /* el formulario del producto sigue abierto debajo */
   closeModal();
   if(currentView === 'sale') render();
 }
