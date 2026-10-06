@@ -18035,7 +18035,13 @@ function openScanner(targetField){
           const m = document.getElementById('scanMsg');
           if(m) m.innerHTML = ok ? '✓ Agregado: <b>' + escapeHtml((productBySku(c) || {}).name || c) + '</b>' : '✗ No está en tu catálogo: <b>' + escapeHtml(c) + '</b>';
           vibrate(ok ? 25 : [18, 60, 18]);
-          if(ok){ /* el carrito de atrás se actualiza sin cerrar la cámara */ }
+          if(ok){
+            /* Producto agregado: se cierra el escáner para que se vea que ya quedó en el carrito.
+               Si el producto abrió su propia ventana (tallas o cantidad), esa ventana se respeta. */
+            if(document.getElementById('scanVideo')) closeScanner();
+            else{ clearTimeout(scanTimer); if(scanStream){ scanStream.getTracks().forEach(t => t.stop()); scanStream = null; } }
+            return;
+          }
         }
       }).catch(() => {}).finally(() => { scanTimer = setTimeout(loop, 220); });
     };
