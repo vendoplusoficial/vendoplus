@@ -19662,7 +19662,8 @@ const SyncBase = {
 const SYNC_SKIP = DATA_NOT_IN_BACKUP.concat(['mesa_cloud_uid']);
 const Cloud = {
   sb:null, ready:false, uid:null, email:'', sub:null, q:new Set(), _mute:false, _t:null, known:{}, linkHash:'',
-  seen:null, _cadena:Promise.resolve(), _trayendo:false, _ui:null,
+  seen:null, _cadena:Promise.resolve(), _trayendo:false, _ui:null, _recuperando:false,
+  estado:{ subida:null, revision:null },
   init(){
     try{
       if(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY && window.supabase){
@@ -19707,8 +19708,10 @@ const Cloud = {
         const keys = [...this.q]; this.q.clear();
         try{
           await this.subir(keys);
+          this.estado.subida = { at:Date.now(), ok:true };
         }catch(e){
           console.error('Vendo plus sync', e);
+          this.estado.subida = { at:Date.now(), ok:false, msg:String((e && (e.message || e.code)) || e) };
           keys.forEach(k => this.q.add(k));
           clearTimeout(this._t); this._t = setTimeout(() => this.flush(), 15000);
           return false;
@@ -19774,7 +19777,9 @@ const Cloud = {
 
   /* ---------- Traer lo que otros aparatos guardaron ---------- */
   async pull(){
-    if(!this.ready || !this.uid || this._trayendo) return;
+    if(!this.ready) return;
+    if(!this.uid){ this.recuperar(); return; }
+    if(this._trayendo) return;
     this._trayendo = true;
     const uid = this.uid;
     try{
@@ -19821,8 +19826,36 @@ const Cloud = {
         if(this.q.size){ clearTimeout(this._t); this._t = setTimeout(() => this.flush(), 900); }
         if(pintar) this.repintar();
       });
-    }catch(e){ /* sin internet: se intenta en la siguiente vuelta */ }
+      this.estado.revision = { at:Date.now(), ok:true };
+    }catch(e){
+      /* sin internet: se intenta en la siguiente vuelta */
+      this.estado.revision = { at:Date.now(), ok:false, msg:String((e && (e.message || e.code)) || e) };
+    }
     finally{ this._trayendo = false; }
+  },
+  /** La sesión de la nube no arrancó (sin internet al abrir, etc.): se retoma sola. */
+  async recuperar(){
+    if(!this.ready || this.uid || this._recuperando || !AUTH.isLogged()) return;
+    this._recuperando = true;
+    try{
+      const { data, error } = await this.sb.auth.getSession();
+      const session = data && data.session;
+      if(error && !session) throw error;
+      if(session && !this.uid){
+        this.uid = session.user.id;
+        const mia = localStorage.getItem('mesa_cloud_uid') === this.uid || localStorage.getItem(SYNC_OWNER_KEY) === this.uid;
+        try{ await this.hydrate(mia ? 'mezclar' : 'reemplazar'); localStorage.setItem('mesa_cloud_uid', this.uid); }catch(e){ console.error(e); }
+        this.syncEmail(session.user);
+        await this.refreshSub(); this.gate();
+        this.queueAll();
+        this.estado.revision = { at:Date.now(), ok:true };
+        this.repintar();
+      }else if(!session){
+        this.estado.revision = { at:Date.now(), ok:false, msg:'No hay sesión de la nube en este aparato' };
+      }
+    }catch(e){
+      this.estado.revision = { at:Date.now(), ok:false, msg:'Sesión: ' + String((e && (e.message || e.code)) || e) };
+    }finally{ this._recuperando = false; }
   },
   /** Vuelve a pintar la pantalla con lo nuevo (sin interrumpir si estás escribiendo). */
   repintar(){
@@ -19890,6 +19923,7 @@ const Cloud = {
     }finally{ this._mute = false; }
     for(const r of data) if(this.isSync(r.key)) await SyncBase.set(r.key, { v:r.value || {}, at:r.updated_at });
     try{ localStorage.setItem(SYNC_OWNER_KEY, this.uid); }catch(e){}
+    this.estado.revision = { at:Date.now(), ok:true };
     if(this.q.size){ clearTimeout(this._t); this._t = setTimeout(() => this.flush(), 1500); }
     return data.length === 0;       /* true = cuenta nueva: se sube lo que haya en este aparato */
   },
@@ -20475,9 +20509,7 @@ bootApp = async function(){
       }
     });
     const reintentar = async () => {
-      if(!Cloud.uid && AUTH.isLogged() && document.visibilityState === 'visible'){
-        try{ await Cloud.sb.auth.getSession(); }catch(e){}
-      }
+      if(!Cloud.uid && AUTH.isLogged() && document.visibilityState === 'visible') await Cloud.recuperar();
     };
     document.addEventListener('visibilitychange', reintentar);
     window.addEventListener('online', reintentar);
@@ -20509,6 +20541,103 @@ bootApp = async function(){
   Cloud.gate();
   Cloud.afterPayment();
   if(vencida) toast('Tu sesión venció', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') });
+};
+
+/* ---------- Mi cuenta › Sincronización: ¿este aparato está conectado a la nube? ---------- */
+const SYNC_VERSION = '2026-10-07';
+function syncHace(t){
+  if(!t) return 'todavía no';
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if(s < 60) return 'hace ' + s + ' s';
+  const m = Math.round(s / 60);
+  return m < 60 ? 'hace ' + m + ' min' : 'hace ' + Math.round(m / 60) + ' h';
+}
+function syncResumen(){
+  if(!Cloud.ready) return { ok:false, txt:'No conectada a la nube: guarda solo en este aparato' };
+  if(!Cloud.uid) return { ok:false, txt:'Sin sesión de la nube · toca para reintentar' };
+  const e = (Cloud.estado.subida && !Cloud.estado.subida.ok) ? Cloud.estado.subida : ((Cloud.estado.revision && !Cloud.estado.revision.ok) ? Cloud.estado.revision : null);
+  if(e) return { ok:false, txt:'Error: ' + e.msg };
+  return { ok:true, txt:'Conectada · revisada ' + syncHace(Cloud.estado.revision && Cloud.estado.revision.at) };
+}
+function syncFilas(){
+  const u = AUTH.getUser() || {};
+  const ventas = DB.getSales();
+  const hoy = ventas.filter(x => !x.cancelled && isSameDay(new Date(x.date), new Date()));
+  const ultima = ventas.reduce((m, x) => (!m || new Date(x.date) > new Date(m)) ? x.date : m, null);
+  let proyecto = '';
+  try{ proyecto = new URL(VENDO_CONFIG.SUPABASE_URL).host.split('.')[0]; }catch(e){ proyecto = '(sin configurar)'; }
+  let zona = '';
+  try{ zona = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(e){}
+  const off = -new Date().getTimezoneOffset() / 60;
+  const app = window.Capacitor && typeof Capacitor.getPlatform === 'function' && Capacitor.getPlatform() !== 'web';
+  const sub = Cloud.estado.subida, rev = Cloud.estado.revision;
+  return [
+    ['Versión', SYNC_VERSION + (app ? ' · app ' + Capacitor.getPlatform() : ' · navegador')],
+    ['Proyecto Supabase', proyecto],
+    ['Nube', !Cloud.ready ? 'NO conectada (falta Supabase)' : (Cloud.uid ? 'conectada' : 'sin sesión de la nube')],
+    ['Cuenta', (Cloud.email || u.email || '—') + (Cloud.uid ? ' · ' + Cloud.uid.slice(0, 8) : '')],
+    ['Internet', navigator.onLine ? 'sí' : 'no'],
+    ['Última subida', sub ? syncHace(sub.at) + (sub.ok ? ' · bien' : ' · ERROR: ' + sub.msg) : 'todavía no'],
+    ['Última revisión de la nube', rev ? syncHace(rev.at) + (rev.ok ? ' · bien' : ' · ERROR: ' + rev.msg) : 'todavía no'],
+    ['Pendiente por subir', String(Cloud.q ? Cloud.q.size : 0)],
+    ['Ventas en este aparato', ventas.length + ' (hoy ' + formatMoney(hoy.reduce((a, x) => a + x.total, 0)) + ')'],
+    ['Última venta', ultima ? new Date(ultima).toLocaleString('es-MX') : '—'],
+    ['Zona horaria', (zona || '?') + ' (UTC' + (off >= 0 ? '+' : '') + off + ')']
+  ];
+}
+function openSyncInfo(){
+  const filas = syncFilas();
+  openModal(`
+    <div class="sheet-header">
+      <h2>Sincronización</h2>
+      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
+    </div>
+    <p class="sheet-text" style="margin-top:-6px;">Si algo no aparece en otro aparato, toca <b>Sincronizar ahora</b>. Si sale un error, toca <b>Copiar diagnóstico</b> y mándalo.</p>
+    <div>${filas.map(f => `<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--surface-alt);font-size:14px;">
+      <span style="color:var(--ink-soft);flex:none;">${escapeHtml(f[0])}</span><b style="text-align:right;word-break:break-word;">${escapeHtml(f[1])}</b></div>`).join('')}</div>
+    <div style="display:grid;gap:10px;margin-top:18px;">
+      <button class="btn primary block" id="syncNowBtn" onclick="syncNow()">${icon('refresh')} Sincronizar ahora</button>
+      <button class="btn ghost block" onclick="copySyncInfo()">Copiar diagnóstico</button>
+    </div>`, { dismissible:true });
+}
+async function syncNow(){
+  const b = document.getElementById('syncNowBtn');
+  if(b){ b.disabled = true; b.textContent = 'Sincronizando…'; }
+  try{
+    if(Cloud.ready && !Cloud.uid) await Cloud.recuperar();
+    if(Cloud.ready && Cloud.uid){
+      for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(Cloud.isSync(k)) Cloud.q.add(k); }
+      await Cloud.flush();
+      await Cloud.pull();
+    }
+  }catch(e){ console.error(e); }
+  if(document.getElementById('syncNowBtn')) openSyncInfo();
+  if(typeof renderBgKeepModal === 'function') renderBgKeepModal();
+  const r = syncResumen();
+  toast(r.ok ? 'Sincronizado' : 'No se pudo sincronizar', { icon:icon(r.ok ? 'check' : 'alert'), variant:r.ok ? 'toast-success' : 'toast-danger toast-wrap', subtitle:r.ok ? '' : r.txt });
+}
+function copySyncInfo(){
+  const txt = syncFilas().map(f => f[0] + ': ' + f[1]).join('\n');
+  mdCopy(txt, 'Diagnóstico copiado');
+}
+const _syncRenderAccount = renderAccount;
+renderAccount = function(){
+  const html = _syncRenderAccount.apply(this, arguments);
+  const r = syncResumen();
+  const fila = `
+    <div class="section-title">Sincronización</div>
+    <div class="acc-list">
+      <button class="acc-row" onclick="openSyncInfo()">
+        <span class="acc-ico ${r.ok ? 'green' : 'gold'}">${icon(r.ok ? 'check' : 'alert')}</span>
+        <span class="acc-txt">
+          <span class="acc-label">Sincronización</span>
+          <span class="acc-sub">${escapeHtml(r.txt)}</span>
+        </span>
+        <span class="acc-chev">${icon('chevronRight')}</span>
+      </button>
+    </div>`;
+  const marca = '<div class="section-title">Sesión</div>';
+  return html.indexOf(marca) >= 0 ? html.replace(marca, fila + marca) : html + fila;
 };
 
 </script>
