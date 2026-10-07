@@ -19489,9 +19489,180 @@ const VENDO_CONFIG = {
   CODIGO_DIGITOS: 6     /* dígitos del código que llega por correo: igual a "Email OTP Length" en Supabase */
 };
 
+/* =========================================================
+   SINCRONIZACIÓN ENTRE APARATOS (web, app de Android, otra caja...)
+   Antes cada aparato subía su copia completa y REEMPLAZABA la de la nube:
+   el último que guardaba borraba lo que había vendido el otro, y ninguno
+   se enteraba de lo del otro hasta volver a abrir.
+   Ahora:
+     · Antes de subir se revisa si la nube cambió y se MEZCLA (nada se pierde).
+     · Cada aparato revisa la nube cada pocos segundos y trae lo nuevo.
+     · Mezcla registro por registro (por su id): ventas, productos, clientes...
+       Las existencias se suman/restan: si la web vende 2 y la app vende 1,
+       quedan 3 menos.
+   "base" = lo último que este aparato sabe que hay en la nube (se guarda
+   en IndexedDB) y sirve para saber qué cambió de cada lado.
+========================================================= */
+const SYNC_OWNER_KEY = 'vendo_sync_owner';      /* de qué cuenta son los datos guardados en este aparato */
+const VendoSync = (function(){
+  const SIN = { sinHistoria: true };              /* no hay "base": primera vez que se mezcla */
+  const SUMABLES = ['stock'];                     /* campos que se suman/restan al mezclar */
+  const esObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+  function igual(a, b){
+    if(a === b) return true;
+    if(typeof a !== typeof b || a === null || b === null || typeof a !== 'object') return false;
+    if(Array.isArray(a) !== Array.isArray(b)) return false;
+    if(Array.isArray(a)){
+      if(a.length !== b.length) return false;
+      for(let i = 0; i < a.length; i++) if(!igual(a[i], b[i])) return false;
+      return true;
+    }
+    const ka = Object.keys(a), kb = Object.keys(b);
+    if(ka.length !== kb.length) return false;
+    for(const k of ka){ if(!Object.prototype.hasOwnProperty.call(b, k) || !igual(a[k], b[k])) return false; }
+    return true;
+  }
+  const redondo = n => Math.round((n + Number.EPSILON) * 1000) / 1000;
+  function lista(b, l, r){
+    const conId = a => a.every(x => esObj(x) && (typeof x.id === 'string' || typeof x.id === 'number'));
+    if(conId(l) && conId(r) && (b === SIN || (Array.isArray(b) && conId(b)))){
+      const mapa = a => { const m = new Map(); a.forEach(x => m.set(String(x.id), x)); return m; };
+      const L = mapa(l), R = mapa(r), B = b === SIN ? null : mapa(b);
+      /* Orden: el de este aparato; lo que solo trae la nube se acomoda junto a su vecino */
+      const orden = l.map(x => String(x.id));
+      const pos = new Map(); orden.forEach((id, i) => pos.set(id, i));
+      const extra = new Map();                    /* id vecino -> ids nuevos que van después */
+      let previo = null;
+      r.forEach(x => {
+        const id = String(x.id);
+        if(L.has(id)){ previo = id; return; }
+        const k = previo === null ? '' : previo;
+        if(!extra.has(k)) extra.set(k, []);
+        extra.get(k).push(id);
+        previo = id;
+      });
+      const todos = [];
+      const meter = id => { todos.push(id); const e = extra.get(id); if(e){ extra.delete(id); e.forEach(meter); } };
+      (extra.get('') || []).forEach(id => { todos.push(id); const e = extra.get(id); if(e){ extra.delete(id); e.forEach(meter); } });
+      extra.delete('');
+      orden.forEach(meter);
+      extra.forEach(ids => ids.forEach(id => todos.push(id)));
+      const out = [];
+      const vistos = new Set();
+      todos.forEach(id => {
+        if(vistos.has(id)) return; vistos.add(id);
+        const lv = L.get(id), rv = R.get(id);
+        const bv = B ? (B.has(id) ? B.get(id) : undefined) : SIN;
+        if(lv && rv){ out.push(mezclar(bv, lv, rv, '#')); return; }
+        const v = lv || rv;
+        if(B && B.has(id) && igual(bv, v)) return;     /* el otro aparato lo borró y este no lo tocó */
+        out.push(v);
+      });
+      return out;
+    }
+    const simple = a => a.every(x => x === null || typeof x !== 'object');
+    if(simple(l) && simple(r) && (b === SIN || (Array.isArray(b) && simple(b)))){
+      const out = l.filter(x => !(b !== SIN && b.indexOf(x) >= 0 && r.indexOf(x) < 0));
+      r.forEach(x => { if(out.indexOf(x) < 0 && !(b !== SIN && b.indexOf(x) >= 0)) out.push(x); });
+      return out;
+    }
+    return b === SIN ? r : l;
+  }
+  /** Mezcla de tres: b = base (o SIN), l = este aparato, r = la nube. */
+  function mezclar(b, l, r, campo){
+    if(igual(l, r)) return l;
+    const hay = b !== SIN;
+    if(hay && igual(b, l)) return r;              /* solo cambió la nube */
+    if(hay && igual(b, r)) return l;              /* solo cambió este aparato */
+    if(typeof l === 'number' && typeof r === 'number'){
+      if(hay && typeof b === 'number' && (campo === '' || SUMABLES.indexOf(campo) >= 0)){
+        const n = redondo(b + (l - b) + (r - b));
+        return (campo === 'stock' && l >= 0 && r >= 0) ? Math.max(0, n) : n;
+      }
+      if(!hay && campo === '') return Math.max(l, r);   /* contadores (folios) */
+      return hay ? l : r;
+    }
+    if(Array.isArray(l) && Array.isArray(r)) return lista(hay ? b : SIN, l, r);
+    if(esObj(l) && esObj(r)){
+      const bo = hay ? (esObj(b) ? b : {}) : SIN;
+      const out = {};
+      const ks = Object.keys(l).concat(Object.keys(r).filter(k => !Object.prototype.hasOwnProperty.call(l, k)));
+      for(const k of ks){
+        const enL = Object.prototype.hasOwnProperty.call(l, k), enR = Object.prototype.hasOwnProperty.call(r, k);
+        const bv = bo === SIN ? SIN : bo[k];
+        if(enL && enR){ out[k] = mezclar(bv, l[k], r[k], k); continue; }
+        const v = enL ? l[k] : r[k];
+        if(bo !== SIN && Object.prototype.hasOwnProperty.call(bo, k) && igual(bv, v)) continue;   /* lo quitó el otro lado */
+        out[k] = v;
+      }
+      return out;
+    }
+    return hay ? l : r;
+  }
+  return {
+    igual,
+    /** Lo guardado en el aparato, con el mismo formato que en la nube: {j: ...} o {r: "texto"} */
+    envolver(raw){ try{ return { j: JSON.parse(raw) }; }catch(e){ return { r: raw }; } },
+    texto(v){ v = v || {}; return ('j' in v) ? JSON.stringify(v.j) : String(v.r == null ? '' : v.r); },
+    mezclar(b, l, r){
+      l = l || {}; r = r || {};
+      if('j' in l && 'j' in r) return { j: mezclar((b && 'j' in b) ? b.j : SIN, l.j, r.j, '') };
+      if(b && igual(b, l)) return r;
+      return b ? l : r;
+    }
+  };
+})();
+
+/* Lo último que este aparato sabe que hay en la nube, por cuenta y clave (IndexedDB) */
+const SyncBase = {
+  mem: new Map(), _p: null,
+  abrir(){
+    if(this._p) return this._p;
+    this._p = new Promise(res => {
+      try{
+        const rq = indexedDB.open('vendo-sync', 1);
+        rq.onupgradeneeded = () => { try{ rq.result.createObjectStore('base'); }catch(e){} };
+        rq.onsuccess = () => res(rq.result);
+        rq.onerror = () => res(null);
+        rq.onblocked = () => res(null);
+      }catch(e){ res(null); }
+    });
+    return this._p;
+  },
+  id(k){ return (Cloud.uid || '') + '|' + k; },
+  async get(k){
+    const id = this.id(k);
+    if(this.mem.has(id)) return this.mem.get(id);
+    const db = await this.abrir();
+    if(!db) return null;
+    return new Promise(res => {
+      try{
+        const rq = db.transaction('base', 'readonly').objectStore('base').get(id);
+        rq.onsuccess = () => { const v = rq.result || null; if(!this.mem.has(id)) this.mem.set(id, v); res(this.mem.get(id)); };
+        rq.onerror = () => res(null);
+      }catch(e){ res(null); }
+    });
+  },
+  async set(k, v){
+    const id = this.id(k);
+    this.mem.set(id, v);
+    const db = await this.abrir();
+    if(!db) return;
+    try{ db.transaction('base', 'readwrite').objectStore('base').put(v, id); }catch(e){}
+  },
+  async del(k){
+    const id = this.id(k);
+    this.mem.set(id, null);
+    const db = await this.abrir();
+    if(!db) return;
+    try{ db.transaction('base', 'readwrite').objectStore('base').delete(id); }catch(e){}
+  }
+};
+
 const SYNC_SKIP = DATA_NOT_IN_BACKUP.concat(['mesa_cloud_uid']);
 const Cloud = {
   sb:null, ready:false, uid:null, email:'', sub:null, q:new Set(), _mute:false, _t:null, known:{}, linkHash:'',
+  seen:null, _cadena:Promise.resolve(), _trayendo:false, _ui:null,
   init(){
     try{
       if(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY && window.supabase){
@@ -19517,36 +19688,154 @@ const Cloud = {
     for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(this.isSync(k)) this.q.add(k); }
     this.flush();
   },
+  /** Una operación de sincronización a la vez (subir y traer no se pisan). */
+  enFila(fn){
+    const p = this._cadena.then(() => fn());
+    this._cadena = p.then(() => {}, () => {});
+    return p;
+  },
+  verVisto(at){ if(at && (!this.seen || Date.parse(at) > Date.parse(this.seen))) this.seen = at; },
+  /** Escribe en este aparato SIN volver a subirlo (es lo que ya está en la nube). */
+  escribirLocal(k, v){
+    try{ Storage.prototype.__vendoSet.call(localStorage, k, VendoSync.texto(v)); }catch(e){}
+    Store._cache.delete(k);
+  },
   async flush(){
-    if(!this.ready || !this.uid || !this.q.size) return true;
-    const keys = [...this.q]; this.q.clear();
-    const rows = [], dels = [], raws = {}, news = {};
-    try{
-      for(const k of keys){
-        const raw = localStorage.getItem(k);
-        if(raw === null){ dels.push(k); continue; }
-        let v; try{ v = { j: JSON.parse(raw) }; }catch(e){ v = { r: raw }; }
-        const nv = await this.photos(v);
-        raws[k] = raw; news[k] = nv;
-        rows.push({ user_id:this.uid, key:k, value:nv });
-      }
-      if(rows.length){ const { error } = await this.sb.from('user_data').upsert(rows); if(error) throw error; }
-      if(dels.length){ const { error } = await this.sb.from('user_data').delete().eq('user_id', this.uid).in('key', dels); if(error) throw error; }
-      /* Las fotos ya están en Storage: en el aparato se deja solo el link (libera espacio) */
-      for(const k in news){
-        if(!('j' in news[k])) continue;
-        const s = JSON.stringify(news[k].j);
-        if(s !== raws[k] && localStorage.getItem(k) === raws[k]){
-          Storage.prototype.__vendoSet.call(localStorage, k, s); Store._cache.delete(k);
+    if(!this.ready || !this.uid) return true;
+    return this.enFila(async () => {
+      while(this.q.size && this.uid){
+        const keys = [...this.q]; this.q.clear();
+        try{
+          await this.subir(keys);
+        }catch(e){
+          console.error('Vendo plus sync', e);
+          keys.forEach(k => this.q.add(k));
+          clearTimeout(this._t); this._t = setTimeout(() => this.flush(), 15000);
+          return false;
         }
       }
       return true;
-    }catch(e){
-      console.error('Vendo plus sync', e);
-      keys.forEach(k => this.q.add(k));
-      clearTimeout(this._t); this._t = setTimeout(() => this.flush(), 15000);
-      return false;
+    });
+  },
+  async subir(keys){
+    const uid = this.uid;
+    const dels = keys.filter(k => localStorage.getItem(k) === null);
+    let pend = keys.filter(k => localStorage.getItem(k) !== null);
+    let pintar = false;
+    for(let intento = 0; pend.length && intento < 6; intento++){
+      /* 1) ¿Qué claves cambió otro aparato desde la última vez? */
+      const { data:heads, error:e1 } = await this.sb.from('user_data').select('key,updated_at').eq('user_id', uid).in('key', pend);
+      if(e1) throw e1;
+      const at = {}; (heads || []).forEach(h => { at[h.key] = h.updated_at; });
+      const bases = {};
+      for(const k of pend) bases[k] = await SyncBase.get(k);
+      const traer = pend.filter(k => at[k] && !(bases[k] && bases[k].at === at[k]));
+      const nube = {};
+      if(traer.length){
+        const { data:rows, error:e2 } = await this.sb.from('user_data').select('key,value,updated_at').eq('user_id', uid).in('key', traer);
+        if(e2) throw e2;
+        (rows || []).forEach(r => { nube[r.key] = r; at[r.key] = r.updated_at; });
+      }
+      const otraVez = [];
+      for(const k of pend){
+        if(this.uid !== uid) return;
+        const raw = localStorage.getItem(k);
+        if(raw === null) continue;                              /* se borró mientras tanto: ya va en la cola */
+        const local = VendoSync.envolver(raw);
+        const b = bases[k], r = nube[k];
+        /* Nada nuevo ni aquí ni en la nube: no hay que subir nada */
+        if(!r && at[k] && b && b.at === at[k] && VendoSync.igual(local, b.v)) continue;
+        const mezcla = r ? VendoSync.mezclar(b ? b.v : null, local, r.value || {}) : local;
+        const nv = await this.photos(mezcla);
+        const res = at[k]
+          ? await this.sb.from('user_data').update({ value:nv }).eq('user_id', uid).eq('key', k).eq('updated_at', at[k]).select('updated_at')
+          : await this.sb.from('user_data').insert({ user_id:uid, key:k, value:nv }).select('updated_at');
+        if(res.error){
+          if(res.error.code === '23505'){ otraVez.push(k); continue; }   /* otro aparato la creó primero */
+          throw res.error;
+        }
+        if(!res.data || !res.data.length){ otraVez.push(k); continue; } /* otro aparato escribió en medio: se mezcla otra vez */
+        const nuevoAt = res.data[0].updated_at;
+        await SyncBase.set(k, { v:nv, at:nuevoAt });
+        /* Lo mezclado (y las fotos ya como link) se queda también aquí, si nadie lo cambió mientras */
+        if(localStorage.getItem(k) === raw && !VendoSync.igual(nv, local)){ this.escribirLocal(k, nv); pintar = true; }
+      }
+      pend = otraVez;
     }
+    if(dels.length && this.uid === uid){
+      const { error } = await this.sb.from('user_data').delete().eq('user_id', uid).in('key', dels);
+      if(error) throw error;
+      for(const k of dels) await SyncBase.del(k);
+    }
+    try{ localStorage.setItem(SYNC_OWNER_KEY, uid); }catch(e){}
+    if(pend.length) throw new Error('Otro aparato está guardando al mismo tiempo: ' + pend.join(', '));
+    if(pintar) this.repintar();
+  },
+
+  /* ---------- Traer lo que otros aparatos guardaron ---------- */
+  async pull(){
+    if(!this.ready || !this.uid || this._trayendo) return;
+    this._trayendo = true;
+    const uid = this.uid;
+    try{
+      await this.enFila(async () => {
+        let qy = this.sb.from('user_data').select('key,updated_at').eq('user_id', uid);
+        /* 1 minuto de margen: lo que otro aparato guardó "al mismo tiempo" no se escapa */
+        if(this.seen) qy = qy.gt('updated_at', new Date(Date.parse(this.seen) - 60000).toISOString());
+        const { data:heads, error } = await qy;
+        if(error) throw error;
+        const cambiadas = [];
+        for(const h of (heads || [])){
+          this.verVisto(h.updated_at);
+          if(!this.isSync(h.key)) continue;
+          const b = await SyncBase.get(h.key);
+          if(!b || b.at !== h.updated_at) cambiadas.push(h.key);
+        }
+        if(!cambiadas.length || this.uid !== uid) return;
+        const { data:rows, error:e2 } = await this.sb.from('user_data').select('key,value,updated_at').eq('user_id', uid).in('key', cambiadas);
+        if(e2) throw e2;
+        const bases = {};
+        for(const r of (rows || [])) bases[r.key] = await SyncBase.get(r.key);
+        if(this.uid !== uid) return;
+        let pintar = false;
+        /* Sin pausas (await) aquí: así ningún toque del usuario queda a medias */
+        for(const r of (rows || [])){
+          const remota = r.value || {};
+          const raw = localStorage.getItem(r.key);
+          const b = bases[r.key];
+          let final = remota;
+          if(raw === null){
+            if(this.q.has(r.key)) final = null;                     /* se borró aquí y va a borrarse en la nube */
+          }else{
+            const local = VendoSync.envolver(raw);
+            if(VendoSync.igual(local, remota)) final = null;
+            else if(this.q.has(r.key) || !(b && VendoSync.igual(local, b.v))){
+              final = VendoSync.mezclar(b ? b.v : null, local, remota);  /* hay cambios aquí sin subir: se mezclan */
+              if(!VendoSync.igual(final, remota)) this.q.add(r.key);
+              if(VendoSync.igual(final, local)) final = null;
+            }
+          }
+          if(final){ this.escribirLocal(r.key, final); pintar = true; }
+        }
+        for(const r of (rows || [])) await SyncBase.set(r.key, { v:r.value || {}, at:r.updated_at });
+        if(this.q.size){ clearTimeout(this._t); this._t = setTimeout(() => this.flush(), 900); }
+        if(pintar) this.repintar();
+      });
+    }catch(e){ /* sin internet: se intenta en la siguiente vuelta */ }
+    finally{ this._trayendo = false; }
+  },
+  /** Vuelve a pintar la pantalla con lo nuevo (sin interrumpir si estás escribiendo). */
+  repintar(){
+    clearTimeout(this._ui);
+    this._ui = setTimeout(() => {
+      try{
+        if(document.body.classList.contains('auth-open') || document.body.classList.contains('dm-mode')) return;
+        const a = document.activeElement;
+        if(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'checkbox' && a.type !== 'radio'){ this.repintar(); return; }
+        if(typeof renderBgKeepModal === 'function') renderBgKeepModal();
+        else if(typeof render === 'function') render();
+      }catch(e){}
+    }, 1200);
   },
 
   /* ---------- Fotos → Supabase Storage (bucket "fotos") ---------- */
@@ -19572,19 +19861,36 @@ const Cloud = {
     return this.sb.storage.from('fotos').getPublicUrl(path).data.publicUrl;
   },
 
-  /* ---------- Carga de datos al entrar ---------- */
-  async hydrate(){
-    const { data, error } = await this.sb.from('user_data').select('key,value');
+  /* ---------- Carga de datos al entrar ----------
+     modo 'mezclar'   = los datos de este aparato son de esta cuenta: se mezclan con la nube
+     modo 'reemplazar' = aparato nuevo o de otra cuenta: manda lo de la nube (como antes) */
+  async hydrate(modo){
+    const { data, error } = await this.sb.from('user_data').select('key,value,updated_at');
     if(error) throw error;
+    const mezclar = modo === 'mezclar';
+    const bases = {};
+    if(mezclar) for(const r of data) if(this.isSync(r.key)) bases[r.key] = await SyncBase.get(r.key);
     this._mute = true;
     try{
       for(const r of data){
+        this.verVisto(r.updated_at);
         if(!this.isSync(r.key)) continue;
-        const v = r.value || {};
-        const raw = ('j' in v) ? JSON.stringify(v.j) : String(v.r == null ? '' : v.r);
-        Storage.prototype.__vendoSet.call(localStorage, r.key, raw); Store._cache.delete(r.key);
+        const remota = r.value || {};
+        let final = remota;
+        const raw = localStorage.getItem(r.key);
+        if(mezclar && raw !== null){
+          const local = VendoSync.envolver(raw), b = bases[r.key];
+          if(!VendoSync.igual(local, remota) && !(b && VendoSync.igual(local, b.v))){
+            final = VendoSync.mezclar(b ? b.v : null, local, remota);
+            if(!VendoSync.igual(final, remota)) this.q.add(r.key);   /* lo de este aparato también sube */
+          }
+        }
+        this.escribirLocal(r.key, final);
       }
     }finally{ this._mute = false; }
+    for(const r of data) if(this.isSync(r.key)) await SyncBase.set(r.key, { v:r.value || {}, at:r.updated_at });
+    try{ localStorage.setItem(SYNC_OWNER_KEY, this.uid); }catch(e){}
+    if(this.q.size){ clearTimeout(this._t); this._t = setTimeout(() => this.flush(), 1500); }
     return data.length === 0;       /* true = cuenta nueva: se sube lo que haya en este aparato */
   },
   wipeLocal(){
@@ -19595,6 +19901,8 @@ const Cloud = {
     }
     this._mute = true;
     ks.forEach(k => localStorage.removeItem(k));
+    try{ localStorage.removeItem(SYNC_OWNER_KEY); }catch(e){}
+    this.seen = null;
     Store._cache.clear(); this._mute = false;
   },
 
@@ -19701,7 +20009,8 @@ const Cloud = {
       this.uid = user.id;
       const prev = localStorage.getItem('mesa_cloud_uid');
       if(prev && prev !== this.uid) this.wipeLocal();        /* otra cuenta en el mismo aparato */
-      const empty = await this.hydrate();
+      const mia = localStorage.getItem(SYNC_OWNER_KEY) === this.uid;   /* ¿lo de aquí es de esta cuenta y no se ha subido? */
+      const empty = await this.hydrate(mia ? 'mezclar' : 'reemplazar');
       localStorage.setItem('mesa_cloud_uid', this.uid);
       if(empty){ initDB(); this.queueAll(); }                 /* migra lo que tenías en el navegador */
       await this.refreshSub();
@@ -19724,8 +20033,12 @@ if(Cloud.ready){
   /* Cada escritura local a "mesa_*" se sube sola */
   const _chg = Store._changed;
   Store._changed = function(k){ _chg.call(this, k); Cloud.queue(k); };
-  window.addEventListener('online', () => Cloud.flush());
+  window.addEventListener('online', () => { Cloud.flush(); Cloud.pull(); });
   window.addEventListener('pagehide', () => { clearTimeout(Cloud._t); Cloud.flush(); });
+  /* Lo que vendan otros aparatos (web, app, otra caja) llega solo */
+  setInterval(() => { if(!document.hidden) Cloud.pull(); }, 10000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) Cloud.pull(); });
+  window.addEventListener('focus', () => Cloud.pull());
   document.addEventListener('visibilitychange', async () => {
     if(document.visibilityState === 'visible' && Cloud.uid){ await Cloud.refreshSub(); Cloud.gate(); }
   });
@@ -20158,7 +20471,7 @@ bootApp = async function(){
     Cloud.sb.auth.onAuthStateChange((ev, s) => {
       if(s && s.user && (ev === 'TOKEN_REFRESHED' || ev === 'SIGNED_IN') && !Cloud.uid && AUTH.isLogged()){
         Cloud.uid = s.user.id;
-        setTimeout(async () => { await Cloud.refreshSub(); Cloud.gate(); }, 0);
+        setTimeout(async () => { await Cloud.refreshSub(); Cloud.gate(); Cloud.queueAll(); Cloud.pull(); }, 0);
       }
     });
     const reintentar = async () => {
@@ -20175,7 +20488,8 @@ bootApp = async function(){
     const { data:{ session }, error } = await Cloud.sb.auth.getSession();
     if(session){
       Cloud.uid = session.user.id;
-      try{ await Cloud.hydrate(); }catch(e){ console.error('sin conexión, se usa la copia local', e); }
+      const mia = localStorage.getItem('mesa_cloud_uid') === Cloud.uid || localStorage.getItem(SYNC_OWNER_KEY) === Cloud.uid;
+      try{ await Cloud.hydrate(mia ? 'mezclar' : 'reemplazar'); localStorage.setItem('mesa_cloud_uid', Cloud.uid); }catch(e){ console.error('sin conexión, se usa la copia local', e); }
       await Cloud.refreshSub();
       Cloud.syncEmail(session.user);
       if(AUTH.getUser()) AUTH.openSession();
