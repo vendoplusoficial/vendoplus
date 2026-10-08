@@ -1851,6 +1851,99 @@
   .dm-totals div.g{ color:var(--ink); font-size:18px; font-weight:800; padding-top:8px; }
   .dm-actions{ display:flex; gap:10px; margin-top:18px; }
   .dm-actions .btn{ flex:1; }
+
+  /* ---------- Datos del pedido: tipo de servicio, ubicación y pago ---------- */
+  .dm-co-sum{
+    width:100%; display:flex; align-items:center; gap:11px; text-align:left; cursor:pointer;
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:10px 13px;
+    box-shadow:var(--shadow-card); color:var(--ink); font-family:inherit;
+  }
+  .dm-co-sum-ico{ width:38px; height:38px; border-radius:12px; background:var(--dm-soft); color:var(--dm-ink); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .dm-co-sum-ico svg{ width:19px; height:19px; }
+  .dm-co-sum-txt{ flex:1; min-width:0; }
+  .dm-co-sum-txt b{ display:block; font-size:14px; font-weight:800; }
+  .dm-co-sum-txt small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-top:1px; }
+  .dm-co-sum-total{ font-size:16.5px; font-weight:800; white-space:nowrap; }
+  .dm-co-sec{ margin-top:20px; border-radius:16px; }
+  .dm-co-sec[hidden]{ display:none; }
+  .dmx .dm-co-label{ display:block; font-size:12.5px; font-weight:800; color:var(--ink-soft); margin-bottom:8px; letter-spacing:.1px; }
+  .dmx .dm-co-label span{ font-weight:600; }
+  .dm-co-hint{ font-size:12.5px; font-weight:600; color:var(--ink-soft); line-height:1.45; margin:-3px 0 9px; }
+  .dm-opts{ display:grid; gap:8px; }
+  .dm-opts.two{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .dm-opts.three{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .dm-opt{
+    position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:9px; width:100%;
+    border:1.5px solid var(--border); background:var(--surface); border-radius:14px; padding:12px;
+    text-align:left; color:var(--ink); font-family:inherit; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .dm-opt.static{ flex-direction:row; align-items:center; cursor:default; }
+  .dm-opt-ico{ width:36px; height:36px; border-radius:11px; background:var(--surface-alt); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .15s, color .15s; }
+  .dm-opt-ico svg{ width:19px; height:19px; }
+  .dm-opt-txt b{ display:block; font-size:14px; font-weight:800; line-height:1.25; }
+  .dm-opt-txt small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); line-height:1.35; margin-top:2px; }
+  .dm-opt.col{ align-items:center; text-align:center; gap:7px; padding:12px 4px 11px; }
+  .dm-opt.col b{ font-size:clamp(11px, 3.3vw, 13px); font-weight:800; line-height:1.2; max-width:100%; }
+  .dm-opt-check{ position:absolute; top:8px; right:8px; width:18px; height:18px; border-radius:50%; background:var(--dm-main); color:var(--dm-on); display:none; align-items:center; justify-content:center; }
+  .dm-opt-check svg{ width:11px !important; height:11px !important; }
+  .dm-opt.active{ border-color:var(--dm-main); background:var(--dm-soft); }
+  .dm-opt.active .dm-opt-ico{ background:var(--dm-main); color:var(--dm-on); }
+  .dm-opt.active .dm-opt-check{ display:flex; }
+  .dm-opt.static.active{ border-color:var(--border); background:var(--surface); }
+  .dm-co-sec.need{ animation:dmNeed .5s ease; box-shadow:0 0 0 2px var(--accent-2); }
+  .dm-co-sec.need .dm-co-label{ color:var(--accent-2); }
+  @keyframes dmNeed{ 0%,100%{ transform:none; } 20%{ transform:translateX(-5px); } 40%{ transform:translateX(5px); } 60%{ transform:translateX(-3px); } 80%{ transform:translateX(3px); } }
+  .dm-map{ height:230px; }
+  .dm-loc-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:9px; }
+  .dm-loc-st{ display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:700; color:var(--ink-soft); min-width:0; }
+  .dm-loc-st.ok{ color:var(--success); }
+  .dm-loc-st svg{ width:14px; height:14px; flex-shrink:0; }
+  .dm-gps{
+    display:inline-flex; align-items:center; gap:6px; flex-shrink:0; border:1.5px solid var(--border); background:var(--surface);
+    color:var(--ink); border-radius:999px; padding:8px 12px; font-size:12.5px; font-weight:800; font-family:inherit; cursor:pointer;
+  }
+  .dm-gps svg{ width:15px; height:15px; }
+  .dm-gps.is-busy, .md-del-gps.is-busy{ opacity:.55; }
+  .dm-gps.is-busy svg, .md-del-gps.is-busy svg{ animation:mdSpin 1s linear infinite; }
+  .dm-banner.fee{ margin:12px 0 0; }
+  .dm-co-actions .btn{ white-space:nowrap; }
+  .dm-co-actions .btn:first-child{ flex:0 0 32%; }
+
+  /* ---------- Mapa con el monito (cliente, caja y negocio) ---------- */
+  .md-map{
+    position:relative; z-index:0; isolation:isolate; overflow:hidden; height:200px;
+    border-radius:14px; border:1px solid var(--border); background:var(--surface-alt);
+  }
+  .md-map .leaflet-container, .md-map.leaflet-container{ font-family:inherit; background:var(--surface-alt); }
+  .md-map .leaflet-control-attribution{ font-size:9.5px; background:rgba(255,255,255,.75); }
+  .md-map .leaflet-bar{ border:none; box-shadow:0 2px 8px rgba(16,22,42,.18); border-radius:10px; overflow:hidden; }
+  .md-map .leaflet-bar a{ width:32px; height:32px; line-height:32px; color:var(--ink); }
+  .md-map-ph{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:16px; text-align:center; color:var(--ink-soft); font-size:13px; font-weight:700; }
+  .md-map-ph small{ font-size:12px; font-weight:600; max-width:260px; line-height:1.4; }
+  .md-map-ph-ico{ width:40px; height:40px; border-radius:50%; background:var(--surface); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); margin-bottom:2px; }
+  .md-map-ph-ico svg{ width:20px; height:20px; }
+  .md-map.is-loading .md-map-ph-ico{ animation:mdPulse 1.2s ease-in-out infinite; }
+  @keyframes mdPulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(.88); opacity:.6; } }
+  @keyframes mdSpin{ to{ transform:rotate(360deg); } }
+  .md-map-tip{
+    position:absolute; z-index:1000; left:50%; top:10px; transform:translateX(-50%); pointer-events:none;
+    display:flex; align-items:center; gap:6px; white-space:nowrap; max-width:calc(100% - 90px);
+    background:rgba(22,33,62,.9); color:#fff; font-size:12px; font-weight:700; padding:7px 12px; border-radius:999px;
+    box-shadow:0 4px 12px rgba(16,22,42,.25);
+  }
+  .md-map-tip span{ overflow:hidden; text-overflow:ellipsis; }
+  .md-map-tip svg{ width:14px; height:14px; flex-shrink:0; }
+  .md-map.has-pin .md-map-tip{ display:none; }
+  .md-pin-wrap{ background:none; border:none; }
+  .md-pin{
+    position:absolute; left:5px; top:0; width:34px; height:34px; box-sizing:border-box;
+    border-radius:50% 50% 50% 0; transform:rotate(-45deg); background:#16213E; border:3px solid #fff;
+    box-shadow:0 5px 12px rgba(16,22,42,.35); display:flex; align-items:center; justify-content:center;
+  }
+  .md-pin-in{ transform:rotate(45deg); color:#fff; display:flex; }
+  .md-pin-in svg{ width:17px; height:17px; }
+  .md-pin-shadow{ position:absolute; left:15px; top:41px; width:14px; height:6px; border-radius:50%; background:rgba(16,22,42,.28); }
+  .leaflet-dragging .md-pin{ box-shadow:0 10px 18px rgba(16,22,42,.35); }
   .dm-empty{ text-align:center; padding:60px 24px; }
   .dm-empty svg{ width:60px; height:60px; margin:0 auto 14px; color:var(--ink-faint); }
   .dm-empty h2{ font-size:19px; margin:0 0 6px; }
@@ -1862,7 +1955,8 @@
     display:flex; align-items:center; gap:10px; max-width:86%;
   }
   .dm-toast.show{ opacity:1; transform:translate(-50%,0); }
-  .dm-toast svg{ width:18px; height:18px; color:var(--success); }
+  .dm-toast svg{ width:18px; height:18px; color:var(--success); flex-shrink:0; }
+  .dm-toast.warn svg{ color:var(--accent-2); }
 
   @media (min-width:640px){ .dm-grid{ grid-template-columns:1fr 1fr 1fr; } }
   @media (min-width:700px){
@@ -2225,6 +2319,71 @@
   .mdi-after{ display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
   .mdi-after .btn{ flex:1 1 45%; padding:12px 10px; font-size:13.5px; }
   .mdi-after .btn.ghost{ background:var(--surface); }
+  .mdi-after:empty{ display:none; }
+  .btn.mdi-notify{ margin:-4px 0 16px; padding:14px 12px; font-size:14.5px; box-shadow:0 6px 16px rgba(37,211,102,.28); }
+
+  /* ---------- Pedido: tipo de servicio, pago y domicilio ---------- */
+  .mdi-pill.del{ background:#E8F0FF; color:#2456B8; }
+  .mdi-facts{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin:0 0 14px; }
+  .mdi-fact{ display:flex; align-items:center; gap:10px; min-width:0; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:10px 11px; box-shadow:var(--shadow-card); }
+  .mdi-fact-ico{ width:34px; height:34px; border-radius:11px; background:var(--surface-alt); color:var(--ink); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .mdi-fact-ico svg{ width:18px; height:18px; }
+  .mdi-fact.del .mdi-fact-ico{ background:#E8F0FF; color:#2456B8; }
+  .mdi-fact-txt{ min-width:0; }
+  .mdi-fact-txt small{ display:block; font-size:11px; font-weight:700; color:var(--ink-soft); }
+  .mdi-fact-txt b{ display:block; font-size:13.5px; font-weight:800; line-height:1.25; overflow-wrap:anywhere; }
+  .mdi-deliv{ background:var(--surface); border:1.5px solid #C9DAFB; border-radius:16px; padding:10px; margin-bottom:18px; box-shadow:var(--shadow-card); }
+  .mdi-deliv-alert{ display:flex; gap:10px; align-items:flex-start; background:#E8F0FF; color:#24427E; border-radius:11px; padding:11px 12px; margin-bottom:10px; font-size:12.5px; font-weight:600; line-height:1.45; }
+  .mdi-deliv-alert svg{ width:20px; height:20px; flex-shrink:0; color:#2456B8; margin-top:1px; }
+  .mdi-deliv-alert b{ display:block; font-size:14.5px; font-weight:800; color:#1A3570; }
+  .mdi-map{ height:180px; }
+  .mdi-ref{ display:flex; gap:8px; align-items:flex-start; margin:10px 2px 0; font-size:13px; font-weight:600; line-height:1.45; overflow-wrap:anywhere; }
+  .mdi-ref svg{ width:16px; height:16px; color:var(--ink-soft); flex-shrink:0; margin-top:2px; }
+  .mdi-ref small{ display:block; font-size:11px; font-weight:700; color:var(--ink-soft); }
+  .btn.mdi-gmaps{ margin-top:10px; padding:11px 10px; font-size:13.5px; background:var(--surface-alt); border-color:transparent; }
+  .mdi-noloc{ display:flex; gap:8px; align-items:flex-start; font-size:13px; font-weight:700; color:#8A3A32; background:var(--danger-bg); border-radius:11px; padding:10px 12px; line-height:1.4; }
+  .mdi-noloc svg{ width:16px; height:16px; flex-shrink:0; margin-top:1px; }
+  .mdi-fee{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 2px 2px; padding-top:12px; border-top:1px dashed var(--border); }
+  .mdi-fee label{ min-width:0; }
+  .mdi-fee label b, .mdi-fee.ro span b{ display:block; font-size:14px; font-weight:800; color:var(--ink); }
+  .mdi-fee label small{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft); margin-top:1px; line-height:1.35; }
+  .mdi-fee.ro > b{ font-size:15px; font-weight:800; white-space:nowrap; }
+  .mdi-fee-input{ display:flex; align-items:center; width:118px; flex-shrink:0; border:1.5px solid var(--border); border-radius:12px; background:var(--surface); padding:0 10px; transition:border-color .15s; }
+  .mdi-fee-input:focus-within{ border-color:var(--accent-strong); }
+  .mdi-fee-input span{ font-weight:800; color:var(--ink-soft); font-size:15px; }
+  .mdi-fee-input input{ width:100%; min-width:0; border:none; outline:none; background:transparent; color:var(--ink); font-family:inherit; font-size:16px; font-weight:800; padding:11px 4px; -moz-appearance:textfield; }
+  .mdi-fee-input input::-webkit-outer-spin-button, .mdi-fee-input input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .mdi-tbd{ color:#8A6000; }
+  .mdi-banner[hidden]{ display:none; }
+
+  /* ---------- Configuración: ¿tienes servicio a domicilio? ---------- */
+  .md-yn-q{ font-size:16px; font-weight:800; color:var(--ink); margin:0 0 12px; line-height:1.35; }
+  .md-yn{ display:grid; gap:9px; margin-bottom:14px; }
+  .md-yn-opt{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:1.5px solid var(--border); background:var(--surface); border-radius:14px; padding:12px 13px; font-family:inherit; color:var(--ink); cursor:pointer; transition:border-color .15s, background .15s; }
+  .md-yn-ico{ width:40px; height:40px; border-radius:12px; background:var(--surface-alt); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .md-yn-ico svg{ width:20px; height:20px; }
+  .md-yn-txt{ flex:1; min-width:0; }
+  .md-yn-txt b{ display:block; font-size:14.5px; font-weight:800; }
+  .md-yn-txt small{ display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-top:2px; line-height:1.35; }
+  .md-yn-radio{ width:22px; height:22px; border-radius:50%; border:2px solid var(--ink-faint); flex-shrink:0; background:var(--surface); }
+  .md-yn-opt.active{ border-color:var(--accent-strong); background:var(--accent-soft); }
+  .md-yn-opt.active .md-yn-ico{ background:var(--accent); color:var(--accent-ink); }
+  .md-yn-opt.active .md-yn-radio{ border-color:var(--ink); background:var(--ink); box-shadow:inset 0 0 0 4px var(--surface); }
+  .md-del-info{ display:grid; gap:8px; background:var(--surface-alt); border-radius:14px; padding:11px 13px; margin-bottom:16px; }
+  .md-del-info div{ display:flex; gap:9px; align-items:flex-start; font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.45; }
+  .md-del-info svg{ width:16px; height:16px; flex-shrink:0; color:var(--ink-soft); margin-top:1px; }
+  .md-del-map-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin:0 2px 8px; }
+  .md-del-map-head b{ display:block; font-size:14px; font-weight:800; }
+  .md-del-map-head small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-top:1px; }
+  .md-del-clear{ border:none; background:none; color:var(--accent-2); font-weight:800; font-size:12.5px; font-family:inherit; padding:4px 2px; cursor:pointer; }
+  .md-del-clear[hidden]{ display:none; }
+  .md-del-map{ height:190px; }
+  .btn.md-del-gps{ margin-top:8px; padding:11px 10px; font-size:13.5px; }
+  .md-nudge{ display:flex; align-items:center; gap:11px; width:100%; margin-top:12px; text-align:left; border:none; cursor:pointer; background:var(--accent-soft); color:#6B4A00; border-radius:14px; padding:11px 12px; font-family:inherit; font-size:12.5px; font-weight:600; line-height:1.4; }
+  .md-nudge-ico{ width:36px; height:36px; border-radius:11px; background:var(--accent); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .md-nudge-ico svg{ width:19px; height:19px; }
+  .md-nudge-txt{ flex:1; min-width:0; }
+  .md-nudge-txt b{ display:block; font-size:13.5px; font-weight:800; color:var(--ink); }
 
   /* ---------- Historial, ticket y ventas ---------- */
   .tag.md{ background:var(--sec-menu-soft); color:var(--sec-menu-ink); margin:0 0 0 4px; vertical-align:1px; }
@@ -4267,6 +4426,9 @@ Object.assign(ICONS, {
   hash: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4 8 20M16 4l-1.5 16M4.5 9h15M4 15h15"/></svg>`,
   shop: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>`
 });
+/* El "monito" del mapa (servicio a domicilio) y el botón de "mi ubicación" */
+ICONS.monito = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="7.3" r="3.7" fill="currentColor"/><path d="M5 19.3c0-3.9 3.1-6.7 7-6.7s7 2.8 7 6.7c0 .6-.5 1.1-1.1 1.1H6.1c-.6 0-1.1-.5-1.1-1.1Z" fill="currentColor"/></svg>`;
+ICONS.locate = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="6.6"/><circle cx="12" cy="12" r="2.3" fill="currentColor" stroke="none"/><path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3"/></svg>`;
 /* Ícono de portapapeles (antes se copiaba de "paste" antes de que existiera y salía vacío) */
 ICONS.clipboard = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="4.5" width="14" height="16" rx="2.2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4.5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v.5a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 function icx(name){ return '<span class="ic">' + icon(name) + '</span>'; }
@@ -13369,7 +13531,212 @@ const MD_DESIGNS = [
 ];
 function mdValidDesign(d){ return MD_DESIGNS.some(x => x.id === d) ? d : 'clasico'; }
 function mdDefaultCfg(){
-  return { active:false, id:null, activatedAt:null, paused:false, whatsapp:{ country:'', number:'' }, color:MD_DEFAULT_COLOR, design:'clasico', hours:{ mode:'business', days:null } };
+  return { active:false, id:null, activatedAt:null, paused:false, whatsapp:{ country:'', number:'' }, color:MD_DEFAULT_COLOR, design:'clasico', hours:{ mode:'business', days:null }, delivery:{ on:null, lat:null, lng:null } };
+}
+/* ---------- Servicio a domicilio ----------
+   on = true  -> el cliente elige "Ir a buscar" o "Servicio a domicilio"
+   on = false -> solo "Ir a buscar"
+   on = null  -> el negocio aún no responde (se pide antes de activar el menú)
+   lat/lng    -> ubicación del negocio (opcional): ahí empieza el mapa del cliente */
+function mdValidLatLng(lat, lng){
+  lat = Number(lat); lng = Number(lng);
+  return (isFinite(lat) && isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0))
+    ? { lat:Math.round(lat * 1e6) / 1e6, lng:Math.round(lng * 1e6) / 1e6 } : null;
+}
+function mdCleanDelivery(d){
+  d = d || {};
+  const p = mdValidLatLng(d.lat, d.lng);
+  return { on: d.on === true ? true : (d.on === false ? false : null), lat: p ? p.lat : null, lng: p ? p.lng : null };
+}
+
+/* ---------- Mapa con el "monito" (Leaflet + OpenStreetMap) ----------
+   Se descarga solo cuando hace falta: cuando el cliente elige "Servicio a
+   domicilio", al ver un pedido a domicilio en la caja o al marcar el
+   negocio. Si no carga (sin internet), se sigue con "Usar mi ubicación"
+   y el link de Google Maps. */
+const MD_LEAFLET = [
+  { js:'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js', css:'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css' },
+  { js:'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',               css:'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' },
+];
+const MD_MAP_START = { lat:23.6345, lng:-102.5528, zoom:5 };   /* todo México */
+let _mdLeafletP = null;
+function mdLoadLeaflet(){
+  if(window.L && window.L.map) return Promise.resolve(window.L);
+  if(_mdLeafletP) return _mdLeafletP;
+  const tryOne = src => new Promise((res, rej) => {
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = src.css;
+    const js = document.createElement('script'); js.src = src.js; js.async = true;
+    let done = false;
+    const cssReady = new Promise(ok => { css.onload = ok; css.onerror = ok; setTimeout(ok, 4000); });
+    const fail = () => { if(done) return; done = true; js.remove(); css.remove(); rej(new Error('leaflet')); };
+    const t = setTimeout(fail, 12000);
+    js.onload = () => { clearTimeout(t); if(window.L && window.L.map) cssReady.then(() => { if(!done){ done = true; res(window.L); } }); else fail(); };
+    js.onerror = () => { clearTimeout(t); fail(); };
+    document.head.append(css, js);
+  });
+  _mdLeafletP = tryOne(MD_LEAFLET[0]).catch(() => tryOne(MD_LEAFLET[1])).catch(e => { _mdLeafletP = null; throw e; });
+  return _mdLeafletP;
+}
+function mdMapPH(txt){ return `<div class="md-map-ph"><span class="md-map-ph-ico">${icon('pin')}</span><span>${txt || 'Cargando mapa…'}</span></div>`; }
+function mdPinHTML(){ return `<span class="md-pin-shadow"></span><span class="md-pin"><span class="md-pin-in">${icon('monito')}</span></span>`; }
+/* Un mapa por lugar (key): cliente, caja o negocio. */
+const mdMaps = {};
+/** Pone un mapa en `el`.  opts: { pin, center, zoom, editable, onPick(p), tip, errText }
+    Regresa una promesa con { map, setPin(p, zoom) } o null si no se pudo cargar. */
+function mdMapMount(key, el, opts){
+  opts = opts || {};
+  if(!el) return Promise.resolve(null);
+  /* El mismo contenedor ya tiene mapa (o se está poniendo): no se pone dos veces */
+  if(el._mdInst) return Promise.resolve(el._mdInst);
+  if(el._mdPending) return el._mdPending;
+  const prev = mdMaps[key];
+  if(prev && prev.el !== el){ try{ prev.map.remove(); }catch(e){} delete mdMaps[key]; }
+  el.classList.add('is-loading');
+  el._mdPending = mdLoadLeaflet().then(L => {
+    el._mdPending = null;
+    if(!el.isConnected) return null;
+    el.classList.remove('is-loading', 'is-error');
+    el.innerHTML = '';
+    const pin = opts.pin ? mdValidLatLng(opts.pin.lat, opts.pin.lng) : null;
+    const center = opts.center ? mdValidLatLng(opts.center.lat, opts.center.lng) : null;
+    const start = pin || center || MD_MAP_START;
+    const zoom = pin ? (opts.zoom || 17) : (center ? (opts.zoom || 14) : MD_MAP_START.zoom);
+    const map = L.map(el, { zoomControl:true, attributionControl:true, scrollWheelZoom:false });
+    if(map.attributionControl) map.attributionControl.setPrefix(false);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+    map.setView([start.lat, start.lng], zoom);
+    const ico = L.divIcon({ className:'md-pin-wrap', html:mdPinHTML(), iconSize:[44, 52], iconAnchor:[22, 45] });
+    let marker = null;
+    const inst = { key, el, map };
+    const picked = p => { el.classList.add('has-pin'); if(opts.onPick) opts.onPick(p); };
+    inst.setPin = (p, z) => {
+      p = p && mdValidLatLng(p.lat, p.lng); if(!p) return;
+      if(!marker){
+        marker = L.marker([p.lat, p.lng], { icon:ico, draggable:!!opts.editable, autoPan:true, keyboard:false }).addTo(map);
+        if(opts.editable) marker.on('dragend', () => { const ll = marker.getLatLng(); const q = mdValidLatLng(ll.lat, ll.lng); if(q) picked(q); });
+      }else marker.setLatLng([p.lat, p.lng]);
+      if(z) map.setView([p.lat, p.lng], z);
+      el.classList.add('has-pin');
+    };
+    inst.clearPin = () => { if(marker){ map.removeLayer(marker); marker = null; } el.classList.remove('has-pin'); };
+    if(pin) inst.setPin(pin);
+    if(opts.editable){
+      map.on('click', e => { const q = mdValidLatLng(e.latlng.lat, e.latlng.lng); if(!q) return; inst.setPin(q); picked(q); });
+      const tip = document.createElement('div');
+      tip.className = 'md-map-tip';
+      tip.innerHTML = icon('monito') + '<span>' + (opts.tip || 'Toca el mapa para poner el monito') + '</span>';
+      el.appendChild(tip);
+    }
+    setTimeout(() => { try{ map.invalidateSize(); }catch(e){} }, 80);
+    mdMaps[key] = inst;
+    el._mdInst = inst;
+    return inst;
+  }).catch(err => {
+    el._mdPending = null;
+    if(window.console) console.warn('Vendo plus · mapa', err);
+    if(el.isConnected){
+      el.classList.remove('is-loading'); el.classList.add('is-error');
+      el.innerHTML = `<div class="md-map-ph"><span class="md-map-ph-ico">${icon('alert')}</span><span>No se pudo cargar el mapa</span><small>${opts.errText || 'Revisa tu conexión a internet.'}</small></div>`;
+    }
+    return null;
+  });
+  return el._mdPending;
+}
+/** Ubicación del celular (pide permiso). */
+function mdGeolocate(){
+  return new Promise((res, rej) => {
+    if(!navigator.geolocation){ rej({ code:0 }); return; }
+    navigator.geolocation.getCurrentPosition(
+      p => { const v = mdValidLatLng(p.coords.latitude, p.coords.longitude); v ? res(v) : rej({ code:0 }); },
+      e => rej(e || { code:0 }),
+      { enableHighAccuracy:true, timeout:12000, maximumAge:60000 });
+  });
+}
+function mdGeoErr(e){
+  if(e && e.code === 1) return 'Permite el acceso a tu ubicación, o marca el lugar en el mapa';
+  if(!window.isSecureContext) return 'Tu navegador no deja usar la ubicación aquí. Marca el lugar en el mapa';
+  return 'No pudimos ver tu ubicación. Marca el lugar en el mapa';
+}
+
+/* ---------- ¿Tu negocio tiene servicio a domicilio? ---------- */
+let mdDelDraft = null;
+function mdOpenDeliveryForm(){
+  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
+  const d = mdCfg().delivery;
+  mdDelDraft = { on:d.on, lat:d.lat, lng:d.lng };
+  mdRenderDeliveryForm();
+}
+function mdRenderDeliveryForm(){
+  const d = mdDelDraft; if(!d) return;
+  const pin = mdValidLatLng(d.lat, d.lng);
+  const opt = (on, ico, title, sub) => `
+    <button type="button" class="md-yn-opt ${d.on === on ? 'active' : ''}" onclick="mdDelSet(${on})" aria-pressed="${d.on === on}">
+      <span class="md-yn-ico">${icon(ico)}</span>
+      <span class="md-yn-txt"><b>${title}</b><small>${sub}</small></span>
+      <span class="md-yn-radio"></span>
+    </button>`;
+  openModal(`
+    <div class="sheet-header">
+      <h2>Servicio a domicilio</h2>
+      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+    </div>
+    <p class="md-yn-q">¿Tu negocio tiene servicio a domicilio?</p>
+    <div class="md-yn">
+      ${opt(true, 'truck', 'Sí, llevamos pedidos', 'Tus clientes eligen: ir a buscar o servicio a domicilio')}
+      ${opt(false, 'shop', 'No, solo para ir a buscar', 'Tus clientes pasan por su pedido al negocio')}
+    </div>
+    ${d.on === true ? `
+      <div class="md-del-info">
+        <div>${icon('monito')}<span>El cliente marca en un mapa dónde está.</span></div>
+        <div>${icon('whatsapp')}<span>El costo del envío lo pones tú al confirmar el pedido y le llega por WhatsApp.</span></div>
+      </div>
+      <div class="md-del-map-head">
+        <span><b>¿Dónde está tu negocio?</b><small>Opcional · así el mapa de tus clientes empieza cerca de ti</small></span>
+        <button type="button" class="md-del-clear" id="mdDelClear" onclick="mdDelClear()" ${pin ? '' : 'hidden'}>Quitar</button>
+      </div>
+      <div class="md-map md-del-map" id="mdDelMap">${mdMapPH()}</div>
+      <button type="button" class="btn ghost block md-del-gps" onclick="mdDelGps(this)">${icon('locate')} Usar mi ubicación actual</button>
+    ` : ''}
+    <div class="sheet-actions">
+      <button class="btn ghost block" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary block" onclick="mdSaveDelivery()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
+    </div>
+  `, { dismissible:true });
+  if(d.on === true){
+    mdMapMount('biz', document.getElementById('mdDelMap'), { editable:true, pin, center:pin, tip:'Toca el mapa donde está tu negocio',
+      errText:'Puedes guardar sin marcarlo.', onPick:p => { mdDelDraft.lat = p.lat; mdDelDraft.lng = p.lng; const b = document.getElementById('mdDelClear'); if(b) b.hidden = false; } });
+  }
+}
+function mdDelSet(on){ if(!mdDelDraft) return; mdDelDraft.on = on; vibrate(8); mdRenderDeliveryForm(); }
+function mdDelClear(){
+  if(!mdDelDraft) return;
+  mdDelDraft.lat = null; mdDelDraft.lng = null;
+  const m = mdMaps.biz; if(m && m.clearPin) m.clearPin();
+  const b = document.getElementById('mdDelClear'); if(b) b.hidden = true;
+}
+function mdDelGps(btn){
+  if(btn){ btn.disabled = true; btn.classList.add('is-busy'); }
+  mdGeolocate().then(p => {
+    if(!mdDelDraft) return;
+    mdDelDraft.lat = p.lat; mdDelDraft.lng = p.lng;
+    const m = mdMaps.biz; if(m && m.el.isConnected) m.setPin(p, 17);
+    const b = document.getElementById('mdDelClear'); if(b) b.hidden = false;
+    toast('Ubicación marcada', { icon:icon('check'), variant:'toast-success', subtitle:'Muévela en el mapa si hace falta' });
+  }).catch(e => toast(mdGeoErr(e), { icon:icon('alert') }))
+    .then(() => { if(btn){ btn.disabled = false; btn.classList.remove('is-busy'); } });
+}
+function mdSaveDelivery(){
+  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
+  const d = mdDelDraft;
+  if(!d || d.on === null){ toast('Elige Sí o No'); return; }
+  const cfg = mdCfg();
+  cfg.delivery = mdCleanDelivery({ on:d.on, lat:d.lat, lng:d.lng });
+  mdSaveCfg(cfg);
+  mdDelDraft = null;
+  closeModal();
+  toast(d.on ? 'Servicio a domicilio activado' : 'Solo para ir a buscar', { icon:icon('check'), variant:'toast-success',
+    subtitle: d.on ? 'Tus clientes podrán elegir ir a buscar o a domicilio' : 'Tus clientes pasarán por su pedido al negocio' });
+  mdRerenderIfMenu();
 }
 function mdCfg(){
   let c = {};
@@ -13377,10 +13744,11 @@ function mdCfg(){
   const out = Object.assign(mdDefaultCfg(), c);
   out.whatsapp = Object.assign(mdDefaultCfg().whatsapp, c.whatsapp || {});
   out.hours = mdCleanHours(c.hours);
+  out.delivery = mdCleanDelivery(c.delivery);
   return out;
 }
 function mdSaveCfg(c){
-  const limpio = { active:!!c.active, id:c.id || null, activatedAt:c.activatedAt || null, paused:!!c.paused, whatsapp:c.whatsapp || { country:'', number:'' }, color:mdValidColor(c.color) || MD_DEFAULT_COLOR, design:mdValidDesign(c.design), hours:mdCleanHours(c.hours) };
+  const limpio = { active:!!c.active, id:c.id || null, activatedAt:c.activatedAt || null, paused:!!c.paused, whatsapp:c.whatsapp || { country:'', number:'' }, color:mdValidColor(c.color) || MD_DEFAULT_COLOR, design:mdValidDesign(c.design), hours:mdCleanHours(c.hours), delivery:mdCleanDelivery(c.delivery) };
   try{ localStorage.setItem(MD_CFG_KEY, JSON.stringify(limpio)); }catch(e){}
 }
 /* ---------- Horario del Menú Digital ----------
@@ -13542,6 +13910,14 @@ function mdChecklist(){
     { label:'Horario del menú', ok:true, icon:'clock',
       sub:escapeHtml(mdHoursSub()), action:'mdOpenHoursForm()' },
     (function(){
+      const d = mdCfg().delivery;
+      return { label:'Servicio a domicilio', ok:d.on !== null,
+        sub: d.on === true ? 'Sí · tus clientes eligen ir a buscar o a domicilio'
+           : d.on === false ? 'No · tus clientes solo pueden ir a buscar su pedido'
+           : '¿Tu negocio tiene servicio a domicilio? Toca para responder',
+        action:'mdOpenDeliveryForm()' };
+    })(),
+    (function(){
       const se = (typeof Season !== 'undefined' && Season.summary) ? Season.summary() : { on:true, txt:'Aparecen solas en fechas especiales' };
       return { label:'Decoraciones de temporada', ok:se.on, optional:true, free:true,
                sub:escapeHtml(se.txt), action:'openSettings()' };
@@ -13593,7 +13969,7 @@ function mdConfigHTML(cfg){
     { title:'Apariencia',        sub:'Cómo ven tu menú tus clientes',
       labels:['Diseño del menú', 'Color del menú', 'Logo del negocio', 'Decoraciones de temporada'] },
     { title:'Pedidos y horario', sub:'Cuándo y cómo te llegan los pedidos',
-      labels:['Horario del menú'], pre:(cfg.active && puedeMenu) ? toggleRow : '' },
+      labels:['Servicio a domicilio', 'Horario del menú'], pre:(cfg.active && puedeMenu) ? toggleRow : '' },
   ];
   const usados = new Set(GROUPS.reduce((acc, g) => acc.concat(g.labels), []));
   const otras = list.filter(x => !usados.has(x.label));
@@ -13975,10 +14351,11 @@ function dmPhoto(src, alt){
   if(!src) return icon('plate');
   return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt || '')}" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('span'),{innerHTML:ICONS.plate}).firstChild)">`;
 }
-function dmToast(msg){
+function dmToast(msg, kind){
   const t = document.getElementById('dmToast');
   if(!t) return;
-  t.innerHTML = icon('check') + '<span>' + escapeHtml(msg) + '</span>';
+  t.innerHTML = icon(kind === 'warn' ? 'alert' : 'check') + '<span>' + escapeHtml(msg) + '</span>';
+  t.classList.toggle('warn', kind === 'warn');
   t.classList.add('show');
   clearTimeout(dmToast._t);
   dmToast._t = setTimeout(() => t.classList.remove('show'), 2400);
@@ -14228,6 +14605,7 @@ function dmOpenSheet(kind){
   document.getElementById('dmOverlay').addEventListener('click', e => { if(e.target.id === 'dmOverlay') dmCloseSheet(); });
   document.body.classList.add('dm-lock');
   dmRenderCartbar();
+  if(kind === 'confirm' && typeof dmCoAfter === 'function') dmCoAfter();
 }
 function dmCloseSheet(){
   dm.sheet = null;
@@ -14357,7 +14735,7 @@ function dmCartHTML(){
     ${dmTotalsHTML()}
     ${paused ? `<div class="dm-banner" style="margin:14px 0 0;">${icon('pause')}<span><b>${cfg.paused ? 'Pedidos pausados' : 'Estamos cerrados'}</b>${cfg.paused ? 'El negocio no está recibiendo pedidos en este momento.' : 'Recibimos pedidos de nuevo ' + (next || 'más tarde') + '.'}</span></div>` : ''}
     <div class="dm-actions">
-      <button class="btn dm-green block" onclick="dmOpenSheet('confirm')" ${paused ? 'disabled' : ''}>${icon('whatsapp')} Enviar por WhatsApp</button>
+      <button class="btn dm-green block" onclick="dmContinue()" ${paused ? 'disabled' : ''}>Continuar ${icon('arrowRight')}</button>
     </div>`;
 }
 function dmConfirmHTML(){
@@ -14757,8 +15135,35 @@ function mdiLineLabel(l){ return l.name + (l.sizeLabel ? ' (' + l.sizeLabel + ')
 function mdiQtyText(l){ return (l.sizeLabel || unitOf(l.unit).plain) ? 'x' + fmtNum(l.qty) : fmtQty(l.qty, l.unit); }
 function mdiLineStep(l){ if(l.sizeId) return 1; const p = findProduct(l.productId); return p ? productStep(p) : 1; }
 
+/* ---------- Cómo lo recibe y cómo paga el cliente ----------
+   Viaja dentro de "customer" (Supabase lo guarda tal cual, no hay que
+   cambiar nada allá):  customer = { name, service, payment, loc:{ lat, lng, ref } } */
+const MD_SERVICES = {
+  llevar:    { label:'Ir a buscar',          ico:'shop',  sub:'Pasas por él al negocio' },
+  domicilio: { label:'Servicio a domicilio', ico:'truck', sub:'Te lo llevan a donde estás' },
+};
+const MD_PAY_IDS = ['efectivo', 'tarjeta', 'transferencia'];
+function mdiCleanCustomer(c){
+  c = c || {};
+  const out = { name: mdiStr(c.name, 60) };
+  if(c.service === 'llevar' || c.service === 'domicilio') out.service = c.service;
+  if(MD_PAY_IDS.indexOf(c.payment) >= 0) out.payment = c.payment;
+  if(out.service === 'domicilio' && c.loc){
+    const p = mdValidLatLng(c.loc.lat, c.loc.lng);
+    if(p) out.loc = { lat:p.lat, lng:p.lng, ref: mdiStr(c.loc.ref, 200) };
+  }
+  return out;
+}
+function mdiIsDelivery(o){ return !!(o && o.customer && o.customer.service === 'domicilio'); }
+function mdiHasFee(o){ return mdiIsDelivery(o) && o.deliveryFee != null && isFinite(Number(o.deliveryFee)); }
+function mdiDeliveryFee(o){ return mdiHasFee(o) ? Math.max(0, round2(Number(o.deliveryFee))) : 0; }
+/** Total del pedido, con lo que se cobra por llevarlo (si es a domicilio). */
+function mdiOrderTotal(o){ return round2(mdTotals((o && o.lines) || []).total + mdiDeliveryFee(o)); }
+function mdiMapsUrl(loc){ return 'https://maps.google.com/?q=' + Number(loc.lat).toFixed(6) + ',' + Number(loc.lng).toFixed(6); }
+
 /* ---------- Crear el pedido (lo usa el Menú Digital del cliente) ---------- */
-function mdiBuildFromCart(cartLines, customerName){
+function mdiBuildFromCart(cartLines, customerName, extra){
+  const customer = mdiCleanCustomer(Object.assign({}, extra || {}, { name:customerName }));
   const lines = cartLines.map(l => {
     const p = findProduct(l.productId);
     return mdiCleanLine({ productId:l.productId, name:p ? p.name : 'Producto', sizeId:l.sizeId, sizeLabel:l.sizeLabel, unit:l.unit, qty:l.qty, price:l.price, note:l.note });
@@ -14769,13 +15174,13 @@ function mdiBuildFromCart(cartLines, customerName){
     code: mdiNewCode(),
     createdAt: now,
     receivedAt: now,
-    customer: { name: mdiStr(customerName, 60) },
+    customer: customer,
     original: lines,
     lines: lines.map(l => Object.assign({}, l)),
     status: 'nuevo',
     source: 'menu',
-    service: 'llevar',
-    payment: 'efectivo'
+    service: customer.service || 'llevar',
+    payment: customer.payment || 'efectivo'
   };
 }
 /* Mismo formato que siempre ha tenido el mensaje del Menú Digital. */
@@ -14795,6 +15200,16 @@ function mdiMessage(o){
     msg += '\n' + ivaLabel() + ': ' + formatMoney(t.iva);
   }
   msg += '\n*Total: ' + formatMoney(t.total) + ' MXN*';
+  /* Lo que eligió el cliente (los renglones no empiezan con • para no confundirse con productos) */
+  const c = o.customer || {};
+  if(c.service || c.payment) msg += '\n';
+  if(c.service) msg += '\nTipo de servicio: ' + MD_SERVICES[c.service].label;
+  if(c.service === 'domicilio'){
+    if(c.loc) msg += '\nUbicación: ' + mdiMapsUrl(c.loc);
+    if(c.loc && c.loc.ref) msg += '\nReferencias: ' + c.loc.ref;
+    msg += '\nCosto de envío: me lo dicen por aquí, por favor';
+  }
+  if(c.payment) msg += '\nMétodo de pago: ' + paymentOf(c.payment).name;
   return msg;
 }
 
@@ -14840,6 +15255,14 @@ function mdiParseMessage(text){
   const cm = text.match(/\b(MD-[A-Z0-9]{4,6})\b/i); if(cm) out.code = cm[1].toUpperCase();
   const nm = text.match(/Nombre:\s*([^\n]+)/i); if(nm) out.name = mdiStr(nm[1].replace(/\*/g, ''), 60);
   const tm = text.match(/(?:^|\n)[^\S\n]*\*?\s*Total:\s*\$\s*([\d,]+(?:\.\d+)?)/i); if(tm) out.total = parseFloat(tm[1].replace(/,/g, ''));
+  /* Tipo de servicio, ubicación y método de pago (mensajes nuevos) */
+  const svm = text.match(/Tipo de servicio:\s*([^\n]+)/i);
+  if(svm){ const v = mdiNorm(svm[1]); out.service = /domicilio/.test(v) ? 'domicilio' : (/buscar|recoger|llevar/.test(v) ? 'llevar' : null); }
+  const pym = text.match(/M[eé]todo de pago:\s*([^\n]+)/i);
+  if(pym){ const v = mdiNorm(pym[1]); out.payment = /tarjeta/.test(v) ? 'tarjeta' : (/transfer/.test(v) ? 'transferencia' : (/efectivo/.test(v) ? 'efectivo' : null)); }
+  const lcm = text.match(/[?&]q=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+  if(lcm) out.loc = { lat:parseFloat(lcm[1]), lng:parseFloat(lcm[2]) };
+  const rfm = text.match(/Referencias:\s*([^\n]+)/i); if(rfm) out.ref = mdiStr(rfm[1].replace(/\*/g, ''), 200);
   let last = null;
   text.split(/\r?\n/).forEach(raw => {
     const line = raw.replace(/\*/g, '').trim();
@@ -14957,10 +15380,10 @@ function mdiSectionHTML(){
     { id:'todos', label:'Todos', n:c.total },
   ].filter(t => t.id !== 'cancelado' || t.n || mdiFilter === 'cancelado');
   const hoy = all.filter(o => isSameDay(new Date(o.createdAt), new Date()));
-  const ventasHoy = visibleSales().filter(s => s.origin === 'menu' && !s.cancelled && isSameDay(new Date(s.date), new Date()));
+  const confHoy = all.filter(o => o.status === 'confirmado' && isSameDay(new Date(o.decidedAt || o.createdAt), new Date()));
   const empty = {
     nuevo: ['No hay pedidos por revisar', 'Cuando un cliente mande su pedido desde tu Menú Digital, aparecerá aquí para que lo confirmes o lo rechaces.'],
-    confirmado: ['Aún no confirmas pedidos', 'Los pedidos que confirmes quedan aquí por cobrar. Al cobrarlos se guardan en Historial y en Ventas como “Pedido hecho en Menú Digital”.'],
+    confirmado: ['Aún no confirmas pedidos', 'Los pedidos que confirmes quedan aquí. Desde cada uno le avisas al cliente por WhatsApp que su pedido ya está confirmado.'],
     rechazado: ['Sin pedidos rechazados', 'Aquí verás los pedidos que no pudiste surtir.'],
     cancelado: ['Sin pedidos cancelados', 'Aquí verás los pedidos confirmados que después cancelaste.'],
     todos: ['Aún no llegan pedidos', 'Comparte el link de tu Menú Digital con tus clientes para empezar a recibir pedidos.'],
@@ -14974,7 +15397,7 @@ function mdiSectionHTML(){
     <div class="mdi-today">
       <div><span>Hoy</span><b>${hoy.length}</b><small>pedido${hoy.length === 1 ? '' : 's'}</small></div>
       <div><span>Por revisar</span><b class="${c.nuevo ? 'warn' : ''}">${c.nuevo}</b><small>esperan respuesta</small></div>
-      <div><span>Vendido hoy</span><b>${formatMoney(ventasHoy.reduce((a, s) => a + s.total, 0))}</b><small>${ventasHoy.length} cobrado${ventasHoy.length === 1 ? '' : 's'}</small></div>
+      <div><span>Confirmado hoy</span><b>${formatMoney(confHoy.reduce((a, o) => a + mdiOrderTotal(o), 0))}</b><small>${confHoy.length} pedido${confHoy.length === 1 ? '' : 's'}</small></div>
     </div>
 
     <div class="mdi-tabs" role="tablist">
@@ -14996,7 +15419,7 @@ function mdiSectionHTML(){
   `;
 }
 function mdiCardHTML(o){
-  const t = mdTotals(o.lines || []);
+  const total = mdiOrderTotal(o);
   const st = MDI_STATUS[o.status] || MDI_STATUS.nuevo;
   const mod = mdiIsModified(o);
   const items = (o.lines || []).slice(0, 3).map(l => escapeHtml(mdiQtyText(l).replace(/^x/, '') + (l.sizeLabel || unitOf(l.unit).plain ? '× ' : ' ') + l.name.replace(/\s*\(EJEMPLO[^)]*\)/, ''))).join(' · ') + ((o.lines || []).length > 3 ? ' · +' + ((o.lines || []).length - 3) : '');
@@ -15005,14 +15428,14 @@ function mdiCardHTML(o){
       <span class="mdi-card-top">
         <span class="mdi-code">${escapeHtml(o.code)}</span>
         <span class="mdi-pill ${st.cls}">${st.label}</span>
-        ${o.status === 'confirmado' && !mdiIsPaid(o) ? '<span class="mdi-pill nuevo">Por cobrar</span>' : ''}
+        ${mdiIsDelivery(o) ? `<span class="mdi-pill del">${icon('truck')} A domicilio</span>` : ''}
         ${mod ? '<span class="mdi-pill mod">Modificado</span>' : ''}
         ${o.waCheck && o.waCheck.ok ? `<span class="mdi-pill wa">${icon('check')} WhatsApp</span>` : ''}
         <span class="mdi-time">${mdiAgo(o.receivedAt || o.createdAt)}</span>
       </span>
       <span class="mdi-name">${icon('person')} ${escapeHtml((o.customer && o.customer.name) || 'Cliente sin nombre')}</span>
       <span class="mdi-items">${items || '—'}</span>
-      <span class="mdi-card-foot"><span>${(o.lines || []).length} producto${(o.lines || []).length === 1 ? '' : 's'}${o.status === 'rechazado' && o.rejectReason ? ' · ' + escapeHtml(o.rejectReason) : ''}</span><b>${formatMoney(t.total)}</b></span>
+      <span class="mdi-card-foot"><span>${(o.lines || []).length} producto${(o.lines || []).length === 1 ? '' : 's'}${o.status === 'rechazado' && o.rejectReason ? ' · ' + escapeHtml(o.rejectReason) : ''}</span><b>${formatMoney(total)}</b></span>
     </button>`;
 }
 
@@ -15029,6 +15452,13 @@ function mdiOpen(id, keepScroll){
   openModal(mdiDetailHTML(o), { dismissible:true });
   const sh = document.querySelector('#modal-layer .modal-sheet');
   if(sh){ sh.classList.add('mdi-sheet'); if(y) sh.scrollTop = y; }
+  mdiMountMap(o);
+}
+/* Mapa (solo para ver) con el lugar que marcó el cliente */
+function mdiMountMap(o){
+  const el = document.getElementById('mdiMap');
+  if(!el || !mdiIsDelivery(o) || !o.customer.loc) return;
+  mdMapMount('mdi', el, { editable:false, pin:o.customer.loc, zoom:16, errText:'Usa «Abrir en Google Maps».' });
 }
 function mdiRefresh(){ if(mdiUI.id) mdiOpen(mdiUI.id, true); if(currentView === 'menu' || currentView === 'home') renderBgKeepModal(); mdiPaintBadge(); }
 /* Repinta la vista de atrás sin cerrar la hoja abierta. */
@@ -15041,17 +15471,96 @@ function renderBgKeepModal(){
   if(!layer.innerHTML && html){ layer.innerHTML = html; }
   const sh2 = layer.querySelector('.modal-sheet'); if(sh2) sh2.scrollTop = y;
   window.scrollTo(0, scrollY);
+  if(mdiUI.id){ const o = MDI.get(mdiUI.id); if(o) mdiMountMap(o); }
+}
+
+/* Tipo de servicio y método de pago que eligió el cliente */
+function mdiServiceHTML(o){
+  const c = o.customer || {};
+  if(!c.service && !c.payment) return '';
+  const sv = c.service ? MD_SERVICES[c.service] : null;
+  const pm = c.payment ? paymentOf(c.payment) : null;
+  return `
+    <div class="mdi-facts">
+      <div class="mdi-fact ${c.service === 'domicilio' ? 'del' : ''}">
+        <span class="mdi-fact-ico">${icon(sv ? sv.ico : 'shop')}</span>
+        <span class="mdi-fact-txt"><small>Tipo de servicio</small><b>${sv ? sv.label : 'No lo eligió'}</b></span>
+      </div>
+      <div class="mdi-fact">
+        <span class="mdi-fact-ico">${icon(pm ? pm.ico : 'cash')}</span>
+        <span class="mdi-fact-txt"><small>Método de pago</small><b>${pm ? pm.name : 'No lo eligió'}</b></span>
+      </div>
+    </div>`;
+}
+/* Aviso "Este servicio es a domicilio": ubicación y lo que se cobra por llevarlo */
+function mdiDeliveryHTML(o){
+  if(!mdiIsDelivery(o)) return '';
+  const loc = o.customer.loc;
+  const editable = o.status === 'nuevo';
+  const fee = mdiHasFee(o) ? mdiDeliveryFee(o) : null;
+  return `
+    <div class="mdi-deliv">
+      <div class="mdi-deliv-alert">${icon('truck')}<span><b>Este servicio es a domicilio</b>${editable ? 'Revisa la ubicación del cliente y escribe cuánto cobras por llevarlo.' : 'Llévalo a la ubicación que marcó el cliente.'}</span></div>
+      ${loc ? `
+        <div class="md-map mdi-map" id="mdiMap">${mdMapPH()}</div>
+        ${loc.ref ? `<div class="mdi-ref">${icon('pin')}<span><small>Dirección o referencias</small>${escapeHtml(loc.ref)}</span></div>` : ''}
+        <button class="btn ghost block mdi-gmaps" onclick="mdiOpenMaps('${o.id}')">${icon('external')} Abrir en Google Maps</button>` : `
+        <div class="mdi-noloc">${icon('alert')}<span>El cliente no mandó su ubicación. Pídesela por WhatsApp.</span></div>`}
+      ${editable ? `
+        <div class="mdi-fee">
+          <label for="mdiFee"><b>Costo de envío</b><small>Se suma al total y le llega al cliente al confirmar</small></label>
+          <div class="mdi-fee-input"><span>$</span><input id="mdiFee" type="number" inputmode="decimal" min="0" step="1" placeholder="0.00" value="${fee == null ? '' : fee}" oninput="mdiSetFee('${o.id}', this.value)"></div>
+        </div>` : `
+        <div class="mdi-fee ro"><span><b>Costo de envío</b></span><b>${fee == null ? '—' : (fee ? formatMoney(fee) : 'Gratis')}</b></div>`}
+    </div>`;
+}
+function mdiOpenMaps(id){
+  const o = MDI.get(id); if(!o || !mdiIsDelivery(o) || !o.customer.loc) return;
+  const url = mdiMapsUrl(o.customer.loc);
+  const w = window.open(url, '_blank'); if(!w) location.href = url;
+}
+function mdiTotalsHTML(o){
+  const t = mdTotals(o.lines || []);
+  const tOrig = mdTotals(o.original || []);
+  const mod = mdiIsModified(o);
+  const del = mdiIsDelivery(o);
+  const fee = mdiDeliveryFee(o);
+  return `
+    <div class="totals" id="mdiTotals">
+      <div class="totals-row"><span>Subtotal</span><span class="v">${formatMoney(t.subtotal)}</span></div>
+      ${showsTax() ? `<div class="totals-row"><span>${ivaLabel()}</span><span class="v">${formatMoney(t.iva)}</span></div>` : ''}
+      ${del ? `<div class="totals-row"><span>Envío a domicilio</span><span class="v ${mdiHasFee(o) ? '' : 'mdi-tbd'}">${mdiHasFee(o) ? (fee ? formatMoney(fee) : 'Gratis') : 'Por definir'}</span></div>` : ''}
+      <div class="totals-row grand"><span>Total</span><span class="v">${formatMoney(round2(t.total + fee))}</span></div>
+      ${mod ? `<div class="totals-row"><span>Total que mandó el cliente</span><span class="v" style="text-decoration:line-through;">${formatMoney(tOrig.total)}</span></div>` : ''}
+    </div>`;
+}
+function mdiMissing(o){ return (o.lines || []).filter(l => !l.productId || !findProduct(l.productId)).length; }
+function mdiCanConfirm(o){ return (o.lines || []).length > 0 && !mdiMissing(o) && (!mdiIsDelivery(o) || mdiHasFee(o)); }
+function mdiSetFee(id, v){
+  const raw = String(v == null ? '' : v).trim().replace(',', '.');
+  const n = raw === '' ? null : parseFloat(raw);
+  MDI.update(id, o => {
+    if(o.status !== 'nuevo') return;
+    if(n == null || !isFinite(n) || n < 0) delete o.deliveryFee; else o.deliveryFee = round2(n);
+  });
+  mdiPaintTotals(id);
+}
+/* Actualiza totales y botón sin repintar la hoja (no se pierde lo que se escribe) */
+function mdiPaintTotals(id){
+  const o = MDI.get(id); if(!o) return;
+  const tw = document.getElementById('mdiTotals'); if(tw) tw.outerHTML = mdiTotalsHTML(o);
+  const btn = document.getElementById('mdiConfirmBtn');
+  if(btn){ btn.innerHTML = icon('check') + ' Confirmar · ' + formatMoney(mdiOrderTotal(o)); btn.disabled = !mdiCanConfirm(o); }
+  const need = document.getElementById('mdiFeeNeed'); if(need) need.hidden = mdiHasFee(o);
 }
 
 function mdiDetailHTML(o){
   const st = MDI_STATUS[o.status] || MDI_STATUS.nuevo;
-  const t = mdTotals(o.lines || []);
-  const tOrig = mdTotals(o.original || []);
   const mod = mdiIsModified(o);
   const editable = o.status === 'nuevo';
   const sale = o.saleId ? DB.getSales().find(s => s.id === o.saleId) : null;
   const srcTxt = { menu:'desde el Menú Digital', link:'con el link de WhatsApp', pegado:'pegado de WhatsApp' }[o.source] || 'desde el Menú Digital';
-  const faltan = (o.lines || []).filter(l => !l.productId || !findProduct(l.productId)).length;
+  const faltan = mdiMissing(o);
 
   const lineRows = (o.lines || []).map((l, i) => {
     const p = l.productId ? findProduct(l.productId) : null;
@@ -15097,14 +15606,17 @@ function mdiDetailHTML(o){
       <span>${icon('clock')} ${formatDateTime(o.createdAt)} · ${srcTxt}</span>
     </div>
 
-    ${o.status === 'confirmado' ? (mdiIsPaid(o) ? `
-      <div class="mdi-banner ok">${icon('check')}<span><b>Pedido confirmado y cobrado</b>${sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : `
-      <div class="mdi-banner warn">${icon('clock')}<span><b>Pedido confirmado · por cobrar</b>Aún no entra a tus ventas, a la caja ni a tus existencias. Cóbralo cuando el cliente pague.</span></div>`) : ''}
+    ${o.status === 'confirmado' ? `
+      <div class="mdi-banner ok">${icon('check')}<span><b>Pedido confirmado</b>${mdiIsPaid(o) ? (sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.')
+        : (o.notifiedAt ? 'Le avisaste al cliente ' + mdiAgo(o.notifiedAt) + '.' : 'Avísale al cliente por WhatsApp que su pedido ya está confirmado.')}</span></div>
+      <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>` : ''}
     ${o.status === 'rechazado' ? `
       <div class="mdi-banner no">${icon('close')}<span><b>Pedido rechazado</b>${escapeHtml(o.rejectReason || 'Sin motivo')}${o.rejectNote ? ' · ' + escapeHtml(o.rejectNote) : ''}</span></div>` : ''}
     ${o.status === 'cancelado' ? `
       <div class="mdi-banner cancel">${icon('close')}<span><b>Pedido cancelado</b>${sale ? 'La venta ' + orderNumberLabel(sale.number) + ' quedó cancelada en Historial y ya no cuenta en tus ventas.' : 'Ya no cuenta en tus ventas.'}${o.cancelledAt ? ' Cancelado el ' + formatDateTime(o.cancelledAt) + (o.cancelledBy ? ' por ' + escapeHtml(o.cancelledBy) : '') : ''}</span></div>` : ''}
 
+    ${o.status === 'rechazado' ? '' : mdiServiceHTML(o)}
+    ${o.status === 'rechazado' || o.status === 'cancelado' ? '' : mdiDeliveryHTML(o)}
     ${o.status === 'rechazado' || o.status === 'cancelado' ? '' : mdiCompareHTML(o)}
 
     ${o.status === 'rechazado' ? '' : `
@@ -15120,23 +15632,18 @@ function mdiDetailHTML(o){
         ${mod ? `<button class="btn ghost" onclick="mdiRestore('${o.id}')">${icon('undo')} Volver al original</button>` : ''}
       </div>` : ''}
 
-    <div class="totals">
-      <div class="totals-row"><span>Subtotal</span><span class="v">${formatMoney(t.subtotal)}</span></div>
-      ${showsTax() ? `<div class="totals-row"><span>${ivaLabel()}</span><span class="v">${formatMoney(t.iva)}</span></div>` : ''}
-      <div class="totals-row grand"><span>Total</span><span class="v">${formatMoney(t.total)}</span></div>
-      ${mod ? `<div class="totals-row"><span>Total que mandó el cliente</span><span class="v" style="text-decoration:line-through;">${formatMoney(tOrig.total)}</span></div>` : ''}
-    </div>`}
+    ${mdiTotalsHTML(o)}`}
 
     ${editable ? `
       ${faltan ? `<div class="mdi-banner warn">${icon('alert')}<span><b>Falta elegir ${faltan} producto${faltan === 1 ? '' : 's'}</b>Hay productos que no están en tu catálogo. Toca ${icx('edit')} para cambiarlos antes de confirmar.</span></div>` : ''}
+      ${mdiIsDelivery(o) ? `<div class="mdi-banner warn" id="mdiFeeNeed" ${mdiHasFee(o) ? 'hidden' : ''}>${icon('truck')}<span><b>Falta el costo de envío</b>Escríbelo arriba para poder confirmar. Si no cobras envío, pon 0.</span></div>` : ''}
       <div class="mdi-decide">
         <button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>
-        <button class="btn mdi-confirm" onclick="mdiConfirm('${o.id}')" ${(o.lines || []).length && !faltan ? '' : 'disabled'}>${icon('check')} Confirmar · ${formatMoney(t.total)}</button>
+        <button class="btn mdi-confirm" id="mdiConfirmBtn" onclick="mdiConfirm('${o.id}')" ${mdiCanConfirm(o) ? '' : 'disabled'}>${icon('check')} Confirmar · ${formatMoney(mdiOrderTotal(o))}</button>
       </div>
     ` : `
       <div class="mdi-after">
-        ${o.status === 'confirmado' && !mdiIsPaid(o) ? `<button class="btn primary" onclick="mdiCharge('${o.id}')">${icon('card')} Cobrar · ${formatMoney(t.total)}</button>` : ''}
-        <button class="btn whatsapp" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} Avisar al cliente</button>
+        ${o.status === 'confirmado' ? '' : `<button class="btn whatsapp" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} Avisar al cliente</button>`}
         ${sale && canSeeSale(sale) ? `<button class="btn ghost" onclick="showTicket(DB.getSales().find(s => s.id === '${sale.id}'))">${icon('receipt')} Ver ticket</button>` : ''}
         ${o.status === 'confirmado' && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
         ${o.status === 'rechazado' ? `<button class="btn ghost" onclick="mdiReopen('${o.id}')">${icon('undo')} Volver a revisar</button>` : ''}
@@ -15346,17 +15853,21 @@ function mdiRemoveLine(){
   mdiOpen(e.id);
 }
 
-/* ---------- Confirmar ≠ cobrar ----------
-   Confirmar solo acepta el pedido: NO crea la venta, no pone método de
-   pago y no toca la caja ni las existencias. El pedido queda "por cobrar".
-   Cobrarlo lo pasa al carrito y se cobra en la hoja de cobro de siempre
-   (con todas sus revisiones: efectivo, fiado, pago mixto, existencias y
-   caja). Hasta entonces entra a Historial, Ventas, la caja y el inventario. */
+/* ---------- Confirmar ----------
+   Confirmar acepta el pedido y deja listo el aviso al cliente por WhatsApp
+   (con el costo de envío si es a domicilio). Ya no hay botón "Cobrar"
+   aquí: no crea venta ni toca la caja ni las existencias. (Los pedidos que
+   se cobraron con la versión anterior siguen ligados a su venta.) */
 function mdiIsPaid(o){ return !!(o && o.saleId); }
 function mdiConfirm(id){
   const o = MDI.get(id);
   if(!o || o.status !== 'nuevo') return;
   if(!o.lines.length){ toast('El pedido no tiene productos'); return; }
+  if(mdiIsDelivery(o) && !mdiHasFee(o)){
+    toast('Escribe el costo de envío', { icon:icon('truck'), variant:'toast-danger', subtitle:'Si no cobras envío, pon 0' });
+    const f = document.getElementById('mdiFee'); if(f){ f.focus(); try{ f.scrollIntoView({ block:'center', behavior:'smooth' }); }catch(e){} }
+    return;
+  }
   const inventario = DB.getProducts();
   if(o.lines.some(l => !inventario.find(p => p.id === l.productId))){ toast('Hay productos que no están en tu catálogo', { variant:'toast-danger', icon:icon('alert') }); return; }
   const uso = stockUseByProduct(o.lines, inventario);
@@ -15376,9 +15887,11 @@ function mdiConfirm(id){
   if(!ok) return;
   shieldClicks();
   vibrate([15, 60, 15]);
-  toast('Pedido confirmado', { icon:icon('check'), variant:'toast-success', subtitle:'Queda por cobrar · cóbralo cuando el cliente pague', duration:2600 });
+  toast('Pedido confirmado', { icon:icon('check'), variant:'toast-success', subtitle:'Ahora avísale al cliente por WhatsApp', duration:2600 });
   mdiUI = { id, compare:false, text:'', result:null };
   mdiOpen(id);
+  /* Arriba queda el aviso y el botón para avisarle al cliente */
+  const sh = document.querySelector('#modal-layer .modal-sheet'); if(sh) sh.scrollTop = 0;
   if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
   mdiPaintBadge();
 }
@@ -15450,7 +15963,7 @@ function mdiCancelOrder(id, fromHistory){
   const hayRegreso = Object.keys(regresa).length > 0;
   askConfirm({
     title:'¿Cancelar el pedido ' + escapeHtml(o.code) + '?',
-    text:(sale ? 'La venta ' + orderNumberLabel(sale.number) + ' se queda en tu historial como cancelada y deja de contar en tus ventas.' : 'El pedido aún no se cobraba: no hay venta ni dinero que regresar.')
+    text:(sale ? 'La venta ' + orderNumberLabel(sale.number) + ' se queda en tu historial como cancelada y deja de contar en tus ventas.' : 'El pedido pasa a Cancelados. Después puedes avisarle al cliente por WhatsApp.')
       + (hayRegreso ? ' Lo que se descontó de tus existencias regresa al inventario.' : ''),
     ok:'Cancelar pedido', cancel:'Volver', danger:true, icon:icon('alert')
   }, () => mdiCancelOrderNow(id, fromHistory));
@@ -15476,7 +15989,7 @@ function mdiCancelOrderNow(id, fromHistory){
   }
   shieldClicks();
   vibrate([15, 60, 15]);
-  toast('Pedido ' + o.code + ' cancelado', { subtitle:(sale ? 'Venta ' + orderNumberLabel(sale.number) + ' cancelada' : 'No se había cobrado') + (hayRegreso ? ' · existencias devueltas' : '') });
+  toast('Pedido ' + o.code + ' cancelado', { subtitle:(sale ? 'Venta ' + orderNumberLabel(sale.number) + ' cancelada' : 'Puedes avisarle al cliente por WhatsApp') + (hayRegreso ? ' · existencias devueltas' : '') });
   if(fromHistory){ closeModal(); render(); mdiPaintBadge(); return; }
   mdiUI = { id, compare:false, text:'', result:null };
   mdiOpen(id);
@@ -15550,10 +16063,25 @@ function mdiNotify(id){
   let msg;
   if(o.status === 'confirmado'){
     const t = mdTotals(o.lines);
+    const c = o.customer || {};
+    const del = mdiIsDelivery(o);
+    const fee = mdiDeliveryFee(o);
     msg = '¡Hola' + nombre + '! Confirmamos tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + '.\n';
     if(mdiIsModified(o)) msg += 'Hicimos unos cambios, así quedó:\n';
     msg += '\n' + o.lines.map(l => '• ' + mdiLineLabel(l) + ' ' + mdiQtyText(l) + ' - ' + formatMoney(l.price * l.qty)).join('\n');
-    msg += '\n\n*Total: ' + formatMoney(t.total) + ' MXN*\n¡Gracias por tu compra!';
+    if(del){
+      msg += '\n\nProductos: ' + formatMoney(t.total);
+      msg += '\nEnvío a domicilio: ' + (fee ? formatMoney(fee) : 'gratis');
+      msg += '\n*Total: ' + formatMoney(round2(t.total + fee)) + ' MXN*';
+    }else msg += '\n\n*Total: ' + formatMoney(t.total) + ' MXN*';
+    const extra = [];
+    if(del) extra.push('Te lo llevamos a la ubicación que nos mandaste.');
+    else if(c.service === 'llevar') extra.push('Puedes pasar por él al negocio.');
+    if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
+    if(extra.length) msg += '\n\n' + extra.join('\n');
+    msg += '\n¡Gracias por tu compra!';
+    MDI.update(id, x => { x.notifiedAt = new Date().toISOString(); });
+    setTimeout(() => { if(mdiUI.id === id) mdiOpen(id, true); }, 400);
   }else if(o.status === 'cancelado'){
     msg = 'Hola' + nombre + ', te avisamos que tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + ' quedó cancelado. Si tienes alguna duda, escríbenos.';
   }else{
@@ -15593,6 +16121,13 @@ function mdiImportPasted(){
     o = { id:'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), code:parsed.code || mdiNewCode(), createdAt:now,
           customer:{ name:parsed.name || '' }, original:lines, lines:lines.map(l => Object.assign({}, l)), status:'nuevo', service:'llevar', payment:'efectivo' };
   }
+  if(parsed.service || parsed.payment){
+    const c0 = o.customer || {};
+    o.customer = mdiCleanCustomer({ name:c0.name, service:parsed.service || c0.service, payment:parsed.payment || c0.payment,
+      loc: parsed.loc ? { lat:parsed.loc.lat, lng:parsed.loc.lng, ref:parsed.ref || '' } : c0.loc });
+    o.service = o.customer.service || 'llevar';
+    o.payment = o.customer.payment || 'efectivo';
+  }
   if(!o.waText) o.waText = String(text).replace(/\r/g, '').slice(0, 4000);
   const r = mdiReceive(o, 'pegado');
   if(r.isNew && parsed.lines.length){
@@ -15611,7 +16146,7 @@ function mdiHomeCardHTML(){
   const n = mdiCounts().nuevo;
   if(!n) return '';
   const nuevos = MDI.all().filter(o => o.status === 'nuevo');
-  const total = nuevos.reduce((a, o) => a + mdTotals(o.lines || []).total, 0);
+  const total = nuevos.reduce((a, o) => a + mdiOrderTotal(o), 0);
   return `
     <button class="mdi-home-card" onclick="mdiFilter='nuevo'; goTo('menu'); setTimeout(() => { const s = document.getElementById('mdiSection'); if(s) s.scrollIntoView({ behavior:'smooth', block:'start' }); }, 60);">
       <span class="mdi-home-ico">${icon('inbox')}<span>${n}</span></span>
@@ -15709,6 +16244,12 @@ function mdCompactHTML(cfg){
         <button class="btn ghost" onclick="mdShareLink()">${icon('share')} Compartir</button>
         <button class="btn ghost" onclick="mdSetCfgVisible(true)">${icon('gear')} ${can('gestionarProductos') ? 'Configurar' : 'Detalles'}</button>
       </div>
+      ${cfg.delivery.on === null && can('gestionarProductos') ? `
+        <button class="md-nudge" onclick="mdOpenDeliveryForm()">
+          <span class="md-nudge-ico">${icon('truck')}</span>
+          <span class="md-nudge-txt"><b>¿Tu negocio tiene servicio a domicilio?</b>Respóndelo para que tus clientes vean las opciones correctas.</span>
+          <span class="acc-chev">${icon('chevronRight')}</span>
+        </button>` : ''}
       ${typeof mdPubStatusHTML === 'function' ? mdPubStatusHTML() : ''}
     </div>`;
 }
@@ -15723,28 +16264,155 @@ renderMenuDigital = function(){
     ${mdiSectionHTML()}`;
 };
 
-/* ---------- Menú del cliente: nombre + folio + link para la caja ---------- */
+/* ---------- Menú del cliente: "Continuar" → tipo de servicio, pago y nombre ----------
+   El carrito ya no manda directo a WhatsApp: con "Continuar" el cliente
+   elige cómo lo recibe (ir a buscar / a domicilio con su ubicación en el
+   mapa) y cómo paga. Todo eso viaja en el pedido y en el mensaje. */
+function dmCoState(){
+  if(!dm.co){
+    let name = '';
+    try{ name = localStorage.getItem('mesa_dm_name') || ''; }catch(e){}
+    dm.co = { svc:null, pay:null, loc:null, ref:'', name, geoTried:false };
+  }
+  return dm.co;
+}
+function dmDeliveryOn(){ return mdCfg().delivery.on === true; }
+function dmVib(p){ if(navigator.vibrate) try{ navigator.vibrate(p); }catch(e){} }
+function dmContinue(){
+  const cfg = mdCfg();
+  if(mdOrdersBlocked(cfg)){ dmToast(cfg.paused ? 'El negocio no está recibiendo pedidos' : 'Estamos cerrados en este momento'); return; }
+  if(!dm.cart.length) return;
+  const co = dmCoState();
+  if(!dmDeliveryOn()) co.svc = 'llevar';
+  dmOpenSheet('confirm');
+}
 dmConfirmHTML = function(){
+  const co = dmCoState();
+  const del = dmDeliveryOn();
+  if(!del) co.svc = 'llevar';
   const nombre = (bizData().name || '').trim();
-  let guardado = '';
-  try{ guardado = localStorage.getItem('mesa_dm_name') || ''; }catch(e){}
+  const t = mdTotals(dm.cart);
+  const n = dm.cart.length;
+  const check = `<span class="dm-opt-check">${icon('check')}</span>`;
+  const svcBtn = id => { const sv = MD_SERVICES[id]; return `
+    <button type="button" class="dm-opt ${co.svc === id ? 'active' : ''}" data-svc="${id}" onclick="dmCoSvc('${id}')" aria-pressed="${co.svc === id}">
+      <span class="dm-opt-ico">${icon(sv.ico)}</span>
+      <span class="dm-opt-txt"><b>${sv.label}</b><small>${sv.sub}</small></span>${check}
+    </button>`; };
+  const payBtn = pm => `
+    <button type="button" class="dm-opt col ${co.pay === pm.id ? 'active' : ''}" data-pay="${pm.id}" onclick="dmCoPay('${pm.id}')" aria-pressed="${co.pay === pm.id}">
+      <span class="dm-opt-ico">${icon(pm.ico)}</span><b>${pm.name}</b>${check}
+    </button>`;
   return `
     <div class="sheet-header">
-      <h2>Confirmar pedido</h2>
+      <h2>Datos del pedido</h2>
       <button class="sheet-close" onclick="dmCloseSheet()" aria-label="Cerrar">${icon('close')}</button>
     </div>
-    ${dmLinesHTML(false)}
-    ${dmTotalsHTML()}
-    <div class="field" style="margin:16px 0 0;">
-      <label for="dmName" style="display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px;">Tu nombre (para identificar tu pedido)</label>
-      <input id="dmName" type="text" maxlength="60" autocomplete="name" placeholder="Ej. Ana López" value="${escapeHtml(guardado)}">
+    <button type="button" class="dm-co-sum" onclick="dmOpenSheet('cart')">
+      <span class="dm-co-sum-ico">${icon('bag')}</span>
+      <span class="dm-co-sum-txt"><b>${n} producto${n === 1 ? '' : 's'}</b><small>Toca para ver o cambiar tu pedido</small></span>
+      <b class="dm-co-sum-total">${formatMoney(t.total)}</b>
+    </button>
+
+    <div class="dm-co-sec" id="dmCoSvc">
+      <div class="dm-co-label">Tipo de servicio</div>
+      ${del ? `<div class="dm-opts two">${svcBtn('llevar')}${svcBtn('domicilio')}</div>` : `
+      <div class="dm-opt active static">
+        <span class="dm-opt-ico">${icon('shop')}</span>
+        <span class="dm-opt-txt"><b>Ir a buscar</b><small>Este negocio solo tiene servicio para ir a buscar: pasas por tu pedido al negocio.</small></span>
+      </div>`}
     </div>
-    <div class="dm-banner wa" style="margin:14px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Tu pedido irá listo para enviarlo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Solo toca enviar en WhatsApp.</span></div>
-    <div class="dm-actions">
+
+    ${del ? `
+    <div class="dm-co-sec dm-co-del" id="dmCoDel" ${co.svc === 'domicilio' ? '' : 'hidden'}>
+      <div class="dm-co-label">¿Dónde te lo llevamos?</div>
+      <p class="dm-co-hint">Toca el mapa o arrastra el monito hasta el lugar exacto donde estás.</p>
+      <div class="md-map dm-map" id="dmMap">${mdMapPH()}</div>
+      <div class="dm-loc-row">
+        <span class="dm-loc-st ${co.loc ? 'ok' : ''}" id="dmLocSt">${co.loc ? icon('check') + 'Ubicación marcada' : 'Aún no marcas tu ubicación'}</span>
+        <button type="button" class="dm-gps" onclick="dmCoGps(this)">${icon('locate')} Usar mi ubicación</button>
+      </div>
+      <div class="field" style="margin:10px 0 0;">
+        <input id="dmRef" type="text" maxlength="200" autocomplete="street-address" placeholder="Dirección o referencias (opcional)" value="${escapeHtml(co.ref)}" oninput="dmCoState().ref=this.value">
+      </div>
+      <div class="dm-banner fee">${icon('truck')}<span><b>El costo de envío te lo damos en el chat</b>Al confirmar tu pedido, el negocio te dirá por WhatsApp cuánto cuesta llevarlo.</span></div>
+    </div>` : ''}
+
+    <div class="dm-co-sec" id="dmCoPay">
+      <div class="dm-co-label">Método de pago</div>
+      <div class="dm-opts three">${basicPayMethods().map(payBtn).join('')}</div>
+    </div>
+
+    <div class="field dm-co-sec" style="margin-bottom:0;">
+      <label for="dmName" class="dm-co-label">Tu nombre <span>(para identificar tu pedido)</span></label>
+      <input id="dmName" type="text" maxlength="60" autocomplete="name" placeholder="Ej. Ana López" value="${escapeHtml(co.name)}" oninput="dmCoState().name=this.value">
+    </div>
+
+    <div class="dm-banner wa" style="margin:16px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Tu pedido irá listo para enviarlo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Solo toca enviar en WhatsApp.</span></div>
+    <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmOpenSheet('cart')">Volver</button>
-      <button class="btn dm-green" onclick="dmSendWhatsApp()">${icon('check')} Confirmar</button>
+      <button class="btn dm-green" onclick="dmSendWhatsApp()">${icon('whatsapp')} Enviar pedido</button>
     </div>`;
 };
+/* Se llama al abrir la hoja: el mapa solo se carga si es a domicilio. */
+function dmCoAfter(){ if(dmCoState().svc === 'domicilio') dmCoMountMap(); }
+function dmCoSvc(id){
+  const co = dmCoState();
+  co.svc = id;
+  dmVib(8);
+  document.querySelectorAll('#dmCoSvc .dm-opt[data-svc]').forEach(b => { const on = b.dataset.svc === id; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+  const box = document.getElementById('dmCoSvc'); if(box) box.classList.remove('need');
+  const del = document.getElementById('dmCoDel');
+  if(!del) return;
+  del.hidden = id !== 'domicilio';
+  if(id === 'domicilio'){
+    dmCoMountMap();
+    setTimeout(() => { try{ del.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'start' }); }catch(e){} }, 90);
+  }
+}
+function dmCoPay(id){
+  dmCoState().pay = id;
+  dmVib(8);
+  document.querySelectorAll('#dmCoPay .dm-opt[data-pay]').forEach(b => { const on = b.dataset.pay === id; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+  const box = document.getElementById('dmCoPay'); if(box) box.classList.remove('need');
+}
+function dmCoLocPaint(){
+  const co = dmCoState();
+  const st = document.getElementById('dmLocSt');
+  if(st){ st.classList.toggle('ok', !!co.loc); st.innerHTML = co.loc ? icon('check') + 'Ubicación marcada' : 'Aún no marcas tu ubicación'; }
+  if(co.loc){ const box = document.getElementById('dmCoDel'); if(box) box.classList.remove('need'); }
+}
+function dmCoMountMap(){
+  const el = document.getElementById('dmMap'); if(!el) return;
+  const co = dmCoState();
+  const d = mdCfg().delivery;
+  const center = mdValidLatLng(d.lat, d.lng);
+  mdMapMount('dm', el, { editable:true, pin:co.loc, center, tip:'Toca el mapa para poner el monito',
+    errText:'Toca «Usar mi ubicación» y escribe tu dirección.',
+    onPick:p => { co.loc = p; dmVib(10); dmCoLocPaint(); } }).then(inst => {
+    /* Sin ubicación del negocio el mapa empieza muy lejos: se intenta una vez con la del celular */
+    if(inst && !co.loc && !center && !co.geoTried){ co.geoTried = true; dmCoGps(null, true); }
+  });
+}
+function dmCoGps(btn, quiet){
+  const co = dmCoState();
+  if(btn){ btn.disabled = true; btn.classList.add('is-busy'); }
+  mdGeolocate().then(p => {
+    if(quiet && co.loc) return;            /* ya lo marcó a mano mientras tanto */
+    co.loc = p;
+    const m = mdMaps.dm; if(m && m.el.isConnected) m.setPin(p, 17);
+    dmCoLocPaint();
+    if(!quiet) dmToast('Listo. Mueve el monito si hace falta');
+  }).catch(e => { if(!quiet) dmToast(mdGeoErr(e), 'warn'); })
+    .then(() => { if(btn){ btn.disabled = false; btn.classList.remove('is-busy'); } });
+}
+function dmCoNeed(id, msg){
+  dmToast(msg, 'warn');
+  dmVib([20, 40, 20]);
+  const el = document.getElementById(id); if(!el) return;
+  el.classList.remove('need'); void el.offsetWidth; el.classList.add('need');
+  try{ el.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'center' }); }catch(e){}
+}
 dmSendWhatsApp = function(){
   const cfg = mdCfg();
   if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
@@ -15752,10 +16420,19 @@ dmSendWhatsApp = function(){
   const tel = mdWhatsappDigits();
   if(!tel){ dmToast('El negocio aún no configura su WhatsApp'); return; }
   if(!dm.cart.length) return;
-  const nameEl = document.getElementById('dmName');
-  const name = nameEl ? nameEl.value.trim().slice(0, 60) : '';
+  const co = dmCoState();
+  const nameEl = document.getElementById('dmName'); if(nameEl) co.name = nameEl.value;
+  const refEl = document.getElementById('dmRef'); if(refEl) co.ref = refEl.value;
+  if(cfg.delivery.on !== true) co.svc = 'llevar';
+  if(!co.svc){ dmCoNeed('dmCoSvc', 'Elige el tipo de servicio'); return; }
+  if(co.svc === 'domicilio' && !co.loc){ dmCoNeed('dmCoDel', 'Marca en el mapa dónde te lo llevamos'); return; }
+  if(!co.pay){ dmCoNeed('dmCoPay', 'Elige cómo vas a pagar'); return; }
+  const name = (co.name || '').trim().slice(0, 60);
   try{ if(name) localStorage.setItem('mesa_dm_name', name); }catch(e){}
-  const order = mdiBuildFromCart(dm.cart, name);
+  const order = mdiBuildFromCart(dm.cart, name, {
+    service: co.svc, payment: co.pay,
+    loc: co.svc === 'domicilio' && co.loc ? { lat:co.loc.lat, lng:co.loc.lng, ref:(co.ref || '').trim() } : null
+  });
   order.waText = mdiMessage(order);
   /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
   mdiReceive(order, 'menu');
@@ -15763,10 +16440,11 @@ dmSendWhatsApp = function(){
      Se manda antes de abrir WhatsApp y termina aunque WhatsApp tape la página. */
   const envio = typeof mdiCloudSend === 'function' ? mdiCloudSend(order) : Promise.resolve(false);
   const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
-  if(navigator.vibrate) try{ navigator.vibrate([60, 40, 60]); }catch(e){}
+  dmVib([60, 40, 60]);
   const win = window.open(url, '_blank');
   if(!win) location.href = url;
   dm.cart = [];
+  dm.co = null;                 /* el nombre queda guardado en este celular */
   dmCloseSheet();
   dmRefreshCards();
   dmToast('Pedido ' + order.code + ' listo en WhatsApp');
@@ -20246,7 +20924,9 @@ function mdPublicSnapshot(){
   });
   return {
     v:1,
-    cfg:{ paused:!!cfg.paused, color:cfg.color, design:mdValidDesign(cfg.design), hours:cfg.hours },
+    cfg:{ paused:!!cfg.paused, color:cfg.color, design:mdValidDesign(cfg.design), hours:cfg.hours,
+         /* Servicio a domicilio: si lo hay y dónde empieza el mapa del cliente */
+         delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null } },
     wa: mdWhatsappDigits(),
     biz:{ name:b.name || '', logo:b.logo || u.photo || null, giro:b.giro || '', type:b.type || '', hours:hrsClean(b.hours) },
     tax:{ taxMode:pc.taxMode, taxRate:pc.taxRate },
@@ -20430,7 +21110,7 @@ function dmrInstall(sameBiz){
     if(DMR_KEYS.has(key)){ const v = DMR.over[key]; return v === undefined ? fb : v; }
     return peek.call(this, key, fb);
   };
-  mdCfg = function(){ const c = Object.assign(mdDefaultCfg(), DMR.cfg || {}); c.hours = mdCleanHours(c.hours); return c; };
+  mdCfg = function(){ const c = Object.assign(mdDefaultCfg(), DMR.cfg || {}); c.hours = mdCleanHours(c.hours); c.delivery = mdCleanDelivery(c.delivery); return c; };
   currentUser = function(){
     const se = DMR.season || {};
     return { business:Object.assign({}, DMR.biz || {}), photo:null, country: se.country || 'MX',
@@ -20570,7 +21250,7 @@ function mdiCloudSend(order){
     p_menu_id: dm.id,
     p_order: {
       v:1, id:order.id, code:order.code, createdAt:order.createdAt,
-      customer:{ name:mdiStr(order.customer && order.customer.name, 60) },
+      customer: mdiCleanCustomer(order.customer),   /* nombre, tipo de servicio, pago y ubicación */
       original:(order.original || []).slice(0, 150)
     }
   });
@@ -20606,14 +21286,15 @@ function mdiFromCloud(row){
       .map(mdiCleanLine).filter(l => l.qty > 0).map(mdiRepriceLine);
     if(!lines.length) return null;
     const when = new Date(row.created_at || Date.now());
+    const customer = mdiCleanCustomer(d.customer);
     return {
       id: row.id,
       code: /^MD-[A-Z0-9]{4,6}$/.test(row.code || '') ? row.code : mdiNewCode(),
       createdAt: isNaN(when) ? new Date().toISOString() : when.toISOString(),
-      customer: { name: mdiStr(d.customer && d.customer.name, 60) },
+      customer: customer,
       original: lines,
       lines: lines.map(l => Object.assign({}, l)),
-      status:'nuevo', service:'llevar', payment:'efectivo', online:true
+      status:'nuevo', service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true
     };
   }catch(e){ return null; }
 }
@@ -20625,7 +21306,7 @@ function mdiAnnounce(nuevos){
   const o = nuevos[nuevos.length - 1];
   vibrate([30, 60, 30]);
   const titulo = nuevos.length > 1 ? nuevos.length + ' pedidos nuevos del Menú Digital' : 'Nuevo pedido del Menú Digital';
-  toast(titulo, { icon:icon('inbox'), variant:'toast-success toast-top', subtitle:o.code + ' · ' + formatMoney(mdTotals(o.lines || []).total) + ((o.customer && o.customer.name) ? ' · ' + o.customer.name : ''), duration:3600 });
+  toast(titulo, { icon:icon('inbox'), variant:'toast-success toast-top', subtitle:o.code + ' · ' + formatMoney(mdTotals(o.lines || []).total) + ((o.customer && o.customer.name) ? ' · ' + o.customer.name : '') + (mdiIsDelivery(o) ? ' · a domicilio' : ''), duration:3600 });
   if(currentView === 'menu' || currentView === 'home'){
     if(document.querySelector('#modal-layer .modal-sheet')) renderBgKeepModal(); else render();
   }
