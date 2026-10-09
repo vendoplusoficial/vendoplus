@@ -4008,6 +4008,63 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
 @media (hover:none){ .fdx #fdNav{ display:none !important; } }
 @media (max-height:600px){ .fdx .fd-menu{ font-size:40px; } .fdx .fd-info p{ -webkit-line-clamp:2; } .fdx .fd-slide{ padding-top:calc(58px + env(safe-area-inset-top)); } }
 @media (prefers-reduced-motion:reduce){ .fdx #fdFeed{ scroll-behavior:auto; } .fdx #fdSwipe svg{ animation:none; } }
+
+/* ---------- Diseño Catálogo (menú del cliente) ---------- */
+.md-dz-grid .md-dz:last-child:nth-child(odd){ grid-column:1 / -1; }
+.ct{ flex:1; font-family:'Figtree',var(--sans,system-ui),sans-serif; color:var(--ink); padding-bottom:calc(110px + env(safe-area-inset-bottom,0px)); }
+.ct button{ font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; padding:0; -webkit-tap-highlight-color:transparent; }
+.ct svg{ display:block; }
+.ct-hero{ background:var(--dm-soft); padding:calc(18px + env(safe-area-inset-top,0px)) 18px 16px; border-radius:0 0 26px 26px; }
+.ct-brand{ display:flex; align-items:center; gap:12px; }
+.ct-logo{ width:46px; height:46px; border-radius:14px; flex:none; overflow:hidden; background:var(--dm-main); color:var(--dm-on); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; }
+.ct-logo img{ width:100%; height:100%; object-fit:cover; } .ct-logo svg{ width:24px; height:24px; }
+.ct-brand h1{ font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:clamp(23px,5.4vw,34px); line-height:1.08; margin:0; letter-spacing:-.01em; }
+.ct-brand p{ margin:3px 0 0; font-size:14px; color:var(--ink-soft); }
+.ct-search{ margin-top:14px; display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:0 8px 0 14px; height:48px; }
+.ct-search:focus-within{ border-color:var(--dm-main); }
+.ct-search > svg{ width:19px; height:19px; color:var(--ink-soft); flex:none; }
+.ct-search input{ flex:1; min-width:0; border:0; outline:0; background:none; font:inherit; font-size:16px; color:var(--ink); height:100%; }
+.ct-search input::-webkit-search-cancel-button{ display:none; }
+.ct-search button{ width:32px; height:32px; border-radius:50%; display:none; align-items:center; justify-content:center; color:var(--ink-soft); }
+.ct-search.has button{ display:flex; } .ct-search button svg{ width:16px; height:16px; }
+.ct-hero .dm-hours{ margin:12px 0 0; } .ct-hero .dm-banner{ margin:12px 0 0; background:#fff; }
+.ct-tabs{ position:sticky; top:0; z-index:20; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); margin-top:8px; display:flex; gap:22px; overflow-x:auto; scrollbar-width:none; padding:0 18px; }
+.ct-tabs::-webkit-scrollbar{ display:none; }
+.ct-tab{ flex:none; padding:14px 0 11px; font-weight:700; font-size:14.5px; color:var(--ink-soft); border-bottom:3px solid transparent; white-space:nowrap; }
+.ct-tab.on{ color:var(--ink); border-color:var(--dm-main); }
+.ct-sec{ padding:0 18px; margin-top:22px; }
+.ct-sec-h{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.ct-sec-h h2{ font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:22px; margin:0; }
+.ct-sec-n{ font-size:13px; color:var(--ink-soft); }
+.ct-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:22px 14px; }
+@media(min-width:640px){ .ct-grid{ grid-template-columns:repeat(3,1fr); } }
+@media(min-width:1000px){ .ct-grid{ grid-template-columns:repeat(4,1fr); } }
+.ct-pw{ position:relative; }
+.ct-pic{ display:block; width:100%; aspect-ratio:4/5; border-radius:20px; overflow:hidden; position:relative; background:var(--dm-soft); transition:transform .3s; }
+.ct-pic:active{ transform:scale(.98); }
+.ct-pic img{ width:100%; height:100%; object-fit:cover; display:block; }
+.ct-ph{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--dm-ink); opacity:.55; } .ct-ph svg{ width:42%; height:42%; }
+.ct-flag{ position:absolute; top:10px; left:10px; background:var(--ink); color:#fff; font-style:normal; font-weight:700; font-size:12px; padding:4px 10px; border-radius:99px; }
+.ct-tile.out .ct-pic img{ filter:grayscale(.85); opacity:.6; }
+.ct-ctl{ position:absolute; right:10px; bottom:10px; z-index:3; }
+.ct-add{ width:44px; height:44px; border-radius:50%; background:#fff; color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:600; line-height:1; box-shadow:0 6px 16px rgba(20,24,40,.22); transition:transform .2s; }
+.ct-add:active{ transform:scale(.9); } .ct-add b{ font-size:15px; font-weight:800; }
+.ct-step{ display:flex; align-items:center; background:var(--dm-main); color:var(--dm-on); border-radius:99px; box-shadow:0 6px 16px rgba(20,24,40,.25); }
+.ct-step button{ width:38px; height:44px; font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; }
+.ct-step button:disabled{ opacity:.4; } .ct-step b{ min-width:18px; text-align:center; font-weight:800; font-size:15px; white-space:nowrap; }
+.ct-meta{ padding:10px 2px 0; }
+.ct-meta h3{ font-family:'Fraunces',Georgia,serif; font-weight:500; font-size:17px; line-height:1.2; margin:0; }
+.ct-meta p{ margin:4px 0 0; color:var(--ink-soft); font-size:13.5px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.ct-tag{ display:inline-block; position:relative; margin-top:9px; background:var(--ink); color:#fff; font-weight:800; font-size:14px; padding:4px 11px 4px 20px; clip-path:polygon(10px 0,100% 0,100% 100%,10px 100%,0 50%); }
+.ct-tag::before{ content:""; position:absolute; left:8px; top:50%; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:var(--bg); }
+.ct-tag small{ font-weight:600; opacity:.75; }
+.ct-none{ text-align:center; padding:50px 24px; color:var(--ink-soft); }
+.ct-none h2{ font-family:'Fraunces',Georgia,serif; color:var(--ink); margin:0 0 4px; }
+.ct-cb{ pointer-events:auto; display:flex; align-items:center; justify-content:space-between; width:100%; height:58px; padding:0 18px 0 12px; background:var(--ink); color:#fff; border-radius:18px; box-shadow:0 12px 30px rgba(20,24,40,.35); font-family:inherit; font-weight:800; border:0; cursor:pointer; }
+.ct-cb-l{ display:flex; align-items:center; gap:12px; }
+.ct-cb-i{ position:relative; width:36px; height:36px; border-radius:11px; background:var(--dm-main); color:var(--dm-on); display:flex; align-items:center; justify-content:center; } .ct-cb-i svg{ width:20px; height:20px; }
+.ct-cb-n{ position:absolute; top:-6px; right:-6px; background:#fff; color:var(--ink); font-size:11px; font-weight:800; min-width:19px; height:19px; border-radius:99px; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+.ct-cb-t{ font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:18px; }
 </style>
 </head>
 <body>
@@ -13527,6 +13584,7 @@ function mdColorName(hex){ const c = MD_COLORS.find(x => x.hex === (mdValidColor
 /* Diseños del Menú Digital (cómo lo ven los clientes) */
 const MD_DESIGNS = [
   { id:'clasico', name:'Clásico', short:'lista por categorías', desc:'Lista por categorías con tarjetas. Ideal para ver muchos productos de un vistazo.' },
+  { id:'catalogo', name:'Catálogo', short:'fotos grandes tipo tienda', desc:'Fotos verticales grandes con etiqueta de precio, pensado para tiendas de productos y regalos. Luce más con buenas fotos.' },
   { id:'visual',  name:'Visual',  short:'un producto por pantalla', desc:'Un producto por pantalla con foto grande; se desliza como en redes. Luce más con buenas fotos.' },
 ];
 function mdValidDesign(d){ return MD_DESIGNS.some(x => x.id === d) ? d : 'clasico'; }
@@ -21657,6 +21715,13 @@ function mdDesignName(id){ const d = MD_DESIGNS.find(x => x.id === id); return d
 function mdDesignShort(id){ const d = MD_DESIGNS.find(x => x.id === id); return d ? d.short : MD_DESIGNS[0].short; }
 function mdDesignPreview(id, pal){
   const line = '#DADDE6', ink = '#16213E';
+  if(id === 'catalogo'){
+    const t = (x, y, h) => `<rect x="${x}" y="${y}" width="40" height="${h}" rx="6" fill="${pal.soft}" stroke="${line}"/><circle cx="${x + 32}" cy="${y + h - 8}" r="6" fill="${pal.main}"/><rect x="${x}" y="${y + h + 4}" width="26" height="3.5" rx="1.7" fill="${ink}" opacity=".75"/><rect x="${x}" y="${y + h + 11}" width="18" height="6" rx="1" fill="${ink}"/>`;
+    return `<svg class="md-dz-pv" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="130" fill="#fff" stroke="${line}"/>
+      <rect x="0" y="0" width="100" height="30" fill="${pal.soft}"/><rect x="8" y="8" width="14" height="14" rx="4" fill="${pal.main}"/><rect x="27" y="10" width="36" height="5" rx="2.5" fill="${ink}"/><rect x="27" y="18" width="22" height="3" rx="1.5" fill="${line}"/>
+      <rect x="8" y="36" width="20" height="4" rx="2" fill="${pal.main}"/><rect x="34" y="36" width="20" height="4" rx="2" fill="${line}"/><rect x="60" y="36" width="20" height="4" rx="2" fill="${line}"/>
+      ${t(8, 48, 46)}${t(52, 48, 46)}</svg>`;
+  }
   if(id === 'visual'){
     return `<svg class="md-dz-pv" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="130" fill="#fff" stroke="${line}"/>
       <rect x="22" y="8" width="56" height="5" rx="2.5" fill="${pal.ink}" opacity=".7"/>
@@ -21689,7 +21754,7 @@ function mdRenderDesignForm(){
       <h2>Diseño del menú</h2>
       <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
     </div>
-    <p class="sheet-text" style="margin-bottom:12px;">Elige cómo verán tu menú tus clientes. Puedes cambiarlo cuando quieras: tus productos, precios, color, horario y pedidos son los mismos en los dos.</p>
+    <p class="sheet-text" style="margin-bottom:12px;">Elige cómo verán tu menú tus clientes. Puedes cambiarlo cuando quieras: tus productos, precios, color, horario y pedidos son los mismos en todos.</p>
     <div class="md-dz-grid">
       ${MD_DESIGNS.map(x => `
         <button class="md-dz ${mdDesignDraft === x.id ? 'active' : ''}" onclick="mdPickDesign('${x.id}')" aria-pressed="${mdDesignDraft === x.id}">
@@ -21716,6 +21781,136 @@ function mdSaveDesign(abrir){
   mdRerenderIfMenu();
   if(abrir && cfg.active) mdOpenLink();
 }
+
+/* ---------- Diseño Catálogo ----------
+   Lee TODO del POS: nombre y logo del negocio, color, categorías (en su orden),
+   productos, fotos, nombres, descripciones, precios, tamaños, existencias,
+   horario y pausa. Usa el mismo carrito, hojas, datos del pedido y envío por
+   WhatsApp que los otros diseños (dm.cart, dmOpenProduct, dmOpenSheet…). */
+const ct = { cat:'all', q:'' };
+function ctFonts(){
+  if(document.getElementById('ctFonts')) return;
+  const l = document.createElement('link');
+  l.id = 'ctFonts'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600;700;800&display=swap';
+  document.head.appendChild(l);
+}
+function ctPrice(p){
+  if(hasSizes(p)) return '<small>Desde</small> ' + formatMoney(Math.min.apply(null, p.sizes.map(s => s.price)));
+  const u = productUnit(p);
+  return formatMoney(p.price) + (u.plain ? '' : '<small> /' + u.short + '</small>');
+}
+function ctCtl(p, blk){
+  if(stockInfo(p).level === 'out') return '';
+  const q = dmQtyOf(p.id), sheet = hasSizes(p) || blk;
+  if(q > 0 && !sheet){
+    const sinMas = dmStockUse(p.id) + productStep(p) > dmMaxFor(p) + 1e-9;
+    return `<div class="ct-step"><button onclick="dmStepCard('${p.id}',-1)" aria-label="Quitar">−</button><b>${dmQtyText(p, q)}</b><button onclick="dmStepCard('${p.id}',1)" ${sinMas ? 'disabled' : ''} aria-label="Agregar">+</button></div>`;
+  }
+  return `<button class="ct-add" onclick="${sheet ? `dmOpenProduct('${p.id}')` : `dmStepCard('${p.id}',1)`}" aria-label="Agregar ${escapeHtml(p.name)}">${q > 0 ? '<b>' + dmQtyText(p, q) + '</b>' : '+'}</button>`;
+}
+function ctTile(p, blk){
+  const out = stockInfo(p).level === 'out';
+  return `<article class="ct-tile ${out ? 'out' : ''}" data-p="${p.id}">
+    <div class="ct-pw">
+      <button class="ct-pic" onclick="dmOpenProduct('${p.id}')" aria-label="Ver ${escapeHtml(p.name)}">${p.image ? dmPhoto(p.image, p.name) : `<span class="ct-ph">${icon('gift')}</span>`}${out ? '<i class="ct-flag">Agotado</i>' : ''}</button>
+      <div class="ct-ctl" data-p="${p.id}">${ctCtl(p, blk)}</div>
+    </div>
+    <div class="ct-meta"><h3>${escapeHtml(p.name)}</h3>${(p.description || '').trim() ? `<p>${escapeHtml(p.description)}</p>` : ''}<span class="ct-tag">${ctPrice(p)}</span></div>
+  </article>`;
+}
+function ctRender(d){
+  fdTeardown();
+  dmApplyColor(d.cfg.color);
+  ctFonts();
+  const food = typeof bizIsFood === 'function' && bizIsFood();
+  const nombre = (d.b.name || '').trim() || (food ? 'Nuestro menú' : 'Nuestro catálogo');
+  document.title = nombre + ' · ' + (food ? 'Menú Digital' : 'Catálogo digital');
+  const logoSrc = d.b.logo || d.u.photo;
+  const logo = logoSrc ? `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(nombre)}">`
+    : ((d.b.name || '').trim() ? escapeHtml(d.b.name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('')) : icon('gift'));
+  const { cats } = fdProds(d);
+  if(ct.cat !== 'all' && !cats.some(c => c.id === ct.cat)) ct.cat = 'all';
+  const blk = mdOrdersBlocked(d.cfg);
+  const banner = d.cfg.paused
+    ? `<div class="dm-banner">${icon('pause')}<span><b>Por ahora no estamos recibiendo pedidos</b>Puedes ver el catálogo; vuelve a intentarlo más tarde.</span></div>`
+    : (mdClosedNow(d.cfg) ? `<div class="dm-banner">${icon('clock')}<span><b>Estamos cerrados en este momento</b>Puedes ver el catálogo${hrsNextOpen(mdMenuHours(d.cfg)) ? '; recibimos pedidos de nuevo ' + hrsNextOpen(mdMenuHours(d.cfg)) : ''}.</span></div>` : '');
+  const secs = cats.map(c => {
+    const list = d.prods.filter(p => c.id === UNCATEGORIZED.id ? !d.cats.some(x => x.id === p.category) : p.category === c.id);
+    return `<section class="ct-sec" data-c="${c.id}"><div class="ct-sec-h"><h2>${escapeHtml(c.name)}</h2><span class="ct-sec-n">${list.length} producto${list.length === 1 ? '' : 's'}</span></div><div class="ct-grid">${list.map(p => ctTile(p, blk)).join('')}</div></section>`;
+  }).join('');
+  document.getElementById('dmRoot').innerHTML = `<div class="ct" id="ctHost">
+    <header class="ct-hero">
+      <div class="ct-brand"><span class="ct-logo">${logo}</span><div><h1>${escapeHtml(nombre)}</h1><p>${food ? 'Nuestro menú' : 'Nuestros productos'}</p></div></div>
+      <label class="ct-search ${ct.q ? 'has' : ''}" id="ctSrch">${icon('search')}<input id="ctQ" type="search" placeholder="${food ? 'Buscar en el menú…' : 'Buscar un producto…'}" autocomplete="off" enterkeyhint="search" aria-label="Buscar producto" value="${escapeHtml(ct.q)}"><button type="button" id="ctQx" aria-label="Borrar búsqueda">${icon('close')}</button></label>
+      ${dmHoursLineHTML(d.cfg)}${banner}
+    </header>
+    ${cats.length ? `<nav class="ct-tabs" aria-label="Categorías"><button class="ct-tab" data-c="all" onclick="ctSetCat('all')">Todo</button>${cats.map(c => `<button class="ct-tab" data-c="${c.id}" onclick="ctSetCat('${c.id}')">${escapeHtml(c.name)}</button>`).join('')}</nav>${secs}`
+      : `<div class="ct-none">${icon('bag')}<h2>Aún no hay productos</h2><p>Pronto verás aquí el catálogo del negocio.</p></div>`}
+    <div class="ct-none" id="ctNone" style="display:none">${icon('search')}<h2>Sin resultados</h2><p>Prueba con otra palabra o revisa otra categoría.</p></div>
+  </div>`;
+  const inp = document.getElementById('ctQ'), box = document.getElementById('ctSrch');
+  let t = null;
+  inp.addEventListener('input', () => { ct.q = inp.value; box.classList.toggle('has', !!ct.q); clearTimeout(t); t = setTimeout(ctApply, 140); });
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter') inp.blur(); });
+  document.getElementById('ctQx').onclick = () => { ct.q = ''; inp.value = ''; box.classList.remove('has'); ctApply(); };
+  ctApply();
+  dmRenderCartbar();
+}
+function ctSetCat(id){
+  ct.cat = id; dmVib(8); ctApply();
+  const on = document.querySelector('.ct-tab.on'); if(on) on.scrollIntoView({ inline:'center', block:'nearest', behavior:'smooth' });
+  const tabs = document.querySelector('.ct-tabs');
+  if(tabs && window.scrollY > tabs.offsetTop) window.scrollTo({ top:Math.max(0, tabs.offsetTop - 4) });
+}
+function ctApply(){
+  const h = document.getElementById('ctHost'); if(!h) return;
+  const w = mdiNorm(ct.q || '').split(' ').filter(Boolean);
+  let any = false;
+  h.querySelectorAll('.ct-sec').forEach(sec => {
+    const okCat = ct.cat === 'all' || sec.dataset.c === ct.cat;
+    let vis = 0;
+    sec.querySelectorAll('.ct-tile').forEach(tile => {
+      const p = dmFind(tile.dataset.p);
+      let ok = okCat && !!p;
+      if(ok && w.length){ const tx = mdiNorm(p.name + ' ' + (p.description || '') + ' ' + (categoryOf(p.category).name || '')); ok = w.every(x => tx.includes(x)); }
+      tile.style.display = ok ? '' : 'none';
+      if(ok) vis++;
+    });
+    sec.style.display = vis ? '' : 'none';
+    const n = sec.querySelector('.ct-sec-n'); if(n) n.textContent = vis + ' producto' + (vis === 1 ? '' : 's');
+    if(vis) any = true;
+  });
+  const none = h.querySelector('#ctNone');
+  if(none) none.style.display = (!any && h.querySelector('.ct-sec')) ? '' : 'none';
+  h.querySelectorAll('.ct-tab').forEach(b => b.classList.toggle('on', b.dataset.c === ct.cat));
+}
+function ctRefresh(){
+  const h = document.getElementById('ctHost'); if(!h) return;
+  const blk = mdOrdersBlocked(mdCfg());
+  h.querySelectorAll('.ct-ctl').forEach(el => { const p = dmFind(el.dataset.p); if(p) el.innerHTML = ctCtl(p, blk); });
+}
+function ctBar(){
+  const bar = document.getElementById('dmCartbar');
+  if(!bar || !document.getElementById('ctHost')) return;
+  const n = dmUnits();
+  bar.classList.toggle('show', n > 0 && !dm.sheet);
+  bar.classList.add('no-pop');
+  if(!n) return;
+  bar.innerHTML = `<button class="ct-cb" onclick="dmOpenSheet('cart')"><span class="ct-cb-l"><span class="ct-cb-i">${icon('bag')}<span class="ct-cb-n">${n}</span></span>Ver pedido</span><span class="ct-cb-t">${formatMoney(mdTotals(dm.cart).total)}</span></button>`;
+}
+(function(){
+  const prevRender = dmRender;
+  dmRender = function(){
+    const d = dmData();
+    if(d.ok && d.cfg.design === 'catalogo'){ ctRender(d); return; }
+    prevRender.apply(this, arguments);
+  };
+  const prevRefresh = dmRefreshCards;
+  dmRefreshCards = function(){ prevRefresh.apply(this, arguments); ctRefresh(); };
+  const prevBar = dmRenderCartbar;
+  dmRenderCartbar = function(){ prevBar.apply(this, arguments); ctBar(); };
+})();
 </script>
 
 <script>
