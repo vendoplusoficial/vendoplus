@@ -4124,6 +4124,53 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
   .mdi-pend-name b{ font-weight:800; white-space:nowrap; }
   .mdi-pend-btns{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .mdi-pend-btns .btn{ padding:12px 10px; font-size:14px; }
+
+  /* ---------- Pedidos entrantes: tarjetas agrupadas ---------- */
+  .mdi2-group{ display:flex; align-items:center; gap:10px; margin:18px 2px 10px; }
+  .mdi2-group:first-of-type{ margin-top:6px; }
+  .mdi2-gico{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; }
+  .mdi2-gico svg{ width:18px; height:18px; }
+  .mdi2-gico.gold{ background:#FBE7B5; color:#B07A00; } .mdi2-gico.green{ background:#16A34A; color:#fff; }
+  .mdi2-gico.red{ background:#FBD9D5; color:#C23B2E; } .mdi2-gico.blue{ background:var(--surface-alt); color:var(--ink-soft); }
+  .mdi2-gtxt{ flex:1; min-width:0; } .mdi2-gtxt b{ display:block; font-size:15px; font-weight:800; }
+  .mdi2-gtxt small{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft); }
+  .mdi2-gcount{ min-width:28px; height:26px; padding:0 9px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; }
+  .mdi2-gcount.gold{ background:#FBE7B5; color:#B07A00; } .mdi2-gcount.green{ background:#D9F3E2; color:#15803D; }
+  .mdi2-gcount.red{ background:#FBD9D5; color:#C23B2E; } .mdi2-gcount.blue{ background:var(--surface-alt); color:var(--ink); }
+  .mdi2-card{
+    position:relative; display:grid; grid-template-columns:minmax(78px, 92px) minmax(0,1fr) auto; align-items:stretch;
+    background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:12px 12px 12px 12px;
+    box-shadow:var(--shadow-card); cursor:pointer; min-width:0; transition:transform .12s ease;
+  }
+  .mdi2-card:active{ transform:scale(.985); }
+  .mdi2-left{ display:flex; flex-direction:column; gap:3px; padding-right:10px; border-right:1px solid var(--border); min-width:0; }
+  .mdi2-code{ font-size:15px; font-weight:800; letter-spacing:.3px; }
+  .mdi2-when{ font-size:11px; font-weight:600; color:var(--ink-soft); }
+  .mdi2-who{ display:flex; align-items:center; gap:5px; margin-top:4px; font-size:11.5px; font-weight:700; color:var(--ink-soft); min-width:0; }
+  .mdi2-who svg{ width:14px; height:14px; flex:none; }
+  .mdi2-who span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mdi2-mid{ display:flex; flex-direction:column; justify-content:space-between; gap:8px; padding:0 10px; min-width:0; }
+  .mdi2-items{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .mdi2-item{ display:flex; flex-direction:column; min-width:0; }
+  .mdi2-item b{ font-size:12px; font-weight:700; line-height:1.2; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .mdi2-item small{ font-size:11px; font-weight:600; color:var(--ink-soft); }
+  .mdi2-more{ font-size:11px; font-weight:700; color:var(--ink-soft); }
+  .mdi2-total{ align-self:flex-start; background:var(--surface-alt); border-radius:999px; padding:4px 10px; font-size:11.5px; font-weight:600; color:var(--ink-soft); white-space:nowrap; }
+  .mdi2-total b{ color:var(--ink); font-weight:800; }
+  .mdi2-reason{ font-size:11px; font-weight:600; color:var(--accent-2); }
+  .mdi2-right{ display:flex; flex-direction:column; justify-content:center; gap:7px; width:116px; padding-top:14px; }
+  .mdi2-btn{
+    display:flex; align-items:center; justify-content:center; gap:6px; border:none; border-radius:10px; padding:9px 6px;
+    font-family:inherit; font-size:12px; font-weight:700; white-space:nowrap;
+  }
+  .mdi2-btn svg{ width:14px; height:14px; flex:none; }
+  .mdi2-btn.ok{ background:#16A34A; color:#fff; } .mdi2-btn.no{ background:#FCE3E0; color:#C23B2E; }
+  .mdi2-btn.wa{ background:#DCF8E6; color:#15803D; } .mdi2-btn.ghost{ background:var(--surface-alt); color:var(--ink); }
+  .mdi2-btn:active{ transform:scale(.96); }
+  .mdi2-chev{ position:absolute; top:10px; right:8px; color:var(--ink-faint); }
+  .mdi2-chev svg{ width:14px; height:14px; }
+  .mdi2-right .mdi-pill{ align-self:center; }
+  @media (max-width:380px){ .mdi2-right{ width:104px; } .mdi2-btn{ font-size:11.5px; padding:8px 4px; } }
 </style>
 </head>
 <body>
@@ -4191,6 +4238,7 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
   <nav class="bottomnav no-print">
     <button class="navbtn" data-view="home" data-icon="home" onclick="goTo('home')"><span class="navicon"></span><span>Inicio</span></button>
     <button class="navbtn" data-view="sale" data-icon="cart" onclick="goTo('sale')"><span class="navicon"></span><span>Nueva venta</span></button>
+    <button class="navbtn" data-view="history" data-icon="receipt" onclick="goTo('history')"><span class="navicon"></span><span>Historial</span></button>
     <button class="navbtn" data-view="stats" data-icon="chart" onclick="goTo('stats')"><span class="navicon"></span><span>Estadísticas</span></button>
     <button class="navbtn" data-view="menu" data-icon="menuBook" onclick="goTo('menu')"><span class="navicon"></span><span>Menú Digital</span></button>
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
@@ -15477,7 +15525,7 @@ function mdiSectionHTML(){
       ${filtroActivo ? `<span class="mdi-viewing">Viendo: <b>${filtroNombre}</b></span><button class="filters-clear-btn" onclick="mdiSetFilter('nuevo')">Limpiar filtros</button>` : ''}
     </div>
 
-    ${list.length ? `<div class="mdi-list">${list.map(mdiCardHTML).join('')}</div>` : `
+    ${list.length ? mdiGroupsHTML(list) : `
       <div class="mdi-empty">
         <span class="mdi-empty-ico">${icon('inbox')}</span>
         <b>${empty[0]}</b>
@@ -15490,39 +15538,87 @@ function mdiSectionHTML(){
     <p class="md-hint">Por WhatsApp el cliente solo te manda su número de pedido (MD-…). Búscalo aquí para ver lo que pidió, confirmarlo y avisarle el total.</p>
   `;
 }
+function mdiWhen(iso){
+  const d = new Date(iso); if(isNaN(d)) return '';
+  const hoy = new Date(); const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
+  const dia = isSameDay(d, hoy) ? 'Hoy' : isSameDay(d, ayer) ? 'Ayer' : formatDateShort(iso);
+  return dia + ', ' + d.toLocaleTimeString('es-MX', { hour:'numeric', minute:'2-digit' });
+}
+/* Confirmar desde la lista: si falta algo (envío, producto, etc.) abre el pedido para completarlo */
+function mdiQuickConfirm(id){
+  const o = MDI.get(id); if(!o || o.status !== 'nuevo') return;
+  if(!mdiCanConfirm(o)){
+    toast('Revisa el pedido antes de confirmar', { icon:icon('alert'), subtitle:mdiIsDelivery(o) && !mdiHasFee(o) ? 'Falta el costo de envío' : 'Hay productos por elegir' });
+    mdiOpen(id); return;
+  }
+  mdiConfirm(id);
+}
 function mdiCardHTML(o){
   const total = mdiOrderTotal(o);
   const st = mdiStage(o);
-  const mod = mdiIsModified(o);
-  const items = (o.lines || []).slice(0, 3).map(l => escapeHtml(mdiQtyText(l).replace(/^x/, '') + (l.sizeLabel || unitOf(l.unit).plain ? '× ' : ' ') + l.name.replace(/\s*\(EJEMPLO[^)]*\)/, ''))).join(' · ') + ((o.lines || []).length > 3 ? ' · +' + ((o.lines || []).length - 3) : '');
-  const card = `
-    <button class="mdi-card st-${st.cls}" onclick="mdiOpen('${o.id}')">
-      <span class="mdi-card-top">
-        <span class="mdi-code">${escapeHtml(o.code)}</span>
-        <span class="mdi-pill ${st.cls}">${st.label}</span>
-        ${mdiIsDelivery(o) ? `<span class="mdi-pill del">${icon('truck')} A domicilio</span>` : ''}
-        ${mod ? '<span class="mdi-pill mod">Modificado</span>' : ''}
-        <span class="mdi-time">${mdiAgo(o.receivedAt || o.createdAt)}</span>
-      </span>
-      <span class="mdi-name">${icon('person')} ${escapeHtml((o.customer && o.customer.name) || 'Cliente sin nombre')}</span>
-      <span class="mdi-items">${items || '—'}</span>
-      <span class="mdi-card-foot"><span>${(o.lines || []).length} producto${(o.lines || []).length === 1 ? '' : 's'}${o.status === 'rechazado' && o.rejectReason ? ' · ' + escapeHtml(o.rejectReason) : ''}</span><b>${formatMoney(total)}</b></span>
-    </button>`;
-  /* Pendiente de pago: nombre del pedido + botón Confirmar (cobrar) y botón Información */
-  if(st.id === 'pendiente') return `
-    <div class="mdi-pend-card">
-      <div class="mdi-pend-head">
-        <span class="mdi-code">${escapeHtml(o.code)}</span>
-        <span class="mdi-pill pend">${st.label}</span>
-        <span class="mdi-time">${mdiAgo(o.receivedAt || o.createdAt)}</span>
+  const lines = o.lines || [];
+  const items = lines.slice(0, 3).map(l => `<span class="mdi2-item"><b>${escapeHtml(mdiLineLabel(l).replace(/\s*\(EJEMPLO[^)]*\)/, ''))}</b><small>${escapeHtml(mdiQtyText(l))}</small></span>`).join('')
+    + (lines.length > 3 ? `<span class="mdi2-more">+${lines.length - 3} más</span>` : '');
+  const stop = 'event.stopPropagation(); ';
+  let acts = '';
+  if(o.pendingNext){
+    acts = `<button type="button" class="mdi2-btn ok" onclick="${stop}mdiNext('${o.id}')">${icon('chevronRight')} Siguiente</button>
+            <button type="button" class="mdi2-btn wa" onclick="${stop}mdiNotify('${o.id}')">${icon('whatsapp')} Avisar</button>`;
+  }else if(o.status === 'nuevo'){
+    acts = `<button type="button" class="mdi2-btn ok" onclick="${stop}mdiQuickConfirm('${o.id}')">${icon('check')} Confirmar</button>
+            <button type="button" class="mdi2-btn no" onclick="${stop}mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>`;
+  }else if(st.id === 'pendiente'){
+    acts = `<button type="button" class="mdi2-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('card')} Confirmar pago</button>
+            <button type="button" class="mdi2-btn ghost" onclick="${stop}mdiOpen('${o.id}')">${icon('eye')} Información</button>`;
+  }else{
+    acts = `<span class="mdi-pill ${st.cls}">${st.label}</span>`;
+  }
+  return `
+    <div class="mdi2-card st-${st.cls}" role="button" tabindex="0" onclick="mdiOpen('${o.id}')">
+      <div class="mdi2-left">
+        <b class="mdi2-code">${escapeHtml(o.code)}</b>
+        <span class="mdi2-when">${mdiWhen(o.receivedAt || o.createdAt)}</span>
+        <span class="mdi2-who">${icon('person')}<span>${escapeHtml((o.customer && o.customer.name) || 'Cliente sin nombre')}</span></span>
+        ${mdiIsDelivery(o) ? `<span class="mdi-pill del">${icon('truck')} Domicilio</span>` : ''}
       </div>
-      <div class="mdi-pend-name">${icon('person')} <span>${escapeHtml((o.customer && o.customer.name) || 'Cliente sin nombre')}</span><b>${formatMoney(total)}</b></div>
-      <div class="mdi-pend-btns">
-        <button type="button" class="btn primary" onclick="mdiCharge('${o.id}')">${icon('check')} Confirmar</button>
-        <button type="button" class="btn ghost" onclick="mdiOpen('${o.id}')">${icon('eye')} Información</button>
+      <div class="mdi2-mid">
+        <div class="mdi2-items">${items || '—'}</div>
+        <span class="mdi2-total">Total: <b>${formatMoney(total)}</b></span>
+        ${o.status === 'rechazado' && o.rejectReason ? `<small class="mdi2-reason">${escapeHtml(o.rejectReason)}</small>` : ''}
       </div>
+      <div class="mdi2-right">${acts}</div>
+      <span class="mdi2-chev">${icon('chevronRight')}</span>
     </div>`;
-  return card;
+}
+/* Lista agrupada en secciones, como las pantallas de pedidos de las apps de entrega */
+function mdiGroupsHTML(list){
+  const out = [];
+  const add = (ico, cls, title, sub, items) => {
+    if(!items.length) return;
+    out.push(`
+      <div class="mdi2-group">
+        <span class="mdi2-gico ${cls}">${icon(ico)}</span>
+        <div class="mdi2-gtxt"><b>${title}</b><small>${sub}</small></div>
+        <span class="mdi2-gcount ${cls}">${items.length}</span>
+      </div>
+      <div class="mdi-list">${items.map(mdiCardHTML).join('')}</div>`);
+  };
+  if(mdiFilter === 'nuevo'){
+    add('clock', 'gold', 'Pendientes', 'Revisa y confirma o rechaza los pedidos.', list.filter(o => o.status === 'nuevo'));
+    add('check', 'green', 'Aceptados', 'Avisa al cliente y toca “Siguiente”.', list.filter(o => o.status === 'confirmado'));
+    add('close', 'red', 'Rechazados', 'Avisa al cliente y toca “Siguiente”.', list.filter(o => o.status === 'rechazado'));
+  }else if(mdiFilter === 'pendiente'){
+    add('card', 'gold', 'Pendientes de pago', 'Contacta al cliente y confirma el pago.', list);
+  }else if(mdiFilter === 'finalizado'){
+    add('check', 'green', 'Finalizados', 'Pedidos ya cobrados.', list);
+  }else if(mdiFilter === 'rechazado'){
+    add('close', 'red', 'Rechazados', 'Pedidos que no pudiste surtir.', list);
+  }else if(mdiFilter === 'cancelado'){
+    add('close', 'red', 'Cancelados', 'Pedidos que cancelaste después de confirmarlos.', list);
+  }else{
+    add('inbox', 'blue', 'Todos los pedidos', 'Los más recientes primero.', list);
+  }
+  return out.join('');
 }
 
 /* =========================================================
@@ -21375,9 +21471,28 @@ function mdiFromCloud(row){
 }
 
 /* ---------- Aviso de pedido nuevo (lo usan Realtime, la revisión y otra pestaña) ---------- */
+let mdiTitle0 = null;
+function mdiTitleClear(){ if(mdiTitle0 !== null){ document.title = mdiTitle0; mdiTitle0 = null; } }
+function mdiAskNotify(){
+  try{ Notification.requestPermission().then(() => mdiCloudPaint()); }catch(e){}
+}
+/* Con la app en segundo plano: aviso del sistema (si diste permiso) y el título de la pestaña */
+function mdiBackgroundAlert(nuevos){
+  if(!document.hidden) return;
+  const n = MDI.all().filter(o => mdiStage(o).id === 'nuevo').length || nuevos.length;
+  if(mdiTitle0 === null) mdiTitle0 = document.title;
+  document.title = '(' + n + ') Nuevo pedido · ' + mdiTitle0;
+  try{
+    if(typeof Notification !== 'undefined' && Notification.permission === 'granted'){
+      const o = nuevos[nuevos.length - 1];
+      new Notification(nuevos.length > 1 ? nuevos.length + ' pedidos nuevos' : 'Nuevo pedido ' + o.code, { body:formatMoney(mdTotals(o.lines || []).total) + ((o.customer && o.customer.name) ? ' · ' + o.customer.name : ''), tag:'vendo-pedido' });
+    }
+  }catch(e){}
+}
 function mdiAnnounce(nuevos){
   mdiPaintBadge();
   if(!nuevos || !nuevos.length) return;
+  mdiBackgroundAlert(nuevos);
   const o = nuevos[nuevos.length - 1];
   vibrate([30, 60, 30]);
   const titulo = nuevos.length > 1 ? nuevos.length + ' pedidos nuevos del Menú Digital' : 'Nuevo pedido del Menú Digital';
@@ -21447,7 +21562,7 @@ const MdiCloud = {
       }
     })();
   },
-  ok(){ this.err = null; this.setState('ok'); },
+  ok(){ this.err = null; this.last = Date.now(); const cambio = this.state !== 'ok'; this.setState('ok'); if(!cambio) mdiCloudPaint(); },
   setState(s){
     const cambio = s !== this.state;
     this.state = s;
@@ -21474,13 +21589,28 @@ const MdiCloud = {
     if(this.ch){ try{ Cloud.sb.removeChannel(this.ch); }catch(e){} }
     this.ch = null; this.chUid = null;
   },
+  /** Al volver a la app: si estuvo mucho tiempo atrás, el celular pudo cortar la conexión en vivo;
+      se crea una nueva y se bajan los pedidos que llegaron mientras tanto. */
+  wake(force){
+    if(!this.canRun()) return;
+    const st = this.ch && this.ch.state;
+    const largo = this.hiddenAt && (Date.now() - this.hiddenAt > 30000);
+    if(this.ch && (force || largo || (st && st !== 'joined' && st !== 'joining'))) this.unlisten();
+    this.hiddenAt = 0;
+    this.pull();
+  },
   start(){
     if(this.t) return;
-    /* Respaldo: cada 20 s con la app a la vista */
-    this.t = setInterval(() => { if(!document.hidden) this.pull(); }, 20000);
-    document.addEventListener('visibilitychange', () => { if(!document.hidden) this.pull(); });
-    window.addEventListener('online', () => this.pull());
-    window.addEventListener('focus', () => this.pull());
+    /* Respaldo: cada 15 s con la app a la vista (con la pantalla apagada el celular detiene la página) */
+    this.t = setInterval(() => { if(!document.hidden) this.pull(); }, 15000);
+    document.addEventListener('visibilitychange', () => {
+      if(document.hidden){ this.hiddenAt = Date.now(); return; }
+      mdiTitleClear(); this.wake();
+    });
+    window.addEventListener('online', () => this.wake(true));
+    window.addEventListener('focus', () => this.wake());
+    window.addEventListener('pageshow', e => { if(e && e.persisted) this.wake(true); else this.wake(); });
+    document.addEventListener('resume', () => this.wake(true));
   }
 };
 
@@ -21491,7 +21621,7 @@ function mdiCloudStatusHTML(){
     return `<div class="md-pub warn" id="mdiCloudStatus" role="status"><span class="md-pub-dot"></span><span class="md-pub-txt"><b>${escapeHtml(MdiCloud.err.t)}</b>${escapeHtml(MdiCloud.err.s)}</span><button onclick="MdiCloud.pull()">Reintentar</button></div>`;
   }
   if(MdiCloud.state === 'ok'){
-    return `<div class="md-pub ok" id="mdiCloudStatus" role="status"><span class="md-pub-dot"></span><span class="md-pub-txt"><b>Recibiendo pedidos en línea</b>Llegan aquí solos, desde el celular de cualquier cliente.</span></div>`;
+    return `<div class="md-pub ok" id="mdiCloudStatus" role="status"><span class="md-pub-dot"></span><span class="md-pub-txt"><b>Recibiendo pedidos en línea</b>Llegan aquí solos, desde el celular de cualquier cliente.${MdiCloud.last ? '<small style="display:block;opacity:.75;margin-top:2px;">Última revisión: ' + new Date(MdiCloud.last).toLocaleTimeString('es-MX', { hour:'numeric', minute:'2-digit' }) + '</small>' : ''}</span>${(typeof Notification !== 'undefined' && Notification.permission === 'default') ? `<button onclick="mdiAskNotify()">Activar avisos</button>` : ''}</div>`;
   }
   return '<div id="mdiCloudStatus"></div>';
 }
