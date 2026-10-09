@@ -4099,6 +4099,13 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
     #statsCharts .chart-plot{ height:210px; }
     .top-prods{ padding:8px 22px; }
   }
+
+  /* Botón de estadísticas detalladas */
+  .stats-detail-btn{ margin-top:26px; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .stats-detail-btn .sdb-chev{ display:flex; transition:transform .2s ease; }
+  .stats-detail-btn .sdb-chev svg{ width:18px; height:18px; }
+  .stats-detail-btn[aria-expanded="true"] .sdb-chev{ transform:rotate(180deg); }
+  .stats-detail[hidden]{ display:none; }
 </style>
 </head>
 <body>
@@ -9303,6 +9310,10 @@ function renderStats(){
 
     ${!d.all.length && !d.exps.length ? `
       <div class="empty-state">${illustration('chartEmpty')}<div class="empty-title">Sin ventas en este periodo</div><div class="empty-text">Toca el filtro de arriba y elige otras fechas.</div></div>` : `
+    <button type="button" class="btn ghost block stats-detail-btn" id="statsDetailBtn" aria-expanded="${statsDetailOpen}" onclick="toggleStatsDetail()">
+      <span class="sdb-txt">${statsDetailOpen ? 'Ocultar estadísticas detalladas' : 'Ver estadísticas detalladas'}</span><span class="sdb-chev">${icon('chevronDown')}</span>
+    </button>
+    <div id="statsDetail" class="stats-detail" ${statsDetailOpen ? '' : 'hidden'}>
 
     <div class="section-title">Resumen</div>
     <div class="card kv-card">
@@ -9376,8 +9387,21 @@ function renderStats(){
         <div class="chart-plot">${days.slice(-31).map(k => `<div class="chart-col" title="${k}: ${formatMoney(d.byDay[k])}"><span class="vbar ${d.byDay[k] > 0 ? '' : 'zero'}" style="opacity:1; ${d.byDay[k] > 0 ? 'height:' + Math.max(4, d.byDay[k] / Math.max(1, ...days.map(x => d.byDay[x])) * 100) + '%' : ''}"></span></div>`).join('')}</div>
         <div class="chart-x">${days.slice(-31).map((k, i, a) => `<span>${a.length > 12 && i % Math.ceil(a.length / 8) ? '' : Number(k.slice(8))}</span>`).join('')}</div>
       </div>` : ''}
+    </div>
     `}
   `;
+}
+
+/* ---------- Estadísticas detalladas: se muestran u ocultan con un botón ---------- */
+let statsDetailOpen = false;
+function toggleStatsDetail(){
+  statsDetailOpen = !statsDetailOpen; vibrate(8);
+  const box = document.getElementById('statsDetail'), btn = document.getElementById('statsDetailBtn');
+  if(box) box.hidden = !statsDetailOpen;
+  if(btn){
+    btn.setAttribute('aria-expanded', String(statsDetailOpen));
+    const t = btn.querySelector('.sdb-txt'); if(t) t.textContent = statsDetailOpen ? 'Ocultar estadísticas detalladas' : 'Ver estadísticas detalladas';
+  }
 }
 
 /* ---------- Ganancia neta ----------
@@ -16386,7 +16410,14 @@ statsChartsHTML = function(){ return withSalesOrigin(_muStatsChartsHTML); };
 
 const _muRenderStats = renderStats;
 renderStats = function(){
-  if(statsOrigin === 'menu') return mdiStatsHTML();
+  if(statsOrigin === 'menu'){
+    try{ return mdiStatsHTML(); }
+    catch(err){
+      console.error('Estadísticas del Menú Digital:', err);
+      return `<h1 class="page-title">Estadísticas</h1><p class="page-sub">Pedidos hechos en tu Menú Digital</p>${statsOriginSegHTML()}
+        <div class="empty-state"><div class="empty-title">No pudimos cargar estas estadísticas</div><div class="empty-text">Vuelve a intentarlo en unos segundos.</div></div>`;
+    }
+  }
   let html = withSalesOrigin(_muRenderStats);
   html = html.replace(/(<p class="page-sub">[\s\S]*?<\/p>)/, '$1' + statsOriginSegHTML());
   if(statsOrigin === 'all'){
@@ -16422,7 +16453,7 @@ function mdiStatsHTML(){
   const sum = a => a.reduce((x, s) => x + s.total, 0);
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
   const head = `
-    <h1 class="page-title">Ventas</h1>
+    <h1 class="page-title">Estadísticas</h1>
     <p class="page-sub">Pedidos hechos en tu Menú Digital</p>
     ${statsOriginSegHTML()}`;
   if(!orders.length && !menuSales.length){
