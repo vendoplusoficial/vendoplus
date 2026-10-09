@@ -4062,6 +4062,43 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
 .ct-cb-i{ position:relative; width:36px; height:36px; border-radius:11px; background:var(--dm-main); color:var(--dm-on); display:flex; align-items:center; justify-content:center; } .ct-cb-i svg{ width:20px; height:20px; }
 .ct-cb-n{ position:absolute; top:-6px; right:-6px; background:#fff; color:var(--ink); font-size:11px; font-weight:800; min-width:19px; height:19px; border-radius:99px; display:flex; align-items:center; justify-content:center; padding:0 4px; }
 .ct-cb-t{ font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:18px; }
+
+  /* ---------- Estadísticas: orden nuevo, más aire entre secciones ---------- */
+  body[data-section="stats"] #view .section-title{ margin:30px 0 14px; }
+  body[data-section="stats"] #view .seg{ margin-bottom:16px; }
+  body[data-section="stats"] #view .period-bar{ margin:26px 0 18px; }
+  body[data-section="stats"] #view .stat-grid{ margin-bottom:8px; }
+  body[data-section="stats"] #view .inv-actions.rep-actions{ margin-top:26px; }
+  #statsCharts .chart-grid{ grid-template-columns:1fr; margin-bottom:0; }
+  #statsCharts .chart-plot{ height:170px; }
+  #statsCharts .chart-title-lg{ font-size:17px; font-weight:800; color:var(--ink); }
+  #statsCharts .chart-right{ text-align:right; }
+  #statsCharts .chart-delta{ font-size:13px; font-weight:800; margin-top:2px; }
+  #statsCharts .chart-delta.up{ color:var(--brand, #25D366); }
+  #statsCharts .chart-delta.down{ color:var(--accent-2, #E5484D); }
+  .top-prods{ padding:6px 16px; }
+  .tp-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+  .tp-row:last-child{ border-bottom:none; }
+  .tp-photo{ width:42px; height:42px; border-radius:12px; flex:none; overflow:hidden; background:var(--surface-alt); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); }
+  .tp-photo img{ width:100%; height:100%; object-fit:cover; }
+  .tp-photo svg{ width:22px; height:22px; }
+  .tp-name{ flex:1; min-width:0; font-size:14.5px; font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tp-qty{ font-size:15px; font-weight:800; color:var(--ink); }
+  /* Celular: las tarjetas de números se deslizan de lado, sin amontonarse */
+  @media (max-width:699px){
+    body[data-section="stats"] #view .stat-grid.stats-row{
+      display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x proximity;
+      margin:0 -18px 8px; padding:2px 18px 10px; scroll-padding:0 18px; scrollbar-width:none;
+    }
+    body[data-section="stats"] #view .stat-grid.stats-row::-webkit-scrollbar{ display:none; }
+    body[data-section="stats"] #view .stat-grid.stats-row .stat-card{ flex:0 0 150px; scroll-snap-align:start; }
+  }
+  /* Tablet y PC: todas las tarjetas visibles en rejilla */
+  @media (min-width:700px){
+    body[data-section="stats"] #view .stat-grid.stats-row{ grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:14px; }
+    #statsCharts .chart-plot{ height:210px; }
+    .top-prods{ padding:8px 22px; }
+  }
 </style>
 </head>
 <body>
@@ -9232,8 +9269,13 @@ function renderStats(){
   const porCobrar = typeof totalReceivable === 'function' ? totalReceivable() : 0;
   const pedidos = n => n + ' pedido' + (n === 1 ? '' : 's');
 
-  return head + salesPeriodFilterHTML() + `
-    <div class="stat-grid">
+  return head + `
+    <div class="section-title">Gráficas</div>
+    <div id="statsCharts">${statsChartsHTML()}</div>
+
+    ${salesPeriodFilterHTML()}
+
+    <div class="stat-grid stats-row">
       <div class="stat-card"><div class="stat-label">Ventas netas</div><div class="stat-value">${formatMoney(d.net)}</div><div class="stat-label" style="margin-top:4px;">${d.iva ? 'IVA incluido, ' : ''}sin propinas</div></div>
       <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-value">${d.orders.length}</div><div class="stat-label" style="margin-top:4px;">ticket promedio ${formatMoney(ticket)}</div></div>
       ${ver ? `
@@ -9243,13 +9285,21 @@ function renderStats(){
         <div class="stat-card"><div class="stat-label">Descuentos</div><div class="stat-value">${formatMoney(d.discounts)}</div><div class="stat-label" style="margin-top:4px;">que se dieron</div></div>`}
     </div>
 
+    ${prods.length ? `
+    <div class="section-title">Productos más vendidos</div>
+    <div class="card top-prods">
+      ${prods.slice(0, 5).map(p => `<div class="tp-row">
+        <span class="tp-photo">${p.image ? `<img src="${p.image}" alt="" loading="lazy">` : icon('plate')}</span>
+        <span class="tp-name">${escapeHtml(p.name)}${p.sizeLabel ? ' · ' + escapeHtml(p.sizeLabel) : ''}</span>
+        <b class="tp-qty">${escapeHtml(p.unit && !p.sizeLabel && !unitOf(p.unit).plain ? fmtQty(p.qty, p.unit) : fmtNum(p.qty))}</b>
+      </div>`).join('')}
+    </div>` : ''}
+
+
     <div class="inv-actions rep-actions">
       <button class="btn ghost" onclick="withSalesOrigin(printReport)">${icon('print')} Imprimir</button>
       <button class="btn ghost" onclick="withSalesOrigin(() => exportReportExcel())">${icon('download')} Descargar Excel</button>
     </div>
-
-    <div class="section-title">Gráficas</div>
-    <div id="statsCharts">${statsChartsHTML()}</div>
 
     ${!d.all.length && !d.exps.length ? `
       <div class="empty-state">${illustration('chartEmpty')}<div class="empty-title">Sin ventas en este periodo</div><div class="empty-text">Toca el filtro de arriba y elige otras fechas.</div></div>` : `
@@ -9299,7 +9349,7 @@ function renderStats(){
       </div>`).join('')}</div>` : ''}
 
     ${prods.length ? `
-      <div class="section-title">Productos más vendidos</div>
+      <div class="section-title">Detalle por producto</div>
       <div class="card rep-table">
         <div class="rep-tr head"><span>Producto</span><span>Cant.</span><span>Importe</span>${ver ? '<span>Ganancia</span>' : ''}</div>
         ${prods.slice(0, 30).map(p => `<div class="rep-tr"><span>${escapeHtml(p.name)}</span><span>${escapeHtml(p.unit && !p.sizeLabel && !unitOf(p.unit).plain ? fmtQty(p.qty, p.unit) : fmtNum(p.qty))}</span><span>${formatMoney(p.total)}</span>${ver ? `<span class="${p.profit < 0 ? 'neg' : ''}">${formatMoney(p.profit)}</span>` : ''}</div>`).join('')}
@@ -9362,7 +9412,7 @@ function computeProfit(sales){
 let statsPeriod = 'days';   // days | weeks | months
 let statsSel = null;        // columna seleccionada (null = la actual)
 const STATS_PERIODS = [
-  { id:'days',   label:'Días',    n:14 },
+  { id:'days',   label:'Días',    n:7  },
   { id:'weeks',  label:'Semanas', n:8  },
   { id:'months', label:'Meses',   n:6  },
 ];
@@ -9376,7 +9426,8 @@ function buildStatsBuckets(sales, period){
     if(period === 'days'){
       start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
       end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
-      label = String(start.getDate());
+      label = start.toLocaleDateString('es-MX', { weekday:'short' }).replace('.', '');
+      label = label.charAt(0).toUpperCase() + label.slice(1);
       long = i === 0 ? 'Hoy' : start.toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'short' });
     } else if(period === 'weeks'){
       start = startOfWeek(now); start.setDate(start.getDate() - 7 * i);
@@ -9405,13 +9456,14 @@ function statsChartsHTML(){
   const sel = (statsSel !== null && statsSel < n) ? statsSel : n - 1;
   const cur = rows[sel];
   const maxTotal = Math.max(1, ...rows.map(r => r.total));
-  const maxCount = Math.max(1, ...rows.map(r => r.count));
 
-  const cx = i => ((i + 0.5) / n) * 100;
-  const py = v => 8 + (v / maxCount) * 84;            // % desde abajo
-  const pts = rows.map((r, i) => cx(i).toFixed(2) + ',' + (100 - py(r.count)).toFixed(2));
-  const area = cx(0).toFixed(2) + ',100 ' + pts.join(' ') + ' ' + cx(n - 1).toFixed(2) + ',100';
   const xLabels = `<div class="chart-x">${rows.map((r, i) => `<span class="${i === sel ? 'sel' : ''}">${r.label}</span>`).join('')}</div>`;
+  const prev = sel > 0 ? rows[sel - 1] : null;
+  let delta = '';
+  if(prev && prev.total > 0.004){
+    const pc = Math.round((cur.total - prev.total) / prev.total * 100);
+    delta = `<div class="chart-delta ${pc < 0 ? 'down' : 'up'}">${pc < 0 ? '↓' : '↑'} ${pc > 0 ? '+' : ''}${pc}%</div>`;
+  }
 
   return `
     <div class="seg" role="tablist" aria-label="Periodo">
@@ -9420,28 +9472,12 @@ function statsChartsHTML(){
     <div class="chart-grid">
       <div class="card">
         <div class="chart-head">
-          <div><div class="chart-title">Ventas</div><div class="chart-sub">${cur.long}</div></div>
-          <div class="chart-value">${formatMoney(cur.total)}</div>
+          <div><div class="chart-title chart-title-lg">Resumen</div><div class="chart-sub">${cur.long}</div></div>
+          <div class="chart-right"><div class="chart-sub" style="margin:0;">Ventas</div><div class="chart-value">${formatMoney(cur.total)}</div>${delta}</div>
         </div>
         <div class="chart-plot">
           ${rows.map((r, i) => `<button class="chart-col ${i === sel ? 'sel' : ''}" onclick="selectStatsBucket(${i})" aria-label="${r.long}: ${formatMoney(r.total)}">
             <span class="vbar ${r.total ? '' : 'zero'}" style="${r.total ? 'height:' + Math.max(r.total / maxTotal * 100, 4) + '%' : ''}"></span>
-          </button>`).join('')}
-        </div>
-        ${xLabels}
-      </div>
-      <div class="card">
-        <div class="chart-head">
-          <div><div class="chart-title">Pedidos</div><div class="chart-sub">${cur.long}</div></div>
-          <div class="chart-value">${cur.count} pedido${cur.count === 1 ? '' : 's'}</div>
-        </div>
-        <div class="chart-plot">
-          <svg class="line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            <polygon points="${area}" fill="var(--accent-soft)" opacity=".75"/>
-            <polyline points="${pts.join(' ')}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-          </svg>
-          ${rows.map((r, i) => `<button class="chart-col ${i === sel ? 'sel' : ''}" onclick="selectStatsBucket(${i})" aria-label="${r.long}: ${r.count} pedidos">
-            <span class="dot" style="bottom:${py(r.count)}%"></span>
           </button>`).join('')}
         </div>
         ${xLabels}
@@ -16371,7 +16407,7 @@ renderStats = function(){
           <div class="bar-track"><div class="bar-fill" style="width:${sum(menu) / max * 100}%; background:var(--sec-menu);"></div></div>
         </div>
       </div>`;
-    html = html.replace('<div class="section-title">Productos más vendidos</div>', card + '<div class="section-title">Productos más vendidos</div>');
+    html = html.replace('<div class="inv-actions rep-actions">', card + '<div class="inv-actions rep-actions">');
   }
   return html;
 };
@@ -19054,7 +19090,7 @@ function reportData(){
       byCat[cat.id].total += amt;
       const k = (it.custom ? 'libre|' + it.name : it.productId) + '|' + (it.sizeLabel || '');
       const c = itemCost(it);
-      byProd[k] = byProd[k] || { name:it.name, qty:0, total:0, profit:0, unit:it.unit, sizeLabel:it.sizeLabel, sku:it.sku || (p ? p.sku : '') || '', cat:cat.name };
+      byProd[k] = byProd[k] || { name:it.name, qty:0, total:0, profit:0, unit:it.unit, sizeLabel:it.sizeLabel, sku:it.sku || (p ? p.sku : '') || '', cat:cat.name, image:(p && p.image) || '' };
       byProd[k].qty += it.qty; byProd[k].total += amt;
       if(c != null) byProd[k].profit += (netOfTax(it.price, tax) - c) * it.qty;
     });
