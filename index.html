@@ -4011,7 +4011,7 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
 
 /* ---------- Diseño Catálogo (menú del cliente) ---------- */
 .ct{ flex:1; font-family:'Figtree',var(--sans,system-ui),sans-serif; color:var(--ink); padding-bottom:calc(110px + env(safe-area-inset-bottom,0px)); }
-.ct button{ font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; padding:0; -webkit-tap-highlight-color:transparent; }
+:where(.ct) button{ font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; padding:0; -webkit-tap-highlight-color:transparent; }
 .ct svg{ display:block; }
 .ct-hero{ background:var(--dm-soft); padding:calc(18px + env(safe-area-inset-top,0px)) 18px 16px; border-radius:0 0 26px 26px; }
 .ct-brand{ display:flex; align-items:center; gap:12px; }
@@ -4031,31 +4031,29 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
 .ct-tabs::-webkit-scrollbar{ display:none; }
 .ct-tab{ flex:none; padding:14px 0 11px; font-weight:700; font-size:14.5px; color:var(--ink-soft); border-bottom:3px solid transparent; white-space:nowrap; }
 .ct-tab.on{ color:var(--ink); border-color:var(--dm-main); }
-.ct-sec{ padding:0 18px; margin-top:22px; }
+.ct-sec{ padding:0 18px; margin:22px auto 0; max-width:796px; }
 .ct-sec-h{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px; }
 .ct-sec-h h2{ font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:22px; margin:0; }
 .ct-sec-n{ font-size:13px; color:var(--ink-soft); }
-.ct-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:22px 14px; }
-@media(min-width:640px){ .ct-grid{ grid-template-columns:repeat(3,1fr); } }
-@media(min-width:1000px){ .ct-grid{ grid-template-columns:repeat(4,1fr); } }
-.ct-pw{ position:relative; }
-.ct-pic{ display:block; width:100%; aspect-ratio:4/5; border-radius:20px; overflow:hidden; position:relative; background:var(--dm-soft); transition:transform .3s; }
-.ct-pic:active{ transform:scale(.98); }
+.ct-grid{ display:flex; flex-direction:column; gap:12px; }
+.ct-tile{ display:flex; align-items:center; gap:14px; background:#fff; border:1.5px solid var(--border); border-radius:20px; padding:10px 12px 10px 10px; transition:border-color .2s, box-shadow .2s; }
+.ct-tile.in{ border-color:var(--dm-main); box-shadow:0 4px 16px rgba(var(--dm-rgb),.3); }
+.ct-pic{ flex:none; width:96px; height:96px; border-radius:16px; overflow:hidden; position:relative; background:var(--dm-soft); }
+@media(min-width:640px){ .ct-pic{ width:116px; height:116px; } }
 .ct-pic img{ width:100%; height:100%; object-fit:cover; display:block; }
 .ct-ph{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--dm-ink); opacity:.55; } .ct-ph svg{ width:42%; height:42%; }
-.ct-flag{ position:absolute; top:10px; left:10px; background:var(--ink); color:#fff; font-style:normal; font-weight:700; font-size:12px; padding:4px 10px; border-radius:99px; }
+.ct-flag{ position:absolute; top:6px; left:6px; background:var(--ink); color:#fff; font-style:normal; font-weight:700; font-size:11px; padding:3px 8px; border-radius:99px; }
 .ct-tile.out .ct-pic img{ filter:grayscale(.85); opacity:.6; }
-.ct-ctl{ position:absolute; right:10px; bottom:10px; z-index:3; }
-.ct-add{ width:44px; height:44px; border-radius:50%; background:#fff; color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:600; line-height:1; box-shadow:0 6px 16px rgba(20,24,40,.22); transition:transform .2s; }
-.ct-add:active{ transform:scale(.9); } .ct-add b{ font-size:15px; font-weight:800; }
-.ct-step{ display:flex; align-items:center; background:var(--dm-main); color:var(--dm-on); border-radius:99px; box-shadow:0 6px 16px rgba(20,24,40,.25); }
-.ct-step button{ width:38px; height:44px; font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; }
-.ct-step button:disabled{ opacity:.4; } .ct-step b{ min-width:18px; text-align:center; font-weight:800; font-size:15px; white-space:nowrap; }
-.ct-meta{ padding:10px 2px 0; }
+.ct-meta{ flex:1; min-width:0; }
 .ct-meta h3{ font-family:'Fraunces',Georgia,serif; font-weight:500; font-size:17px; line-height:1.2; margin:0; }
 .ct-meta p{ margin:4px 0 0; color:var(--ink-soft); font-size:13.5px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.ct-ctl{ flex:none; }
+.ct-add{ position:relative; width:46px; height:46px; border-radius:50%; background:var(--dm-main); color:var(--dm-on); display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:600; line-height:1; box-shadow:0 6px 14px rgba(var(--dm-rgb),.4); transition:transform .2s; }
+.ct-add:active{ transform:scale(.9); }
+.ct-q{ position:absolute; top:-7px; left:-7px; min-width:22px; height:22px; padding:0 5px; border-radius:99px; background:var(--ink); color:#fff; border:2px solid #fff; font-style:normal; font-size:12px; font-weight:800; line-height:18px; text-align:center; white-space:nowrap; }
+.ct-out{ font-size:12px; font-weight:800; color:var(--ink-soft); background:var(--dm-soft); padding:6px 10px; border-radius:99px; }
 .ct-tag{ display:inline-block; position:relative; margin-top:9px; background:var(--ink); color:#fff; font-weight:800; font-size:14px; padding:4px 11px 4px 20px; clip-path:polygon(10px 0,100% 0,100% 100%,10px 100%,0 50%); }
-.ct-tag::before{ content:""; position:absolute; left:8px; top:50%; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:var(--bg); }
+.ct-tag::before{ content:""; position:absolute; left:8px; top:50%; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:#fff; }
 .ct-tag small{ font-weight:600; opacity:.75; }
 .ct-none{ text-align:center; padding:50px 24px; color:var(--ink-soft); }
 .ct-none h2{ font-family:'Fraunces',Georgia,serif; color:var(--ink); margin:0 0 4px; }
@@ -21799,23 +21797,17 @@ function ctPrice(p){
   const u = productUnit(p);
   return formatMoney(p.price) + (u.plain ? '' : '<small> /' + u.short + '</small>');
 }
-function ctCtl(p, blk){
-  if(stockInfo(p).level === 'out') return '';
-  const q = dmQtyOf(p.id), sheet = hasSizes(p) || blk;
-  if(q > 0 && !sheet){
-    const sinMas = dmStockUse(p.id) + productStep(p) > dmMaxFor(p) + 1e-9;
-    return `<div class="ct-step"><button onclick="dmStepCard('${p.id}',-1)" aria-label="Quitar">−</button><b>${dmQtyText(p, q)}</b><button onclick="dmStepCard('${p.id}',1)" ${sinMas ? 'disabled' : ''} aria-label="Agregar">+</button></div>`;
-  }
-  return `<button class="ct-add" onclick="${sheet ? `dmOpenProduct('${p.id}')` : `dmStepCard('${p.id}',1)`}" aria-label="Agregar ${escapeHtml(p.name)}">${q > 0 ? '<b>' + dmQtyText(p, q) + '</b>' : '+'}</button>`;
+function ctCtl(p){
+  if(stockInfo(p).level === 'out') return '<span class="ct-out">Agotado</span>';
+  const q = dmQtyOf(p.id);
+  return `<button class="ct-add" onclick="dmOpenProduct('${p.id}')" aria-label="Agregar ${escapeHtml(p.name)}">+${q > 0 ? '<i class="ct-q">' + dmQtyText(p, q) + '</i>' : ''}</button>`;
 }
-function ctTile(p, blk){
+function ctTile(p){
   const out = stockInfo(p).level === 'out';
-  return `<article class="ct-tile ${out ? 'out' : ''}" data-p="${p.id}">
-    <div class="ct-pw">
-      <button class="ct-pic" onclick="dmOpenProduct('${p.id}')" aria-label="Ver ${escapeHtml(p.name)}">${p.image ? dmPhoto(p.image, p.name) : `<span class="ct-ph">${icon('gift')}</span>`}${out ? '<i class="ct-flag">Agotado</i>' : ''}</button>
-      <div class="ct-ctl" data-p="${p.id}">${ctCtl(p, blk)}</div>
-    </div>
+  return `<article class="ct-tile ${out ? 'out' : ''} ${dmQtyOf(p.id) > 0 ? 'in' : ''}" data-p="${p.id}">
+    <div class="ct-pic">${p.image ? dmPhoto(p.image, p.name) : `<span class="ct-ph">${icon('gift')}</span>`}${out ? '<i class="ct-flag">Agotado</i>' : ''}</div>
     <div class="ct-meta"><h3>${escapeHtml(p.name)}</h3>${(p.description || '').trim() ? `<p>${escapeHtml(p.description)}</p>` : ''}<span class="ct-tag">${ctPrice(p)}</span></div>
+    <div class="ct-ctl" data-p="${p.id}">${ctCtl(p)}</div>
   </article>`;
 }
 function ctRender(d){
@@ -21836,7 +21828,7 @@ function ctRender(d){
     : (mdClosedNow(d.cfg) ? `<div class="dm-banner">${icon('clock')}<span><b>Estamos cerrados en este momento</b>Puedes ver el catálogo${hrsNextOpen(mdMenuHours(d.cfg)) ? '; recibimos pedidos de nuevo ' + hrsNextOpen(mdMenuHours(d.cfg)) : ''}.</span></div>` : '');
   const secs = cats.map(c => {
     const list = d.prods.filter(p => c.id === UNCATEGORIZED.id ? !d.cats.some(x => x.id === p.category) : p.category === c.id);
-    return `<section class="ct-sec" data-c="${c.id}"><div class="ct-sec-h"><h2>${escapeHtml(c.name)}</h2><span class="ct-sec-n">${list.length} producto${list.length === 1 ? '' : 's'}</span></div><div class="ct-grid">${list.map(p => ctTile(p, blk)).join('')}</div></section>`;
+    return `<section class="ct-sec" data-c="${c.id}"><div class="ct-sec-h"><h2>${escapeHtml(c.name)}</h2><span class="ct-sec-n">${list.length} producto${list.length === 1 ? '' : 's'}</span></div><div class="ct-grid">${list.map(p => ctTile(p)).join('')}</div></section>`;
   }).join('');
   document.getElementById('dmRoot').innerHTML = `<div class="ct" id="ctHost">
     <header class="ct-hero">
@@ -21886,8 +21878,11 @@ function ctApply(){
 }
 function ctRefresh(){
   const h = document.getElementById('ctHost'); if(!h) return;
-  const blk = mdOrdersBlocked(mdCfg());
-  h.querySelectorAll('.ct-ctl').forEach(el => { const p = dmFind(el.dataset.p); if(p) el.innerHTML = ctCtl(p, blk); });
+  h.querySelectorAll('.ct-ctl').forEach(el => {
+    const p = dmFind(el.dataset.p); if(!p) return;
+    el.innerHTML = ctCtl(p);
+    const t = el.closest('.ct-tile'); if(t) t.classList.toggle('in', dmQtyOf(p.id) > 0);
+  });
 }
 function ctBar(){
   const bar = document.getElementById('dmCartbar');
