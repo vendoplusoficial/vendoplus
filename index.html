@@ -12355,7 +12355,7 @@ function doDeleteAccount(){
   if(wipeAll){
     ['mesa_products','mesa_categories','mesa_sales','mesa_counter','mesa_todos','mesa_todos_seed','mesa_demo_hint_off','mesa_demo_seed',
      'mesa_users','mesa_active_user','mesa_user_session','mesa_shifts',
-     'mesa_md_incoming',
+     'mesa_md_incoming', 'mesa_md_gone',
      'mesa_menu','mesa_md_cfg_visible','mesa_dm_name'].forEach(k => localStorage.removeItem(k));
     initDB();
   }else{
@@ -15257,6 +15257,18 @@ saveBusinessForm = function(){
    ACTUAL (con los cambios que haga el negocio).
 ========================================================= */
 const MDI_KEY = 'mesa_md_incoming';
+const MDI_GONE_KEY = 'mesa_md_gone';    /* pedidos que se eliminaron a propósito: no deben volver a bajarse */
+function mdiGoneList(){ try{ const l = JSON.parse(localStorage.getItem(MDI_GONE_KEY) || '[]'); return Array.isArray(l) ? l : []; }catch(e){ return []; } }
+function mdiMarkGone(id){ const l = mdiGoneList(); if(l.indexOf(id) < 0){ l.push(id); try{ localStorage.setItem(MDI_GONE_KEY, JSON.stringify(l.slice(-400))); }catch(e){} } }
+/* Qué tan avanzado va un pedido: al juntar lo de dos celulares gana el que va más adelante */
+function mdiRank(o){
+  if(!o) return 0;
+  if(o.status === 'cancelado') return 7;
+  if(o.saleId) return 6;
+  if(o.status === 'confirmado') return o.pendingNext ? 3 : 4;
+  if(o.status === 'rechazado') return o.pendingNext ? 2 : 5;
+  return 1;
+}
 const MDI_CODE_ABC = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const MDI_STATUS = {
   nuevo:      { label:'Nuevo',      cls:'nuevo' },
@@ -16172,6 +16184,7 @@ function mdiDelete(id){
     : '¿Eliminar este pedido rechazado? No se puede deshacer.';
   askConfirm({ title:'¿Eliminar este pedido?', text:escapeHtml(txt).replace(/\n/g, '<br>'), ok:'Eliminar', danger:true, icon:icon('trash') }, () => {
     MDI.save(MDI.all().filter(o => o.id !== id));
+    mdiMarkGone(id);
     mdiClose();
     toast('Pedido eliminado');
   });
@@ -21522,8 +21535,10 @@ const MdiCloud = {
   /** Guarda en "Pedidos entrantes" los que lleguen y los marca como recibidos. */
   async take(rows){
     const nuevos = [], ids = [];
+    const gone = mdiGoneList();
     (rows || []).forEach(row => {
       if(row && row.id) ids.push(row.id);
+      if(row && gone.indexOf(row.id) >= 0) return;
       const o = mdiFromCloud(row);
       if(!o) return;
       const r = mdiReceive(o, 'menu');
@@ -21544,10 +21559,14 @@ const MdiCloud = {
     return (async () => {
       try{
         this.listen();
+        /* Se bajan los que nadie ha recibido Y los de los últimos 3 días: si otro celular ya los recibió
+           (y los marcó como recibidos), este también los tiene que ver. Lo que ya está aquí no se duplica. */
+        const desde = new Date(Date.now() - 3 * 86400000).toISOString();
         const { data, error } = await Cloud.sb.from(MDI_TABLE)
-          .select('id,code,data,created_at').is('received_at', null)
-          .order('created_at', { ascending:true }).limit(100);
+          .select('id,code,data,created_at').or('received_at.is.null,created_at.gte.' + desde)
+          .order('created_at', { ascending:true }).limit(150);
         if(error) throw error;
+        await this.merge();
         await this.take(data);
         this.ok();
         return true;
@@ -21561,6 +21580,34 @@ const MdiCloud = {
         if(this.again){ this.again = false; setTimeout(() => this.pull(), 300); }
       }
     })();
+  },
+  /** Junta los pedidos con lo que ya hizo otro celular de la misma cuenta (confirmar, rechazar, cobrar…). */
+  async merge(force){
+    if(!force && this.lastMerge && Date.now() - this.lastMerge < 40000) return;
+    this.lastMerge = Date.now();
+    try{
+      const { data, error } = await Cloud.sb.from('user_data').select('key,value').in('key', [MDI_KEY, MDI_GONE_KEY]);
+      if(error || !data) return;
+      const rowOf = k => (data.find(r => r.key === k) || {}).value || {};
+      const remote = Array.isArray(rowOf(MDI_KEY).j) ? rowOf(MDI_KEY).j : [];
+      const rgone = Array.isArray(rowOf(MDI_GONE_KEY).j) ? rowOf(MDI_GONE_KEY).j : [];
+      rgone.forEach(id => mdiMarkGone(id));
+      const gone = mdiGoneList();
+      const list = MDI.all();
+      const byId = {}; list.forEach(o => { byId[o.id] = o; });
+      let changed = false; const nuevos = [];
+      remote.forEach(r => {
+        if(!r || !r.id || gone.indexOf(r.id) >= 0) return;
+        const l = byId[r.id];
+        if(!l){ list.push(r); byId[r.id] = r; changed = true; if(r.status === 'nuevo') nuevos.push(r); }
+        else if(mdiRank(r) > mdiRank(l)){ Object.keys(l).forEach(k => delete l[k]); Object.assign(l, r); changed = true; }
+      });
+      if(changed){
+        MDI.save(list);
+        if(nuevos.length) mdiAnnounce(nuevos);
+        else{ mdiPaintBadge(); if((currentView === 'menu' || currentView === 'home') && !document.querySelector('#modal-layer .modal-sheet')) render(); }
+      }
+    }catch(e){ console.warn('Vendo plus · juntar pedidos', e); }
   },
   ok(){ this.err = null; this.last = Date.now(); const cambio = this.state !== 'ok'; this.setState('ok'); if(!cambio) mdiCloudPaint(); },
   setState(s){
@@ -21597,6 +21644,7 @@ const MdiCloud = {
     const largo = this.hiddenAt && (Date.now() - this.hiddenAt > 30000);
     if(this.ch && (force || largo || (st && st !== 'joined' && st !== 'joining'))) this.unlisten();
     this.hiddenAt = 0;
+    this.lastMerge = 0;
     this.pull();
   },
   start(){
