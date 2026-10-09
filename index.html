@@ -4010,7 +4010,6 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
 @media (prefers-reduced-motion:reduce){ .fdx #fdFeed{ scroll-behavior:auto; } .fdx #fdSwipe svg{ animation:none; } }
 
 /* ---------- Diseño Catálogo (menú del cliente) ---------- */
-.md-dz-grid .md-dz:last-child:nth-child(odd){ grid-column:1 / -1; }
 .ct{ flex:1; font-family:'Figtree',var(--sans,system-ui),sans-serif; color:var(--ink); padding-bottom:calc(110px + env(safe-area-inset-bottom,0px)); }
 .ct button{ font-family:inherit; cursor:pointer; border:0; background:none; color:inherit; padding:0; -webkit-tap-highlight-color:transparent; }
 .ct svg{ display:block; }
@@ -13584,8 +13583,8 @@ function mdColorName(hex){ const c = MD_COLORS.find(x => x.hex === (mdValidColor
 /* Diseños del Menú Digital (cómo lo ven los clientes) */
 const MD_DESIGNS = [
   { id:'clasico', name:'Clásico', short:'lista por categorías', desc:'Lista por categorías con tarjetas. Ideal para ver muchos productos de un vistazo.' },
-  { id:'catalogo', name:'Catálogo', short:'fotos grandes tipo tienda', desc:'Fotos verticales grandes con etiqueta de precio, pensado para tiendas de productos y regalos. Luce más con buenas fotos.' },
   { id:'visual',  name:'Visual',  short:'un producto por pantalla', desc:'Un producto por pantalla con foto grande; se desliza como en redes. Luce más con buenas fotos.' },
+  { id:'catalogo', name:'Catálogo', short:'fotos grandes tipo tienda', desc:'Fotos verticales grandes con etiqueta de precio, pensado para tiendas de productos y regalos. Luce más con buenas fotos.' },
 ];
 function mdValidDesign(d){ return MD_DESIGNS.some(x => x.id === d) ? d : 'clasico'; }
 function mdDefaultCfg(){
