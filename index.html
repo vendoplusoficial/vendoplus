@@ -15525,6 +15525,7 @@ function mdiCardHTML(o){
 
 function mdiSectionHTML(){
   mdiMigrate();
+  try{ MdiCloud.soon(); }catch(e){}
   const all = MDI.all().slice().sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
   const c = mdiCounts();
   const filtro = mdiFilter === 'confirmado' ? 'pendiente' : mdiFilter;
@@ -20971,7 +20972,7 @@ bootApp = async function(){
     Cloud.sb.auth.onAuthStateChange((ev, s) => {
       if(s && s.user && (ev === 'TOKEN_REFRESHED' || ev === 'SIGNED_IN') && !Cloud.uid && AUTH.isLogged()){
         Cloud.uid = s.user.id;
-        setTimeout(async () => { await Cloud.refreshSub(); Cloud.gate(); }, 0);
+        setTimeout(async () => { await Cloud.refreshSub(); Cloud.gate(); try{ MdiCloud.wake(true); }catch(e){} }, 0);
       }
     });
     const reintentar = async () => {
@@ -21478,6 +21479,14 @@ function mdiCloudErr(e){
   return { t:'No se pudieron revisar los pedidos', s:m.slice(0, 140) || 'Se vuelve a intentar sola en unos segundos.' };
 }
 
+/* Si el celular suspende la página a media petición, la respuesta nunca llega: sin límite de tiempo
+   la revisión de pedidos se quedaba "ocupada" para siempre y ese celular dejaba de recibirlos. */
+function mdiTimeout(p, ms){
+  return new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error('timeout')), ms || 20000);
+    Promise.resolve(p).then(v => { clearTimeout(t); res(v); }, e => { clearTimeout(t); rej(e); });
+  });
+}
 const MdiCloud = {
   armed:false, busy:false, again:false, state:'idle', err:null, ch:null, chUid:null, t:null,
   canRun(){
@@ -21497,28 +21506,36 @@ const MdiCloud = {
       if(r.isNew) nuevos.push(r.order);
     });
     if(ids.length){
-      try{ await Cloud.sb.from(MDI_TABLE).update({ received_at:new Date().toISOString() }).in('id', ids).is('received_at', null); }
+      try{ await mdiTimeout(Cloud.sb.from(MDI_TABLE).update({ received_at:new Date().toISOString() }).in('id', ids).is('received_at', null), 15000); }
       catch(e){ /* si no se marca, se vuelve a bajar y no se duplica */ }
     }
     if(nuevos.length) mdiAnnounce(nuevos);
     return nuevos.length;
   },
   /** Baja los pedidos que todavía no recibe ninguna caja. */
-  pull(){
+  pull(force){
     if(!this.canRun()) return Promise.resolve(false);
-    if(this.busy){ this.again = true; return Promise.resolve(false); }
-    this.busy = true;
+    if(this.busy){
+      /* Una revisión que lleva mucho "ocupada" se quedó colgada (el celular suspendió la app a media petición):
+         se descarta y se empieza de nuevo, para que este celular no deje de recibir pedidos. */
+      if(Date.now() - (this.busyAt || 0) < (force ? 6000 : 25000)){ this.again = true; return Promise.resolve(false); }
+      this.busy = false;
+    }
+    this.busy = true; this.busyAt = Date.now(); this.lastPull = Date.now();
+    const mine = this.runId = (this.runId || 0) + 1;
     return (async () => {
       try{
+        /* Renueva la sesión si venció mientras la app estaba en segundo plano (si no, la consulta no regresa nada) */
+        try{ await mdiTimeout(Cloud.sb.auth.getSession(), 8000); }catch(e){}
         this.listen();
         /* Se bajan los que nadie ha recibido Y los de los últimos 3 días: si otro celular ya los recibió
            (y los marcó como recibidos), este también los tiene que ver. Lo que ya está aquí no se duplica. */
         const desde = new Date(Date.now() - 3 * 86400000).toISOString();
-        const { data, error } = await Cloud.sb.from(MDI_TABLE)
+        const { data, error } = await mdiTimeout(Cloud.sb.from(MDI_TABLE)
           .select('id,code,data,created_at').or('received_at.is.null,created_at.gte.' + desde)
-          .order('created_at', { ascending:true }).limit(150);
+          .order('created_at', { ascending:true }).limit(150), 20000);
         if(error) throw error;
-        await this.merge();
+        await this.merge(force);
         await this.take(data);
         this.ok();
         return true;
@@ -21526,19 +21543,28 @@ const MdiCloud = {
         console.warn('Vendo plus · pedidos del menú', e);
         this.err = mdiCloudErr(e);
         this.setState('error');
+        /* Si falló, se reintenta pronto sin esperar al siguiente ciclo */
+        clearTimeout(this.retryT); this.retryT = setTimeout(() => this.pull(), 6000);
         return false;
       }finally{
-        this.busy = false;
-        if(this.again){ this.again = false; setTimeout(() => this.pull(), 300); }
+        if(mine === this.runId){
+          this.busy = false;
+          if(this.again){ this.again = false; setTimeout(() => this.pull(), 300); }
+        }
       }
     })();
+  },
+  /** Al abrir "Pedidos entrantes": revisa en ese momento (máx. una vez cada 4 s). */
+  soon(){
+    if(!this.canRun() || Date.now() - (this.lastPull || 0) < 4000) return;
+    this.pull();
   },
   /** Junta los pedidos con lo que ya hizo otro celular de la misma cuenta (confirmar, rechazar, cobrar…). */
   async merge(force){
     if(!force && this.lastMerge && Date.now() - this.lastMerge < 40000) return;
     this.lastMerge = Date.now();
     try{
-      const { data, error } = await Cloud.sb.from('user_data').select('key,value').in('key', [MDI_KEY, MDI_GONE_KEY]);
+      const { data, error } = await mdiTimeout(Cloud.sb.from('user_data').select('key,value').in('key', [MDI_KEY, MDI_GONE_KEY]), 15000);
       if(error || !data) return;
       const rowOf = k => (data.find(r => r.key === k) || {}).value || {};
       const remote = Array.isArray(rowOf(MDI_KEY).j) ? rowOf(MDI_KEY).j : [];
@@ -21581,6 +21607,12 @@ const MdiCloud = {
         .subscribe(status => {
           /* Al reconectar el Realtime se revisa por si algo llegó mientras */
           if(status === 'SUBSCRIBED') setTimeout(() => this.pull(), 400);
+          /* Si la conexión en vivo se cae, se vuelve a abrir sola y se revisa lo que llegó mientras */
+          else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
+            if(this.chUid !== uid) return;
+            clearTimeout(this.reT);
+            this.reT = setTimeout(() => { this.unlisten(); if(this.canRun()) this.pull(true); }, 3000);
+          }
         });
     }catch(e){ this.ch = null; this.chUid = null; }
   },
@@ -21593,11 +21625,11 @@ const MdiCloud = {
   wake(force){
     if(!this.canRun()) return;
     const st = this.ch && this.ch.state;
-    const largo = this.hiddenAt && (Date.now() - this.hiddenAt > 30000);
+    const largo = this.hiddenAt && (Date.now() - this.hiddenAt > 8000);
     if(this.ch && (force || largo || (st && st !== 'joined' && st !== 'joining'))) this.unlisten();
     this.hiddenAt = 0;
     this.lastMerge = 0;
-    this.pull();
+    this.pull(true);
   },
   start(){
     if(this.t) return;
