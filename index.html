@@ -16619,7 +16619,7 @@ function mdiStatsHTML(){
   const pm = {};
   menuSales.forEach(s => s.items.forEach(it => {
     const k = it.productId + '|' + (it.sizeLabel || '');
-    if(!pm[k]) pm[k] = { name:it.name, qty:0, revenue:0, unit:it.unit };
+    if(!pm[k]) { const pr = it.productId ? findProduct(it.productId) : null; pm[k] = { name:it.name, sizeLabel:it.sizeLabel || '', qty:0, revenue:0, unit:it.unit, image:(pr && pr.image) || it.image || '' }; }
     pm[k].qty += it.qty; pm[k].revenue += it.price * it.qty;
   }));
   const top = Object.values(pm).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
@@ -16628,7 +16628,13 @@ function mdiStatsHTML(){
   rech.forEach(o => { const k = o.rejectReason || 'Sin motivo'; motivos[k] = (motivos[k] || 0) + 1; });
   const maxMot = Math.max(1, ...Object.values(motivos));
 
-  return head + salesPeriodFilterHTML() + mdiUnpaidAlertHTML() + `
+  return head + `
+    <div class="section-title">Gráficas</div>
+    <div id="statsCharts" class="md-charts">${statsChartsHTML()}</div>
+
+    ${salesPeriodFilterHTML()}
+    ${mdiUnpaidAlertHTML()}
+
     <div class="stat-grid">
       <div class="stat-card md-stat">
         <div class="stat-label">Pedidos recibidos</div>
@@ -16666,8 +16672,20 @@ function mdiStatsHTML(){
       </div>
     </div>
 
-    <div class="section-title">Gráficas del Menú Digital</div>
-    <div id="statsCharts" class="md-charts">${statsChartsHTML()}</div>
+    ${top.length ? `
+      <div class="section-title">Productos más vendidos</div>
+      <div class="card top-prods">
+        ${top.map(p => `<div class="tp-row">
+          <span class="tp-photo">${p.image ? `<img src="${p.image}" alt="" loading="lazy">` : icon('plate')}</span>
+          <span class="tp-name">${escapeHtml(p.name)}${p.sizeLabel ? ' · ' + escapeHtml(p.sizeLabel) : ''}</span>
+          <b class="tp-qty">${escapeHtml(p.unit && !p.sizeLabel && !unitOf(p.unit).plain ? fmtQty(p.qty, p.unit) : fmtNum(p.qty))}</b>
+        </div>`).join('')}
+      </div>` : ''}
+
+    <button type="button" class="btn ghost block stats-detail-btn" id="statsDetailBtn" aria-expanded="${statsDetailOpen}" onclick="toggleStatsDetail()">
+      <span class="sdb-txt">${statsDetailOpen ? 'Ocultar estadísticas detalladas' : 'Ver estadísticas detalladas'}</span><span class="sdb-chev">${icon('chevronDown')}</span>
+    </button>
+    <div id="statsDetail" class="stats-detail" ${statsDetailOpen ? '' : 'hidden'}>
 
     <div class="section-title">¿A qué hora piden?</div>
     <div class="card">
@@ -16690,17 +16708,6 @@ function mdiStatsHTML(){
         </div>`).join('')}
     </div>
 
-    ${top.length ? `
-      <div class="section-title">Lo más pedido en el Menú Digital</div>
-      <div class="card">
-        ${top.map((p, i) => `
-          <div class="top-product-row">
-            <div class="top-product-rank">${i + 1}</div>
-            <div class="top-product-name">${escapeHtml(p.name)}<div class="top-product-qty">${escapeHtml(p.unit && !unitOf(p.unit).plain ? fmtQty(p.qty, p.unit) : fmtNum(p.qty))} pedidos</div></div>
-            <div class="top-product-rev">${formatMoney(p.revenue)}</div>
-          </div>`).join('')}
-      </div>` : ''}
-
     ${rech.length ? `
       <div class="section-title">Motivos de rechazo</div>
       <div class="card">
@@ -16710,6 +16717,8 @@ function mdiStatsHTML(){
             <div class="bar-track"><div class="bar-fill" style="width:${v / maxMot * 100}%; background:var(--accent-2);"></div></div>
           </div>`).join('')}
       </div>` : ''}
+
+    </div>
 
     <button class="btn ghost block" style="margin-top:18px;" onclick="mdiFilter='todos'; goTo('menu'); setTimeout(() => { const s = document.getElementById('mdiSection'); if(s) s.scrollIntoView({ block:'start' }); }, 60);">${icon('inbox')} Ver pedidos entrantes</button>
   `;
