@@ -15576,22 +15576,22 @@ function mdiSectionHTML(){
   mdiMigrate();
   const all = MDI.all().slice().sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
   const c = mdiCounts();
-  const confirmados = c.pendiente + c.finalizado;
-  const list = mdiFilter === 'todos' ? all : all.filter(o => o.status === mdiFilter);
+  const filtro = mdiFilter === 'confirmado' ? 'pendiente' : mdiFilter;
+  const list = filtro === 'todos' ? all : filtro === 'pendiente' ? all.filter(o => mdiStage(o).id === 'pendiente') : all.filter(o => o.status === filtro);
   const tabs = [
     { id:'nuevo', label:'Nuevos', n:c.nuevo },
-    { id:'confirmado', label:'Confirmados', n:confirmados },
+    { id:'pendiente', label:'Pendiente a cobrar', n:c.pendiente },
     { id:'rechazado', label:'Rechazados', n:c.rechazado },
     { id:'cancelado', label:'Cancelados', n:c.cancelado },
     { id:'todos', label:'Todos', n:c.total },
-  ].filter(t => t.id !== 'cancelado' || t.n || mdiFilter === 'cancelado');
+  ].filter(t => t.id !== 'cancelado' || t.n || filtro === 'cancelado');
   const hoy = all.filter(o => isSameDay(new Date(o.createdAt), new Date()));
   const cobradosHoy = hoy.filter(o => mdiIsPaid(o));
   const vendidoHoy = cobradosHoy.reduce((a, o) => a + mdiOrderTotal(o), 0);
   const emptyTxt = {
-    nuevo:'No hay pedidos nuevos', confirmado:'No hay pedidos confirmados', rechazado:'No hay pedidos rechazados',
+    nuevo:'No hay pedidos nuevos', pendiente:'No hay pedidos pendientes de cobro', rechazado:'No hay pedidos rechazados',
     cancelado:'No hay pedidos cancelados', todos:'Aún no te llegan pedidos'
-  }[mdiFilter] || 'No hay pedidos';
+  }[filtro] || 'No hay pedidos';
 
   const card = o => {
     const st = mdiStage(o);
@@ -15625,7 +15625,7 @@ function mdiSectionHTML(){
     </div>
 
     <div class="mdi-tabs" role="tablist">
-      ${tabs.map(t => `<button role="tab" class="${mdiFilter === t.id ? 'active' : ''}" onclick="mdiSetFilter('${t.id}')">${t.label}${t.n ? `<span>${t.n}</span>` : ''}</button>`).join('')}
+      ${tabs.map(t => `<button role="tab" class="${filtro === t.id ? 'active' : ''}" onclick="mdiSetFilter('${t.id}')">${t.label}${t.n ? `<span>${t.n}</span>` : ''}</button>`).join('')}
     </div>
 
     ${list.length ? `<div class="mdi-list">${list.map(card).join('')}</div>` : `
@@ -15816,7 +15816,9 @@ function mdiDetailHTML(o){
     ${o.status === 'confirmado' && !o.pendingNext ? `
       <div class="mdi-banner ${mdiIsPaid(o) ? 'ok' : 'warn'}">${icon(mdiIsPaid(o) ? 'check' : 'clock')}<span><b>${mdiIsPaid(o) ? 'Pedido cobrado' : 'Aceptado · falta cobrarlo'}</b>${mdiIsPaid(o) ? (sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.')
         : (o.notifiedAt ? 'Le avisaste al cliente ' + mdiAgo(o.notifiedAt) + '. ' : 'Avísale al cliente por WhatsApp que su pedido ya está confirmado. ') + 'Cuando te pague, toca “Cobrar”: hasta entonces no cuenta como venta.'}</span></div>
-      <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>` : ''}
+      ${mdiIsPaid(o)
+        ? `<button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>`
+        : `<button class="btn primary block mdi-notify" onclick="mdiCharge('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(mdiOrderTotal(o))}</button>`}` : ''}
     ${o.status === 'rechazado' ? `
       <div class="mdi-banner no">${icon('close')}<span><b>Pedido rechazado</b>${escapeHtml(o.rejectReason || 'Sin motivo')}${o.rejectNote ? ' · ' + escapeHtml(o.rejectNote) : ''}</span></div>` : ''}
     ${o.status === 'cancelado' ? `
@@ -15850,7 +15852,6 @@ function mdiDetailHTML(o){
     ` : `
       <div class="mdi-after">
         ${o.pendingNext ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiNext('${o.id}')">Siguiente ${icon('chevronRight')}</button>` : ''}
-        ${o.status === 'confirmado' && !o.pendingNext && !mdiIsPaid(o) ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiCharge('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(mdiOrderTotal(o))}</button>` : ''}
         ${o.status === 'confirmado' ? '' : `<button class="btn whatsapp" style="${o.pendingNext ? 'flex:1 1 100%;' : ''}" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} Avisar al cliente</button>`}
         ${sale && canSeeSale(sale) ? `<button class="btn ghost" onclick="showTicket(DB.getSales().find(s => s.id === '${sale.id}'))">${icon('receipt')} Ver ticket</button>` : ''}
         ${o.status === 'confirmado' && !o.pendingNext && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
