@@ -4171,6 +4171,38 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
   .mdi2-chev svg{ width:14px; height:14px; }
   .mdi2-right .mdi-pill{ align-self:center; }
   @media (max-width:380px){ .mdi2-right{ width:104px; } .mdi2-btn{ font-size:11.5px; padding:8px 4px; } }
+
+  /* ---------- Pedidos entrantes · versión sencilla ---------- */
+  .mdn-steps{ display:flex; align-items:center; justify-content:center; gap:8px; margin:2px 0 14px; font-size:12.5px; font-weight:700; color:var(--ink-soft); }
+  .mdn-steps span{ display:inline-flex; align-items:center; gap:6px; }
+  .mdn-steps i{ font-style:normal; width:20px; height:20px; border-radius:50%; background:var(--ink); color:#fff; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; }
+  .mdn-steps em{ width:22px; height:2px; background:var(--border); border-radius:2px; }
+  .mdn-list{ display:grid; grid-template-columns:minmax(0,1fr); gap:12px; }
+  @media (min-width:700px){ .mdn-list{ grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); } }
+  .mdn-card{ background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:14px; box-shadow:var(--shadow-card); display:flex; flex-direction:column; gap:10px; cursor:pointer; min-width:0; transition:transform .12s ease; }
+  .mdn-card:active{ transform:scale(.99); }
+  .mdn-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .mdn-who{ min-width:0; } .mdn-who b{ display:block; font-size:16px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mdn-who small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-top:2px; }
+  .mdn-total{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:none; } .mdn-total b{ font-size:18px; font-weight:800; }
+  .mdn-state{ font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; background:var(--surface-alt); color:var(--ink-soft); }
+  .mdn-state.ok{ background:#D9F3E2; color:#15803D; } .mdn-state.no{ background:#FBD9D5; color:#C23B2E; }
+  .mdn-items{ font-size:13.5px; font-weight:600; color:var(--ink); line-height:1.4; }
+  .mdn-tags{ display:flex; flex-wrap:wrap; gap:6px; }
+  .mdn-tag{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:999px; background:var(--surface-alt); color:var(--ink-soft); }
+  .mdn-tag svg{ width:13px; height:13px; } .mdn-tag.del{ background:#E3EEFF; color:#2457B5; } .mdn-tag.mod{ background:var(--accent-soft); color:#8A6000; }
+  .mdn-acts{ display:grid; grid-template-columns:1fr 1.4fr; gap:8px; margin-top:2px; }
+  .mdn-btn{ display:flex; align-items:center; justify-content:center; gap:7px; border:none; border-radius:12px; padding:13px 8px; font-family:inherit; font-size:15px; font-weight:800; }
+  .mdn-btn svg{ width:17px; height:17px; flex:none; }
+  .mdn-btn.ok{ background:#16A34A; color:#fff; } .mdn-btn.no{ background:#FCE3E0; color:#C23B2E; } .mdn-btn.wa{ background:#DCF8E6; color:#15803D; }
+  .mdn-btn:active{ transform:scale(.97); }
+  .mdn-done-toggle{ width:100%; display:flex; align-items:center; gap:10px; margin:22px 0 12px; padding:13px 14px; background:var(--surface); border:1px solid var(--border); border-radius:14px; font-family:inherit; font-size:14px; font-weight:700; color:var(--ink); }
+  .mdn-done-toggle > span:first-child{ flex:1; text-align:left; }
+  .mdn-done-toggle b{ background:var(--surface-alt); border-radius:999px; padding:2px 9px; font-size:12px; }
+  .mdn-chev svg{ width:16px; height:16px; transition:transform .2s ease; } .mdn-chev.up svg{ transform:rotate(180deg); }
+  .mdn-done{ text-align:center; padding:6px 4px 4px; } .mdn-done h2{ margin:10px 0 6px; font-size:20px; } .mdn-done p{ margin:0 0 18px; color:var(--ink-soft); font-size:14px; line-height:1.45; }
+  .mdn-done-ico{ width:56px; height:56px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; } .mdn-done-ico svg{ width:28px; height:28px; }
+  .mdn-done-ico.ok{ background:#16A34A; color:#fff; } .mdn-done-ico.no{ background:#FBD9D5; color:#C23B2E; }
 </style>
 </head>
 <body>
@@ -15271,8 +15303,8 @@ function mdiRank(o){
 }
 const MDI_CODE_ABC = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const MDI_STATUS = {
-  nuevo:      { label:'Nuevo',      cls:'nuevo' },
-  confirmado: { label:'Confirmado', cls:'ok' },
+  nuevo:      { label:'Por aceptar', cls:'nuevo' },
+  confirmado: { label:'Aceptado',    cls:'ok' },
   rechazado:  { label:'Rechazado',  cls:'no' },
   cancelado:  { label:'Cancelado',  cls:'cancel' },
 };
@@ -15280,13 +15312,13 @@ const MDI_STATUS = {
    Pendiente de pago = ya lo confirmaste pero el cliente aún no paga (no cuenta como venta).
    Finalizado = confirmaste el pago del cliente (ya es venta). */
 function mdiStage(o){
-  /* Aceptado o rechazado, pero todavía falta avisar al cliente y tocar "Siguiente": sigue en Nuevo */
-  if(o && o.pendingNext && (o.status === 'confirmado' || o.status === 'rechazado')){
-    return o.status === 'confirmado' ? { id:'nuevo', label:'Aceptado · avisa al cliente', cls:'ok' } : { id:'nuevo', label:'Rechazado · avisa al cliente', cls:'no' };
-  }
-  if(o && o.status === 'confirmado') return mdiIsPaid(o) ? { id:'finalizado', label:'Finalizado', cls:'ok' } : { id:'pendiente', label:'Pendiente de pago', cls:'pend' };
-  return Object.assign({ id:(o && o.status) || 'nuevo' }, MDI_STATUS[o && o.status] || MDI_STATUS.nuevo);
+  if(o && o.status === 'confirmado') return mdiIsPaid(o) ? { id:'finalizado', label:'Cobrado', cls:'ok' } : { id:'pendiente', label:'Por cobrar', cls:'pend' };
+  if(o && o.status === 'rechazado') return { id:'rechazado', label:'Rechazado', cls:'no' };
+  if(o && o.status === 'cancelado') return { id:'cancelado', label:'Cancelado', cls:'cancel' };
+  return { id:'nuevo', label:'Por aceptar', cls:'nuevo' };
 }
+/* Pedidos viejos que quedaron a medias en el paso "Siguiente": se acomodan solos */
+function mdiMigrate(){ const l = MDI.all(); if(!l.some(o => o.pendingNext)) return; l.forEach(o => { delete o.pendingNext; }); MDI.save(l); }
 const MDI_REJECT_REASONS = ['Se acabó un producto', 'Estamos cerrados', 'No llegamos a esa zona', 'Pedido duplicado', 'Otro motivo'];
 
 const MDI = {
@@ -15468,169 +15500,123 @@ function mdiPaintBadge(){
 let mdiFilter = 'nuevo';
 function mdiSetFilter(f){ mdiFilter = f; vibrate(8); render(); const s = document.getElementById('mdiSection'); if(s) s.scrollIntoView({ block:'start' }); }
 
-function mdiOpenFilters(){
-  const c = mdiCounts();
-  const chip = (id, label, n, danger) => `<button class="filter-chip ${mdiFilter === id ? 'active' + (danger ? ' is-danger' : '') : ''}" onclick="mdiPickFilter('${id}')">${label}${n ? ' · ' + n : ''}</button>`;
-  openModal(`
-    <div id="mdiFilterModal">
-      <div class="sheet-header">
-        <h2>Filtros</h2>
-        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
-      </div>
-      <div class="filter-modal-group">
-        <div class="filter-modal-label"><span class="fml-icon">${icon('statusCircle')}</span>Ver pedidos</div>
-        <div class="filter-pill-row">
-          ${chip('todos', 'Todos', c.total, false)}
-          ${chip('rechazado', 'Rechazados', c.rechazado, true)}
-          ${chip('cancelado', 'Cancelados', c.cancelado, true)}
-        </div>
-      </div>
-      <button class="btn dark block" onclick="closeModal()">Ver resultados</button>
-    </div>
-  `, { dismissible:true });
-}
-function mdiPickFilter(f){ closeModal(); mdiSetFilter(f); }
+/* =========================================================
+   PEDIDOS ENTRANTES · versión sencilla
+   1) Por aceptar  →  2) Por cobrar  →  3) Terminados
+========================================================= */
+let mdiShowDone = false;
+function mdiToggleDone(){ mdiShowDone = !mdiShowDone; vibrate(8); render(); }
 
-function mdiSectionHTML(){
-  if(mdiFilter === 'confirmado') mdiFilter = 'pendiente';
-  const all = MDI.all().slice().sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
-  const c = mdiCounts();
-  const list = mdiFilter === 'todos' ? all : all.filter(o => mdiStage(o).id === mdiFilter);
-  const tabs = [
-    { id:'nuevo', label:'Nuevo', n:c.nuevo },
-    { id:'pendiente', label:'Pendiente de pago', n:c.pendiente },
-    { id:'finalizado', label:'Finalizado', n:c.finalizado },
-  ];
-  const filtroActivo = ['todos', 'rechazado', 'cancelado'].indexOf(mdiFilter) >= 0;
-  const filtroNombre = { todos:'Todos', rechazado:'Rechazados', cancelado:'Cancelados' }[mdiFilter];
-  const hoy = all.filter(o => isSameDay(new Date(o.createdAt), new Date()));
-  const porCobrar = all.filter(o => mdiStage(o).id === 'pendiente');
-  const empty = {
-    nuevo: ['No hay pedidos por revisar', 'Cuando un cliente mande su pedido desde tu Menú Digital, aparecerá aquí para que lo confirmes o lo rechaces.'],
-    pendiente: ['No hay pedidos pendientes de pago', 'Los pedidos que confirmes esperan aquí a que el cliente pague. Cuando pague, abre el pedido y toca “Confirmar pago del cliente”.'],
-    finalizado: ['Aún no hay pedidos finalizados', 'Aquí quedan los pedidos cuyo pago ya confirmaste. Ya cuentan como venta.'],
-    rechazado: ['Sin pedidos rechazados', 'Aquí verás los pedidos que no pudiste surtir.'],
-    cancelado: ['Sin pedidos cancelados', 'Aquí verás los pedidos confirmados que después cancelaste.'],
-    todos: ['Aún no llegan pedidos', 'Comparte el link de tu Menú Digital con tus clientes para empezar a recibir pedidos.'],
-  }[mdiFilter];
-
-  return `
-    <div class="section-title mdi-title" id="mdiSection">Pedidos entrantes ${c.nuevo ? `<span class="mdi-count">${c.nuevo} nuevo${c.nuevo === 1 ? '' : 's'}</span>` : ''}</div>
-    <p class="md-hint" style="margin:-6px 2px 12px;">Los pedidos de tu Menú Digital llegan aquí solos, desde el celular de cualquier cliente. Tócalos para revisarlos, cambiar algo si hace falta y confirmarlos o rechazarlos.</p>
-    ${typeof mdiCloudStatusHTML === 'function' ? mdiCloudStatusHTML() : ''}
-
-    <div class="mdi-today">
-      <div><span>Hoy</span><b>${hoy.length}</b><small>pedido${hoy.length === 1 ? '' : 's'}</small></div>
-      <div><span>Por revisar</span><b class="${c.nuevo ? 'warn' : ''}">${c.nuevo}</b><small>esperan respuesta</small></div>
-      <div><span>Pendiente de pago</span><b class="${porCobrar.length ? 'warn' : ''}">${formatMoney(porCobrar.reduce((a, o) => a + mdiOrderTotal(o), 0))}</b><small>${porCobrar.length} pedido${porCobrar.length === 1 ? '' : 's'}</small></div>
-    </div>
-
-    <div class="mdi-tabs" role="tablist">
-      ${tabs.map(t => `<button role="tab" aria-selected="${mdiFilter === t.id}" class="${mdiFilter === t.id ? 'active' : ''}" onclick="mdiSetFilter('${t.id}')">${t.label}${t.n ? `<span>${t.n}</span>` : ''}</button>`).join('')}
-    </div>
-    <div class="filters-trigger-row" style="margin-bottom:14px;">
-      <button class="filters-trigger-btn" onclick="mdiOpenFilters()">
-        <span class="fti-icon">${icon('sliders')}</span>
-        <span>Filtros</span>
-        ${filtroActivo ? `<span class="filters-trigger-badge">1</span>` : ''}
-      </button>
-      ${filtroActivo ? `<span class="mdi-viewing">Viendo: <b>${filtroNombre}</b></span><button class="filters-clear-btn" onclick="mdiSetFilter('nuevo')">Limpiar filtros</button>` : ''}
-    </div>
-
-    ${list.length ? mdiGroupsHTML(list) : `
-      <div class="mdi-empty">
-        <span class="mdi-empty-ico">${icon('inbox')}</span>
-        <b>${empty[0]}</b>
-        <span>${empty[1]}</span>
-      </div>`}
-
-    <div class="mdi-foot-actions">
-      <button class="btn ghost" onclick="statsOrigin='menu'; statsSel=null; goTo('stats');">${icon('chart')} Estadísticas del menú</button>
-    </div>
-    <p class="md-hint">Por WhatsApp el cliente solo te manda su número de pedido (MD-…). Búscalo aquí para ver lo que pidió, confirmarlo y avisarle el total.</p>
-  `;
-}
 function mdiWhen(iso){
   const d = new Date(iso); if(isNaN(d)) return '';
   const hoy = new Date(); const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
   const dia = isSameDay(d, hoy) ? 'Hoy' : isSameDay(d, ayer) ? 'Ayer' : formatDateShort(iso);
   return dia + ', ' + d.toLocaleTimeString('es-MX', { hour:'numeric', minute:'2-digit' });
 }
-/* Confirmar desde la lista: si falta algo (envío, producto, etc.) abre el pedido para completarlo */
+/* Aceptar desde la lista: si falta algo (envío, producto…) abre el pedido para completarlo */
 function mdiQuickConfirm(id){
   const o = MDI.get(id); if(!o || o.status !== 'nuevo') return;
   if(!mdiCanConfirm(o)){
-    toast('Revisa el pedido antes de confirmar', { icon:icon('alert'), subtitle:mdiIsDelivery(o) && !mdiHasFee(o) ? 'Falta el costo de envío' : 'Hay productos por elegir' });
+    toast('Revisa el pedido antes de aceptarlo', { icon:icon('alert'), subtitle:mdiIsDelivery(o) && !mdiHasFee(o) ? 'Falta escribir el costo de envío' : 'Hay productos por elegir' });
     mdiOpen(id); return;
   }
   mdiConfirm(id);
 }
+/* Después de aceptar o rechazar: una hoja corta para avisarle al cliente */
+function mdiAfterDecision(id){
+  const o = MDI.get(id); if(!o) return;
+  const ok = o.status === 'confirmado';
+  const nombre = (((o.customer && o.customer.name) || '').trim().split(/\s+/)[0]) || 'el cliente';
+  mdiUI = { id:null, compare:false, text:'', result:null };
+  openModal(`
+    <div class="mdn-done">
+      <span class="mdn-done-ico ${ok ? 'ok' : 'no'}">${icon(ok ? 'check' : 'close')}</span>
+      <h2>${ok ? 'Pedido aceptado' : 'Pedido rechazado'}</h2>
+      <p>${ok ? 'Ahora lo verás en <b>Por cobrar</b>. Avísale a ' + escapeHtml(nombre) + ' que ya lo estás preparando.' : 'Avísale a ' + escapeHtml(nombre) + ' para que sepa que no se pudo surtir.'}</p>
+      <button class="btn whatsapp block" onclick="mdiNotify('${id}')">${icon('whatsapp')} Avisar a ${escapeHtml(nombre)} por WhatsApp</button>
+      <button class="btn ghost block" style="margin-top:8px;" onclick="mdiDoneClose()">Listo</button>
+    </div>
+  `, { dismissible:true });
+  mdiPaintBadge();
+  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
+}
+function mdiDoneClose(){ closeModal(); if(currentView === 'menu' || currentView === 'home') render(); }
+
+function mdiItemsText(o){
+  const ls = o.lines || [];
+  return ls.slice(0, 3).map(l => escapeHtml(((l.sizeLabel || unitOf(l.unit).plain) ? fmtNum(l.qty) + '× ' : fmtQty(l.qty, l.unit) + ' ') + l.name.replace(/\s*\(EJEMPLO[^)]*\)/, ''))).join(' · ') + (ls.length > 3 ? ' · +' + (ls.length - 3) + ' más' : '');
+}
 function mdiCardHTML(o){
-  const total = mdiOrderTotal(o);
   const st = mdiStage(o);
-  const lines = o.lines || [];
-  const items = lines.slice(0, 3).map(l => `<span class="mdi2-item"><b>${escapeHtml(mdiLineLabel(l).replace(/\s*\(EJEMPLO[^)]*\)/, ''))}</b><small>${escapeHtml(mdiQtyText(l))}</small></span>`).join('')
-    + (lines.length > 3 ? `<span class="mdi2-more">+${lines.length - 3} más</span>` : '');
+  const c = o.customer || {};
+  const pm = c.payment ? paymentOf(c.payment) : null;
+  const tags = [];
+  if(mdiIsDelivery(o)) tags.push(`<span class="mdn-tag del">${icon('truck')} A domicilio</span>`);
+  else if(c.service === 'llevar') tags.push(`<span class="mdn-tag">${icon('shop')} Pasa a recoger</span>`);
+  if(pm) tags.push(`<span class="mdn-tag">${icon(pm.ico)} ${pm.name}</span>`);
+  if(mdiIsModified(o)) tags.push(`<span class="mdn-tag mod">Modificado</span>`);
   const stop = 'event.stopPropagation(); ';
   let acts = '';
-  if(o.pendingNext){
-    acts = `<button type="button" class="mdi2-btn ok" onclick="${stop}mdiNext('${o.id}')">${icon('chevronRight')} Siguiente</button>
-            <button type="button" class="mdi2-btn wa" onclick="${stop}mdiNotify('${o.id}')">${icon('whatsapp')} Avisar</button>`;
-  }else if(o.status === 'nuevo'){
-    acts = `<button type="button" class="mdi2-btn ok" onclick="${stop}mdiQuickConfirm('${o.id}')">${icon('check')} Confirmar</button>
-            <button type="button" class="mdi2-btn no" onclick="${stop}mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>`;
-  }else if(st.id === 'pendiente'){
-    acts = `<button type="button" class="mdi2-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('card')} Confirmar pago</button>
-            <button type="button" class="mdi2-btn ghost" onclick="${stop}mdiOpen('${o.id}')">${icon('eye')} Información</button>`;
-  }else{
-    acts = `<span class="mdi-pill ${st.cls}">${st.label}</span>`;
-  }
+  if(st.id === 'nuevo') acts = `<button type="button" class="mdn-btn no" onclick="${stop}mdiAskReject('${o.id}')">Rechazar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiQuickConfirm('${o.id}')">${icon('check')} Aceptar</button>`;
+  else if(st.id === 'pendiente') acts = `<button type="button" class="mdn-btn wa" onclick="${stop}mdiNotify('${o.id}')">${icon('whatsapp')} Avisar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('cash')} Cobrar</button>`;
+  const badge = (st.id === 'nuevo' || st.id === 'pendiente') ? '' : `<span class="mdn-state ${st.cls}">${st.label}</span>`;
   return `
-    <div class="mdi2-card st-${st.cls}" role="button" tabindex="0" onclick="mdiOpen('${o.id}')">
-      <div class="mdi2-left">
-        <b class="mdi2-code">${escapeHtml(o.code)}</b>
-        <span class="mdi2-when">${mdiWhen(o.receivedAt || o.createdAt)}</span>
-        <span class="mdi2-who">${icon('person')}<span>${escapeHtml((o.customer && o.customer.name) || 'Cliente sin nombre')}</span></span>
-        ${mdiIsDelivery(o) ? `<span class="mdi-pill del">${icon('truck')} Domicilio</span>` : ''}
+    <div class="mdn-card" role="button" tabindex="0" onclick="mdiOpen('${o.id}')">
+      <div class="mdn-row">
+        <div class="mdn-who"><b>${escapeHtml(c.name || 'Cliente sin nombre')}</b><small>${escapeHtml(o.code)} · ${mdiAgo(o.receivedAt || o.createdAt)}</small></div>
+        <div class="mdn-total"><b>${formatMoney(mdiOrderTotal(o))}</b>${badge}</div>
       </div>
-      <div class="mdi2-mid">
-        <div class="mdi2-items">${items || '—'}</div>
-        <span class="mdi2-total">Total: <b>${formatMoney(total)}</b></span>
-        ${o.status === 'rechazado' && o.rejectReason ? `<small class="mdi2-reason">${escapeHtml(o.rejectReason)}</small>` : ''}
-      </div>
-      <div class="mdi2-right">${acts}</div>
-      <span class="mdi2-chev">${icon('chevronRight')}</span>
+      <div class="mdn-items">${mdiItemsText(o) || '—'}</div>
+      ${tags.length ? `<div class="mdn-tags">${tags.join('')}</div>` : ''}
+      ${acts ? `<div class="mdn-acts">${acts}</div>` : ''}
     </div>`;
 }
-/* Lista agrupada en secciones, como las pantallas de pedidos de las apps de entrega */
-function mdiGroupsHTML(list){
-  const out = [];
-  const add = (ico, cls, title, sub, items) => {
-    if(!items.length) return;
-    out.push(`
-      <div class="mdi2-group">
-        <span class="mdi2-gico ${cls}">${icon(ico)}</span>
-        <div class="mdi2-gtxt"><b>${title}</b><small>${sub}</small></div>
-        <span class="mdi2-gcount ${cls}">${items.length}</span>
-      </div>
-      <div class="mdi-list">${items.map(mdiCardHTML).join('')}</div>`);
-  };
-  if(mdiFilter === 'nuevo'){
-    add('clock', 'gold', 'Pendientes', 'Revisa y confirma o rechaza los pedidos.', list.filter(o => o.status === 'nuevo'));
-    add('check', 'green', 'Aceptados', 'Avisa al cliente y toca “Siguiente”.', list.filter(o => o.status === 'confirmado'));
-    add('close', 'red', 'Rechazados', 'Avisa al cliente y toca “Siguiente”.', list.filter(o => o.status === 'rechazado'));
-  }else if(mdiFilter === 'pendiente'){
-    add('card', 'gold', 'Pendientes de pago', 'Contacta al cliente y confirma el pago.', list);
-  }else if(mdiFilter === 'finalizado'){
-    add('check', 'green', 'Finalizados', 'Pedidos ya cobrados.', list);
-  }else if(mdiFilter === 'rechazado'){
-    add('close', 'red', 'Rechazados', 'Pedidos que no pudiste surtir.', list);
-  }else if(mdiFilter === 'cancelado'){
-    add('close', 'red', 'Cancelados', 'Pedidos que cancelaste después de confirmarlos.', list);
-  }else{
-    add('inbox', 'blue', 'Todos los pedidos', 'Los más recientes primero.', list);
-  }
-  return out.join('');
+
+function mdiSectionHTML(){
+  mdiMigrate();
+  const all = MDI.all().slice().sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
+  const por = all.filter(o => mdiStage(o).id === 'nuevo');
+  const cobrar = all.filter(o => mdiStage(o).id === 'pendiente');
+  const done = all.filter(o => ['finalizado', 'rechazado', 'cancelado'].indexOf(mdiStage(o).id) >= 0);
+  const porCobrarTotal = cobrar.reduce((a, o) => a + mdiOrderTotal(o), 0);
+  const group = (ico, cls, title, sub, items) => `
+    <div class="mdi2-group">
+      <span class="mdi2-gico ${cls}">${icon(ico)}</span>
+      <div class="mdi2-gtxt"><b>${title}</b><small>${sub}</small></div>
+      <span class="mdi2-gcount ${cls}">${items.length}</span>
+    </div>
+    <div class="mdn-list">${items.map(mdiCardHTML).join('')}</div>`;
+
+  return `
+    <div class="section-title mdi-title" id="mdiSection">Pedidos de tus clientes ${por.length ? `<span class="mdi-count">${por.length} por aceptar</span>` : ''}</div>
+    ${typeof mdiCloudStatusHTML === 'function' ? mdiCloudStatusHTML() : ''}
+
+    <div class="mdn-steps" aria-label="Cómo funciona">
+      <span><i>1</i>Aceptas</span><em></em><span><i>2</i>Cobras</span><em></em><span><i>3</i>Listo</span>
+    </div>
+
+    ${por.length ? group('clock', 'gold', 'Por aceptar', 'Llegaron de tu menú. Acéptalos o recházalos.', por) : ''}
+    ${cobrar.length ? group('cash', 'green', 'Por cobrar', 'Ya los aceptaste · Total ' + formatMoney(porCobrarTotal) + '. Cuando el cliente pague, toca Cobrar.', cobrar) : ''}
+
+    ${!por.length && !cobrar.length ? `
+      <div class="mdi-empty">
+        <span class="mdi-empty-ico">${icon('inbox')}</span>
+        <b>No hay pedidos por atender</b>
+        <span>Cuando un cliente pida desde tu Menú Digital, aparecerá aquí para que lo aceptes.</span>
+      </div>` : ''}
+
+    ${done.length ? `
+      <button type="button" class="mdn-done-toggle" onclick="mdiToggleDone()" aria-expanded="${mdiShowDone}">
+        <span>${mdiShowDone ? 'Ocultar' : 'Ver'} pedidos terminados</span><b>${done.length}</b>
+        <span class="mdn-chev ${mdiShowDone ? 'up' : ''}">${icon('chevronDown')}</span>
+      </button>
+      ${mdiShowDone ? `<div class="mdn-list">${done.slice(0, 40).map(mdiCardHTML).join('')}</div>${done.length > 40 ? `<p class="md-hint">Se muestran los 40 más recientes.</p>` : ''}` : ''}` : ''}
+
+    <div class="mdi-foot-actions">
+      <button class="btn ghost" onclick="statsOrigin='menu'; statsSel=null; goTo('stats');">${icon('chart')} Estadísticas del menú</button>
+    </div>
+    <p class="md-hint">Por WhatsApp el cliente solo te manda su folio (MD-…). Búscalo aquí para ver lo que pidió.</p>
+  `;
 }
 
 /* =========================================================
@@ -15638,6 +15624,7 @@ function mdiGroupsHTML(list){
 ========================================================= */
 let mdiUI = { id:null, compare:false, text:'', result:null };
 function mdiOpen(id, keepScroll){
+  mdiMigrate();
   const o = MDI.get(id);
   if(!o){ toast('Ese pedido ya no existe'); return; }
   if(mdiUI.id !== id) mdiUI = { id, compare:false, text:'', result:null };
@@ -15744,7 +15731,7 @@ function mdiPaintTotals(id){
   const o = MDI.get(id); if(!o) return;
   const tw = document.getElementById('mdiTotals'); if(tw) tw.outerHTML = mdiTotalsHTML(o);
   const btn = document.getElementById('mdiConfirmBtn');
-  if(btn){ btn.innerHTML = icon('check') + ' Confirmar · ' + formatMoney(mdiOrderTotal(o)); btn.disabled = !mdiCanConfirm(o); }
+  if(btn){ btn.innerHTML = icon('check') + ' Aceptar · ' + formatMoney(mdiOrderTotal(o)); btn.disabled = !mdiCanConfirm(o); }
   const need = document.getElementById('mdiFeeNeed'); if(need) need.hidden = mdiHasFee(o);
 }
 
@@ -15804,8 +15791,8 @@ function mdiDetailHTML(o){
       <div class="mdi-banner ok">${icon('check')}<span><b>Pedido aceptado</b>${o.notifiedAt ? 'Ya le avisaste al cliente. Toca “Siguiente” para pasarlo a Pendiente de pago.' : 'Avísale al cliente por WhatsApp y luego toca “Siguiente” para pasarlo a Pendiente de pago.'}</span></div>
       <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que lo aceptaste'}</button>` : ''}
     ${o.status === 'confirmado' && !o.pendingNext ? `
-      <div class="mdi-banner ${mdiIsPaid(o) ? 'ok' : 'warn'}">${icon(mdiIsPaid(o) ? 'check' : 'clock')}<span><b>${mdiIsPaid(o) ? 'Pedido finalizado' : 'Pedido confirmado · pendiente de pago'}</b>${mdiIsPaid(o) ? (sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.')
-        : (o.notifiedAt ? 'Le avisaste al cliente ' + mdiAgo(o.notifiedAt) + '. ' : 'Avísale al cliente por WhatsApp que su pedido ya está confirmado. ') + 'Cuando te pague, toca “Confirmar pago del cliente”: hasta entonces no cuenta como venta.'}</span></div>
+      <div class="mdi-banner ${mdiIsPaid(o) ? 'ok' : 'warn'}">${icon(mdiIsPaid(o) ? 'check' : 'clock')}<span><b>${mdiIsPaid(o) ? 'Pedido cobrado' : 'Aceptado · falta cobrarlo'}</b>${mdiIsPaid(o) ? (sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.')
+        : (o.notifiedAt ? 'Le avisaste al cliente ' + mdiAgo(o.notifiedAt) + '. ' : 'Avísale al cliente por WhatsApp que su pedido ya está confirmado. ') + 'Cuando te pague, toca “Cobrar”: hasta entonces no cuenta como venta.'}</span></div>
       <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>` : ''}
     ${o.status === 'rechazado' ? `
       <div class="mdi-banner no">${icon('close')}<span><b>Pedido rechazado</b>${escapeHtml(o.rejectReason || 'Sin motivo')}${o.rejectNote ? ' · ' + escapeHtml(o.rejectNote) : ''}</span></div>` : ''}
@@ -15835,12 +15822,12 @@ function mdiDetailHTML(o){
       ${mdiIsDelivery(o) ? `<div class="mdi-banner warn" id="mdiFeeNeed" ${mdiHasFee(o) ? 'hidden' : ''}>${icon('truck')}<span><b>Falta el costo de envío</b>Escríbelo arriba para poder confirmar. Si no cobras envío, pon 0.</span></div>` : ''}
       <div class="mdi-decide">
         <button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>
-        <button class="btn mdi-confirm" id="mdiConfirmBtn" onclick="mdiConfirm('${o.id}')" ${mdiCanConfirm(o) ? '' : 'disabled'}>${icon('check')} Confirmar pedido · ${formatMoney(mdiOrderTotal(o))}</button>
+        <button class="btn mdi-confirm" id="mdiConfirmBtn" onclick="mdiConfirm('${o.id}')" ${mdiCanConfirm(o) ? '' : 'disabled'}>${icon('check')} Aceptar pedido · ${formatMoney(mdiOrderTotal(o))}</button>
       </div>
     ` : `
       <div class="mdi-after">
         ${o.pendingNext ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiNext('${o.id}')">Siguiente ${icon('chevronRight')}</button>` : ''}
-        ${o.status === 'confirmado' && !o.pendingNext && !mdiIsPaid(o) ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiCharge('${o.id}')">${icon('check')} Confirmar pago del cliente · ${formatMoney(mdiOrderTotal(o))}</button>` : ''}
+        ${o.status === 'confirmado' && !o.pendingNext && !mdiIsPaid(o) ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiCharge('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(mdiOrderTotal(o))}</button>` : ''}
         ${o.status === 'confirmado' ? '' : `<button class="btn whatsapp" style="${o.pendingNext ? 'flex:1 1 100%;' : ''}" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} Avisar al cliente</button>`}
         ${sale && canSeeSale(sale) ? `<button class="btn ghost" onclick="showTicket(DB.getSales().find(s => s.id === '${sale.id}'))">${icon('receipt')} Ver ticket</button>` : ''}
         ${o.status === 'confirmado' && !o.pendingNext && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
@@ -16010,19 +15997,13 @@ function mdiConfirm(id){
   let ok = false;
   MDI.update(id, x => {
     if(x.status !== 'nuevo') return;          /* otra pestaña ya lo decidió */
-    x.status = 'confirmado'; x.pendingNext = true; delete x.notifiedAt; x.decidedAt = new Date().toISOString(); x.decidedBy = me ? me.name : '';
+    x.status = 'confirmado'; delete x.pendingNext; delete x.notifiedAt; x.decidedAt = new Date().toISOString(); x.decidedBy = me ? me.name : '';
     ok = true;
   });
   if(!ok) return;
   shieldClicks();
   vibrate([15, 60, 15]);
-  toast('Pedido aceptado', { icon:icon('check'), variant:'toast-success', subtitle:'Avísale al cliente y toca “Siguiente”', duration:2600 });
-  mdiUI = { id, compare:false, text:'', result:null };
-  mdiOpen(id);
-  /* Arriba queda el aviso y el botón para avisarle al cliente */
-  const sh = document.querySelector('#modal-layer .modal-sheet'); if(sh) sh.scrollTop = 0;
-  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
-  mdiPaintBadge();
+  mdiAfterDecision(id);
 }
 
 /* ---------- Cobrar un pedido confirmado ----------
@@ -16159,13 +16140,9 @@ function mdiReject(id){
   const o0 = MDI.get(id);
   if(!o0 || o0.status !== 'nuevo') return;   /* ya confirmado/cobrado (p. ej. en otra pestaña): no se rechaza */
   const note = ((document.getElementById('mdiRejectNote') || {}).value || '').trim().slice(0, 200);
-  MDI.update(id, o => { o.status = 'rechazado'; o.pendingNext = true; delete o.notifiedAt; o.rejectReason = mdiRejectReason; o.rejectNote = note; o.decidedAt = new Date().toISOString(); });
+  MDI.update(id, o => { o.status = 'rechazado'; delete o.pendingNext; delete o.notifiedAt; o.rejectReason = mdiRejectReason; o.rejectNote = note; o.decidedAt = new Date().toISOString(); });
   shieldClicks();
-  toast('Pedido rechazado', { subtitle:'Avísale al cliente y toca “Siguiente”' });
-  mdiUI = { id, compare:false, text:'', result:null };
-  mdiOpen(id);
-  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
-  mdiPaintBadge();
+  mdiAfterDecision(id);
 }
 function mdiReopen(id){
   const o0 = MDI.get(id);
@@ -16623,7 +16600,7 @@ function mdiUnpaidAlertHTML(){
   const tot = list.reduce((a, o) => a + mdiOrderTotal(o), 0);
   return `<button type="button" class="alert-card" style="margin:4px 0 16px; width:100%; text-align:left;" onclick="mdiFilter='pendiente'; goTo('menu')">
     <span class="alert-ico">${icon('alert')}</span>
-    <span class="alert-txt"><span class="alert-title">${formatMoney(tot)} pendientes de pago</span><span class="alert-sub">${list.length} pedido${list.length === 1 ? '' : 's'} del Menú Digital. Cuenta como venta cuando confirmas el pago del cliente.</span></span>
+    <span class="alert-txt"><span class="alert-title">${formatMoney(tot)} por cobrar</span><span class="alert-sub">${list.length} pedido${list.length === 1 ? '' : 's'} del Menú Digital. Cuenta como venta cuando confirmas el pago del cliente.</span></span>
     <span class="acc-chev">${icon('chevronRight')}</span>
   </button>`;
 }
