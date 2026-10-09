@@ -15557,8 +15557,8 @@ function mdiCardHTML(o){
   if(mdiIsModified(o)) tags.push(`<span class="mdn-tag mod">Modificado</span>`);
   const stop = 'event.stopPropagation(); ';
   let acts = '';
-  if(st.id === 'nuevo') acts = `<button type="button" class="mdn-btn no" onclick="${stop}mdiAskReject('${o.id}')">Rechazar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiQuickConfirm('${o.id}')">${icon('check')} Aceptar</button>`;
-  else if(st.id === 'pendiente') acts = `<button type="button" class="mdn-btn wa" onclick="${stop}mdiNotify('${o.id}')">${icon('whatsapp')} Avisar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('cash')} Cobrar</button>`;
+  /* Pedidos nuevos: sin botones en la tarjeta (se revisan al abrirla). */
+  if(st.id === 'pendiente') acts = `<button type="button" class="mdn-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('cash')} Cobrar</button>`;
   const badge = (st.id === 'nuevo' || st.id === 'pendiente') ? '' : `<span class="mdn-state ${st.cls}">${st.label}</span>`;
   return `
     <div class="mdn-card" role="button" tabindex="0" onclick="mdiOpen('${o.id}')">
