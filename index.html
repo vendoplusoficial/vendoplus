@@ -4110,6 +4110,9 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
   /* Pedido pendiente de pago */
   .mdi-pill.pend{ background:var(--accent-soft); color:#8A6000; }
   .mdi-card.st-pend{ border-left-color:var(--accent-strong); }
+
+  .mdi-card-wrap{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .mdi-pay-btn{ padding:12px 10px; font-size:14px; }
 </style>
 </head>
 <body>
@@ -15445,7 +15448,7 @@ function mdiCardHTML(o){
   const st = mdiStage(o);
   const mod = mdiIsModified(o);
   const items = (o.lines || []).slice(0, 3).map(l => escapeHtml(mdiQtyText(l).replace(/^x/, '') + (l.sizeLabel || unitOf(l.unit).plain ? '× ' : ' ') + l.name.replace(/\s*\(EJEMPLO[^)]*\)/, ''))).join(' · ') + ((o.lines || []).length > 3 ? ' · +' + ((o.lines || []).length - 3) : '');
-  return `
+  const card = `
     <button class="mdi-card st-${st.cls}" onclick="mdiOpen('${o.id}')">
       <span class="mdi-card-top">
         <span class="mdi-code">${escapeHtml(o.code)}</span>
@@ -15458,6 +15461,9 @@ function mdiCardHTML(o){
       <span class="mdi-items">${items || '—'}</span>
       <span class="mdi-card-foot"><span>${(o.lines || []).length} producto${(o.lines || []).length === 1 ? '' : 's'}${o.status === 'rechazado' && o.rejectReason ? ' · ' + escapeHtml(o.rejectReason) : ''}</span><b>${formatMoney(total)}</b></span>
     </button>`;
+  /* Pendiente de pago: el botón para confirmar el pago queda a la vista, sin abrir el pedido */
+  if(st.id === 'pendiente') return `<div class="mdi-card-wrap">${card}<button type="button" class="btn primary block mdi-pay-btn" onclick="mdiCharge('${o.id}')">${icon('check')} Confirmar pago del cliente · ${formatMoney(total)}</button></div>`;
+  return card;
 }
 
 /* =========================================================
