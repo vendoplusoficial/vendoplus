@@ -14718,7 +14718,7 @@ function dmProductHTML(){
       <div class="dm-sizes">${p.sizes.map(s => `<button class="dm-size ${s.id === dm.pd.sizeId ? 'active' : ''}" onclick="dmPickSize('${s.id}')"><span>${escapeHtml(s.label)}</span><span>${formatMoney(s.price)}</span></button>`).join('')}</div></div>` : ''}
     <div class="field">
       <label for="dmNote" style="display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px;">Instrucciones especiales</label>
-      <textarea id="dmNote" placeholder="Ej: color azul, talla M, sin cebolla…" oninput="dm.pd.note=this.value">${escapeHtml(dm.pd.note)}</textarea>
+      <textarea id="dmNote" placeholder="Ej: sin cebolla, talla M, para regalo…" oninput="dm.pd.note=this.value">${escapeHtml(dm.pd.note)}</textarea>
     </div>
     <div class="dm-pd-foot">
       <div class="dm-q big">
@@ -15680,7 +15680,7 @@ function mdiRenderLineEditor(){
     ${can('gestionarProductos') ? '' : `<p class="field-hint" style="margin:-8px 2px 14px;">El precio sale de tu catálogo. Solo el Dueño o el Administrador lo pueden cambiar.</p>`}
     <div class="field">
       <label for="mdiLeNote">Nota (opcional)</label>
-      <input id="mdiLeNote" type="text" maxlength="160" value="${escapeHtml(e.note)}" placeholder="Ej. color azul, sin cebolla, talla M…">
+      <input id="mdiLeNote" type="text" maxlength="160" value="${escapeHtml(e.note)}" placeholder="Ej. sin cebolla, talla M, para regalo…">
     </div>
     <div class="sheet-actions">
       ${e.i >= 0 ? `<button class="btn danger" onclick="mdiRemoveLine()">${icon('trash')}</button>` : ''}
