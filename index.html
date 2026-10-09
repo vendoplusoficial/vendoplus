@@ -4129,8 +4129,7 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
   <nav class="bottomnav no-print">
     <button class="navbtn" data-view="home" data-icon="home" onclick="goTo('home')"><span class="navicon"></span><span>Inicio</span></button>
     <button class="navbtn" data-view="sale" data-icon="cart" onclick="goTo('sale')"><span class="navicon"></span><span>Nueva venta</span></button>
-    <button class="navbtn" data-view="history" data-icon="receipt" onclick="goTo('history')"><span class="navicon"></span><span>Historial</span></button>
-    <button class="navbtn" data-view="stats" data-icon="chart" onclick="goTo('stats')"><span class="navicon"></span><span>Ventas</span></button>
+    <button class="navbtn" data-view="stats" data-icon="chart" onclick="goTo('stats')"><span class="navicon"></span><span>Estadísticas</span></button>
     <button class="navbtn" data-view="menu" data-icon="menuBook" onclick="goTo('menu')"><span class="navicon"></span><span>Menú Digital</span></button>
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
@@ -9198,7 +9197,7 @@ function deleteSale(saleId){
 function renderStats(){
   const ver = can('verGanancias');
   const head = `
-    <h1 class="page-title">Ventas</h1>
+    <h1 class="page-title">Estadísticas</h1>
     <p class="page-sub">${can('verTodasVentas') ? 'Tus ventas, ganancias y gastos del periodo que elijas' : 'Las ventas que tú cobraste en el periodo que elijas'}</p>`;
   if(!visibleSales().some(s => !s.cancelled)){
     return head + `
