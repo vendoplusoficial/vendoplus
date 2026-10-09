@@ -2240,7 +2240,7 @@
   .mdi-empty-ico svg{ width:26px; height:26px; }
   .mdi-empty b{ font-size:15px; }
   .mdi-empty span:last-child{ font-size:13px; color:var(--ink-soft); line-height:1.5; max-width:330px; font-weight:500; }
-  .mdi-foot-actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
+  .mdi-foot-actions{ display:grid; grid-template-columns:1fr; gap:8px; margin-top:14px; }
   .mdi-foot-actions .btn{ padding:12px 8px; font-size:13px; background:var(--surface); }
 
   /* ---------- Pedido: detalle ---------- */
@@ -14747,7 +14747,7 @@ function dmConfirmHTML(){
     </div>
     ${dmLinesHTML(false)}
     ${dmTotalsHTML()}
-    <div class="dm-banner wa" style="margin:14px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Tu pedido irá listo para enviarlo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Solo toca enviar en WhatsApp.</span></div>
+    <div class="dm-banner wa" style="margin:14px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
     <div class="dm-actions">
       <button class="btn" onclick="dmOpenSheet('cart')">Volver</button>
       <button class="btn dm-green" onclick="dmSendWhatsApp()">${icon('check')} Confirmar</button>
@@ -15069,9 +15069,9 @@ saveBusinessForm = function(){
    4. PEDIDOS ENTRANTES DEL MENÚ DIGITAL
    -------------------------------------------------------------
    Cada pedido que el cliente manda desde el Menú Digital lleva un
-   folio (MD-XXXX). El pedido llega a "Pedidos entrantes" de dos formas:
-     1) En este mismo dispositivo: aparece solo, al instante.
-     2) Pegando el mensaje de WhatsApp en "Pegar pedido".
+   folio (MD-XXXX). El pedido llega solo a "Pedidos entrantes" (por
+   internet, o al instante si se hizo en este mismo dispositivo). Por
+   WhatsApp el cliente solo manda su folio.
    Se guarda el pedido ORIGINAL (lo que mandó el menú) y el pedido
    ACTUAL (con los cambios que haga el negocio).
 ========================================================= */
@@ -15183,39 +15183,19 @@ function mdiBuildFromCart(cartLines, customerName, extra){
     payment: customer.payment || 'efectivo'
   };
 }
-/* Mismo formato que siempre ha tenido el mensaje del Menú Digital. */
+/* Mensaje que el cliente manda por WhatsApp: SOLO su número de pedido.
+   Los productos, el total, el tipo de servicio, la ubicación y el pago
+   viajan por internet a "Pedidos entrantes"; el negocio confirma el
+   pedido y el total desde ahí. */
 function mdiMessage(o){
-  const lines = o.original || o.lines || [];
-  const t = mdTotals(lines);
-  let msg = 'Hola, quiero hacer el siguiente pedido:\n';
-  msg += 'Pedido ' + o.code + '\n';
-  if(o.customer && o.customer.name) msg += 'Nombre: ' + o.customer.name + '\n';
-  msg += '\n';
-  lines.forEach(l => {
-    msg += '• ' + mdiLineLabel(l) + ' ' + mdiQtyText(l) + ' - ' + formatMoney(l.price * l.qty) + '\n';
-    if(l.note) msg += '   Nota: ' + l.note + '\n';
-  });
-  if(showsTax()){
-    msg += '\nSubtotal: ' + formatMoney(t.subtotal);
-    msg += '\n' + ivaLabel() + ': ' + formatMoney(t.iva);
-  }
-  msg += '\n*Total: ' + formatMoney(t.total) + ' MXN*';
-  /* Lo que eligió el cliente (los renglones no empiezan con • para no confundirse con productos) */
-  const c = o.customer || {};
-  if(c.service || c.payment) msg += '\n';
-  if(c.service) msg += '\nTipo de servicio: ' + MD_SERVICES[c.service].label;
-  if(c.service === 'domicilio'){
-    if(c.loc) msg += '\nUbicación: ' + mdiMapsUrl(c.loc);
-    if(c.loc && c.loc.ref) msg += '\nReferencias: ' + c.loc.ref;
-    msg += '\nCosto de envío: me lo dicen por aquí, por favor';
-  }
-  if(c.payment) msg += '\nMétodo de pago: ' + paymentOf(c.payment).name;
-  return msg;
+  return 'Hola, acabo de hacer un pedido en su Menú Digital.\n\n' +
+         'Mi número de pedido es: *' + o.code + '*\n\n' +
+         'Quedo en espera de que me confirmen el pedido y el total. ¡Gracias!';
 }
 
 /* ---------- Links "registrar en caja" de mensajes anteriores ----------
    El mensaje de WhatsApp ya no lleva este link, pero se siguen
-   aceptando los que llegaron antes (al abrirlos o al pegarlos). */
+   aceptando los que llegaron antes (al abrirlos). */
 function mdiDecode(s){
   s = String(s || '').replace(/-/g, '+').replace(/_/g, '/');
   while(s.length % 4) s += '=';
@@ -15247,48 +15227,7 @@ function mdiReceive(o, source){
   return { order:o, isNew:true };
 }
 
-/* ---------- Leer el mensaje de WhatsApp (para comparar o registrar) ---------- */
-function mdiParseMessage(text){
-  const out = { code:null, name:null, lines:[], total:null, payload:null };
-  if(!text) return out;
-  const pm = text.match(/#pedido\/([A-Za-z0-9_-]{16,})/); if(pm) out.payload = pm[1];
-  const cm = text.match(/\b(MD-[A-Z0-9]{4,6})\b/i); if(cm) out.code = cm[1].toUpperCase();
-  const nm = text.match(/Nombre:\s*([^\n]+)/i); if(nm) out.name = mdiStr(nm[1].replace(/\*/g, ''), 60);
-  const tm = text.match(/(?:^|\n)[^\S\n]*\*?\s*Total:\s*\$\s*([\d,]+(?:\.\d+)?)/i); if(tm) out.total = parseFloat(tm[1].replace(/,/g, ''));
-  /* Tipo de servicio, ubicación y método de pago (mensajes nuevos) */
-  const svm = text.match(/Tipo de servicio:\s*([^\n]+)/i);
-  if(svm){ const v = mdiNorm(svm[1]); out.service = /domicilio/.test(v) ? 'domicilio' : (/buscar|recoger|llevar/.test(v) ? 'llevar' : null); }
-  const pym = text.match(/M[eé]todo de pago:\s*([^\n]+)/i);
-  if(pym){ const v = mdiNorm(pym[1]); out.payment = /tarjeta/.test(v) ? 'tarjeta' : (/transfer/.test(v) ? 'transferencia' : (/efectivo/.test(v) ? 'efectivo' : null)); }
-  const lcm = text.match(/[?&]q=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
-  if(lcm) out.loc = { lat:parseFloat(lcm[1]), lng:parseFloat(lcm[2]) };
-  const rfm = text.match(/Referencias:\s*([^\n]+)/i); if(rfm) out.ref = mdiStr(rfm[1].replace(/\*/g, ''), 200);
-  let last = null;
-  text.split(/\r?\n/).forEach(raw => {
-    const line = raw.replace(/\*/g, '').trim();
-    const note = line.match(/^(?:📝\s*)?Nota:\s*(.*)$/i);
-    if(note && last){ last.note = mdiStr(note[1], 160); return; }
-    const m = line.match(/^[•·\-–]\s*(.+?)\s+-\s+\$\s*([\d,]+(?:\.\d+)?)\s*$/);
-    if(!m) return;
-    let left = m[1].trim();
-    const amount = parseFloat(m[2].replace(/,/g, ''));
-    let qty = 1, unitWord = '';
-    let q = left.match(/\s+[x×]\s*(\d+(?:[.,]\d+)?)$/i);
-    if(q){ qty = parseFloat(q[1].replace(',', '.')); left = left.slice(0, q.index).trim(); }
-    else{
-      q = left.match(/\s+(\d+(?:[.,]\d+)?)\s*([a-záéíóúñ.]+)$/i);
-      if(q){ qty = parseFloat(q[1].replace(',', '.')); unitWord = q[2]; left = left.slice(0, q.index).trim(); }
-    }
-    const full = left;
-    let size = '';
-    const sm = left.match(/\s*\(([^()]+)\)$/);
-    if(sm){ size = sm[1].trim(); left = left.slice(0, sm.index).trim(); }
-    last = { name:mdiStr(left, 120), full:mdiStr(full, 160), sizeLabel:size, qty:isFinite(qty) && qty > 0 ? qty : 1, amount:isFinite(amount) ? amount : 0, unitWord, note:'' };
-    out.lines.push(last);
-  });
-  return out;
-}
-/* Busca en el catálogo el producto que dice el mensaje. */
+/* Busca en el catálogo el producto por su nombre (y tamaño). */
 function mdiMatchProduct(name, sizeLabel){
   const n = mdiNorm(name);
   if(!n) return null;
@@ -15303,50 +15242,6 @@ function mdiMatchProduct(name, sizeLabel){
   }
   return { p, size };
 }
-/* El nombre puede terminar en paréntesis sin ser tamaño, ej. "Tela (algodón)". */
-function mdiMatchParsed(pl){
-  if(pl.full && pl.sizeLabel){
-    const whole = mdiMatchProduct(pl.full, '');
-    if(whole && whole.p && !hasSizes(whole.p) && mdiNorm(whole.p.name) === mdiNorm(pl.full)) return whole;
-  }
-  return mdiMatchProduct(pl.name, pl.sizeLabel);
-}
-function mdiLinesFromParsed(parsed){
-  return parsed.lines.map(pl => {
-    const m = mdiMatchParsed(pl);
-    if(m && m.p && !m.needsSize){
-      return mdiCleanLine({ productId:m.p.id, name:m.p.name, sizeId:m.size ? m.size.id : null, sizeLabel:m.size ? m.size.label : null,
-        unit:m.size ? 'pieza' : (m.p.unit || 'pieza'), qty:pl.qty, price:m.size ? m.size.price : m.p.price, note:pl.note });
-    }
-    return mdiCleanLine({ productId:null, name:pl.name, sizeLabel:pl.sizeLabel || null, qty:pl.qty, price:pl.qty ? pl.amount / pl.qty : pl.amount, note:pl.note });
-  });
-}
-/* Compara lo que dice el WhatsApp contra lo que registró el menú. */
-function mdiCompare(o, parsed){
-  const diffs = [];
-  const base = (o.original || []).map(l => ({ key: mdiNorm(l.name) + '|' + mdiNorm(l.sizeLabel), l }));
-  const used = new Set();
-  if(parsed.code && parsed.code !== o.code) diffs.push({ t:'code', txt:`El folio del mensaje es <b>${escapeHtml(parsed.code)}</b> y este pedido es <b>${escapeHtml(o.code)}</b>. Puede ser otro pedido.` });
-  parsed.lines.forEach(pl => {
-    const keys = [mdiNorm(pl.name) + '|' + mdiNorm(pl.sizeLabel)];
-    if(pl.full) keys.push(mdiNorm(pl.full) + '|');
-    const i = base.findIndex((b, j) => !used.has(j) && keys.includes(b.key));
-    const nombre = `<b>${escapeHtml(pl.full || (pl.name + (pl.sizeLabel ? ' (' + pl.sizeLabel + ')' : '')))}</b>`;
-    if(i < 0){ diffs.push({ t:'extra', txt:`En WhatsApp viene ${nombre} ×${fmtNum(pl.qty)} y no estaba en el pedido del menú.` }); return; }
-    used.add(i);
-    const l = base[i].l;
-    if(Math.abs(l.qty - pl.qty) > 1e-9) diffs.push({ t:'qty', txt:`${nombre}: en WhatsApp dice <b>${fmtNum(pl.qty)}</b>, el menú registró <b>${fmtNum(l.qty)}</b>.` });
-    else if(Math.abs(round2(l.price * l.qty) - pl.amount) > 0.01) diffs.push({ t:'price', txt:`${nombre}: en WhatsApp el importe es <b>${formatMoney(pl.amount)}</b>, el menú registró <b>${formatMoney(l.price * l.qty)}</b>.` });
-    if((pl.note || '').trim() !== (l.note || '').trim()) diffs.push({ t:'note', txt:`${nombre}: la nota ${pl.note ? 'dice “' + escapeHtml(pl.note) + '”' : 'no viene'} en WhatsApp${l.note ? ' (el menú: “' + escapeHtml(l.note) + '”)' : ''}.` });
-  });
-  base.forEach((b, j) => { if(!used.has(j)) diffs.push({ t:'missing', txt:`<b>${escapeHtml(mdiLineLabel(b.l))}</b> está en el pedido del menú pero no en el WhatsApp.` }); });
-  if(parsed.total != null){
-    const t = mdTotals(o.original || []).total;
-    if(Math.abs(t - parsed.total) > 0.01) diffs.push({ t:'total', txt:`El total en WhatsApp es <b>${formatMoney(parsed.total)}</b> y en el pedido del menú <b>${formatMoney(t)}</b>.` });
-  }
-  return diffs;
-}
-
 /* ---------- Contadores y aviso en el menú ---------- */
 function mdiCounts(){
   const all = MDI.all();
@@ -15412,10 +15307,9 @@ function mdiSectionHTML(){
       </div>`}
 
     <div class="mdi-foot-actions">
-      <button class="btn ghost" onclick="mdiOpenPaste()">${icon('paste')} Pegar pedido de WhatsApp</button>
       <button class="btn ghost" onclick="statsOrigin='menu'; statsSel=null; goTo('stats');">${icon('chart')} Estadísticas del menú</button>
     </div>
-    <p class="md-hint">¿Te llegó un pedido a tu WhatsApp y no aparece aquí? Copia el mensaje y usa <b>Pegar pedido de WhatsApp</b>; si ya estaba, no se duplica.</p>
+    <p class="md-hint">Por WhatsApp el cliente solo te manda su número de pedido (MD-…). Búscalo aquí para ver lo que pidió, confirmarlo y avisarle el total.</p>
   `;
 }
 function mdiCardHTML(o){
@@ -15430,7 +15324,6 @@ function mdiCardHTML(o){
         <span class="mdi-pill ${st.cls}">${st.label}</span>
         ${mdiIsDelivery(o) ? `<span class="mdi-pill del">${icon('truck')} A domicilio</span>` : ''}
         ${mod ? '<span class="mdi-pill mod">Modificado</span>' : ''}
-        ${o.waCheck && o.waCheck.ok ? `<span class="mdi-pill wa">${icon('check')} WhatsApp</span>` : ''}
         <span class="mdi-time">${mdiAgo(o.receivedAt || o.createdAt)}</span>
       </span>
       <span class="mdi-name">${icon('person')} ${escapeHtml((o.customer && o.customer.name) || 'Cliente sin nombre')}</span>
@@ -15617,7 +15510,6 @@ function mdiDetailHTML(o){
 
     ${o.status === 'rechazado' ? '' : mdiServiceHTML(o)}
     ${o.status === 'rechazado' || o.status === 'cancelado' ? '' : mdiDeliveryHTML(o)}
-    ${o.status === 'rechazado' || o.status === 'cancelado' ? '' : mdiCompareHTML(o)}
 
     ${o.status === 'rechazado' ? '' : `
     <div class="mdi-block-title">
@@ -15653,75 +15545,6 @@ function mdiDetailHTML(o){
   `;
 }
 function mdiClose(){ mdiUI = { id:null, compare:false, text:'', result:null }; closeModal(); if(currentView === 'menu' || currentView === 'home') render(); }
-
-/* ---------- Comparar con WhatsApp ---------- */
-function mdiCompareHTML(o){
-  const r = mdiUI.result;
-  const msg = o.waText || mdiMessage(o);
-  return `
-    <div class="mdi-compare">
-      <div class="mdi-compare-head">
-        <span class="mdi-compare-ico">${icon('whatsapp')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">¿Es lo mismo que te llegó por WhatsApp?</span>
-          <span class="acc-sub">${o.waCheck ? (o.waCheck.ok ? 'Ya lo comparaste: el mensaje coincide.' : 'Lo comparaste y había ' + o.waCheck.n + ' diferencia' + (o.waCheck.n === 1 ? '' : 's') + '.') : 'El cliente pudo cambiar el texto antes de enviarlo. Compáralo aquí.'}</span>
-        </span>
-      </div>
-      <details class="mdi-wa-details">
-        <summary>${o.source === 'pegado' ? 'Ver el mensaje que pegaste' : 'Ver el mensaje que armó el menú'}</summary>
-        <div class="mdi-wa-bubble">${escapeHtml(msg).replace(/\n/g, '<br>')}</div>
-      </details>
-      ${mdiUI.compare ? `
-        <div class="field" style="margin:10px 0 8px;">
-          <textarea id="mdiCompareText" class="md-textarea" rows="5" placeholder="Pega aquí el mensaje que te llegó por WhatsApp">${escapeHtml(mdiUI.text)}</textarea>
-        </div>
-        <div class="mdi-compare-actions">
-          <button class="btn ghost" onclick="mdiPasteFromClipboard('mdiCompareText')">${icon('paste')} Pegar</button>
-          <button class="btn dark" onclick="mdiRunCompare('${o.id}')">${icon('compare')} Comparar</button>
-        </div>` : `
-        <button class="btn ghost block" style="margin-top:10px;" onclick="mdiUI.compare=true; mdiOpen('${o.id}', true); setTimeout(() => { const t = document.getElementById('mdiCompareText'); if(t) t.focus(); }, 60);">${icon('compare')} Comparar con WhatsApp</button>`}
-      ${r ? (r.diffs.length ? `
-        <div class="mdi-result warn">
-          <b>${icon('alert')} Hay ${r.diffs.length} diferencia${r.diffs.length === 1 ? '' : 's'}</b>
-          <ul>${r.diffs.map(d => `<li>${d.txt}</li>`).join('')}</ul>
-          ${o.status === 'nuevo' && r.lines && r.lines.length ? `<div class="mdi-compare-actions">
-            <button class="btn ghost" onclick="mdiUI.result=null; mdiOpen('${o.id}', true);">Dejarlo como está</button>
-            <button class="btn dark" onclick="mdiApplyWhatsapp('${o.id}')">Usar lo del WhatsApp</button>
-          </div>` : ''}
-        </div>` : `
-        <div class="mdi-result ok"><b>${icon('check')} Coincide</b><span>El mensaje de WhatsApp es igual al pedido que registró el menú.</span></div>`) : ''}
-    </div>`;
-}
-function mdiPasteFromClipboard(inputId){
-  if(navigator.clipboard && navigator.clipboard.readText){
-    navigator.clipboard.readText().then(t => { const el = document.getElementById(inputId); if(el){ el.value = t; el.dispatchEvent(new Event('input')); } })
-      .catch(() => toast('Mantén presionado el cuadro y elige “Pegar”'));
-  }else toast('Mantén presionado el cuadro y elige “Pegar”');
-}
-function mdiRunCompare(id){
-  const el = document.getElementById('mdiCompareText');
-  const text = el ? el.value : '';
-  mdiUI.text = text;
-  const o = MDI.get(id); if(!o) return;
-  const parsed = mdiParseMessage(text);
-  if(!parsed.lines.length && !parsed.payload){ toast('No encontramos productos en ese texto', { subtitle:'Copia el mensaje completo del cliente', icon:icon('alert'), variant:'toast-danger' }); return; }
-  let lines = parsed.lines;
-  if(!lines.length && parsed.payload){ try{ const d = mdiDecode(parsed.payload); parsed.lines = d.original.map(l => ({ name:l.name, sizeLabel:l.sizeLabel || '', qty:l.qty, amount:round2(l.price * l.qty), note:l.note })); parsed.code = d.code; }catch(e){} }
-  const diffs = mdiCompare(o, parsed);
-  mdiUI.result = { diffs, lines: parsed.lines, parsed };
-  MDI.update(id, x => { x.waCheck = { at:new Date().toISOString(), ok:!diffs.length, n:diffs.length }; });
-  vibrate(diffs.length ? [18, 50, 18] : 12);
-  mdiOpen(id, true);
-}
-function mdiApplyWhatsapp(id){
-  const r = mdiUI.result; if(!r) return;
-  const o0 = MDI.get(id); if(!o0 || o0.status !== 'nuevo') return;
-  const nuevas = mdiLinesFromParsed({ lines:r.lines });
-  MDI.update(id, o => { o.lines = nuevas; });
-  mdiUI.result = null;
-  toast('Pedido actualizado con lo del WhatsApp', { icon:icon('check'), variant:'toast-success', subtitle:'Revisa los productos antes de confirmar' });
-  mdiRefresh();
-}
 
 /* ---------- Editar productos del pedido ---------- */
 function mdiSet(id, key, val){ MDI.update(id, o => { if(o.status === 'nuevo') o[key] = val; }); vibrate(8); mdiOpen(id, true); }
@@ -16092,55 +15915,6 @@ function mdiNotify(id){
   const w = window.open(url, '_blank'); if(!w) location.href = url;
 }
 
-/* ---------- Registrar un pedido pegando el mensaje de WhatsApp ---------- */
-function mdiOpenPaste(){
-  openModal(`
-    <div class="sheet-header">
-      <h2>Pegar pedido de WhatsApp</h2>
-      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
-    </div>
-    <p class="sheet-text">Copia el mensaje completo que te mandó el cliente y pégalo aquí. Lo convertimos en un pedido para que lo revises y lo confirmes.</p>
-    <div class="field">
-      <textarea id="mdiPasteText" class="md-textarea" rows="8" placeholder="Hola, quiero hacer el siguiente pedido:&#10;Pedido MD-7K2P&#10;• Producto x2 - $44.00&#10;…"></textarea>
-    </div>
-    <div class="sheet-actions">
-      <button class="btn ghost block" onclick="mdiPasteFromClipboard('mdiPasteText')">${icon('paste')} Pegar</button>
-      <button class="btn primary block" onclick="mdiImportPasted()">Agregar pedido</button>
-    </div>
-  `, { dismissible:true });
-}
-function mdiImportPasted(){
-  const text = (document.getElementById('mdiPasteText') || {}).value || '';
-  const parsed = mdiParseMessage(text);
-  let o = null;
-  if(parsed.payload){ try{ o = mdiDecode(parsed.payload); }catch(e){ o = null; } }
-  if(!o){
-    if(!parsed.lines.length){ toast('No encontramos productos en ese mensaje', { icon:icon('alert'), variant:'toast-danger', subtitle:'Pega el mensaje completo del cliente' }); return; }
-    const lines = mdiLinesFromParsed(parsed);
-    const now = new Date().toISOString();
-    o = { id:'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), code:parsed.code || mdiNewCode(), createdAt:now,
-          customer:{ name:parsed.name || '' }, original:lines, lines:lines.map(l => Object.assign({}, l)), status:'nuevo', service:'llevar', payment:'efectivo' };
-  }
-  if(parsed.service || parsed.payment){
-    const c0 = o.customer || {};
-    o.customer = mdiCleanCustomer({ name:c0.name, service:parsed.service || c0.service, payment:parsed.payment || c0.payment,
-      loc: parsed.loc ? { lat:parsed.loc.lat, lng:parsed.loc.lng, ref:parsed.ref || '' } : c0.loc });
-    o.service = o.customer.service || 'llevar';
-    o.payment = o.customer.payment || 'efectivo';
-  }
-  if(!o.waText) o.waText = String(text).replace(/\r/g, '').slice(0, 4000);
-  const r = mdiReceive(o, 'pegado');
-  if(r.isNew && parsed.lines.length){
-    const diffs = mdiCompare(r.order, parsed);
-    MDI.update(r.order.id, x => { x.waCheck = { at:new Date().toISOString(), ok:!diffs.length, n:diffs.length }; });
-  }
-  closeModal();
-  mdiFilter = 'nuevo';
-  if(currentView !== 'menu') goTo('menu'); else render();
-  toast(r.isNew ? 'Pedido agregado' : 'Ese pedido ya estaba registrado', { icon:icon('check'), variant:'toast-success', subtitle:r.order.code });
-  mdiOpen(r.order.id);
-}
-
 /* ---------- Aviso en Inicio ---------- */
 function mdiHomeCardHTML(){
   const n = mdiCounts().nuevo;
@@ -16348,10 +16122,11 @@ dmConfirmHTML = function(){
       <input id="dmName" type="text" maxlength="60" autocomplete="name" placeholder="Ej. Ana López" value="${escapeHtml(co.name)}" oninput="dmCoState().name=this.value">
     </div>
 
-    <div class="dm-banner wa" style="margin:16px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Tu pedido irá listo para enviarlo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Solo toca enviar en WhatsApp.</span></div>
+    <div class="dm-banner wa" style="margin:16px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
+    <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Enviar pedido» otra vez.</span></div>
     <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmOpenSheet('cart')">Volver</button>
-      <button class="btn dm-green" onclick="dmSendWhatsApp()">${icon('whatsapp')} Enviar pedido</button>
+      <button class="btn dm-green" id="dmSendBtn" onclick="dmSendWhatsApp()">${icon('whatsapp')} Enviar pedido</button>
     </div>`;
 };
 /* Se llama al abrir la hoja: el mapa solo se carga si es a domicilio. */
@@ -16413,7 +16188,8 @@ function dmCoNeed(id, msg){
   el.classList.remove('need'); void el.offsetWidth; el.classList.add('need');
   try{ el.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'center' }); }catch(e){}
 }
-dmSendWhatsApp = function(){
+dmSendWhatsApp = async function(){
+  if(dm.sending) return;
   const cfg = mdCfg();
   if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
   if(mdClosedNow(cfg)){ dmToast('Estamos cerrados en este momento'); dmRender(); dmCloseSheet(); return; }
@@ -16433,22 +16209,62 @@ dmSendWhatsApp = function(){
     service: co.svc, payment: co.pay,
     loc: co.svc === 'domicilio' && co.loc ? { lat:co.loc.lat, lng:co.loc.lng, ref:(co.ref || '').trim() } : null
   });
-  order.waText = mdiMessage(order);
+  order.waText = mdiMessage(order);          /* solo el número de pedido */
+  const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
   /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
   mdiReceive(order, 'menu');
-  /* Desde CUALQUIER celular: el pedido viaja por internet a la caja del negocio.
-     Se manda antes de abrir WhatsApp y termina aunque WhatsApp tape la página. */
-  const envio = typeof mdiCloudSend === 'function' ? mdiCloudSend(order) : Promise.resolve(false);
-  const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
+  const enEsteAparato = !!MDI.get(order.id);
+  const conNube = !!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY);
+  const listo = msg => {
+    dm.cart = [];
+    dm.co = null;                 /* el nombre queda guardado en este celular */
+    dmCloseSheet();
+    dmRefreshCards();
+    dmToast(msg);
+  };
+
+  if(!conNube || enEsteAparato){
+    /* El pedido ya quedó en la caja de este aparato: WhatsApp se abre de inmediato. */
+    if(conNube && typeof mdiCloudSend === 'function') mdiCloudSend(order);   /* y llega a las demás cajas */
+    dmVib([60, 40, 60]);
+    const win = window.open(url, '_blank');
+    if(!win) location.href = url;
+    listo('Pedido ' + order.code + ' listo en WhatsApp');
+    return;
+  }
+
+  /* Desde el celular del cliente: por WhatsApp solo va el número de pedido,
+     así que primero el pedido tiene que llegar por internet a la caja.
+     La pestaña de WhatsApp se abre ya (con el toque del cliente, para que
+     el navegador no la bloquee) y se llena cuando el pedido llegó. */
+  const win = window.open('', '_blank');
+  const btn = document.getElementById('dmSendBtn');
+  const errBox = document.getElementById('dmSendErr');
+  const btnHTML = btn ? btn.innerHTML : '';
+  dm.sending = true;
+  if(btn){ btn.disabled = true; btn.textContent = 'Enviando tu pedido…'; }
+  if(errBox) errBox.style.display = 'none';
+  let ok = false;
+  try{
+    ok = await Promise.race([
+      typeof mdiCloudSend === 'function' ? mdiCloudSend(order) : Promise.resolve(false),
+      new Promise(r => setTimeout(() => r(false), 15000))
+    ]);
+  }catch(e){ ok = false; }
+  dm.sending = false;
+  if(!ok){
+    try{ if(win && !win.closed) win.close(); }catch(e){}
+    if(btn && btn.isConnected){ btn.disabled = false; btn.innerHTML = btnHTML; }
+    if(errBox && errBox.isConnected) errBox.style.display = '';
+    dmVib([20, 40, 20]);
+    dmToast('No pudimos enviar tu pedido. Revisa tu internet e inténtalo otra vez', 'warn');
+    return;
+  }
   dmVib([60, 40, 60]);
-  const win = window.open(url, '_blank');
-  if(!win) location.href = url;
-  dm.cart = [];
-  dm.co = null;                 /* el nombre queda guardado en este celular */
-  dmCloseSheet();
-  dmRefreshCards();
-  dmToast('Pedido ' + order.code + ' listo en WhatsApp');
-  envio.then(ok => { if(ok) dmToast('El negocio ya recibió tu pedido ' + order.code); });
+  let abierto = false;
+  try{ if(win && !win.closed){ win.location.href = url; abierto = true; } }catch(e){}
+  listo('El negocio ya recibió tu pedido ' + order.code);
+  if(!abierto) location.href = url;
 };
 dmWhatsappMessage = function(){ return mdiMessage(mdiBuildFromCart(dm.cart, '')); };
 
@@ -21237,7 +21053,8 @@ function dmrStartPoll(id){
        cada 20 s y al volver a la app. Entra como "Nuevo" con aviso.
      · Los precios se toman del catálogo de la caja (igual que al pegar un
        WhatsApp): nadie puede mandar un pedido con precios inventados.
-     · "Pegar pedido de WhatsApp" sigue funcionando y no duplica.
+     · Por WhatsApp el cliente solo manda su número de pedido: si el
+       envío por internet falla, se le avisa y no se abre WhatsApp.
    Requiere correr menu_pedidos.sql en Supabase una sola vez.
 ========================================================================= */
 const MDI_TABLE = 'menu_orders';
@@ -21317,7 +21134,7 @@ function mdiCloudErr(e){
   const m = String((e && (e.message || e.error || e.details)) || e || '');
   const code = (e && e.code) || '';
   if(code === 'PGRST205' || code === '42P01' || (/menu_orders/i.test(m) && /(does not exist|could not find|schema cache)/i.test(m)) || /permission denied for (table|function)/i.test(m))
-    return { t:'Falta preparar Supabase', s:'Corre menu_pedidos.sql en el SQL Editor de Supabase (una sola vez). Mientras, usa «Pegar pedido de WhatsApp».' };
+    return { t:'Falta preparar Supabase', s:'Corre menu_pedidos.sql en el SQL Editor de Supabase (una sola vez). Mientras no lo hagas, los pedidos de tus clientes no pueden llegar.' };
   if(/failed to fetch|networkerror|network|load failed|timeout/i.test(m))
     return { t:'Sin conexión a internet', s:'Los pedidos llegan en cuanto vuelva el internet.' };
   return { t:'No se pudieron revisar los pedidos', s:m.slice(0, 140) || 'Se vuelve a intentar sola en unos segundos.' };
