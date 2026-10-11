@@ -8993,9 +8993,9 @@ function tkOpenWa(tel, text){
   const w = window.open(url, '_blank'); if(!w) location.href = url;
 }
 async function tkDeliver(blobP, text, tel, name){
-  /* Con número: se abre directo el chat de ese cliente (la imagen queda copiada para pegarla).
-     Sin número en celular: menú de compartir para elegir el chat. */
-  if(!tel && tkMobileShare()){
+  /* Celular: menú de compartir con la imagen ya adjunta (eliges WhatsApp y el chat).
+     Computadora: se copia la imagen y se abre el chat para pegarla. */
+  if(tkMobileShare()){
     try{
       const blob = await blobP;
       await navigator.share({ files:[new File([blob], name, { type:'image/png' })], text:text });
@@ -9009,14 +9009,6 @@ async function tkDeliver(blobP, text, tel, name){
       copied = true;
     }
   }catch(e){}
-  if(!copied && tel && tkMobileShare()){
-    /* No se pudo copiar: plan B en celular, el menú de compartir con la imagen */
-    try{
-      const blob = await blobP;
-      await navigator.share({ files:[new File([blob], name, { type:'image/png' })], text:text });
-      return;
-    }catch(e){ if(e && e.name === 'AbortError') return; }
-  }
   if(!copied){
     try{
       const blob = await blobP;
@@ -9085,8 +9077,9 @@ function sendTicketWhatsApp(id){
     tkSendImage(ticketImageSpec(sale), ticketWaText(sale), tel, fname, ticketPlainText(sale));
   };
   const known = sale.customerPhone || (sale.customerId && typeof customerById === 'function' && customerById(sale.customerId) ? customerById(sale.customerId).phone : '');
-  if(known){ go(known); return; }
-  askConfirm({ title:'Mandar ticket por WhatsApp', text:'Escribe el WhatsApp del cliente para abrir su chat directo. La imagen del ticket se copia para que la pegues en el chat. Si lo dejas vacío, eliges el chat tú.', ok:'Abrir WhatsApp', icon:icon('whatsapp'),
+  /* En celular se elige el chat en el menú de compartir: no hace falta pedir el número */
+  if(known || tkMobileShare()){ go(known); return; }
+  askConfirm({ title:'Mandar ticket por WhatsApp', text:'Escribe el WhatsApp del cliente, o déjalo vacío para elegir el chat en WhatsApp. Se copiará la imagen del ticket para que la pegues en el chat.', ok:'Abrir WhatsApp', icon:icon('whatsapp'),
     extraHTML:`<div class="field"><input id="waTicketTel" type="tel" inputmode="numeric" maxlength="16" placeholder="Ej. 981 123 4567"></div>` },
     card => go((card.querySelector('#waTicketTel') || {}).value));
 }
