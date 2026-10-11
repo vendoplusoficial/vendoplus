@@ -16381,7 +16381,7 @@ function mdiNotify(id){
   const o = MDI.get(id); if(!o) return;
   const b = bizData();
   const nombre = (o.customer && o.customer.name) ? ' ' + o.customer.name.split(/\s+/)[0] : '';
-  let msg, img = null;
+  let msg;
   if(o.status === 'confirmado'){
     const t = mdTotals(o.lines);
     const c = o.customer || {};
@@ -16401,27 +16401,6 @@ function mdiNotify(id){
     if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
     if(extra.length) msg += '\n\n' + extra.join('\n');
     msg += '\n¡Gracias por tu compra!';
-    /* El cliente recibe la IMAGEN del pedido; el texto solo lleva folio y total */
-    const qtyTxt = l => ((l.sizeLabel || unitOf(l.unit).plain) ? fmtNum(l.qty) : fmtQty(l.qty, l.unit)) + ' x ' + formatMoney(l.price);
-    const extras = [];
-    try{ if(c.service) extras.push({ label:'Servicio', value:stripEmoji(serviceOf(c.service).name) }); }catch(e){}
-    if(c.payment) extras.push({ label:'Pago', value:stripEmoji(paymentOf(c.payment).name) });
-    const totals = del
-      ? [ { label:'Productos', value:formatMoney(t.total) }, { label:'Envío a domicilio', value:fee ? formatMoney(fee) : 'Gratis' }, { label:'TOTAL', value:formatMoney(round2(t.total + fee)), grand:true } ]
-      : [ { label:'TOTAL', value:formatMoney(t.total), grand:true } ];
-    img = {
-      spec: {
-        title: (b.name || 'Pedido').toUpperCase(),
-        sub: 'Pedido confirmado',
-        address: b.address || '',
-        metas: ['Pedido ' + o.code, formatDateTime(o.createdAt)].concat((o.customer && o.customer.name) ? ['Cliente: ' + o.customer.name] : []).concat(mdiIsModified(o) ? ['Pedido con cambios'] : []),
-        items: o.lines.map(l => ({ name:mdiLineLabel(l), amount:formatMoney(l.price * l.qty), sub:qtyTxt(l) + (l.note ? ' · ' + l.note : '') })),
-        totals: totals, extras: extras,
-        footer: '¡Gracias por tu compra!'
-      },
-      text: 'Pedido ' + o.code + '\nTotal: ' + formatMoney(round2(t.total + fee)),
-      name: 'pedido-' + String(o.code).replace(/[^\w.-]/g, '') + '.png'
-    };
     MDI.update(id, x => { x.notifiedAt = new Date().toISOString(); });
     setTimeout(() => { if(mdiUI.id === id) mdiOpen(id, true); }, 400);
   }else if(o.status === 'cancelado'){
@@ -16434,7 +16413,6 @@ function mdiNotify(id){
     msg = 'Hola' + nombre + ', lo sentimos. No podemos surtir tu pedido ' + o.code + (o.rejectReason && o.rejectReason !== 'Otro motivo' ? ': ' + o.rejectReason.toLowerCase() + '.' : '.');
     if(o.rejectNote) msg += '\n' + o.rejectNote;
   }
-  if(img){ tkSendImage(img.spec, img.text, '', img.name, msg); return; }
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   const w = window.open(url, '_blank'); if(!w) location.href = url;
 }
