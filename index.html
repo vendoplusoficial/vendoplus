@@ -8862,19 +8862,222 @@ function ticketPlainText(sale){
   if(f && !ret) t += '\n\n' + f;
   return t;
 }
+/* ---------- Ticket como IMAGEN para WhatsApp ----------
+   El ticket se dibuja en un canvas (igual que se ve en la app) y se manda como
+   imagen. En el texto solo van el número de pedido y el total.
+   · Celular: se abre el menú de compartir con la imagen (eliges WhatsApp y el chat).
+   · Computadora: se copia la imagen, se abre WhatsApp y se pega con Ctrl+V / ⌘V
+     (si el navegador no deja copiar, se descarga la imagen). */
+function tkRenderImage(spec){
+  return new Promise((resolve, reject) => {
+    try{
+      const cs = getComputedStyle(document.documentElement);
+      const v = (n, d) => (cs.getPropertyValue(n) || '').trim() || d;
+      const MONO = v('--mono', "ui-monospace, 'Courier New', Courier, monospace");
+      const C = { bg:v('--bg', '#F4F6FB'), card:v('--surface', '#FFFFFF'), ink:v('--ink', '#16213E'),
+                  soft:v('--ink-soft', '#8A93AC'), faint:v('--ink-faint', '#C9CEDD'), acc:v('--accent-2', '#E1594C') };
+      const W = 440, M = 14, PAD = 20, S = 3, X0 = M + PAD, X1 = W - M - PAD, IW = X1 - X0;
+
+      const pass = (ctx, draw) => {
+        let y = M + PAD;
+        ctx.textBaseline = 'top';
+        const font = (sz, wt) => { ctx.font = (wt || 400) + ' ' + sz + 'px ' + MONO; };
+        const wrap = (txt, maxW) => {
+          const out = [];
+          String(txt == null ? '' : txt).split('\n').forEach(par => {
+            let line = '';
+            par.split(' ').forEach(w => {
+              while(w.length > 1 && ctx.measureText(w).width > maxW){
+                let k = w.length;
+                while(k > 1 && ctx.measureText(w.slice(0, k)).width > maxW) k--;
+                if(line){ out.push(line); line = ''; }
+                out.push(w.slice(0, k)); w = w.slice(k);
+              }
+              const t = line ? line + ' ' + w : w;
+              if(line && ctx.measureText(t).width > maxW){ out.push(line); line = w; } else line = t;
+            });
+            out.push(line);
+          });
+          return out;
+        };
+        const center = (txt, sz, color, wt, gap) => {
+          if(txt == null || txt === '') return;
+          font(sz, wt);
+          wrap(txt, IW).forEach(l => {
+            if(draw){ ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.fillText(l, W / 2, y); }
+            y += Math.round(sz * 1.5);
+          });
+          y += gap || 0;
+        };
+        const left = (txt, sz, color, wt) => {
+          if(txt == null || txt === '') return;
+          font(sz, wt);
+          wrap(txt, IW).forEach(l => {
+            if(draw){ ctx.fillStyle = color; ctx.textAlign = 'left'; ctx.fillText(l, X0, y); }
+            y += Math.round(sz * 1.5);
+          });
+        };
+        const row = (a, b, sz, color, wt) => {
+          font(sz, wt);
+          const rw = b ? ctx.measureText(String(b)).width : 0;
+          wrap(a, IW - rw - 12).forEach((l, i) => {
+            if(draw){
+              ctx.fillStyle = color;
+              ctx.textAlign = 'left'; ctx.fillText(l, X0, y);
+              if(i === 0 && b){ ctx.textAlign = 'right'; ctx.fillText(String(b), X1, y); }
+            }
+            y += Math.round(sz * 1.5);
+          });
+        };
+        const hr = () => {
+          y += 8;
+          if(draw){
+            ctx.save(); ctx.setLineDash([4, 3]); ctx.lineWidth = 1; ctx.strokeStyle = C.faint;
+            ctx.beginPath(); ctx.moveTo(X0, y + 0.5); ctx.lineTo(X1, y + 0.5); ctx.stroke(); ctx.restore();
+          }
+          y += 12;
+        };
+
+        try{ ctx.letterSpacing = '1px'; }catch(e){}
+        center(spec.title, 16, C.ink, 700);
+        try{ ctx.letterSpacing = '0px'; }catch(e){}
+        center(spec.sub, 11, C.soft, 400, 6);
+        center(spec.address, 11.5, C.soft);
+        center(spec.kind, 12.5, C.acc, 800);
+        (spec.metas || []).forEach(m => center(m, 11.5, C.soft));
+        hr();
+        (spec.items || []).forEach(it => {
+          row(it.name, it.amount, 12.5, C.ink, 400);
+          left(it.sub, 12.5, C.soft, 400);
+          y += 4;
+        });
+        hr();
+        (spec.totals || []).forEach(r => row(r.label, r.value, r.grand ? 15 : 12.5, C.ink, r.grand ? 700 : 400));
+        const ex = spec.extras || [];
+        if(ex.length){ hr(); ex.forEach(r => row(r.label, r.value, 12.5, r.color === 'acc' ? C.acc : C.ink, r.bold ? 700 : 400)); }
+        if(spec.cancelled){ hr(); row('VENTA CANCELADA', '', 12.5, C.acc, 700); }
+        hr();
+        center(spec.footer, 11.5, C.soft);
+        return y;
+      };
+
+      const probe = document.createElement('canvas').getContext('2d');
+      const H = Math.ceil(pass(probe, false) + PAD + M);
+      const cv = document.createElement('canvas');
+      cv.width = W * S; cv.height = H * S;
+      const ctx = cv.getContext('2d');
+      ctx.scale(S, S);
+      ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+      const x = M, y0 = M, w = W - 2 * M, h = H - 2 * M, r = 16;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y0); ctx.arcTo(x + w, y0, x + w, y0 + h, r); ctx.arcTo(x + w, y0 + h, x, y0 + h, r);
+      ctx.arcTo(x, y0 + h, x, y0, r); ctx.arcTo(x, y0, x + w, y0, r); ctx.closePath();
+      ctx.fillStyle = C.card; ctx.fill();
+      ctx.save(); ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5; ctx.strokeStyle = C.faint; ctx.stroke(); ctx.restore();
+      pass(ctx, true);
+      cv.toBlob(b => b ? resolve(b) : reject(new Error('sin imagen')), 'image/png');
+    }catch(e){ reject(e); }
+  });
+}
+
+/* ¿Este equipo es un celular/tablet que puede compartir archivos? */
+function tkMobileShare(){
+  try{
+    if(!navigator.share || !navigator.canShare || typeof File !== 'function') return false;
+    if(!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches)) return false;
+    return navigator.canShare({ files:[new File([new Blob(['x'], { type:'image/png' })], 'ticket.png', { type:'image/png' })] });
+  }catch(e){ return false; }
+}
+function tkOpenWa(tel, text){
+  const url = 'https://wa.me/' + (tel || '') + '?text=' + encodeURIComponent(text);
+  const w = window.open(url, '_blank'); if(!w) location.href = url;
+}
+async function tkDeliver(blobP, text, tel, name){
+  if(tkMobileShare()){
+    try{
+      const blob = await blobP;
+      await navigator.share({ files:[new File([blob], name, { type:'image/png' })], text:text });
+      return;
+    }catch(e){ if(e && e.name === 'AbortError') return; /* si falló por otra razón, seguimos con el plan B */ }
+  }
+  let copied = false;
+  try{
+    if(navigator.clipboard && window.ClipboardItem){
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]);
+      copied = true;
+    }
+  }catch(e){}
+  if(!copied){
+    try{
+      const blob = await blobP;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }catch(e){}
+  }
+  tkOpenWa(tel, text);
+  toast(copied ? 'Imagen del ticket copiada' : 'Imagen del ticket descargada',
+    { subtitle: copied ? 'Pégala en el chat de WhatsApp (Ctrl+V o ⌘V)' : 'Adjúntala en el chat de WhatsApp',
+      icon:icon('check'), variant:'toast-success', duration:5200 });
+}
+async function tkSendImage(spec, text, tel, name, fallbackText){
+  let blobP;
+  try{ blobP = tkRenderImage(spec); await blobP; }
+  catch(e){
+    toast('No pudimos crear la imagen', { subtitle:'Se manda el ticket en texto' });
+    tkOpenWa(tel, fallbackText || text);
+    return;
+  }
+  await tkDeliver(blobP, text, tel, name);
+}
+
+/* Datos del ticket de una venta, igual que en pantalla */
+function ticketImageSpec(sale){
+  const service = serviceOf(sale.serviceType);
+  const biz = ticketBusiness();
+  const bu = ((typeof currentUser === 'function' ? currentUser() : null) || {}).business || {};
+  const ret = saleIsReturn(sale);
+  const retTotal = (sale.returns || []).reduce((a, r) => a + Math.abs(r.total || 0), 0);
+  const metas = [ ret ? 'De la venta ' + (sale.refNumber ? orderNumberLabel(sale.refNumber) : '') : 'Pedido ' + orderNumberLabel(sale.number), formatDateTime(sale.date) ];
+  if(typeof saleIsMenu === 'function' && saleIsMenu(sale)) metas.push('Pedido hecho en Menú Digital' + (sale.menuCode ? ' · ' + sale.menuCode : ''));
+  if(sale.customerName) metas.push('Cliente: ' + sale.customerName);
+  if(sale.userName) metas.push('Atendió: ' + sale.userName);
+  const extras = [];
+  if(!ret) extras.push({ label:'Servicio', value:service.name });
+  if(sale.table) extras.push({ label:tableTicketLabel(sale), value:String(sale.table) });
+  ticketPayRows(sale).forEach(r => extras.push({ label:r[0], value:String(r[1]) }));
+  if(retTotal > 0) extras.push({ label:'Devoluciones', value:'−' + formatMoney(retTotal), color:'acc', bold:true });
+  return {
+    title: biz.title, sub: biz.sub, address: bu.address || '',
+    kind: ret ? 'DEVOLUCIÓN ' + (sale.folio || '') : '',
+    metas: metas,
+    items: sale.items.map(it => ({ name:it.name, amount:formatMoney(Math.abs(it.price * it.qty)), sub:ticketItemQtyLine(it) + (it.note ? ' · ' + it.note : '') })),
+    totals: ticketTotalsRows(sale).map(r => ({ label:r[0], value:r[1], grand:r[2] === 'grand' })),
+    extras: extras,
+    cancelled: !!sale.cancelled,
+    footer: ret ? 'Comprobante de devolución' : (printPrefs().footer || '¡Gracias por su visita!')
+  };
+}
+/* Texto que acompaña a la imagen: SOLO número de pedido y total */
+function ticketWaText(sale){
+  if(saleIsReturn(sale)) return 'Devolución ' + (sale.folio || '') + '\nTotal devuelto: ' + formatMoney(Math.abs(sale.total));
+  return 'Pedido ' + orderNumberLabel(sale.number) + '\nTotal: ' + formatMoney(round2(sale.total + (sale.tip || 0)));
+}
 function sendTicketWhatsApp(id){
   const sale = resolveSale(id);
   if(!sale){ toast('No encontramos ese ticket'); return; }
+  const fname = 'ticket-' + (saleIsReturn(sale) ? String(sale.folio || 'devolucion').replace(/[^\w.-]/g, '') : String(sale.number).padStart(4, '0')) + '.png';
   const go = (digits) => {
     const u = currentUser() || {};
     const d = String(digits || '').replace(/\D/g, '');
     const tel = d.length >= 10 ? (d.length === countryOf(u.country).digits ? countryOf(u.country).dial.replace(/\D/g, '') + d : d) : '';
-    const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(ticketPlainText(sale));
-    const w = window.open(url, '_blank'); if(!w) location.href = url;
+    tkSendImage(ticketImageSpec(sale), ticketWaText(sale), tel, fname, ticketPlainText(sale));
   };
   const known = sale.customerPhone || (sale.customerId && typeof customerById === 'function' && customerById(sale.customerId) ? customerById(sale.customerId).phone : '');
-  if(known){ go(known); return; }
-  askConfirm({ title:'Mandar ticket por WhatsApp', text:'Escribe el WhatsApp del cliente, o déjalo vacío para elegir el chat en WhatsApp.', ok:'Abrir WhatsApp', icon:icon('whatsapp'),
+  /* En celular se elige el chat en el menú de compartir: no hace falta pedir el número */
+  if(known || tkMobileShare()){ go(known); return; }
+  askConfirm({ title:'Mandar ticket por WhatsApp', text:'Escribe el WhatsApp del cliente, o déjalo vacío para elegir el chat en WhatsApp. Se copiará la imagen del ticket para que la pegues en el chat.', ok:'Abrir WhatsApp', icon:icon('whatsapp'),
     extraHTML:`<div class="field"><input id="waTicketTel" type="tel" inputmode="numeric" maxlength="16" placeholder="Ej. 981 123 4567"></div>` },
     card => go((card.querySelector('#waTicketTel') || {}).value));
 }
@@ -16169,7 +16372,7 @@ function mdiNotify(id){
   const o = MDI.get(id); if(!o) return;
   const b = bizData();
   const nombre = (o.customer && o.customer.name) ? ' ' + o.customer.name.split(/\s+/)[0] : '';
-  let msg;
+  let msg, img = null;
   if(o.status === 'confirmado'){
     const t = mdTotals(o.lines);
     const c = o.customer || {};
@@ -16189,6 +16392,27 @@ function mdiNotify(id){
     if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
     if(extra.length) msg += '\n\n' + extra.join('\n');
     msg += '\n¡Gracias por tu compra!';
+    /* El cliente recibe la IMAGEN del pedido; el texto solo lleva folio y total */
+    const qtyTxt = l => ((l.sizeLabel || unitOf(l.unit).plain) ? fmtNum(l.qty) : fmtQty(l.qty, l.unit)) + ' x ' + formatMoney(l.price);
+    const extras = [];
+    try{ if(c.service) extras.push({ label:'Servicio', value:stripEmoji(serviceOf(c.service).name) }); }catch(e){}
+    if(c.payment) extras.push({ label:'Pago', value:stripEmoji(paymentOf(c.payment).name) });
+    const totals = del
+      ? [ { label:'Productos', value:formatMoney(t.total) }, { label:'Envío a domicilio', value:fee ? formatMoney(fee) : 'Gratis' }, { label:'TOTAL', value:formatMoney(round2(t.total + fee)), grand:true } ]
+      : [ { label:'TOTAL', value:formatMoney(t.total), grand:true } ];
+    img = {
+      spec: {
+        title: (b.name || 'Pedido').toUpperCase(),
+        sub: 'Pedido confirmado',
+        address: b.address || '',
+        metas: ['Pedido ' + o.code, formatDateTime(o.createdAt)].concat((o.customer && o.customer.name) ? ['Cliente: ' + o.customer.name] : []).concat(mdiIsModified(o) ? ['Pedido con cambios'] : []),
+        items: o.lines.map(l => ({ name:mdiLineLabel(l), amount:formatMoney(l.price * l.qty), sub:qtyTxt(l) + (l.note ? ' · ' + l.note : '') })),
+        totals: totals, extras: extras,
+        footer: '¡Gracias por tu compra!'
+      },
+      text: 'Pedido ' + o.code + '\nTotal: ' + formatMoney(round2(t.total + fee)),
+      name: 'pedido-' + String(o.code).replace(/[^\w.-]/g, '') + '.png'
+    };
     MDI.update(id, x => { x.notifiedAt = new Date().toISOString(); });
     setTimeout(() => { if(mdiUI.id === id) mdiOpen(id, true); }, 400);
   }else if(o.status === 'cancelado'){
@@ -16201,6 +16425,7 @@ function mdiNotify(id){
     msg = 'Hola' + nombre + ', lo sentimos. No podemos surtir tu pedido ' + o.code + (o.rejectReason && o.rejectReason !== 'Otro motivo' ? ': ' + o.rejectReason.toLowerCase() + '.' : '.');
     if(o.rejectNote) msg += '\n' + o.rejectNote;
   }
+  if(img){ tkSendImage(img.spec, img.text, '', img.name, msg); return; }
   const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   const w = window.open(url, '_blank'); if(!w) location.href = url;
 }
