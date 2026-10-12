@@ -9278,7 +9278,7 @@ function renderHistoryList(){
         <div class="empty-text">No hay ventas que coincidan con estos filtros.</div>
       </div>
     `
-  ) : buildHistoryChart(sales) + sales.map(s => renderSaleRow(s)).join('');
+  ) : sales.map(s => renderSaleRow(s)).join('');
 }
 
 /* Gráfico de barras del historial: solo aparece cuando las ventas filtradas
