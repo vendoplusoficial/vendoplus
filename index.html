@@ -4355,6 +4355,13 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .empty-state .empty-title{ font-size:20px; }
 .vp-empty-cta{ margin-top:18px; padding:14px 26px 14px 22px; font-size:15px; gap:12px; box-shadow:0 8px 18px rgba(22,193,91,.3); }
 .vp-empty-cta svg{ width:20px; height:20px; } .vp-empty-cta i{ height:20px; }
+
+/* ---- Formulario: llenar TODA la pantalla (compensa el zoom de la app en celular) ---- */
+@media (max-width:699px){
+  body:has(.vp-pf) #modal-layer .modal-overlay{ background:#fff !important; position:fixed; inset:0; height:calc(100dvh / var(--z,1)); min-height:calc(100dvh / var(--z,1)); padding:0; align-items:stretch; }
+  .modal-sheet.vp-pf{ height:calc(100dvh / var(--z,1)) !important; max-height:calc(100dvh / var(--z,1)) !important; min-height:calc(100dvh / var(--z,1)); width:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; box-shadow:none; animation:none; }
+  body:has(.vp-pf){ overflow:hidden; }
+}
 </style>
 
 </head>
@@ -4421,7 +4428,6 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   <main class="view" id="view"></main>
 
   <nav class="bottomnav no-print">
-    <button class="navbtn" data-view="home" data-icon="home" onclick="goTo('home')"><span class="navicon"></span><span>Inicio</span></button>
     <button class="navbtn" data-view="sale" data-icon="cart" onclick="goTo('sale')"><span class="navicon"></span><span>Nueva venta</span></button>
     <button class="navbtn" data-view="history" data-icon="receipt" onclick="goTo('history')"><span class="navicon"></span><span>Historial</span></button>
     <button class="navbtn" data-view="stats" data-icon="chart" onclick="goTo('stats')"><span class="navicon"></span><span>Estadísticas</span></button>
@@ -5345,7 +5351,7 @@ function stockBadge(p){
 }
 
 /* ---------- Estado en memoria ---------- */
-let currentView = 'home';
+let currentView = 'sale';
 let cart = [];               // { productId, qty, sizeId?, unitPrice?, sizeLabel?, manualPrice?, disc?, note? }
 /* Datos del cobro que se está armando. */
 function newCheckout(){
@@ -5509,6 +5515,7 @@ function vibrate(pattern){
    tienen su botón en el menú lateral. */
 const EXTRA_VIEWS = {};
 function goTo(view){
+  if(view === 'home') view = 'sale';              /* Inicio ya no existe: se abre Nueva venta */
   if(view === 'reports') view = 'stats';          /* Reportes ahora vive dentro de Ventas */
   currentView = view;
   render.fresh = true;
@@ -5545,7 +5552,7 @@ function render(){
   else if(currentView === 'account') put(renderAccount());
   else if(currentView === 'menu') put(renderMenuDigital());
   else if(EXTRA_VIEWS[currentView]) put(EXTRA_VIEWS[currentView]());
-  else { currentView = 'home'; document.body.dataset.section = 'home'; put(renderHome()); }
+  else { currentView = 'sale'; document.body.dataset.section = 'sale'; put(renderSale()); }
   const chip = document.getElementById('userChip');
   if(chip) chip.classList.toggle('active', currentView === 'account');
   if(typeof mdCfgSheetSync === 'function') mdCfgSheetSync();
@@ -12713,7 +12720,7 @@ function doLogout(){
   closeOpenShifts();
   closeUserSession();
   clearAppUnlocked();
-  currentView = 'home';
+  currentView = 'sale';
   authState = Object.assign(authState, { screen:'welcome', mode:'login', phone:'', email:'', password:'', terms:false, code:'' });
   showAuth('welcome');
   toast('Sesión cerrada');
@@ -12758,7 +12765,7 @@ function doDeleteAccount(){
     ['mesa_users','mesa_active_user','mesa_user_session','mesa_shifts'].forEach(k => localStorage.removeItem(k));
   }
   closeModal();
-  currentView = 'home';
+  currentView = 'sale';
   cart = []; delete checkout.menuOrderId;
   authState = Object.assign(authState, { screen:'welcome', mode:'signup', phone:'', email:'', password:'', terms:false, code:'' });
   showAuth('welcome');
@@ -13101,7 +13108,7 @@ function enterAsUser(u){
   hideAuth();
   closeModal();
   cart = []; delete checkout.menuOrderId;
-  currentView = 'home';
+  currentView = 'sale';
   paintChrome();
   render();
   toast('Bienvenido, ' + (userFirstName(u) || u.name), { variant:'toast-success', icon:icon('check'), subtitle:'Turno iniciado a las ' + shiftClock(new Date().toISOString()) });
@@ -13121,7 +13128,7 @@ function switchUser(){
   closeModal();
   cart = [];
   checkout = newCheckout(); customItems = {};
-  currentView = 'home';
+  currentView = 'sale';
   authState.pickedUser = null;
   showAuth('users');
   if(resumen) toast('Turno cerrado', { subtitle: resumen, icon:icon('clock') });
@@ -17449,7 +17456,7 @@ Object.assign(ICONS, {
 
 /* Encabezado para las secciones que no están en el menú de abajo del
    celular: una flecha para volver a Inicio. */
-function subViewBackHTML(){ return `<button class="page-back no-print" onclick="goTo('home')">${icon('chevronLeft')} Inicio</button>`; }
+function subViewBackHTML(){ return `<button class="page-back no-print" onclick="goTo('sale')">${icon('chevronLeft')} Volver</button>`; }
 function meName(){ const me = (typeof multiUser === 'function' && multiUser()) ? activeUser() : null; return me ? me.name : (displayName ? displayName() : ''); }
 function meId(){ const me = (typeof multiUser === 'function' && multiUser()) ? activeUser() : null; return me ? me.id : ''; }
 function fmtTime(iso){ return new Date(iso).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' }); }
@@ -23194,7 +23201,7 @@ function mdSaveDesign(abrir){
       if(d&&adv) adv.insertBefore(d,adv.firstChild);
     };
   }
-  var MORE=[['home','home','Inicio'],['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y gastos'],['account','person','Mi cuenta']];
+  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y gastos'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
     if(!bg){
