@@ -4473,6 +4473,11 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .mdx-done-sub{ margin:2px 0 0; font-size:14px; font-weight:600; line-height:1.45; color:var(--ink-soft,#6B7592); max-width:300px; }
 .mdx-done-actions{ display:flex; gap:10px; margin-top:8px; }
 .mdx-done-actions .btn{ padding:10px 18px; }
+
+.mdx-head{ display:flex; align-items:flex-start; gap:12px; }
+.mdx-head-txt{ flex:1; min-width:0; }
+.mdx-head .mdx-gear{ margin-top:16px; }
+.mdx-done-ico + h2{ margin-top:0; }
 </style>
 </head>
 <body>
@@ -16910,11 +16915,42 @@ function mdOffCardHTML(){
 }
 renderMenuDigital = function(){
   const cfg = mdCfg();
-  return `
+  const titulo = `
     <h1 class="page-title">Menú Digital</h1>
-    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>
-    ${!cfg.active ? mdOffCardHTML() : mdCompactHTML(cfg) + mdiSectionHTML()}`;
+    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>`;
+  if(!cfg.active) return titulo + mdOffCardHTML();
+  return `
+    <div class="mdx-head">
+      <div class="mdx-head-txt">${titulo}</div>
+      <button class="mdx-gear" onclick="mdOpenLinkSheet()" aria-label="Tu Menú Digital">${icon('gear')}</button>
+    </div>
+    ${mdiSectionHTML()}`;
 };
+/* Tuerca: pantalla completa con el link, copiar/compartir y configurar */
+function mdOpenLinkSheet(){
+  const cfg = mdCfg();
+  if(!cfg.active) return;
+  vibrate(8);
+  const puede = can('gestionarProductos');
+  openModal(`
+    <i class="fs-marker" hidden></i>
+    <div class="sheet-header">
+      <button class="sheet-close" style="margin-left:auto;" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
+    </div>
+    <div class="mdx-done">
+      <span class="mdx-done-ico">${icon('menuBook')}</span>
+      <h2>Tu Menú Digital</h2>
+      <p class="mdx-done-sub">Este es el link de tu menú. Envíaselo a tus clientes para que hagan sus pedidos.</p>
+      <div class="md-link-box mdx-done-link">${icon('link')}<span class="md-link-url" title="${escapeHtml(mdLink(cfg))}">${escapeHtml(mdShortLink(cfg))}</span></div>
+      <div class="mdx-done-actions">
+        <button class="btn ghost" onclick="mdCopyLink()">${icon('copy')} Copiar</button>
+        <button class="btn ghost" onclick="mdShareLink()">${icon('share')} Compartir</button>
+      </div>
+      <button class="btn ghost block" style="max-width:380px;margin-top:22px;" onclick="mdSetCfgVisible(true)">${icon('gear')} ${puede ? 'Configurar menú' : 'Ver detalles'}</button>
+    </div>
+    <button type="button" class="btn primary block" onclick="closeModal()">Listo</button>
+  `, { dismissible:true });
+}
 
 /* ---------- Menú del cliente: "Continuar" → tipo de servicio, pago y nombre ----------
    El carrito ya no manda directo a WhatsApp: con "Continuar" el cliente
