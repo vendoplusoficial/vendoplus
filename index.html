@@ -4313,6 +4313,39 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   body.auth-open .modal-overlay:has(.vp-pf){ padding-left:0; }
   .modal-sheet.vp-pf{ max-width:600px; height:auto; max-height:92vh; border-radius:28px; padding:28px 32px 32px; }
 }
+
+/* ---- Ajuste de tamaños (más compacto, como el diseño de referencia) ---- */
+.vp-pf .sheet-close{ width:38px; height:38px; border-radius:13px; }
+.vp-pf .sheet-close svg{ width:19px; height:19px; }
+.modal-sheet.vp-pf{ padding-left:18px; padding-right:18px; }
+.vp-pf .sheet-header{ gap:14px; margin-bottom:16px; }
+.vp-pf .sheet-header h2{ font-size:25px; gap:11px; }
+.vp-pf .sheet-header h2::before{ height:25px; width:4px; }
+.vp-pf .field{ margin-bottom:15px; }
+.vp-pf .field > label:not(.photo-upload){ font-size:13px; margin-bottom:7px; }
+.vp-pf .field input:not([type=checkbox]):not([type=file]),.vp-pf .field select{ height:46px; border-radius:14px; font-size:15px; padding:0 15px; }
+.vp-pf .field textarea{ width:100%; border-radius:14px; border:1.5px solid var(--vp-line); padding:12px 15px; font:600 15px var(--sans); color:var(--vp-navy); background:#fff; }
+.vp-pf .field-hint{ font-size:12.5px; margin-top:6px; }
+.vp-pf .field label.photo-upload{ height:128px; border-radius:18px; gap:8px; }
+.vp-pf .photo-upload svg{ width:28px; height:28px; }
+.vp-pf .photo-upload-hint{ font-size:14px; }
+.vp-money span{ font-size:17px; left:16px; }
+.vp-pf .vp-money input{ padding-left:40px !important; }
+.vp-select svg{ width:20px; height:20px; left:15px; }
+.vp-pf .vp-select select{ padding-left:44px; padding-right:40px; background-size:18px; background-position:right 13px center; }
+.vp-adv-toggle{ padding:15px 16px; font-size:14.5px; border-radius:16px; gap:11px; margin:2px 0 16px; }
+.vp-adv-toggle svg{ width:20px; height:20px; } .vp-adv-toggle .vp-chev{ width:18px; height:18px; }
+.vp-pf .vp-save{ height:48px; font-size:15px; gap:12px; margin-top:4px; box-shadow:0 8px 18px rgba(22,193,91,.28); }
+.vp-pf .vp-save svg{ width:20px; height:20px; } .vp-pf .vp-save i{ height:20px; }
+.vp-pf .section-title{ font-size:14px; margin:18px 0 10px; }
+@media (max-width:699px){
+  body:has(.vp-pf) .bottomnav, body:has(.vp-pf) .cartbar{ display:none !important; }
+  .modal-overlay:has(.vp-pf){ background:#fff; }
+  .navbtn[data-view="sale"] .navicon{ width:54px; height:54px; border-width:4px; }
+  .navbtn[data-view="sale"]{ margin-top:-26px; }
+  .navbtn[data-view="sale"] .navicon svg{ width:24px; height:24px; }
+}
+@media (min-width:700px){ .modal-sheet.vp-pf{ max-width:520px; } }
 </style>
 
 </head>
@@ -23117,9 +23150,11 @@ function mdSaveDesign(abrir){
     var tg=document.createElement('button'); tg.type='button'; tg.className='vp-adv-toggle'; tg.innerHTML=GEAR+'<span>Opciones avanzadas</span>'+CH;
     whole.parentNode.insertBefore(tg,whole); whole.parentNode.insertBefore(adv,whole);
     list.forEach(function(x){ adv.appendChild(x); });
-    var hasAdv=!!editing && (editing.sku || editing.stock!=null || editing.sizesOn || Number(editing.wholesalePrice)>0);
-    function setAdv(o){ adv.hidden=!o; tg.classList.toggle('open',o); }
-    setAdv(!!hasAdv); tg.onclick=function(){ setAdv(adv.hidden); };
+    var h2=q('.sheet-header h2',sh), title=h2?h2.textContent:'';
+    function setAdv(o){ sh.classList.toggle('vp-adv-mode',o); adv.hidden=!o; tg.style.display=o?'none':''; if(h2) h2.textContent=o?'Opciones avanzadas':title; sh.scrollTop=0; }
+    sh.vpSetAdv=setAdv; setAdv(false); tg.onclick=function(){ setAdv(true); };
+    if(cl){ cl.removeAttribute('onclick'); cl.onclick=function(e){ e.preventDefault(); if(sh.classList.contains('vp-adv-mode')) setAdv(false); else closeModal(); }; }
+    var nm=document.getElementById('pfName'); if(nm) nm.placeholder='Ej. Hamburguesa Clásica';
     save.className='vp-save';
     save.setAttribute('onclick',"vpSaveProduct('"+(editing?editing.id:'')+"')");
     save.innerHTML= editing ? 'Guardar cambios' : ICONS.vpPlus+'<i></i><span>Agregar producto</span>';
@@ -23127,8 +23162,17 @@ function mdSaveDesign(abrir){
   window.vpSaveProduct=function(id){
     saveProductForm(id);
     var adv=document.getElementById('vpAdv');
-    if(adv && adv.hidden && adv.querySelector('.has-error')){ adv.hidden=false; var t=q('.vp-adv-toggle'); if(t) t.classList.add('open'); }
+    var sh=q('#modal-layer .modal-sheet');
+    if(adv && adv.hidden && adv.querySelector('.has-error') && sh && sh.vpSetAdv) sh.vpSetAdv(true);
   };
+  var _vpOpen=window.openProductForm;
+  if(typeof _vpOpen==='function'){
+    window.openProductForm=openProductForm=function(id){
+      _vpOpen(id);
+      var d=document.getElementById('pfDescField'), adv=document.getElementById('vpAdv');
+      if(d&&adv) adv.insertBefore(d,adv.firstChild);
+    };
+  }
   var MORE=[['home','home','Inicio'],['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y gastos'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
