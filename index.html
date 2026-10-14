@@ -4372,6 +4372,16 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   .navbtn[data-view="sale"], .navbtn[data-view="sale"].active, .navbtn[data-view="sale"]:hover{ background:none !important; box-shadow:none !important; }
   .navbtn[data-view="sale"].active .navicon{ background:var(--vp-green-d) !important; }
 }
+
+/* ---- Barra del carrito: verde, redonda y un poco más grande ---- */
+.cartbar-inner{ background:linear-gradient(135deg,#1ECF68,#12B755) !important; border:0 !important; border-radius:999px !important; padding:12px 16px 12px 12px !important; min-height:64px; box-shadow:0 12px 26px rgba(22,193,91,.38) !important; color:#fff !important; }
+.cartbar-icon{ width:42px !important; height:42px !important; background:rgba(255,255,255,.22) !important; color:#fff !important; border-radius:50% !important; }
+.cartbar-icon svg{ width:21px; height:21px; }
+.cartbar-count{ background:#fff !important; color:var(--vp-green-d) !important; border:0 !important; font-weight:800; }
+.cartbar-label{ font-size:16px !important; color:#fff !important; }
+.cartbar-total{ font-size:17.5px !important; color:#fff !important; }
+.cartbar-thumb{ border:2px solid rgba(255,255,255,.7) !important; }
+.cartbar-chevron{ background:rgba(255,255,255,.24) !important; color:#fff !important; }
 </style>
 
 </head>
@@ -10007,7 +10017,7 @@ function setProductsTab(t){ productsTab = t; vibrate(8); render(); }
 function onProductsSearch(v){ productsSearch = v; render(); }
 
 function renderProducts(){
-  if(!DB.getProducts().length) productsTab = 'catalogo';
+  productsTab = 'catalogo';
   const products = DB.getProducts();
   const categories = DB.getCategories();
   const puedeEditar = can('gestionarProductos');
@@ -10017,8 +10027,7 @@ function renderProducts(){
     </div>`;
   const head = `
     <h1 class="page-title">Inventarios</h1>
-    ${products.length ? `<p class="page-sub">${puedeEditar ? 'Tus productos, categorías y existencias' : 'Consulta los productos y las existencias'}</p>
-    ${seg}` : ''}`;
+    ${products.length ? `<p class="page-sub">${puedeEditar ? 'Tus productos, categorías y existencias' : 'Consulta los productos y las existencias'}</p>` : ''}`;
   if(productsTab === 'inventario' && typeof inventoryTabHTML === 'function') return head + inventoryTabHTML();
 
   const q = productsSearch.trim();
@@ -23198,7 +23207,9 @@ function mdSaveDesign(abrir){
     save.innerHTML= editing ? 'Guardar cambios' : ICONS.vpPlus+'<i></i><span>Agregar producto</span>';
   };
   window.vpSaveProduct=function(id){
+    var shf=q('#modal-layer .modal-sheet'), fromSale=!!(shf && shf.dataset.fromSale);
     saveProductForm(id);
+    if(fromSale && !document.getElementById('pfName')){ goTo('sale'); return; }
     var adv=document.getElementById('vpAdv');
     var sh=q('#modal-layer .modal-sheet');
     if(adv && adv.hidden && adv.querySelector('.has-error') && sh && sh.vpSetAdv) sh.vpSetAdv(true);
@@ -23206,7 +23217,9 @@ function mdSaveDesign(abrir){
   var _vpOpen=window.openProductForm;
   if(typeof _vpOpen==='function'){
     window.openProductForm=openProductForm=function(id){
+      var fs=!!window.vpFromSale; window.vpFromSale=false;
       _vpOpen(id);
+      var sh0=q('#modal-layer .modal-sheet'); if(sh0 && fs) sh0.dataset.fromSale='1';
       var d=document.getElementById('pfDescField'), adv=document.getElementById('vpAdv');
       if(d&&adv) adv.insertBefore(d,adv.firstChild);
     };
@@ -23237,7 +23250,7 @@ function mdSaveDesign(abrir){
       if(!t||t.textContent.trim()!=='Sin productos aquí'||q('.vp-empty-cta',es)) return;
       var btn=document.createElement('button'); btn.className='vp-empty-cta';
       btn.innerHTML=ICONS.vpPlus+'<i></i><span>Agregar nuevos productos</span>';
-      btn.onclick=function(){ try{ productsTab='catalogo'; }catch(e){} goTo('products'); setTimeout(function(){ openProductForm(); },80); };
+      btn.onclick=function(){ window.vpFromSale=true; openProductForm(); };
       es.appendChild(btn);
     });
   }
