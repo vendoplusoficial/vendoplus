@@ -17767,7 +17767,7 @@ function renderCustomers(){
 
     <div class="mdi-today">
       <div><span>Clientes</span><b>${list.length}</b><small>${list.length === 1 ? 'registrado' : 'registrados'}</small></div>
-      <div><span>Te deben</span><b class="${deben.length ? 'warn' : ''}">${formatMoney(totalReceivable())}</b><small>${deben.length} cliente${deben.length === 1 ? '' : 's'}</small></div>
+      <div><span>Te deben</span><b>${formatMoney(totalReceivable())}</b><small>${deben.length} cliente${deben.length === 1 ? '' : 's'}</small></div>
       <div><span>Cobrado este mes</span><b>${formatMoney(cobradoMes)}</b><small>en abonos</small></div>
     </div>
 
