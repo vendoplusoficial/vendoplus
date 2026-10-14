@@ -1,806 +1,492 @@
-
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f7f9f7">
-  <meta name="description" content="Conoce cómo VendoPlus recopila, utiliza y protege tus datos personales y la información de tu negocio.">
-  <title>Política de Privacidad | VendoPlus</title>
-
-  <style>
-    :root {
-      --green: #16865b;
-      --green-dark: #106644;
-      --green-light: #e8f5ee;
-      --ink: #17251e;
-      --muted: #66736b;
-      --border: #e5ebe6;
-      --surface: #ffffff;
-      --background: #f7f9f7;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html {
-      scroll-behavior: smooth;
-      scroll-padding-top: 100px;
-    }
-
-    body {
-      font-family: Inter, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", Roboto, Arial, sans-serif;
-      background: var(--background);
-      color: var(--ink);
-      line-height: 1.75;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    a {
-      color: var(--green-dark);
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .nav {
-      max-width: 1120px;
-      margin: auto;
-      min-height: 76px;
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      color: var(--ink);
-      font-size: 23px;
-      font-weight: 800;
-      letter-spacing: -1px;
-    }
-
-    .brand:hover {
-      text-decoration: none;
-    }
-
-    .brand-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
-      background: var(--green);
-      color: white;
-      display: grid;
-      place-items: center;
-      box-shadow: 0 5px 14px #16865b30;
-    }
-
-    .brand-icon svg {
-      width: 23px;
-      height: 23px;
-    }
-
-    .nav-label {
-      font-size: 13px;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .hero {
-      padding: 76px 24px 70px;
-      background:
-        radial-gradient(ellipse at 85% 15%, #d9f0e3 0%, transparent 34%),
-        linear-gradient(145deg, #ffffff 0%, #f0f7f1 100%);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .hero-inner {
-      max-width: 1000px;
-      margin: auto;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--green-light);
-      color: var(--green-dark);
-      padding: 7px 12px;
-      border-radius: 30px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 1.1px;
-      text-transform: uppercase;
-    }
-
-    .eyebrow span {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-    }
-
-    h1 {
-      margin-top: 23px;
-      max-width: 760px;
-      font-size: clamp(36px, 6vw, 61px);
-      line-height: 1.1;
-      letter-spacing: -2.6px;
-      font-weight: 800;
-    }
-
-    h1 em {
-      font-style: normal;
-      color: var(--green);
-    }
-
-    .hero-description {
-      max-width: 650px;
-      margin-top: 20px;
-      font-size: 17px;
-      color: var(--muted);
-      line-height: 1.8;
-    }
-
-    .updated {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      margin-top: 25px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .updated svg {
-      width: 17px;
-      height: 17px;
-      color: var(--green);
-    }
-
-    .layout {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 48px 24px 76px;
-      display: grid;
-      grid-template-columns: 250px minmax(0, 1fr);
-      gap: 32px;
-      align-items: start;
-    }
-
-    .sidebar {
-      position: sticky;
-      top: 100px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 23px 16px;
-    }
-
-    .sidebar h2 {
-      padding: 0 10px;
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 15px;
-    }
-
-    .sidebar a {
-      display: block;
-      padding: 9px 11px;
-      margin: 3px 0;
-      border-radius: 9px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #56645b;
-      transition: background .2s, color .2s;
-    }
-
-    .sidebar a:hover {
-      background: var(--green-light);
-      color: var(--green-dark);
-      text-decoration: none;
-    }
-
-    .content {
-      min-width: 0;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: clamp(24px, 5vw, 48px);
-      box-shadow: 0 12px 40px #18291d05;
-    }
-
-    .intro-card {
-      background: #f0f7f1;
-      border: 1px solid #e0eee3;
-      border-radius: 14px;
-      padding: 22px 24px;
-      margin-bottom: 40px;
-    }
-
-    .intro-card p {
-      color: #3d5948;
-      font-size: 14px;
-    }
-
-    .content section {
-      scroll-margin-top: 100px;
-      padding-top: 30px;
-      margin-top: 30px;
-      border-top: 1px solid var(--border);
-    }
-
-    .content section:first-of-type {
-      padding-top: 0;
-      margin-top: 0;
-      border-top: 0;
-    }
-
-    .content h2 {
-      font-size: clamp(20px, 3vw, 25px);
-      letter-spacing: -.6px;
-      line-height: 1.4;
-      margin-bottom: 15px;
-    }
-
-    .content h3 {
-      font-size: 16px;
-      margin: 22px 0 8px;
-    }
-
-    .content p {
-      font-size: 15px;
-      color: #536158;
-      margin-bottom: 13px;
-    }
-
-    .content ul {
-      list-style: none;
-      margin: 15px 0 18px;
-    }
-
-    .content li {
-      position: relative;
-      padding: 7px 0 7px 26px;
-      color: #536158;
-      font-size: 14px;
-    }
-
-    .content li::before {
-      content: "";
-      position: absolute;
-      left: 2px;
-      top: 17px;
-      width: 8px;
-      height: 8px;
-      border-radius: 3px;
-      background: #51a77b;
-    }
-
-    .data-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin: 20px 0;
-    }
-
-    .data-item {
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      padding: 17px;
-      background: #fff;
-    }
-
-    .data-item .symbol {
-      width: 34px;
-      height: 34px;
-      display: grid;
-      place-items: center;
-      background: var(--green-light);
-      border-radius: 10px;
-      color: var(--green-dark);
-      font-size: 17px;
-      margin-bottom: 12px;
-    }
-
-    .data-item strong {
-      display: block;
-      font-size: 14px;
-      margin-bottom: 5px;
-    }
-
-    .data-item span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    .contact-card {
-      margin-top: 35px;
-      border-radius: 16px;
-      padding: 25px;
-      background: var(--ink);
-      color: white;
-    }
-
-    .contact-card h2 {
-      color: white;
-    }
-
-    .contact-card p {
-      color: #c2d0c6;
-    }
-
-    .contact-card a {
-      display: inline-block;
-      color: #9ce3b9;
-      font-weight: 700;
-      overflow-wrap: anywhere;
-    }
-
-    .footer {
-      border-top: 1px solid var(--border);
-      padding: 30px 24px;
-      background: #fff;
-    }
-
-    .footer-inner {
-      max-width: 1120px;
-      margin: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .footer p {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .footer-brand {
-      font-weight: 800;
-      color: var(--ink);
-      font-size: 15px;
-    }
-
-    @media (max-width: 760px) {
-      .nav {
-        min-height: 66px;
-        padding: 12px 18px;
-      }
-
-      .brand {
-        font-size: 21px;
-      }
-
-      .nav-label {
-        font-size: 11px;
-      }
-
-      .hero {
-        padding: 55px 21px 48px;
-      }
-
-      h1 {
-        letter-spacing: -1.6px;
-      }
-
-      .hero-description {
-        font-size: 15px;
-      }
-
-      .layout {
-        display: block;
-        padding: 24px 14px 48px;
-      }
-
-      .sidebar {
-        position: static;
-        margin-bottom: 18px;
-        padding: 17px;
-      }
-
-      .sidebar nav {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 2px;
-      }
-
-      .sidebar a {
-        font-size: 12px;
-      }
-
-      .content {
-        padding: 25px 20px;
-        border-radius: 16px;
-      }
-
-      .data-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .intro-card {
-        padding: 18px;
-      }
-
-      .footer-inner {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-    }
-
-    @media print {
-      .topbar, .sidebar {
-        display: none;
-      }
-
-      .layout {
-        display: block;
-        padding: 0;
-      }
-
-      .content {
-        border: 0;
-        box-shadow: none;
-      }
-
-      body {
-        background: #fff;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aviso de privacidad · Vendo</title>
+<meta name="description" content="Qué datos usa Vendo, para qué los usamos, con quién los compartimos y cómo puedes ejercer tus derechos ARCO.">
+<meta name="theme-color" content="#1C1F52">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234F46E5'/%3E%3Cstop offset='1' stop-color='%237C3AED'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cg transform='translate(4 4)' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.3 8.6h13.4l-1.05 10.9a1.7 1.7 0 0 1-1.7 1.5H8.05a1.7 1.7 0 0 1-1.7-1.5L5.3 8.6Z'/%3E%3Cpath d='M9 8.6V7.2a3 3 0 0 1 6 0v1.4'/%3E%3Cpath d='m9.3 14.3 1.9 1.9 3.6-3.9'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  /* Mismos colores, letra y formas que el punto de venta Vendo */
+  :root{
+    --brand:#4F46E5;
+    --brand-2:#7C3AED;
+    --brand-soft:#EEEFFF;
+    --brand-ink:#3730A3;
+    --brand-rgb:79,70,229;
+
+    --bg:#F3F4FA;
+    --surface:#FFFFFF;
+    --surface-alt:#EEF0F7;
+    --ink:#16213E;
+    --ink-mid:#5B6482;
+    --ink-soft:#8A93AC;
+    --ink-faint:#C9CEDD;
+    --border:#E4E7F1;
+    --danger-bg:#FBEAE8;
+    --danger-ink:#B23A2E;
+
+    --radius-card:18px;
+    --radius-btn:13px;
+    --shadow-card:0 1px 2px rgba(22,33,62,.04), 0 6px 18px rgba(22,33,62,.05);
+    --hero:linear-gradient(160deg,#2C2F7E 0%, #1C1F52 62%, #13153A 100%);
+    --sans:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; scroll-padding-top:16px; }
+  body{
+    margin:0; font-family:var(--sans); background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; line-height:1.55;
+  }
+  a{ color:var(--brand-ink); font-weight:700; }
+  svg{ display:block; }
+  :focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+  .wrap{ width:100%; max-width:1080px; margin:0 auto; padding:0 16px; }
+
+  /* ---------- Encabezado ---------- */
+  .hero{
+    background:var(--hero); color:#fff; position:relative; overflow:hidden;
+    padding:calc(18px + env(safe-area-inset-top)) 0 64px;
+  }
+  .hero::after{
+    content:''; position:absolute; right:-120px; top:-140px; width:420px; height:420px; border-radius:50%;
+    background:radial-gradient(circle, rgba(124,58,237,.38), rgba(124,58,237,0) 68%); pointer-events:none;
+  }
+  .hero .wrap{ position:relative; z-index:1; }
+  .brand{ display:inline-flex; align-items:center; gap:11px; color:#fff; text-decoration:none; }
+  .brand-mark{
+    width:42px; height:42px; border-radius:13px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--brand), var(--brand-2));
+    display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,0,0,.25);
+  }
+  .brand-mark svg{ width:22px; height:22px; }
+  .brand b{ display:block; font-size:20px; font-weight:800; letter-spacing:-.3px; line-height:1.1; }
+  .brand small{ display:block; font-size:11.5px; font-weight:600; opacity:.72; margin-top:2px; }
+  .hero-txt{ margin-top:34px; max-width:620px; }
+  .eyebrow{
+    display:inline-block; font-size:11.5px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase;
+    color:#C9CCFB; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
+    padding:5px 11px; border-radius:999px;
+  }
+  .hero h1{ font-size:34px; line-height:1.12; font-weight:800; letter-spacing:-.6px; margin:14px 0 10px; }
+  .hero p{ font-size:16px; font-weight:500; color:rgba(255,255,255,.76); margin:0; max-width:540px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+  .chips span{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:12.5px; font-weight:700; color:rgba(255,255,255,.9);
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
+    padding:7px 12px; border-radius:999px;
+  }
+  .chips svg{ width:15px; height:15px; color:#C9CCFB; flex-shrink:0; }
+
+  /* ---------- Distribución ---------- */
+  .main{ display:grid; gap:14px; margin-top:-36px; position:relative; z-index:2; }
+  .side{ display:grid; gap:14px; min-width:0; }
+  .content{ display:grid; gap:14px; min-width:0; }
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card); padding:20px 18px; min-width:0;
+  }
+
+  /* ---------- Índice ---------- */
+  .toc summary{
+    list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    font-size:15px; font-weight:800;
+  }
+  .toc summary::-webkit-details-marker{ display:none; }
+  .toc summary .chev{ width:18px; height:18px; color:var(--ink-soft); transition:transform .18s ease; }
+  .toc[open] summary .chev{ transform:rotate(180deg); }
+  .toc ol{ list-style:none; margin:12px 0 0; padding:0; display:grid; gap:2px; counter-reset:toc; }
+  .toc li{ counter-increment:toc; }
+  .toc a{
+    display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px;
+    font-size:13.5px; font-weight:700; color:var(--ink-mid); text-decoration:none;
+  }
+  .toc a::before{
+    content:counter(toc); width:22px; height:22px; border-radius:7px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;
+    background:var(--surface-alt); color:var(--ink-soft);
+  }
+  .toc a:hover{ background:var(--bg); color:var(--ink); }
+  .toc a.on{ background:var(--brand-soft); color:var(--brand-ink); }
+  .toc a.on::before{ background:var(--brand); color:#fff; }
+
+  /* ---------- Resumen ---------- */
+  .sum-title{ font-size:16px; font-weight:800; margin:0 0 4px; }
+  .sum-sub{ margin:0 0 14px; font-size:13.5px; color:var(--ink-soft); font-weight:600; }
+  .sum-grid{ display:grid; grid-template-columns:1fr; gap:8px; }
+  .sum{
+    display:flex; gap:12px; align-items:flex-start; background:var(--bg); border:1px solid var(--border);
+    border-radius:14px; padding:12px;
+  }
+  .sum b{ display:block; font-size:14px; font-weight:800; color:var(--ink); line-height:1.3; }
+  .sum span.t{ display:block; font-size:13px; font-weight:600; color:var(--ink-mid); margin-top:2px; line-height:1.45; }
+  .ico{
+    width:36px; height:36px; border-radius:11px; background:var(--surface); box-shadow:0 0 0 1px var(--border);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--brand-ink);
+  }
+  .ico svg{ width:18px; height:18px; }
+  .ico.solid{ background:var(--brand-soft); box-shadow:none; }
+
+  /* ---------- Secciones ---------- */
+  .sec{ scroll-margin-top:16px; }
+  .section-title{
+    font-size:17px; font-weight:800; color:var(--ink); margin:0 0 12px;
+    display:flex; align-items:center; gap:9px; letter-spacing:-.15px; line-height:1.3;
+  }
+  .section-title::before{ content:''; display:block; width:4px; height:18px; border-radius:3px; background:var(--brand); flex-shrink:0; }
+  .sec p{ margin:0 0 12px; font-size:14.5px; color:var(--ink-mid); font-weight:500; }
+  .sec p:last-child{ margin-bottom:0; }
+  .sec p b, .sec li b{ color:var(--ink); font-weight:700; }
+  .sec h3{ font-size:14.5px; font-weight:800; margin:16px 0 8px; color:var(--ink); }
+
+  .list{ list-style:none; margin:0 0 12px; padding:0; display:grid; gap:8px; }
+  .list:last-child{ margin-bottom:0; }
+  .list li{ position:relative; padding-left:22px; font-size:14.5px; color:var(--ink-mid); font-weight:500; }
+  .list li::before{
+    content:''; position:absolute; left:4px; top:9px; width:7px; height:7px; border-radius:50%; background:var(--brand);
+  }
+
+  .data-grid{ display:grid; grid-template-columns:1fr; gap:8px; margin-bottom:12px; }
+  .data{
+    display:flex; gap:12px; align-items:flex-start; border:1px solid var(--border); border-radius:14px; padding:12px; background:var(--bg);
+  }
+  .data b{ display:block; font-size:14px; font-weight:800; color:var(--ink); }
+  .data span.t{ display:block; font-size:13px; color:var(--ink-mid); font-weight:600; margin-top:2px; line-height:1.45; }
+
+  .kv{ margin:0; background:var(--bg); border:1px solid var(--border); border-radius:14px; padding:4px 14px; }
+  .kv div{ display:flex; justify-content:space-between; gap:16px; padding:10px 0; border-bottom:1px dashed var(--border); font-size:14px; }
+  .kv div:last-child{ border-bottom:none; }
+  .kv dt{ color:var(--ink-soft); font-weight:700; white-space:nowrap; }
+  .kv dd{ margin:0; text-align:right; font-weight:700; color:var(--ink); word-break:break-word; }
+
+  .arco{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:4px 0 14px; }
+  .arco div{ border:1px solid var(--border); border-radius:14px; padding:12px; background:var(--bg); min-width:0; }
+  .arco .letter{
+    width:30px; height:30px; border-radius:9px; background:var(--brand); color:#fff; font-weight:800; font-size:15px;
+    display:flex; align-items:center; justify-content:center; margin-bottom:8px;
+  }
+  .arco b{ display:block; font-size:14px; font-weight:800; }
+  .arco span.t{ display:block; font-size:12.5px; color:var(--ink-mid); font-weight:600; margin-top:2px; line-height:1.4; }
+
+  .steps{ list-style:none; margin:0 0 14px; padding:0; display:grid; gap:10px; counter-reset:st; }
+  .steps li{ counter-increment:st; display:flex; gap:12px; font-size:14.5px; color:var(--ink-mid); font-weight:500; }
+  .steps li::before{
+    content:counter(st); width:26px; height:26px; border-radius:8px; flex-shrink:0; margin-top:-1px;
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;
+    background:var(--brand-soft); color:var(--brand-ink);
+  }
+
+  .note{
+    display:flex; gap:11px; align-items:flex-start; margin:12px 0 0;
+    background:var(--brand-soft); color:var(--brand-ink); border-radius:14px; padding:12px 14px;
+    font-size:13.5px; font-weight:600; line-height:1.5;
+  }
+  .note svg{ width:19px; height:19px; flex-shrink:0; margin-top:1px; }
+  .note b{ color:var(--brand-ink); }
+
+  .btn-row{ display:flex; flex-wrap:wrap; gap:9px; margin-top:16px; }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; flex:1 1 220px;
+    border:none; border-radius:var(--radius-btn); padding:14px 18px; font-size:15px; font-weight:800;
+    background:var(--surface-alt); color:var(--ink); text-decoration:none; transition:transform .12s ease;
+  }
+  .btn:active{ transform:scale(.98); }
+  .btn svg{ width:18px; height:18px; }
+  .btn.primary{ background:var(--brand); color:#fff; box-shadow:0 8px 20px rgba(var(--brand-rgb),.28); }
+  .btn.ghost{ background:var(--surface); border:1.5px solid var(--border); color:var(--ink); }
+
+  /* ---------- Pie ---------- */
+  .foot{ padding-top:26px; padding-bottom:calc(30px + env(safe-area-inset-bottom)); text-align:center; font-size:13px; color:var(--ink-soft); font-weight:600; }
+  .foot nav{ display:flex; justify-content:center; flex-wrap:wrap; gap:6px 18px; margin-bottom:8px; }
+  .foot a{ color:var(--brand-ink); }
+  .foot small{ display:block; margin-top:6px; color:var(--ink-faint); }
+
+  @media (min-width:600px){
+    .card{ padding:22px; }
+    .sum-grid, .data-grid{ grid-template-columns:1fr 1fr; }
+    .arco{ grid-template-columns:repeat(4, 1fr); }
+  }
+  @media (min-width:900px){
+    .hero{ padding-top:28px; padding-bottom:84px; }
+    .hero h1{ font-size:42px; }
+    .hero-txt{ margin-top:46px; }
+    .main{ grid-template-columns:270px minmax(0,1fr); gap:18px; align-items:start; margin-top:-52px; }
+    .side{ position:sticky; top:16px; }
+    .toc summary{ pointer-events:none; }
+    .toc summary .chev{ display:none; }
+    .card{ padding:24px 26px; }
+  }
+  @media (max-width:380px){
+    .hero h1{ font-size:30px; }
+  }
+  @media print{
+    .hero{ background:#fff; color:var(--ink); padding:0 0 10px; }
+    .hero::after, .side, .btn-row, .foot nav{ display:none; }
+    .hero p, .chips span, .brand small{ color:var(--ink-mid); }
+    .eyebrow, .chips span{ border-color:var(--border); background:none; color:var(--ink-mid); }
+    .main{ margin-top:0; display:block; }
+    .card{ box-shadow:none; border:none; padding:10px 0; break-inside:avoid; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{ scroll-behavior:auto; }
+    *{ transition:none !important; }
+  }
+</style>
 </head>
-
 <body>
 
-  <header class="topbar">
-    <div class="nav">
-      <a class="brand" href="https://vendoplusoficial.com/"
-         aria-label="Vendo+ inicio">
-        <span class="brand-icon">
-          <svg viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round"
-               aria-hidden="true">
-            <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/>
-            <path d="M9 8h6M9 12h6M9 16h3"/>
-          </svg>
-        </span>
-        VendoPlus
-      </a>
-      <span class="nav-label">Centro de privacidad</span>
-    </div>
-  </header>
+<header class="hero">
+  <div class="wrap">
+    <span class="brand" aria-label="Vendo">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5.3 8.6h13.4l-1.05 10.9a1.7 1.7 0 0 1-1.7 1.5H8.05a1.7 1.7 0 0 1-1.7-1.5L5.3 8.6Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.6V7.2a3 3 0 0 1 6 0v1.4" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="m9.3 14.3 1.9 1.9 3.6-3.9" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span><b>Vendo</b><small>Punto de venta para cualquier negocio</small></span>
+    </span>
 
-  <main>
-    <section class="hero">
-      <div class="hero-inner">
-        <div class="eyebrow"><span></span> Privacidad y seguridad</div>
-        <h1>Tu negocio es tuyo.<br><em>Tus datos también.</em></h1>
-        <p class="hero-description">
-          La transparencia es parte de un buen negocio. Aquí te explicamos
-          qué información utiliza VendoPlus, para qué la necesitamos y cómo
-          puedes solicitar su eliminación.
-        </p>
-        <div class="updated">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="1.8" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M12 7v5l3 2"/>
-          </svg>
-          Última actualización: 13 de octubre de 2026
+    <div class="hero-txt">
+      <span class="eyebrow">Cuenta y privacidad</span>
+      <h1>Aviso de privacidad</h1>
+      <p>Qué datos usa Vendo, para qué los usamos, con quién los compartimos y cómo puedes controlarlos.</p>
+      <div class="chips">
+        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.9"/><path d="M12 7.2V12l3.1 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Última actualización: 14 de octubre de 2026</span>
+        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2 5 6v6c0 4.2 3 7.4 7 8.8 4-1.4 7-4.6 7-8.8V6l-7-2.8Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="m9 12 2.2 2.2L15.5 10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Ley Federal de Protección de Datos Personales</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap main">
+
+  <!-- Índice -->
+  <aside class="side">
+    <details class="card toc" id="toc" open>
+      <summary>Contenido
+        <svg class="chev" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </summary>
+      <ol>
+        <li><a href="#responsable">Quién es responsable</a></li>
+        <li><a href="#datos">Qué datos usamos</a></li>
+        <li><a href="#finalidades">Para qué los usamos</a></li>
+        <li><a href="#compartir">Con quién los compartimos</a></li>
+        <li><a href="#conservacion">Cuánto tiempo los guardamos</a></li>
+        <li><a href="#seguridad">Cómo los cuidamos</a></li>
+        <li><a href="#derechos">Tus derechos (ARCO)</a></li>
+        <li><a href="#dispositivo">Datos en tu dispositivo</a></li>
+        <li><a href="#menores">Menores de edad</a></li>
+        <li><a href="#cambios">Cambios a este aviso</a></li>
+        <li><a href="#contacto">Contacto</a></li>
+      </ol>
+    </details>
+  </aside>
+
+  <div class="content">
+
+    <!-- Resumen -->
+    <section class="card" aria-labelledby="t-sum">
+      <h2 class="sum-title" id="t-sum">En resumen</h2>
+      <p class="sum-sub">Lo más importante, en pocas palabras.</p>
+      <div class="sum-grid">
+        <div class="sum">
+          <span class="ico solid"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2 5 6v6c0 4.2 3 7.4 7 8.8 4-1.4 7-4.6 7-8.8V6l-7-2.8Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="m9 12 2.2 2.2L15.5 10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span><b>No vendemos tus datos</b><span class="t">Ni los usamos para publicidad.</span></span>
+        </div>
+        <div class="sum">
+          <span class="ico solid"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2.2" stroke="currentColor" stroke-width="1.9"/><path d="M3 10h18M7 15h3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+          <span><b>No guardamos tarjetas</b><span class="t">Vendo solo anota cómo te pagaron: efectivo, tarjeta o transferencia.</span></span>
+        </div>
+        <div class="sum">
+          <span class="ico solid"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7" stroke="currentColor" stroke-width="1.9"/><path d="M4.8 20c0-3.9 3.2-6.4 7.2-6.4s7.2 2.5 7.2 6.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+          <span><b>Tus datos son tuyos</b><span class="t">Puedes verlos, corregirlos u oponerte a que los usemos.</span></span>
+        </div>
+        <div class="sum">
+          <span class="ico solid"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 7h15M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8L18 7M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span><b>Puedes borrar tu cuenta</b><span class="t">Lo pides en <a href="../eliminar-cuenta/">Eliminar cuenta</a> y lo hacemos en máximo 30 días.</span></span>
         </div>
       </div>
     </section>
 
-    <div class="layout">
+    <!-- 1 -->
+    <section class="card sec" id="responsable">
+      <h2 class="section-title">1. Quién es responsable de tus datos</h2>
+      <p><b>Vendo</b>, el punto de venta para negocios, es responsable de tratar los datos personales que nos das al usar la app y este sitio, de acuerdo con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.</p>
+      <dl class="kv">
+        <div><dt>Responsable</dt><dd>Vendo</dd></div>
+        <!-- Agrega aquí tu nombre o razón social y tu domicilio. Quita los signos de comentario para que aparezcan:
+        <div><dt>Razón social</dt><dd>Tu nombre o el de tu empresa</dd></div>
+        <div><dt>Domicilio</dt><dd>Calle, número, colonia, ciudad, estado, C.P.</dd></div>
+        -->
+        <div><dt>Correo de privacidad</dt><dd><a href="mailto:soporte.vendoplus@gmail.com">soporte.vendoplus@gmail.com</a></dd></div>
+      </dl>
+    </section>
 
-      <aside class="sidebar">
-        <h2>En esta página</h2>
-        <nav aria-label="Contenido de la política">
-          <a href="#introduccion">Introducción</a>
-          <a href="#datos">Datos que recopilamos</a>
-          <a href="#uso">Uso de los datos</a>
-          <a href="#terceros">Servicios de terceros</a>
-          <a href="#pagos">Pagos y suscripciones</a>
-          <a href="#seguridad">Seguridad</a>
-          <a href="#conservacion">Conservación y eliminación</a>
-          <a href="#menores">Privacidad de menores</a>
-          <a href="#derechos">Tus derechos</a>
-          <a href="#contacto">Contacto</a>
-        </nav>
-      </aside>
-
-      <article class="content">
-
-        <div class="intro-card">
-          <p>
-            <strong>En pocas palabras:</strong> VendoPlus utiliza información
-            para permitirte iniciar sesión, administrar tu negocio,
-            guardar tus registros y comprobar tu suscripción. No vendemos
-            deliberadamente tus datos personales. A continuación encontrarás
-            los detalles sobre el tratamiento de la información.
-          </p>
+    <!-- 2 -->
+    <section class="card sec" id="datos">
+      <h2 class="section-title">2. Qué datos usamos</h2>
+      <p>Solo usamos los datos que necesitas para que tu caja funcione:</p>
+      <div class="data-grid">
+        <div class="data">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7" stroke="currentColor" stroke-width="1.9"/><path d="M4.8 20c0-3.9 3.2-6.4 7.2-6.4s7.2 2.5 7.2 6.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+          <span><b>Tu cuenta</b><span class="t">Nombre, correo electrónico, datos de acceso y foto de perfil si la subes.</span></span>
         </div>
-
-        <section id="introduccion">
-          <h2>1. Introducción</h2>
-          <p>
-            Esta Política de Privacidad describe cómo VendoPlus recopila,
-            utiliza, almacena y protege la información relacionada con
-            el uso de nuestra aplicación de punto de venta y nuestros
-            servicios web.
-          </p>
-          <p>
-            Al utilizar Vendo+, puedes registrar información de tu negocio,
-            como productos, precios, inventario y ventas. Debes asegurarte
-            de tener autorización para introducir información personal
-            de otras personas.
-          </p>
-        </section>
-
-        <section id="datos">
-          <h2>2. ¿Qué información recopilamos?</h2>
-          <p>
-            La información procesada depende de las funciones que utilices
-            y de los datos que decidas introducir.
-          </p>
-
-          <div class="data-grid">
-            <div class="data-item">
-              <div class="symbol">♙</div>
-              <strong>Datos de cuenta</strong>
-              <span>
-                Correo electrónico, identificador de usuario y datos
-                necesarios para autenticar tu cuenta.
-              </span>
-            </div>
-
-            <div class="data-item">
-              <div class="symbol">▤</div>
-              <strong>Información del negocio</strong>
-              <span>
-                Nombres de productos, precios, inventario, ventas
-                y registros que decidas guardar.
-              </span>
-            </div>
-
-            <div class="data-item">
-              <div class="symbol">▧</div>
-              <strong>Imágenes y archivos</strong>
-              <span>
-                Fotografías de productos y archivos que subas
-                voluntariamente para utilizar las funciones de la app.
-              </span>
-            </div>
-
-            <div class="data-item">
-              <div class="symbol">✓</div>
-              <strong>Suscripciones</strong>
-              <span>
-                Estado de la suscripción, fechas de vigencia e
-                identificadores necesarios para verificar compras.
-              </span>
-            </div>
-          </div>
-
-          <p>
-            También pueden procesarse datos técnicos y registros de
-            funcionamiento cuando sean necesarios para la seguridad,
-            el mantenimiento o la solución de errores.
-          </p>
-        </section>
-
-        <section id="uso">
-          <h2>3. ¿Cómo utilizamos tus datos?</h2>
-          <p>La información puede utilizarse para:</p>
-          <ul>
-            <li>Crear, autenticar y administrar tu cuenta.</li>
-            <li>Guardar y sincronizar los datos de tu negocio.</li>
-            <li>Mostrar productos, inventario, precios y ventas.</li>
-            <li>Administrar el acceso a las funciones de Vendo+.</li>
-            <li>Verificar compras, periodos de prueba y suscripciones.</li>
-            <li>Proteger las cuentas y detectar usos no autorizados.</li>
-            <li>Resolver problemas técnicos y mejorar el funcionamiento.</li>
-            <li>Cumplir obligaciones legales aplicables.</li>
-          </ul>
-          <p>
-            No utilizamos los datos para fines incompatibles con los
-            descritos en esta política sin informar de ello cuando
-            corresponda o sin obtener el consentimiento necesario.
-          </p>
-        </section>
-
-        <section id="terceros">
-          <h2>4. Servicios de terceros</h2>
-          <p>
-            Para operar Vendo+, podemos utilizar proveedores tecnológicos
-            que procesan información necesaria para prestar sus servicios.
-            Estos pueden incluir:
-          </p>
-          <ul>
-            <li>
-              <strong>Supabase:</strong> autenticación, base de datos
-              y almacenamiento de información, según la configuración
-              de la aplicación.
-            </li>
-            <li>
-              <strong>Google Play:</strong> distribución de la aplicación
-              Android y gestión de compras o suscripciones realizadas
-              mediante Google Play.
-            </li>
-            <li>
-              <strong>Stripe:</strong> procesamiento de pagos de los
-              servicios web que utilicen Stripe.
-            </li>
-            <li>
-              <strong>Twilio:</strong> envío de mensajes de verificación
-              si esta función está habilitada.
-            </li>
-          </ul>
-          <p>
-            La información compartida con estos proveedores se limita
-            a la necesaria para las funciones correspondientes. Cada
-            proveedor puede tratar datos conforme a sus condiciones,
-            políticas y obligaciones legales.
-          </p>
-          <p>
-            No vendemos deliberadamente información personal a terceros.
-            La información también podrá comunicarse cuando sea legalmente
-            necesario, para proteger la seguridad del servicio o con
-            autorización del usuario.
-          </p>
-        </section>
-
-        <section id="pagos">
-          <h2>5. Pagos y suscripciones</h2>
-          <p>
-            En la aplicación Android distribuida por Google Play, las
-            compras y suscripciones se gestionan mediante Google Play
-            Billing cuando corresponda. En los servicios web, los pagos
-            pueden procesarse mediante Stripe.
-          </p>
-          <p>
-            Para validar una suscripción, Vendo+ puede procesar
-            identificadores de compra, tokens de verificación, el producto
-            contratado y el estado o periodo de vigencia de la suscripción.
-          </p>
-          <p>
-            Los proveedores de pago gestionan los datos de pago sujetos
-            a sus propios procesos y políticas. Vendo+ no pretende
-            almacenar los números completos de las tarjetas bancarias
-            en sus propios sistemas.
-          </p>
-        </section>
-
-        <section id="seguridad">
-          <h2>6. Seguridad y almacenamiento</h2>
-          <p>
-            Aplicamos medidas razonables de seguridad para reducir el
-            riesgo de acceso, pérdida, modificación o divulgación no
-            autorizados de la información.
-          </p>
-          <p>
-            Los datos pueden almacenarse en infraestructura de proveedores
-            tecnológicos utilizados por Vendo+. El acceso a los datos
-            depende de las funciones, permisos y configuraciones de
-            seguridad correspondientes.
-          </p>
-          <p>
-            Aunque trabajamos para proteger la información, ningún sistema
-            conectado a internet puede garantizar seguridad absoluta.
-          </p>
-        </section>
-
-        <section id="conservacion">
-          <h2>7. Conservación y eliminación de datos</h2>
-          <p>
-            Conservamos la información durante el tiempo necesario para
-            proporcionar el servicio, mantener la cuenta, gestionar las
-            suscripciones, cumplir obligaciones legales y resolver
-            posibles controversias.
-          </p>
-          <p>
-            Puedes solicitar la eliminación de tu cuenta y de los datos
-            asociados utilizando los datos de contacto indicados al final
-            de esta página. Revisaremos la solicitud y eliminaremos los
-            datos que corresponda, salvo aquellos que deban conservarse
-            por una obligación legal u otra razón legítima aplicable.
-          </p>
-          <p>
-            La eliminación de la cuenta en Vendo+ no necesariamente
-            cancela una suscripción contratada a través de Google Play.
-            Si corresponde, debes cancelarla también desde Google Play.
-          </p>
-        </section>
-
-        <section id="menores">
-          <h2>8. Privacidad de menores</h2>
-          <p>
-            Vendo+ es una herramienta comercial y no está diseñada
-            específicamente para niños. No recopilamos deliberadamente
-            datos personales de niños en situaciones en las que la ley
-            exija autorización parental sin contar con ella.
-          </p>
-          <p>
-            Si consideras que un menor nos ha proporcionado datos
-            personales de forma indebida, ponte en contacto con nosotros
-            para que podamos revisar la situación.
-          </p>
-        </section>
-
-        <section id="derechos">
-          <h2>9. Tus derechos y cambios en la política</h2>
-          <p>
-            Dependiendo de la legislación aplicable, puedes tener derecho
-            a solicitar acceso, rectificación, eliminación u otra gestión
-            de tus datos personales, así como a retirar un consentimiento
-            cuando corresponda.
-          </p>
-          <p>
-            Para ejercer tus derechos, utiliza el contacto indicado
-            a continuación. Es posible que necesitemos verificar tu
-            identidad antes de atender la solicitud.
-          </p>
-          <p>
-            Podemos actualizar esta política para reflejar cambios en
-            VendoPlus, los proveedores utilizados o los requisitos legales.
-            Publicaremos la versión actualizada en esta misma dirección
-            e indicaremos su fecha de actualización.
-          </p>
-        </section>
-
-        <div class="contact-card" id="contacto">
-          <h2>10. ¿Tienes alguna pregunta?</h2>
-          <p>
-            Si necesitas información sobre privacidad, tus datos o la
-            eliminación de tu cuenta, contacta con el equipo de Vendo+.
-          </p>
-          <p><strong>Correo de soporte:</strong></p>
-          <!-- Reemplaza el correo de ejemplo por tu correo real -->
-          <a href="mailto:soporte.vendoplus@gmail.com">
-            soporte.vendoplus@gmail.com
-          </a>
-
+        <div class="data">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M3.2 9.5 5 4h14l1.8 5.5a2.6 2.6 0 0 1-4.9 1.2 2.6 2.6 0 0 1-4.9 0 2.6 2.6 0 0 1-4.9 0 2.6 2.6 0 0 1-2.9-1.2Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span>
+          <span><b>Tu negocio</b><span class="t">Nombre, giro, logo, dirección, teléfono y horario.</span></span>
         </div>
-
-      </article>
-    </div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <div>
-        <div class="footer-brand">VendoPlus</div>
-        <p>Una forma más sencilla de administrar tu negocio.</p>
+        <div class="data">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h12v17.2c0 .6-.6 1-1.1.7L15 19.4l-1.9 1.5a1 1 0 0 1-1.2 0L10 19.4l-1.9 1.5c-.5.3-1.1-.1-1.1-.7V3Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 8h6M9 11.5h6M9 15h3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+          <span><b>Lo que registras en tu caja</b><span class="t">Productos, precios, costos, inventario, fotos, ventas, tickets, cotizaciones y el método de pago de cada venta.</span></span>
+        </div>
+        <div class="data">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9.2" cy="8" r="3.4" stroke="currentColor" stroke-width="1.9"/><path d="M3 20c0-3.4 2.8-5.8 6.2-5.8S15.4 16.6 15.4 20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M16.4 5.2a3.2 3.2 0 0 1 0 6.2M18.2 13.9c1.9.8 3.1 2.4 3.1 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+          <span><b>Datos de otras personas que tú capturas</b><span class="t">Nombre y WhatsApp de tus clientes en cotizaciones y pedidos del Menú Digital, y nombre y rol de los usuarios que agregas a tu caja.</span></span>
+        </div>
       </div>
-      <p>© 2026 VendoPlus. Todos los derechos reservados.</p>
-    </div>
-  </footer>
+      <p><b>No te pedimos datos sensibles</b>, como información de salud, creencias religiosas, origen étnico, preferencias sexuales u opiniones políticas. Te pedimos que no los escribas en notas ni comentarios.</p>
+      <p><b>Tampoco guardamos datos de tarjetas.</b> Vendo no cobra con tarjeta: solo anota si la venta fue en efectivo, con tarjeta o por transferencia.</p>
+      <div class="note">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.9"/><path d="M12 11v5.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.9" r="1.1" fill="currentColor"/></svg>
+        <span><b>Datos de tus clientes y empleados:</b> cuando capturas sus datos en Vendo, tú decides qué guardar y para qué. Avísales que usas Vendo para atenderlos. Nosotros solo tratamos esos datos para darte el servicio.</span>
+      </div>
+    </section>
 
+    <!-- 3 -->
+    <section class="card sec" id="finalidades">
+      <h2 class="section-title">3. Para qué los usamos</h2>
+      <p>Usamos tus datos para lo que es necesario para darte el servicio:</p>
+      <ul class="list">
+        <li>Crear tu cuenta, dejarte entrar y mantener tu sesión segura.</li>
+        <li>Que funcione tu punto de venta: registrar ventas, inventario, tickets, cotizaciones, usuarios y tu Menú Digital.</li>
+        <li>Mostrar tus estadísticas e historial de ventas.</li>
+        <li>Atenderte cuando nos escribes a soporte y avisarte de cambios importantes en el servicio.</li>
+        <li>Atender tus solicitudes de derechos ARCO y de eliminación de cuenta.</li>
+        <li>Cumplir con las obligaciones que nos marque la ley.</li>
+      </ul>
+      <p><b>No usamos tus datos para otros fines</b>, como publicidad o venta de bases de datos. Si algún día quisiéramos usarlos para algo distinto, te pediremos tu permiso antes.</p>
+    </section>
+
+    <!-- 4 -->
+    <section class="card sec" id="compartir">
+      <h2 class="section-title">4. Con quién los compartimos</h2>
+      <p><b>No vendemos ni rentamos tus datos.</b> Solo los compartimos en estos casos:</p>
+      <ul class="list">
+        <li><b>Proveedores que nos ayudan a operar Vendo</b>, como alojamiento de datos y envío de correos y formularios. Solo reciben lo necesario para hacer su trabajo y no pueden usarlo para otra cosa.</li>
+        <li><b>Tiendas de apps</b> (App Store y Google Play), si pagas una suscripción. Ellas procesan el pago con sus propias reglas de privacidad.</li>
+        <li><b>WhatsApp</b>, solo cuando tú decides mandar un ticket, una cotización o un pedido por ese medio. Ese mensaje se rige por la privacidad de WhatsApp.</li>
+        <li><b>Autoridades</b>, cuando una ley o una orden judicial nos lo exija.</li>
+      </ul>
+    </section>
+
+    <!-- 5 -->
+    <section class="card sec" id="conservacion">
+      <h2 class="section-title">5. Cuánto tiempo los guardamos</h2>
+      <p>Guardamos tus datos mientras tengas tu cuenta en Vendo. Cuando pides <a href="../eliminar-cuenta/">eliminar tu cuenta</a>, borramos tu cuenta y los datos de tu negocio en un plazo máximo de 30 días, salvo la información que la ley nos obligue a conservar por más tiempo.</p>
+    </section>
+
+    <!-- 6 -->
+    <section class="card sec" id="seguridad">
+      <h2 class="section-title">6. Cómo los cuidamos</h2>
+      <p>Usamos medidas administrativas, técnicas y físicas para proteger tus datos contra pérdida, robo y uso o acceso no autorizado. Solo el personal que lo necesita para darte soporte puede ver tu información.</p>
+      <p>Ningún sistema es 100% seguro. Si ocurre un problema de seguridad que afecte tus datos de forma importante, te avisaremos para que puedas tomar medidas.</p>
+    </section>
+
+    <!-- 7 -->
+    <section class="card sec" id="derechos">
+      <h2 class="section-title">7. Tus derechos (ARCO)</h2>
+      <p>Tienes derecho a:</p>
+      <div class="arco">
+        <div><span class="letter">A</span><b>Acceso</b><span class="t">Saber qué datos tenemos de ti.</span></div>
+        <div><span class="letter">R</span><b>Rectificación</b><span class="t">Corregirlos si están mal.</span></div>
+        <div><span class="letter">C</span><b>Cancelación</b><span class="t">Pedir que los borremos.</span></div>
+        <div><span class="letter">O</span><b>Oposición</b><span class="t">Negarte a un uso en particular.</span></div>
+      </div>
+      <p>También puedes <b>revocar tu consentimiento</b> o <b>limitar el uso</b> de tus datos. Si lo haces, es posible que ya no podamos darte el servicio.</p>
+      <h3>Cómo hacer tu solicitud</h3>
+      <ol class="steps">
+        <li><span>Escríbenos a <a href="mailto:soporte.vendoplus@gmail.com">soporte.vendoplus@gmail.com</a> con el asunto "Derechos ARCO".</span></li>
+        <li><span>Incluye tu nombre, el correo de tu cuenta, qué derecho quieres ejercer y una descripción clara de lo que pides.</span></li>
+        <li><span>Para comprobar que eres el titular, te podemos pedir una identificación oficial o algún dato de tu cuenta.</span></li>
+        <li><span>Te respondemos al mismo correo en un plazo máximo de <b>20 días hábiles</b>.</span></li>
+      </ol>
+      <p>Si crees que no atendimos bien tu solicitud, puedes acudir a la <b>Secretaría Anticorrupción y Buen Gobierno</b>, la autoridad en protección de datos personales.</p>
+      <div class="btn-row">
+        <a class="btn primary" href="mailto:soporte.vendoplus@gmail.com?subject=Derechos%20ARCO&amp;body=Nombre%3A%20%0ACorreo%20de%20mi%20cuenta%3A%20%0ADerecho%20que%20quiero%20ejercer%20(Acceso%2C%20Rectificaci%C3%B3n%2C%20Cancelaci%C3%B3n%20u%20Oposici%C3%B3n)%3A%20%0ALo%20que%20pido%3A%20">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.2" stroke="currentColor" stroke-width="1.9"/><path d="m4.5 7 7.5 5.8L19.5 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Escribir a soporte
+        </a>
+        <a class="btn ghost" href="../eliminar-cuenta/">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 7h15M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8L18 7M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Eliminar mi cuenta
+        </a>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section class="card sec" id="dispositivo">
+      <h2 class="section-title">8. Datos que se guardan en tu dispositivo</h2>
+      <p>La app guarda en tu celular o computadora (en el almacenamiento del navegador) tu sesión y tus preferencias, como el tamaño del ticket o la configuración de tu Menú Digital, para que no tengas que configurarlo cada vez.</p>
+      <p>No usamos cookies de publicidad. Puedes borrar estos datos desde la configuración de tu navegador; si lo haces, tendrás que volver a entrar y ajustar tus preferencias.</p>
+    </section>
+
+    <!-- 9 -->
+    <section class="card sec" id="menores">
+      <h2 class="section-title">9. Menores de edad</h2>
+      <p>Vendo es una herramienta para negocios y no está dirigida a menores de 18 años. No recopilamos a propósito datos de menores. Si crees que un menor nos dio sus datos, escríbenos y los borramos.</p>
+    </section>
+
+    <!-- 10 -->
+    <section class="card sec" id="cambios">
+      <h2 class="section-title">10. Cambios a este aviso</h2>
+      <p>Podemos actualizar este aviso cuando cambie la ley o la forma en que funciona Vendo. Siempre vas a encontrar la versión vigente en esta página, con su fecha de actualización arriba. Si el cambio es importante, también te avisaremos en la app o por correo.</p>
+    </section>
+
+    <!-- 11 -->
+    <section class="card sec" id="contacto">
+      <h2 class="section-title">11. Contacto</h2>
+      <p>Para cualquier duda sobre tu privacidad o este aviso, escríbenos a <a href="mailto:soporte.vendoplus@gmail.com">soporte.vendoplus@gmail.com</a>.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="wrap foot">
+  <nav aria-label="Páginas de Vendo">
+    <a href="./">Aviso de privacidad</a>
+    <a href="../eliminar-cuenta/">Eliminar cuenta</a>
+    <a href="mailto:soporte.vendoplus@gmail.com">Soporte</a>
+  </nav>
+  ¿Dudas? Escríbenos a <a href="mailto:soporte.vendoplus@gmail.com">soporte.vendoplus@gmail.com</a>
+  <small>© <span id="year">2026</span> Vendo · Punto de venta</small>
+</footer>
+
+<script>
+(function(){
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  /* En el celular el índice empieza cerrado; en PC siempre abierto */
+  var toc = document.getElementById('toc');
+  var pc = window.matchMedia('(min-width:900px)');
+  function ajustar(){ toc.open = pc.matches; }
+  ajustar();
+  if(pc.addEventListener) pc.addEventListener('change', ajustar); else if(pc.addListener) pc.addListener(ajustar);
+  toc.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){ if(!pc.matches) toc.open = false; });
+  });
+
+  /* Marca en el índice la sección que estás leyendo */
+  if(!('IntersectionObserver' in window)) return;
+  var links = {};
+  toc.querySelectorAll('a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+  var visibles = {};
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ visibles[e.target.id] = e.isIntersecting ? e.boundingClientRect.top : null; });
+    var mejor = null, top = Infinity;
+    Object.keys(visibles).forEach(function(id){ var t = visibles[id]; if(t !== null && t < top){ top = t; mejor = id; } });
+    Object.keys(links).forEach(function(id){ links[id].classList.toggle('on', id === mejor); });
+  }, { rootMargin:'-10% 0px -55% 0px' });
+  document.querySelectorAll('.sec').forEach(function(s){ io.observe(s); });
+})();
+</script>
 </body>
 </html>
-
