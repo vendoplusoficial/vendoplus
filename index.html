@@ -4445,6 +4445,22 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   #confirm-layer .modal-overlay:has(#cgOpening){ padding:0; align-items:stretch; background:#fff !important; }
   #confirm-layer .conf-card:has(#cgOpening){ width:100%; max-width:none; margin:0; border-radius:0; height:calc(100dvh / var(--z,.9)); max-height:calc(100dvh / var(--z,.9)); overflow-y:auto; display:flex; flex-direction:column; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom)); box-shadow:none; }
 }
+
+/* Menú Digital: tarjeta activa y tarjeta desactivada */
+.mdx-title{ margin:0 0 10px; }
+.mdx-row{ display:flex; align-items:center; gap:10px; }
+.mdx-txt{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+.mdx-txt b{ font-size:14.5px; font-weight:800; line-height:1.25; }
+.mdx-txt > span:not(.md-pill){ font-size:12px; font-weight:600; color:var(--ink-soft); line-height:1.35; }
+.mdx-txt .md-pill{ margin-top:4px; }
+.mdx-gear{ flex:none; width:46px; height:46px; border-radius:14px; border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; color:var(--ink); cursor:pointer; padding:0; }
+.mdx-gear svg{ width:21px; height:21px; }
+.mdx-copy{ flex:none; display:flex; align-items:center; gap:7px; border:1px solid #b9ebcf; background:#eafaf1; color:#0f8f46; border-radius:14px; padding:0 12px; height:46px; font:inherit; font-weight:700; font-size:13px; line-height:1.15; text-align:left; cursor:pointer; }
+.mdx-copy svg{ width:18px; height:18px; flex:none; }
+.mdx-copy span{ max-width:60px; }
+.md-status-card.mdx-off{ display:block; width:100%; text-align:left; font:inherit; color:inherit; cursor:pointer; }
+.mdx-off .md-status-top{ display:flex; align-items:center; gap:12px; }
+.mdx-off:active{ transform:scale(.99); }
 </style>
 </head>
 <body>
@@ -16739,6 +16755,29 @@ function mdiWatch(){
 var mdCfgSheetOn = false;
 var MD_CFG_TITLE = 'Configuración del Menú Digital';
 function mdCfgVisible(){ return mdCfgSheetOn; }
+/* Configuración inicial (menú desactivado): hoja de pantalla completa */
+var mdSetupOn = false;
+var MD_SETUP_TITLE = 'Configura tu Menú Digital';
+function mdSetupHTML(){
+  return `
+    <i class="fs-marker" hidden></i>
+    <div class="sheet-header">
+      <h2>${MD_SETUP_TITLE}</h2>
+      <button class="sheet-close" onclick="mdSetupClose()" aria-label="Cerrar">${icon('close')}</button>
+    </div>
+    ${mdConfigHTML(mdCfg())}`;
+}
+function mdOpenSetup(){
+  if(mdCfg().active){ mdSetupOn = false; return; }
+  vibrate(8);
+  mdSetupOn = true;
+  openModal(mdSetupHTML(), { dismissible:true });
+}
+function mdSetupShowing(){
+  const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
+  return !!sh && sheetTitleOf(sh) === MD_SETUP_TITLE;
+}
+function mdSetupClose(){ mdSetupOn = false; _mdCloseModalBase(); }
 function mdCfgSheetHTML(){
   return `
     <div class="sheet-header">
@@ -16758,6 +16797,12 @@ function mdCfgSheetShowing(){
 }
 /* Se llama al final de render(): mantiene la hoja al día (conserva el scroll) */
 function mdCfgSheetSync(){
+  if(mdSetupOn){
+    if(currentView !== 'menu' || mdCfg().active){
+      mdSetupOn = false;
+      if(mdSetupShowing()) _mdCloseModalBase();
+    }else if(mdSetupShowing()) openModal(mdSetupHTML(), { dismissible:true });
+  }
   if(!mdCfgSheetOn) return;
   if(currentView !== 'menu' || !mdCfg().active){
     mdCfgSheetOn = false;
@@ -16770,8 +16815,12 @@ var _mdCloseModalBase = closeModal;
 closeModal = function(){
   const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
   const eraCfg = !!sh && sheetTitleOf(sh) === MD_CFG_TITLE;
+  const eraSetup = !!sh && sheetTitleOf(sh) === MD_SETUP_TITLE;
   _mdCloseModalBase();
   if(eraCfg){ mdCfgSheetOn = false; return; }
+  if(eraSetup){ mdSetupOn = false; return; }
+  /* se cerró un formulario que estaba sobre la configuración inicial */
+  if(mdSetupOn && currentView === 'menu' && !mdCfg().active){ mdOpenSetup(); return; }
   /* se cerró un formulario o confirmación que estaba sobre la configuración */
   if(mdCfgSheetOn && currentView === 'menu' && mdCfg().active) mdOpenCfgSheet();
 };
@@ -16787,18 +16836,16 @@ function mdCompactHTML(cfg){
                : { cls:'on', txt:'Activo', sub:'Recibiendo pedidos aquí y en tu WhatsApp' };
   return `
     <div class="md-compact">
-      <div class="md-compact-top">
+      <div class="section-title mdx-title">Configuración del Menú Digital</div>
+      <div class="mdx-row">
         <span class="md-status-ico on">${icon('menuBook')}</span>
-        <span class="md-compact-txt">
+        <span class="mdx-txt">
           <b>Tu Menú Digital está activo</b>
           <span>${escapeHtml(estado.sub)}</span>
+          <span class="md-pill ${estado.cls}">${estado.txt}</span>
         </span>
-        <span class="md-pill ${estado.cls}">${estado.txt}</span>
-      </div>
-      <div class="md-compact-actions">
-        <button class="btn ghost" onclick="mdCopyLink()">${icon('copy')} Copiar link</button>
-        <button class="btn ghost" onclick="mdShareLink()">${icon('share')} Compartir</button>
-        <button class="btn ghost" onclick="mdSetCfgVisible(true)">${icon('gear')} ${can('gestionarProductos') ? 'Configurar' : 'Detalles'}</button>
+        <button class="mdx-gear" onclick="mdSetCfgVisible(true)" aria-label="${can('gestionarProductos') ? 'Configurar' : 'Detalles'}">${icon('gear')}</button>
+        <button class="mdx-copy" onclick="mdCopyLink()">${icon('link')}<span>Copiar enlace</span></button>
       </div>
       ${cfg.delivery.on === null && can('gestionarProductos') ? `
         <button class="md-nudge" onclick="mdOpenDeliveryForm()">
@@ -16806,18 +16853,30 @@ function mdCompactHTML(cfg){
           <span class="md-nudge-txt"><b>¿Tu negocio tiene servicio a domicilio?</b>Respóndelo para que tus clientes vean las opciones correctas.</span>
           <span class="acc-chev">${icon('chevronRight')}</span>
         </button>` : ''}
-      ${typeof mdPubStatusHTML === 'function' ? mdPubStatusHTML() : ''}
     </div>`;
+}
+/* Menú desactivado: solo una tarjeta; al tocarla se abre la configuración */
+function mdOffCardHTML(){
+  return `
+    <div class="section-title">Configuración del Menú Digital</div>
+    <button type="button" class="md-status-card mdx-off" onclick="mdOpenSetup()">
+      <span class="md-status-top">
+        <span class="md-status-ico">${icon('menuBook')}</span>
+        <span class="md-status-txt">
+          <span class="md-status-title">Menú Digital desactivado</span>
+          <span class="md-status-sub">Confirma estas opciones y actívalo</span>
+        </span>
+        <span class="md-pill off">Inactivo</span>
+        <span class="acc-chev">${icon('chevronRight')}</span>
+      </span>
+    </button>`;
 }
 renderMenuDigital = function(){
   const cfg = mdCfg();
   return `
     <h1 class="page-title">Menú Digital</h1>
     <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>
-    ${!cfg.active ? `
-      <div class="section-title">Configuración del Menú Digital</div>
-      ${mdConfigHTML(cfg)}` : mdCompactHTML(cfg)}
-    ${mdiSectionHTML()}`;
+    ${!cfg.active ? mdOffCardHTML() : mdCompactHTML(cfg) + mdiSectionHTML()}`;
 };
 
 /* ---------- Menú del cliente: "Continuar" → tipo de servicio, pago y nombre ----------
