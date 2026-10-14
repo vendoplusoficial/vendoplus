@@ -4346,6 +4346,15 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   .navbtn[data-view="sale"] .navicon svg{ width:24px; height:24px; }
 }
 @media (min-width:700px){ .modal-sheet.vp-pf{ max-width:520px; } }
+
+/* ---- Inventarios vacío ---- */
+.fab-row.vp-cat-only{ justify-content:flex-end; }
+.fab-row .btn.ghost{ border-radius:16px; border:1.5px solid var(--vp-line); background:#fff; font-weight:800; color:var(--vp-navy); padding:12px 18px; font-size:14px; box-shadow:0 4px 12px rgba(22,33,62,.05); }
+.fab-row .btn.ghost svg{ width:18px; height:18px; }
+.empty-state .empty-illustration svg{ width:120px; height:120px; }
+.empty-state .empty-title{ font-size:20px; }
+.vp-empty-cta{ margin-top:18px; padding:14px 26px 14px 22px; font-size:15px; gap:12px; box-shadow:0 8px 18px rgba(22,193,91,.3); }
+.vp-empty-cta svg{ width:20px; height:20px; } .vp-empty-cta i{ height:20px; }
 </style>
 
 </head>
@@ -4796,11 +4805,23 @@ const ILLUSTRATIONS = {
   // Productos sin catálogo: bolsa / caja de compras vacía
   boxEmpty: `
   <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="78" cy="134" rx="40" ry="6" fill="#EEF1F7"/>
-    <path d="M52 62h52l4 64a4 4 0 0 1-4 4H52a4 4 0 0 1-4-4l4-64Z" fill="#fff" stroke="#16213E" stroke-width="2.4" stroke-linejoin="round"/>
-    <path d="M64 62v-8a14 14 0 0 1 28 0v8" stroke="#16213E" stroke-width="2.4" stroke-linecap="round"/>
+    <ellipse cx="80" cy="134" rx="40" ry="6" fill="#EEF1F7"/>
+    <path d="M54 62h52l4 64a4 4 0 0 1-4 4H54a4 4 0 0 1-4-4l4-64Z" fill="#fff" stroke="#16213E" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M66 62v-8a14 14 0 0 1 28 0v8" stroke="#16213E" stroke-width="2.4" stroke-linecap="round"/>
     <circle cx="112" cy="48" r="17" fill="#16C15B"/>
     <path d="M112 40v16M104 48h16" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+    <g stroke="#16C15B" stroke-width="2.2" stroke-linecap="round"><path d="M34 60l7 4M28 76l9 1M32 92l8-3M126 60l-7 4M132 76l-9 1M128 92l-8-3"/></g>
+  </svg>`,
+  boxOpen: `
+  <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M64 76a16 16 0 0 1 32 0" fill="#fff" stroke="#16213E" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M48 86 36 74l32-12M112 86l12-12-32-12" stroke="#16213E" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M48 86l32 14v36L48 120V86Z" fill="#fff" stroke="#16213E" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M80 100l32-14v34l-32 16v-36Z" fill="#fff" stroke="#16213E" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M48 86l32-14 32 14" stroke="#16213E" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="118" cy="46" r="16" fill="#16C15B"/>
+    <path d="M118 38v16M110 46h16" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+    <g stroke="#16C15B" stroke-width="2.2" stroke-linecap="round"><path d="M34 60l7 4M28 76l9 1M32 92l8-3M126 60l-7 4M132 76l-9 1M128 92l-8-3"/></g>
   </svg>`,
 
   // Historial sin registros: documentos apilados
@@ -9969,6 +9990,7 @@ function setProductsTab(t){ productsTab = t; vibrate(8); render(); }
 function onProductsSearch(v){ productsSearch = v; render(); }
 
 function renderProducts(){
+  if(!DB.getProducts().length) productsTab = 'catalogo';
   const products = DB.getProducts();
   const categories = DB.getCategories();
   const puedeEditar = can('gestionarProductos');
@@ -9978,8 +10000,8 @@ function renderProducts(){
     </div>`;
   const head = `
     <h1 class="page-title">Inventarios</h1>
-    <p class="page-sub">${puedeEditar ? 'Tus productos, categorías y existencias' : 'Consulta los productos y las existencias'}</p>
-    ${seg}`;
+    ${products.length ? `<p class="page-sub">${puedeEditar ? 'Tus productos, categorías y existencias' : 'Consulta los productos y las existencias'}</p>
+    ${seg}` : ''}`;
   if(productsTab === 'inventario' && typeof inventoryTabHTML === 'function') return head + inventoryTabHTML();
 
   const q = productsSearch.trim();
@@ -10001,9 +10023,9 @@ function renderProducts(){
     ${stockWarningCardHTML()}
 
     ${puedeEditar ? `
-      <div class="fab-row" style="gap:8px; margin-top:16px;">
+      <div class="fab-row ${products.length ? '' : 'vp-cat-only'}" style="gap:8px; margin-top:16px;">
         <button class="btn ghost" onclick="openCategoryManager()">${icon('tag')} Categorías</button>
-        <button class="btn primary" onclick="openProductForm()">${icon('plus')} Nuevo producto</button>
+        ${products.length ? `<button class="btn primary" onclick="openProductForm()">${icon('plus')} Nuevo producto</button>` : ''}
       </div>
     ` : `
       <div class="alert-card" style="margin-top:16px;">
@@ -10022,11 +10044,10 @@ function renderProducts(){
       </div>` : ''}
 
     ${products.length === 0 ? `
-      <div class="empty-state">
-        ${illustration('boxEmpty')}
-        <div class="empty-title">Aún no hay productos</div>
-        <div class="empty-text">Agrega tus nuevos productos para empezar a vender y llevar tus existencias.</div>
-        ${puedeEditar ? `<button class="btn primary" style="margin-top:14px;" onclick="openProductForm()">${icon('plus')} Agregar nuevo producto</button>` : ''}
+      <div class="empty-state" style="padding-top:56px;">
+        ${illustration('boxOpen')}
+        <div class="empty-title">Sin productos aquí</div>
+        ${puedeEditar ? `<button class="vp-empty-cta" onclick="openProductForm()">${icon('vpPlus')}<i></i><span>Agregar nuevo producto</span></button>` : ''}
       </div>
     ` : ''}
     ${(q && !shown.length) ? `
