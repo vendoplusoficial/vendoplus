@@ -4373,6 +4373,46 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   .navbtn[data-view="sale"].active .navicon{ background:var(--vp-green-d) !important; }
 }
 
+
+/* ===== Pantalla "Venta realizada" ===== */
+.modal-sheet.vp-done-sheet{ position:relative; display:flex; flex-direction:column; width:100%; max-width:none; margin:0; border-radius:0; background:#fff; overflow-x:hidden; overflow-y:auto; padding:max(18px,env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)); height:calc(100dvh / var(--z,1)); max-height:calc(100dvh / var(--z,1)); animation:none; }
+.modal-overlay:has(.vp-done-sheet){ padding:0; align-items:stretch; }
+.vp-done-sheet .sheet-grip{ display:none; }
+.vp-done-sheet .vp-x{ position:absolute; top:max(16px,env(safe-area-inset-top)); right:18px; width:38px; height:38px; z-index:3; }
+.vp-done-main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding-top:30px; min-height:0; }
+.vp-done-hero{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+.vp-done-circle{ width:96px; height:96px; border-radius:50%; background:var(--vp-green); display:flex; align-items:center; justify-content:center; box-shadow:0 12px 28px rgba(22,193,91,.3); animation:vpPop .5s cubic-bezier(.2,1.4,.4,1) both; }
+.vp-done-circle svg{ width:48px; height:48px; }
+.vp-done-hero h2{ margin:8px 0 0; font-size:26px; font-weight:800; letter-spacing:-.6px; color:var(--vp-navy); }
+.vp-done-sheet .done-box{ background:none; border:0; padding:0; box-shadow:none; display:block; text-align:center; }
+.vp-done-sheet .done-ico{ display:none; }
+.vp-done-sheet .done-txt{ display:flex; flex-direction:column; gap:3px; align-items:center; }
+.vp-done-sheet .done-txt b{ font-size:17px; font-weight:800; color:var(--vp-green-d); }
+.vp-done-sheet .done-txt span{ font-size:14px; color:var(--vp-mute); font-weight:600; }
+.vp-ticket-btn{ margin-top:22px; border:1.5px solid var(--vp-line); background:#fff; color:var(--vp-navy); border-radius:999px; padding:11px 26px; font:800 14px var(--sans); }
+.vp-done-sheet #ticket-print{ display:none; width:100%; margin-top:16px; text-align:left; }
+.vp-done-sheet.vp-show #ticket-print{ display:block; }
+.vp-done-actions{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
+.vp-done-actions .btn{ height:48px; border-radius:16px; font-size:15px; padding:0; }
+.vp-done-actions .btn.primary{ grid-column:1 / -1; border-radius:999px; box-shadow:0 8px 18px rgba(22,193,91,.28); }
+.vp-confetti{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1; }
+.vp-confetti i{ position:absolute; top:-16px; opacity:0; animation:vpFall 2.6s ease-out forwards; }
+@keyframes vpFall{ 0%{ transform:translate(0,-10px) rotate(0); opacity:0; } 12%{ opacity:1; } 100%{ transform:translate(var(--dx,0),min(92vh,720px)) rotate(420deg); opacity:0; } }
+@keyframes vpPop{ from{ transform:scale(.4); opacity:0; } to{ transform:scale(1); opacity:1; } }
+@media (max-width:699px){
+  body:has(.vp-done-sheet) #modal-layer .modal-overlay{ background:#fff !important; }
+  body:has(.vp-done-sheet) .bottomnav, body:has(.vp-done-sheet) .cartbar{ display:none !important; }
+}
+@media (min-width:700px){
+  .modal-overlay:has(.vp-done-sheet){ align-items:center; padding-left:104px; }
+  body.auth-open .modal-overlay:has(.vp-done-sheet){ padding-left:0; }
+  .modal-sheet.vp-done-sheet{ max-width:480px; height:auto; min-height:620px; max-height:92vh; border-radius:28px; }
+}
+@media print{
+  .vp-done-sheet #ticket-print{ display:block !important; margin:0; }
+  .modal-sheet.vp-done-sheet{ height:auto !important; max-height:none !important; overflow:visible !important; display:block; }
+}
+@media (prefers-reduced-motion:reduce){ .vp-confetti{ display:none; } }
 </style>
 
 </head>
@@ -9050,7 +9090,7 @@ function showTicket(sale, opts){
   opts = opts || {};
   lastTicketSale = sale;
   const ret = saleIsReturn(sale);
-  const html = `
+  let html = `
     <div class="sheet-header no-print">
       <h2>${opts.fromCheckout ? 'Venta cobrada' : (ret ? 'Devolución ' + escapeHtml(sale.folio || '') : 'Detalle de venta')}</h2>
       <button class="sheet-close" onclick="closeModal(); ${opts.fromCheckout ? 'afterSaleClosed();' : 'render();'}">${icon('close')}</button>
@@ -9065,7 +9105,9 @@ function showTicket(sale, opts){
         : `<button class="btn dark block" onclick="closeModal(); render();">Cerrar</button>`}
     </div>
   `;
+  if(opts.fromCheckout && typeof vpDoneHTML === 'function') html = vpDoneHTML(sale);
   openModal(html, { dismissible:false });
+  if(opts.fromCheckout){ const shd = document.querySelector('#modal-layer .modal-sheet'); if(shd) shd.classList.add('vp-done-sheet'); }
 }
 function afterSaleNew(){
   stockAlert = [];
@@ -23215,6 +23257,38 @@ function mdSaveDesign(abrir){
       if(d&&adv) adv.insertBefore(d,adv.firstChild);
     };
   }
+
+  /* ---- Pantalla "Venta realizada" ---- */
+  window.vpToggleTicket=function(btn){
+    var sh=btn.closest('.modal-sheet'); if(!sh) return;
+    var on=sh.classList.toggle('vp-show');
+    btn.textContent=on?'Ocultar ticket':'Ver ticket';
+    if(on) setTimeout(function(){ var t=sh.querySelector('#ticket-print'); if(t&&t.scrollIntoView) t.scrollIntoView({behavior:'smooth',block:'nearest'}); },60);
+  };
+  window.vpDoneHTML=function(sale){
+    var cols=['#16C15B','#16213E','#FFD666','#7BE0A4','#FF8A80','#8FB8FF'], c='';
+    for(var i=0;i<18;i++){
+      var l=Math.round(Math.random()*100), d=(Math.random()*.5).toFixed(2), sz=6+Math.round(Math.random()*5), r=Math.random()>.5?'50%':'2px';
+      c+='<i style="left:'+l+'%;width:'+sz+'px;height:'+(sz+(r==='2px'?4:0))+'px;background:'+cols[i%cols.length]+';border-radius:'+r+';animation-delay:'+d+'s;--dx:'+(Math.round(Math.random()*60)-30)+'px"></i>';
+    }
+    return '<div class="vp-confetti no-print" aria-hidden="true">'+c+'</div>'+
+      '<button class="sheet-close vp-x no-print" onclick="closeModal(); afterSaleClosed();" aria-label="Cerrar">'+icon('close')+'</button>'+
+      '<div class="vp-done-main">'+
+        '<div class="vp-done-hero no-print">'+
+          '<div class="vp-done-circle"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 12.5 4.2 4.2L18.5 7.8"/></svg></div>'+
+          '<h2>Venta realizada</h2>'+
+          saleDoneBoxHTML(sale)+
+        '</div>'+
+        stockAlertHTML()+
+        '<button type="button" class="vp-ticket-btn no-print" onclick="vpToggleTicket(this)">Ver ticket</button>'+
+        '<div id="ticket-print">'+ticketHTML(sale)+'</div>'+
+      '</div>'+
+      '<div class="ticket-actions vp-done-actions no-print">'+
+        '<button class="btn ghost" onclick="printTicket(\''+sale.id+'\')">'+icon('print')+' Imprimir</button>'+
+        '<button class="btn ghost" onclick="sendTicketWhatsApp(\''+sale.id+'\')">'+icon('whatsapp')+' WhatsApp</button>'+
+        '<button class="btn primary block" onclick="closeModal(); afterSaleNew();">'+icon('plus')+' Nueva venta</button>'+
+      '</div>';
+  };
   var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y gastos'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
