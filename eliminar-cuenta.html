@@ -1,0 +1,586 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101a2b">
+  <meta name="description" content="Solicita la eliminación de tu cuenta y de los datos asociados a VendoPlus.">
+  <title>Eliminar cuenta | VendoPlus</title>
+
+  <style>
+    :root {
+      --navy: #101a2b;
+      --navy-light: #192840;
+      --green: #38d6a0;
+      --green-dark: #149b70;
+      --paper: #f5f7f8;
+      --white: #ffffff;
+      --text: #263449;
+      --muted: #718096;
+      --border: #e5eaf0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Arial, sans-serif;
+      background: var(--paper);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .topbar {
+      background: var(--navy);
+      color: white;
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+
+    .nav {
+      max-width: 1120px;
+      margin: auto;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 21px;
+      letter-spacing: -.7px;
+    }
+
+    .brand-icon {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      background: var(--green);
+      color: var(--navy);
+      font-size: 17px;
+      font-weight: 900;
+      box-shadow: 0 5px 20px rgba(56,214,160,.18);
+    }
+
+    .nav-link {
+      color: #d0d9e5;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .nav-link:hover {
+      color: var(--green);
+    }
+
+    .hero {
+      background:
+        radial-gradient(ellipse at 80% 15%, rgba(56,214,160,.12), transparent 38%),
+        var(--navy);
+      color: white;
+      padding: 76px 24px 100px;
+    }
+
+    .hero-inner {
+      max-width: 850px;
+      margin: auto;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 12px;
+      border: 1px solid rgba(56,214,160,.25);
+      border-radius: 999px;
+      background: rgba(56,214,160,.08);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(38px, 6vw, 62px);
+      line-height: 1.08;
+      letter-spacing: -2.5px;
+      font-weight: 800;
+      margin-bottom: 23px;
+    }
+
+    h1 span {
+      color: var(--green);
+    }
+
+    .hero p {
+      max-width: 630px;
+      color: #c2ccda;
+      font-size: 17px;
+      line-height: 1.8;
+    }
+
+    .main {
+      max-width: 900px;
+      margin: -42px auto 0;
+      padding: 0 22px 76px;
+      position: relative;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: 0 18px 55px rgba(16,26,43,.07);
+      padding: clamp(25px, 5vw, 46px);
+      margin-bottom: 22px;
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 17px;
+      margin-bottom: 18px;
+    }
+
+    .number {
+      flex: 0 0 43px;
+      width: 43px;
+      height: 43px;
+      display: grid;
+      place-items: center;
+      background: #e5fbf2;
+      color: #11845e;
+      border-radius: 14px;
+      font-weight: 900;
+      font-size: 17px;
+    }
+
+    h2 {
+      color: var(--navy);
+      font-size: 23px;
+      line-height: 1.35;
+      letter-spacing: -.6px;
+      margin-bottom: 8px;
+    }
+
+    h3 {
+      color: var(--navy);
+      font-size: 16px;
+      margin: 23px 0 7px;
+    }
+
+    p {
+      margin-bottom: 13px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .steps {
+      display: grid;
+      gap: 13px;
+      margin: 25px 0;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 17px;
+      background: #f8fafb;
+      border: 1px solid #edf1f4;
+      border-radius: 14px;
+    }
+
+    .step-icon {
+      flex: 0 0 34px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: white;
+      color: var(--green-dark);
+      border: 1px solid var(--border);
+      font-weight: 800;
+    }
+
+    .step strong {
+      display: block;
+      color: var(--navy);
+      margin-bottom: 3px;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .email-box {
+      background: var(--navy);
+      border-radius: 18px;
+      padding: 26px;
+      color: white;
+      margin-top: 25px;
+    }
+
+    .email-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: #aebccd;
+      font-weight: 800;
+      margin-bottom: 9px;
+    }
+
+    .email-address {
+      color: var(--green);
+      font-size: clamp(17px, 4vw, 23px);
+      font-weight: 800;
+      overflow-wrap: anywhere;
+      text-decoration: none;
+    }
+
+    .email-address:hover {
+      text-decoration: underline;
+    }
+
+    .subject {
+      color: #d4deea;
+      font-size: 14px;
+      margin: 15px 0 20px;
+    }
+
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 21px;
+      border-radius: 12px;
+      background: var(--green);
+      color: var(--navy);
+      font-weight: 800;
+      font-size: 14px;
+      text-decoration: none;
+      transition: transform .2s, background .2s;
+    }
+
+    .button:hover {
+      background: #64e6ba;
+      transform: translateY(-2px);
+    }
+
+    .data-list {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+      margin: 19px 0;
+    }
+
+    .data-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+    }
+
+    .check {
+      color: var(--green-dark);
+      font-weight: 900;
+    }
+
+    .notice {
+      background: #f1f8f5;
+      border: 1px solid #d9eee4;
+      border-radius: 14px;
+      padding: 19px;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #385b4e;
+    }
+
+    .notice strong {
+      color: #176a4e;
+    }
+
+    .footer {
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 30px 22px;
+    }
+
+    .footer-inner {
+      max-width: 900px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .footer-brand {
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    .footer p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .footer a {
+      color: var(--green-dark);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .nav {
+        padding: 15px 19px;
+      }
+
+      .brand {
+        font-size: 18px;
+      }
+
+      .brand-icon {
+        width: 38px;
+        height: 38px;
+      }
+
+      .hero {
+        padding: 57px 21px 80px;
+      }
+
+      h1 {
+        letter-spacing: -1.6px;
+      }
+
+      .hero p {
+        font-size: 15px;
+      }
+
+      .main {
+        padding: 0 14px 48px;
+      }
+
+      .card {
+        border-radius: 17px;
+        padding: 23px 19px;
+      }
+
+      .card-heading {
+        gap: 12px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      .email-box {
+        padding: 21px;
+      }
+
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <nav class="nav">
+      <a class="brand" href="https://vendoplusoficial.com/" aria-label="VendoPlus, inicio">
+        <span class="brand-icon">VP</span>
+        <span>VendoPlus</span>
+      </a>
+      <a class="nav-link" href="https://vendoplusoficial.com/">
+        Ir al sitio principal ↗
+      </a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">
+        <span class="eyebrow-dot"></span>
+        Privacidad y control
+      </div>
+      <h1>Tu cuenta, <span>tu decisión.</span></h1>
+      <p>
+        En VendoPlus respetamos tus decisiones. Si deseas dejar de utilizar
+        nuestra plataforma, aquí encontrarás cómo solicitar la eliminación
+        de tu cuenta y de los datos asociados.
+      </p>
+    </div>
+  </section>
+
+  <main class="main">
+    <section class="card">
+      <div class="card-heading">
+        <div class="number">01</div>
+        <div>
+          <h2>¿Quieres eliminar tu cuenta?</h2>
+          <p class="muted">
+            Puedes solicitarlo por correo electrónico. No necesitas realizar
+            la solicitud desde la aplicación.
+          </p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-icon">1</div>
+          <div>
+            <strong>Escribe a nuestro equipo</strong>
+            <p>Envía tu solicitud desde la dirección de correo asociada a tu cuenta, si tienes acceso a ella.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-icon">2</div>
+          <div>
+            <strong>Identificamos tu cuenta</strong>
+            <p>Incluye el correo de tu cuenta VendoPlus. Podemos pedirte información adicional razonable para verificar que eres el titular.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-icon">3</div>
+          <div>
+            <strong>Procesamos la solicitud</strong>
+            <p>Revisaremos la solicitud y te informaremos si necesitamos algún dato adicional o si existe información que deba conservarse.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="email-box">
+        <div class="email-label">Correo de soporte</div>
+        <a class="email-address" href="mailto:soporte.vendoplus@gmail.com">
+          soporte.vendoplus@gmail.com
+        </a>
+        <p class="subject">
+          <strong>Asunto:</strong> Solicitud de eliminación de cuenta VendoPlus
+        </p>
+        <a class="button"
+           href="mailto:soporte.vendoplus@gmail.com?subject=Solicitud%20de%20eliminaci%C3%B3n%20de%20cuenta%20VendoPlus&body=Hola%2C%20quiero%20solicitar%20la%20eliminaci%C3%B3n%20de%20mi%20cuenta%20VendoPlus.%0A%0ACorreo%20asociado%20a%20mi%20cuenta%3A%20%0A%0AGracias.">
+          Enviar solicitud por correo <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-heading">
+        <div class="number">02</div>
+        <div>
+          <h2>¿Qué datos se eliminan?</h2>
+          <p class="muted">
+            La eliminación depende de los datos asociados a tu cuenta y de
+            las obligaciones aplicables.
+          </p>
+        </div>
+      </div>
+
+      <p>Una vez verificada y procesada la solicitud, se eliminarán la cuenta y los datos personales asociados que ya no sean necesarios, según corresponda, como:</p>
+
+      <ul class="data-list">
+        <li><span class="check">✓</span><span>Los datos del perfil de la cuenta.</span></li>
+        <li><span class="check">✓</span><span>La información del negocio vinculada a la cuenta, cuando proceda.</span></li>
+        <li><span class="check">✓</span><span>Los demás datos personales asociados que no deban conservarse.</span></li>
+      </ul>
+
+      <div class="notice">
+        <strong>Información que podría conservarse</strong>
+        <p style="margin: 8px 0 0;">
+          Ciertos registros de pagos, facturación, contabilidad, seguridad o
+          cumplimiento legal podrían conservarse cuando exista una obligación
+          legítima. Se mantendrán solo durante el periodo requerido por la
+          normativa aplicable o necesario para atender esa obligación y,
+          posteriormente, se eliminarán cuando corresponda.
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-heading">
+        <div class="number">03</div>
+        <div>
+          <h2>Plazos y seguimiento</h2>
+        </div>
+      </div>
+
+      <p>
+        Las solicitudes se revisan manualmente. El tiempo de procesamiento
+        puede depender de la verificación de identidad, de los datos
+        involucrados y de las obligaciones de conservación aplicables.
+      </p>
+
+      <p>
+        Si necesitamos información adicional para completar la solicitud,
+        nos pondremos en contacto contigo mediante el correo que nos
+        proporcionaste.
+      </p>
+
+      <p>
+        Si tienes dudas sobre la eliminación de tu cuenta o tus datos,
+        puedes escribirnos a
+        <a href="mailto:soporte.vendoplus@gmail.com" style="color: var(--green-dark); font-weight: 700;">
+          soporte.vendoplus@gmail.com
+        </a>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">VendoPlus</div>
+        <p>Herramientas para administrar tu negocio.</p>
+      </div>
+      <a href="https://vendoplusoficial.com/">Volver a VendoPlus ↗</a>
+    </div>
+  </footer>
+</body>
+</html>
