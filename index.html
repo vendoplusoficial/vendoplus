@@ -4362,6 +4362,16 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   .modal-sheet.vp-pf{ height:calc(100dvh / var(--z,1)) !important; max-height:calc(100dvh / var(--z,1)) !important; min-height:calc(100dvh / var(--z,1)); width:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; box-shadow:none; animation:none; }
   body:has(.vp-pf){ overflow:hidden; }
 }
+
+/* ---- Botón + limpio al seleccionarlo: sin aro blanco ni resplandor ---- */
+@media (max-width:699px){
+  .navbtn[data-view="sale"] .navicon,
+  .navbtn[data-view="sale"].active .navicon,
+  .navbtn[data-view="sale"]:hover .navicon,
+  .navbtn[data-view="sale"]:focus .navicon{ border:0 !important; outline:0 !important; background:var(--vp-green) !important; box-shadow:0 6px 14px rgba(22,193,91,.28) !important; width:56px; height:56px; }
+  .navbtn[data-view="sale"], .navbtn[data-view="sale"].active, .navbtn[data-view="sale"]:hover{ background:none !important; box-shadow:none !important; }
+  .navbtn[data-view="sale"].active .navicon{ background:var(--vp-green-d) !important; }
+}
 </style>
 
 </head>
@@ -23147,7 +23157,7 @@ function mdSaveDesign(abrir){
     var hist=q('.navbtn[data-view="history"]'); if(hist) hist.dataset.icon='vpHistory';
     var nav=q('.bottomnav');
     if(nav && !q('.vp-more')){
-      var m=document.createElement('button'); m.className='navbtn vp-more'; m.dataset.view='more';
+      var m=document.createElement('button'); m.className='navbtn vp-more'; m.dataset.view='more'; m.dataset.icon='vpMore';
       m.innerHTML='<span class="navicon">'+ICONS.vpMore+'</span><span>Más</span>';
       m.onclick=openMore; nav.appendChild(m);
     }
