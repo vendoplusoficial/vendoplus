@@ -4478,6 +4478,10 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .mdx-head-txt{ flex:1; min-width:0; }
 .mdx-head .mdx-gear{ margin-top:16px; }
 .mdx-done-ico + h2{ margin-top:0; }
+
+.catmgr-tip{ margin:0 0 10px; font-size:12px; font-weight:600; color:var(--ink-soft); }
+.catmgr-grip{ flex:none; width:28px; height:36px; margin-left:-6px; display:flex; align-items:center; justify-content:center; border:0; background:none; padding:0; color:var(--ink-soft); cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; }
+.catmgr-row.dragging{ position:relative; z-index:5; background:var(--surface,#fff); box-shadow:0 10px 24px rgba(20,20,20,.18); transition:none !important; }
 </style>
 </head>
 <body>
@@ -10388,10 +10392,11 @@ function openCategoryManager(){
         <div class="empty-title">Sin categorías</div>
         <div class="empty-text">Crea una categoría para organizar tu catálogo.</div>
       </div>
-    ` : categories.map(c => {
+    ` : `${categories.length > 1 ? '<p class="catmgr-tip">Arrastra el ícono ⠿ para cambiar el orden de las categorías</p>' : ''}<div id="catmgrList">` + categories.map(c => {
       const count = products.filter(p => p.category === c.id).length;
       return `
-        <div class="catmgr-row">
+        <div class="catmgr-row" data-id="${c.id}">
+          ${categories.length > 1 ? `<button type="button" class="catmgr-grip" onpointerdown="catmgrGripDown(event)" aria-label="Arrastrar para cambiar el orden"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg></button>` : ''}
           <div class="catmgr-dot" style="background:${c.color}22"><span class="catmgr-color" style="background:${c.color}"></span></div>
           <div class="catmgr-name">${escapeHtml(c.name)}</div>
           <div class="catmgr-count">${count} prod.</div>
@@ -10401,12 +10406,63 @@ function openCategoryManager(){
           </div>
         </div>
       `;
-    }).join('')}
+    }).join('') + '</div>'}
     <button class="btn primary block" style="margin-top:14px;" onclick="openCategoryForm()">${icon('plus')} Nueva categoría</button>
   `;
   openModal(html, { dismissible:true });
 }
 
+/* Arrastrar categorías para cambiar su orden */
+function catmgrGripDown(e){
+  const grip = e.currentTarget;
+  const row = grip.closest('.catmgr-row');
+  const list = row && row.parentNode;
+  if(!list) return;
+  e.preventDefault();
+  const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1;
+  try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+  const startRect = row.getBoundingClientRect();
+  const grab = e.clientY - startRect.top;
+  row.classList.add('dragging');
+  vibrate(10);
+  const place = y => {
+    row.style.transform = 'none';
+    const nat = row.getBoundingClientRect().top;
+    row.style.transform = 'translateY(' + ((y - grab - nat) / z) + 'px)';
+  };
+  const move = ev => {
+    const y = ev.clientY;
+    const center = y - grab + startRect.height / 2;
+    let before = null;
+    const rows = Array.from(list.children).filter(r => r !== row);
+    for(const r of rows){
+      const rc = r.getBoundingClientRect();
+      if(center < rc.top + rc.height / 2){ before = r; break; }
+    }
+    if(before !== row.nextElementSibling) list.insertBefore(row, before);
+    place(y);
+  };
+  const up = () => {
+    grip.removeEventListener('pointermove', move);
+    grip.removeEventListener('pointerup', up);
+    grip.removeEventListener('pointercancel', up);
+    row.classList.remove('dragging');
+    row.style.transform = '';
+    catmgrSaveOrder(list);
+  };
+  grip.addEventListener('pointermove', move);
+  grip.addEventListener('pointerup', up);
+  grip.addEventListener('pointercancel', up);
+}
+function catmgrSaveOrder(list){
+  const ids = Array.from(list.children).map(r => r.getAttribute('data-id'));
+  const cats = DB.getCategories();
+  const sorted = ids.map(id => cats.find(c => c.id === id)).filter(Boolean);
+  cats.forEach(c => { if(sorted.indexOf(c) < 0) sorted.push(c); });
+  if(sorted.every((c, i) => c === cats[i])) return;
+  DB.saveCategories(sorted);
+  vibrate(8);
+}
 function openCategoryForm(categoryId){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para administrar productos')) return;
   const categories = DB.getCategories();
