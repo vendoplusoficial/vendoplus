@@ -4435,6 +4435,16 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   #cc-layer .cc-card .cc-empty{ padding:0; width:100%; }
   #cc-layer .cc-x{ top:calc(14px + env(safe-area-inset-top,0px)); right:14px; }
 }
+
+/* Pantalla completa en celular: Cobrar pedido y Abrir caja */
+@media (max-width:699px){
+  .modal-overlay:has(.fs-marker){ padding:0; align-items:stretch; background:#fff !important; }
+  .modal-sheet:has(.fs-marker){ width:100%; max-width:none; margin:0; border-radius:0; height:calc(100dvh / var(--z,1)); max-height:calc(100dvh / var(--z,1)); overflow-x:hidden; overflow-y:auto; padding:max(18px,env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)); animation:none; box-shadow:none; }
+  .modal-sheet:has(.fs-marker) .sheet-grip{ display:none; }
+  body:has(.fs-marker) .bottomnav, body:has(.fs-marker) .cartbar{ display:none !important; }
+  #confirm-layer .modal-overlay:has(#cgOpening){ padding:0; align-items:stretch; background:#fff !important; }
+  #confirm-layer .conf-card:has(#cgOpening){ width:100%; max-width:none; margin:0; border-radius:0; height:calc(100dvh / var(--z,.9)); max-height:calc(100dvh / var(--z,.9)); overflow-y:auto; display:flex; flex-direction:column; justify-content:center; padding:max(24px,env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom)); box-shadow:none; }
+}
 </style>
 </head>
 <body>
@@ -6553,6 +6563,7 @@ function cartSheetHTML(step){
     }
 
     return `
+      <i class="fs-marker" hidden></i>
       <div class="sheet-header">
         <div class="sheet-header-left">
           <button class="sheet-back" onclick="openCartSheet('cart')" aria-label="Volver">${icon('chevronLeft')}</button>
@@ -6678,11 +6689,6 @@ function cartSheetHTML(step){
     }).join('')}
     ${cart.length > 0 ? `
       <div class="acc-list cart-opts">
-        <button class="acc-row" onclick="openCustomerPicker('cart')">
-          <span class="acc-ico green">${icon('person')}</span>
-          <span class="acc-txt"><span class="acc-label">${cust ? escapeHtml(cust.name) : 'Cliente'}</span><span class="acc-sub">${cust ? (cust.phone ? escapeHtml(cust.phone) : 'Cliente de la venta') + (typeof customerBalance === 'function' && customerBalance(cust.id) > 0 ? ' · debe ' + formatMoney(customerBalance(cust.id)) : '') : 'Opcional · para fiar, mandar su ticket o ver sus compras'}</span></span>
-          <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>
         ${puedeDesc ? `
           <button class="acc-row" onclick="openOrderDiscount()">
             <span class="acc-ico gold">${icon('tag')}</span>
@@ -18428,6 +18434,7 @@ function openCashOpen(){
   const last = cashLast();
   const sug = last ? (last.keep != null ? last.keep : 0) : 0;
   openModal(`
+    <i class="fs-marker" hidden></i>
     <div class="sheet-header">
       <h2>Abrir caja</h2>
       <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
