@@ -4274,6 +4274,45 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .vp-sheet button:active{ background:var(--vp-soft); }
 .vp-sheet button svg{ width:22px; height:22px; color:var(--vp-green-d); }
 @media (min-width:700px){ .vp-sheet-bg{ display:none !important; } }
+
+/* ===== Formulario Nuevo producto ===== */
+.modal-overlay:has(.vp-pf){ padding:0; align-items:stretch; }
+.modal-sheet.vp-pf{ width:100%; max-width:none; height:100dvh; max-height:100dvh; margin:0; border-radius:0; background:#fff; padding:max(16px,env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom)); }
+.vp-pf .sheet-grip{ display:none; }
+.vp-pf .sheet-header{ display:flex; flex-direction:column; align-items:flex-start; gap:20px; margin-bottom:22px; }
+.vp-pf .sheet-close{ order:1; width:54px; height:54px; border-radius:18px; background:#fff; border:1px solid var(--vp-line); box-shadow:0 6px 18px rgba(22,33,62,.08); color:var(--vp-navy); display:flex; align-items:center; justify-content:center; }
+.vp-pf .sheet-close svg{ width:24px; height:24px; }
+.vp-pf .sheet-header h2{ order:2; display:flex; align-items:center; gap:14px; margin:0; font-size:30px; font-weight:800; letter-spacing:-.8px; color:var(--vp-navy); }
+.vp-pf .sheet-header h2::before{ content:''; width:5px; height:32px; border-radius:3px; background:var(--vp-green); }
+.vp-pf .field{ margin-bottom:20px; }
+.vp-pf .field > label:not(.photo-upload){ display:block; font-size:15px; font-weight:700; color:var(--vp-mute); margin-bottom:9px; }
+.vp-pf .field input:not([type=checkbox]):not([type=file]),.vp-pf .field select{ width:100%; height:56px; border-radius:16px; border:1.5px solid var(--vp-line); background:#fff; padding:0 18px; font:600 17px var(--sans); color:var(--vp-navy); box-shadow:none; }
+.vp-pf .field input:focus,.vp-pf .field select:focus{ outline:none; border-color:var(--vp-green); box-shadow:0 0 0 4px rgba(22,193,91,.12); }
+.vp-pf .field-hint{ font-size:14px; color:var(--vp-mute); margin:8px 2px 0; }
+.vp-pf .field label.photo-upload{ height:200px; border-radius:22px; border:2px dashed #CBD3E6; background:#F5F7FC; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--vp-mute); overflow:hidden; }
+.vp-pf .photo-upload svg{ width:44px; height:44px; }
+.vp-pf .photo-upload-hint{ font-size:17px; font-weight:700; color:var(--vp-mute); }
+.vp-pf .photo-upload.has-image{ border-style:solid; }
+.vp-pf .photo-upload img{ width:100%; height:100%; object-fit:cover; }
+.vp-money{ position:relative; }
+.vp-money span{ position:absolute; left:20px; top:50%; transform:translateY(-50%); font-size:22px; font-weight:600; color:var(--vp-navy); }
+.vp-pf .vp-money input{ padding-left:52px !important; }
+.vp-select{ position:relative; }
+.vp-select svg{ position:absolute; left:18px; top:50%; transform:translateY(-50%); width:26px; height:26px; color:var(--vp-navy); pointer-events:none; }
+.vp-pf .vp-select select{ appearance:none; -webkit-appearance:none; padding-left:56px; padding-right:48px; color:var(--vp-navy);
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316213E' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 16px center/22px; }
+.vp-adv-toggle{ width:100%; display:flex; align-items:center; gap:14px; border:0; border-radius:20px; background:#F1F6F6; padding:24px 20px; font:800 17px var(--sans); color:var(--vp-navy); text-align:left; margin:4px 0 20px; }
+.vp-adv-toggle svg{ width:26px; height:26px; flex:none; }
+.vp-adv-toggle .vp-chev{ margin-left:auto; width:22px; height:22px; transition:transform .2s ease; }
+.vp-adv-toggle.open .vp-chev{ transform:rotate(90deg); }
+#vpAdv{ margin-bottom:8px; } #vpAdv[hidden]{ display:none; }
+.vp-pf .vp-save{ width:100%; height:66px; border-radius:999px; background:var(--vp-green); color:#fff; border:0; display:flex; align-items:center; justify-content:center; gap:16px; font:800 18px var(--sans); box-shadow:0 12px 26px rgba(22,193,91,.32); margin-top:6px; }
+.vp-pf .vp-save svg{ width:26px; height:26px; } .vp-pf .vp-save i{ width:1px; height:26px; background:rgba(255,255,255,.5); }
+@media (min-width:700px){
+  .modal-overlay:has(.vp-pf){ align-items:center; padding-left:104px; }
+  body.auth-open .modal-overlay:has(.vp-pf){ padding-left:0; }
+  .modal-sheet.vp-pf{ max-width:600px; height:auto; max-height:92vh; border-radius:28px; padding:28px 32px 32px; }
+}
 </style>
 
 </head>
@@ -4724,15 +4763,11 @@ const ILLUSTRATIONS = {
   // Productos sin catálogo: bolsa / caja de compras vacía
   boxEmpty: `
   <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="80" cy="138" rx="44" ry="7" fill="#EEF1F7"/>
-    <path d="M55 46l-8 14h66l-8-14" stroke="#16213E" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="M47 60h66l-5 62a4 4 0 0 1-4 3.6H56a4 4 0 0 1-4-3.6l-5-62Z" fill="#FFFFFF" stroke="#16213E" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="M65 46a15 15 0 0 1 30 0" stroke="#16213E" stroke-width="2.2" stroke-linecap="round"/>
-    <path d="M62 82h36" stroke="#D8DCE8" stroke-width="3.4" stroke-linecap="round"/>
-    <circle cx="121" cy="52" r="16" fill="#FFD666"/>
-    <path d="M121 45v14M114 52h14" stroke="#16213E" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="33" cy="88" r="2.6" fill="#E4E8F0"/>
-    <circle cx="39" cy="102" r="2" fill="#FFE29A"/>
+    <ellipse cx="78" cy="134" rx="40" ry="6" fill="#EEF1F7"/>
+    <path d="M52 62h52l4 64a4 4 0 0 1-4 4H52a4 4 0 0 1-4-4l4-64Z" fill="#fff" stroke="#16213E" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M64 62v-8a14 14 0 0 1 28 0v8" stroke="#16213E" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="112" cy="48" r="17" fill="#16C15B"/>
+    <path d="M112 40v16M104 48h16" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
   </svg>`,
 
   // Historial sin registros: documentos apilados
@@ -10355,12 +10390,6 @@ function openProductForm(productId){
   const categories = DB.getCategories();
   const editing = productId ? products.find(p => p.id === productId) : null;
 
-  if(categories.length === 0){
-    toast('Primero crea una categoría');
-    openCategoryForm();
-    return;
-  }
-
   productFormImage = editing ? (editing.image || null) : null;
   const stockOn = !!editing && editing.stock !== null && editing.stock !== undefined;
   const sizesOn = !!editing && !!editing.sizesOn;
@@ -10414,7 +10443,7 @@ function openProductForm(productId){
         ${(() => {
           const last = lastProductCategory();
           const sel = editing ? editing.category : (categories.some(c => c.id === last) ? last : '');
-          return categories.map(c => `<option value="${c.id}" ${sel === c.id ? 'selected':''}>${catEmo(c)}${c.name}</option>`).join('');
+          return `<option value="" disabled ${categories.some(c => c.id === sel) ? '' : 'selected'}>Selecciona una categoría</option>` + categories.map(c => `<option value="${c.id}" ${sel === c.id ? 'selected':''}>${catEmo(c)}${c.name}</option>`).join('');
         })()}
       </select>
     </div>
@@ -10489,6 +10518,7 @@ function openProductForm(productId){
   updateProductFormWarnings();
   updateStockFieldLabels();
   if(typeof mdOnUnitChange === 'function') mdOnUnitChange();
+  if(typeof vpEnhanceProductForm === 'function') vpEnhanceProductForm(editing);
 }
 
 /* Redimensiona/recorta cualquier imagen a un cuadro fijo (cover) para que
@@ -10745,7 +10775,7 @@ function saveProductForm(productId){
   };
 
   const name = document.getElementById('pfName').value.trim();
-  const category = document.getElementById('pfCategory').value;
+  const category = document.getElementById('pfCategory').value || UNCATEGORIZED.id;
 
   if(!name){ markError('pfNameField', 'Escribe un nombre para el producto', 'pfName'); }
 
@@ -20516,6 +20546,7 @@ function posSettingsSub(){
 ========================================================= */
 /* Sin productos: se avisa que hay que agregarlos (y no se pide la caja todavía). */
 function noProductsBannerHTML(margin){
+  return '';
   if(DB.getProducts().length) return '';
   const puede = can('gestionarProductos');
   const sub = puede ? 'Toca aquí para agregar tu primer producto y empezar a vender'
@@ -23062,6 +23093,42 @@ function mdSaveDesign(abrir){
     all('.navbtn').forEach(function(btn){ var h=btn.querySelector('.navicon'); if(h&&btn.dataset.icon) h.innerHTML=icon(btn.dataset.icon); });
     markMore();
   }
+
+  var AR='<svg viewBox="0 0 24 24" '+S+' stroke-width="2.2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>';
+  var CH='<svg class="vp-chev" viewBox="0 0 24 24" '+S+' stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg>';
+  var GEAR='<svg viewBox="0 0 24 24" '+S+'><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>';
+  var TAG='<svg viewBox="0 0 24 24" '+S+'><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>';
+  window.vpEnhanceProductForm=function(editing){
+    var sh=q('#modal-layer .modal-sheet'); if(!sh) return;
+    sh.classList.add('vp-pf');
+    var cl=q('.sheet-header .sheet-close',sh); if(cl) cl.innerHTML=AR;
+    ['pfPrice','pfCost'].forEach(function(id){
+      var i=document.getElementById(id);
+      if(i && !i.parentNode.classList.contains('vp-money')){ var w=document.createElement('div'); w.className='vp-money'; w.innerHTML='<span>$</span>'; i.parentNode.insertBefore(w,i); w.appendChild(i); }
+    });
+    var cf=document.getElementById('pfCostField');
+    if(cf && !q('.vp-hint',cf)){ var h=document.createElement('div'); h.className='field-hint vp-hint'; h.textContent='Es el precio que te cuesta producirlo.'; cf.appendChild(h); }
+    var sel=document.getElementById('pfCategory'), whole=document.getElementById('pfWholeBox'), save=q('button[onclick^="saveProductForm"]',sh);
+    if(!sel||!whole||!save) return;
+    var catF=sel.closest('.field'); var sw=document.createElement('div'); sw.className='vp-select'; sw.innerHTML=TAG; sel.parentNode.insertBefore(sw,sel); sw.appendChild(sel);
+    whole.parentNode.insertBefore(catF,whole);
+    var adv=document.createElement('div'); adv.id='vpAdv';
+    var n=whole, list=[]; while(n && n!==save){ list.push(n); n=n.nextElementSibling; }
+    var tg=document.createElement('button'); tg.type='button'; tg.className='vp-adv-toggle'; tg.innerHTML=GEAR+'<span>Opciones avanzadas</span>'+CH;
+    whole.parentNode.insertBefore(tg,whole); whole.parentNode.insertBefore(adv,whole);
+    list.forEach(function(x){ adv.appendChild(x); });
+    var hasAdv=!!editing && (editing.sku || editing.stock!=null || editing.sizesOn || Number(editing.wholesalePrice)>0);
+    function setAdv(o){ adv.hidden=!o; tg.classList.toggle('open',o); }
+    setAdv(!!hasAdv); tg.onclick=function(){ setAdv(adv.hidden); };
+    save.className='vp-save';
+    save.setAttribute('onclick',"vpSaveProduct('"+(editing?editing.id:'')+"')");
+    save.innerHTML= editing ? 'Guardar cambios' : ICONS.vpPlus+'<i></i><span>Agregar producto</span>';
+  };
+  window.vpSaveProduct=function(id){
+    saveProductForm(id);
+    var adv=document.getElementById('vpAdv');
+    if(adv && adv.hidden && adv.querySelector('.has-error')){ adv.hidden=false; var t=q('.vp-adv-toggle'); if(t) t.classList.add('open'); }
+  };
   var MORE=[['home','home','Inicio'],['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y gastos'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
@@ -23088,7 +23155,7 @@ function mdSaveDesign(abrir){
       if(!t||t.textContent.trim()!=='Sin productos aquí'||q('.vp-empty-cta',es)) return;
       var btn=document.createElement('button'); btn.className='vp-empty-cta';
       btn.innerHTML=ICONS.vpPlus+'<i></i><span>Agregar nuevos productos</span>';
-      btn.onclick=function(){ goTo('products'); };
+      btn.onclick=function(){ try{ productsTab='catalogo'; }catch(e){} goTo('products'); setTimeout(function(){ openProductForm(); },80); };
       es.appendChild(btn);
     });
   }
