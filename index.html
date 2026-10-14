@@ -4461,6 +4461,18 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .md-status-card.mdx-off{ display:block; width:100%; text-align:left; font:inherit; color:inherit; cursor:pointer; }
 .mdx-off .md-status-top{ display:flex; align-items:center; gap:12px; }
 .mdx-off:active{ transform:scale(.99); }
+
+/* Menú Digital: pantalla de felicitación */
+.modal-sheet:has(.mdx-done){ display:flex; flex-direction:column; }
+.mdx-done{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:10px; padding:10px 4px 20px; min-height:0; }
+.mdx-done-ico{ width:92px; height:92px; border-radius:50%; background:var(--vp-green,#16C15B); color:#fff; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+.mdx-done-ico svg{ width:46px; height:46px; }
+.mdx-done h2{ margin:0; font-size:28px; font-weight:800; letter-spacing:-.6px; }
+.mdx-done-lead{ margin:0; font-size:16px; font-weight:700; color:var(--ink-soft,#6B7592); }
+.mdx-done-link{ width:100%; max-width:380px; margin-top:14px; }
+.mdx-done-sub{ margin:2px 0 0; font-size:14px; font-weight:600; line-height:1.45; color:var(--ink-soft,#6B7592); max-width:300px; }
+.mdx-done-actions{ display:flex; gap:10px; margin-top:8px; }
+.mdx-done-actions .btn{ padding:10px 18px; }
 </style>
 </head>
 <body>
@@ -14689,6 +14701,7 @@ function mdConfigHTML(cfg){
       ` : ''}
     </div>
 
+    ${cfg.active ? '<div class="section-title">Configurar menú</div>' : ''}
     ${groupsHTML}
 
     ${!cfg.active ? (puedeMenu ? `
@@ -14725,8 +14738,30 @@ function mdActivate(){
   c.activatedAt = new Date().toISOString();
   mdSaveCfg(c);
   vibrate([15, 60, 15]);
-  toast('Menú Digital activado', { icon:icon('check'), subtitle:'Ya tienes el link único de tu negocio' });
   render();
+  mdOpenDone();
+}
+/* Pantalla completa que se ve al terminar de configurar y activar el menú */
+function mdOpenDone(){
+  const cfg = mdCfg();
+  openModal(`
+    <i class="fs-marker" hidden></i>
+    <div class="sheet-header">
+      <button class="sheet-close" style="margin-left:auto;" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
+    </div>
+    <div class="mdx-done">
+      <span class="mdx-done-ico">${icon('check')}</span>
+      <h2>¡Felicidades!</h2>
+      <p class="mdx-done-lead">Activaste tu Menú Digital</p>
+      <div class="md-link-box mdx-done-link">${icon('link')}<span class="md-link-url" title="${escapeHtml(mdLink(cfg))}">${escapeHtml(mdShortLink(cfg))}</span></div>
+      <p class="mdx-done-sub">Este link envíaselo a tu cliente para que pueda usar tu menú</p>
+      <div class="mdx-done-actions">
+        <button class="btn ghost" onclick="mdCopyLink()">${icon('copy')} Copiar</button>
+        <button class="btn ghost" onclick="mdShareLink()">${icon('share')} Compartir</button>
+      </div>
+    </div>
+    <button type="button" class="btn primary block" onclick="closeModal()">Listo</button>
+  `, { dismissible:true });
 }
 function mdDeactivate(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para desactivar el Menú Digital')) return;
@@ -16780,11 +16815,13 @@ function mdSetupShowing(){
 function mdSetupClose(){ mdSetupOn = false; _mdCloseModalBase(); }
 function mdCfgSheetHTML(){
   return `
+    <i class="fs-marker" hidden></i>
     <div class="sheet-header">
       <h2>${MD_CFG_TITLE}</h2>
       <button class="sheet-close" onclick="mdSetCfgVisible(false)" aria-label="Cerrar">${icon('close')}</button>
     </div>
-    ${mdConfigHTML(mdCfg())}`;
+    ${mdConfigHTML(mdCfg())}
+    <button type="button" class="btn primary block" style="margin-top:18px;" onclick="mdSetCfgVisible(false)">Listo</button>`;
 }
 function mdOpenCfgSheet(){
   if(!mdCfg().active){ mdCfgSheetOn = false; return; }
