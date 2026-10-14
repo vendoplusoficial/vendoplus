@@ -4155,6 +4155,127 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
   .mdn-done-ico{ width:56px; height:56px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; } .mdn-done-ico svg{ width:28px; height:28px; }
   .mdn-done-ico.ok{ background:#16A34A; color:#fff; } .mdn-done-ico.no{ background:#FBD9D5; color:#C23B2E; }
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style id="vp-redesign">
+/* ===== VendoPlus · rediseño (capa final, no toca la lógica) ===== */
+:root{
+  --vp-navy:#16213E; --vp-green:#16C15B; --vp-green-d:#0FA84C; --vp-soft:#EAF9F0;
+  --vp-mute:#7C88A3; --vp-line:#E6EAF3;
+  --ink:#16213E; --ink-soft:#7C88A3; --bg:#FFFFFF; --border:#E6EAF3;
+  --sec-home:#16C15B; --sec-sale:#16C15B; --sec-history:#16C15B; --sec-stats:#16C15B; --sec-products:#16C15B;
+  --sans:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+}
+body{ background:#fff; font-family:var(--sans); }
+.app{ background:#fff; }
+
+/* ---- Encabezado: wordmark + chip de usuario ---- */
+.topbar{ background:#fff; padding:max(14px,env(safe-area-inset-top)) 18px 8px; }
+.brand-mark-wrap,.brand-txt{ display:none !important; }
+.vp-wordmark{ font-weight:800; font-size:30px; letter-spacing:-1.4px; color:var(--vp-navy); line-height:1; }
+.vp-wordmark b{ color:var(--vp-green); font-weight:800; }
+.user-chip{
+  display:flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--vp-line);
+  border-radius:999px; padding:6px 16px 6px 6px; box-shadow:0 6px 18px rgba(22,33,62,.08);
+}
+.user-chip .avatar-btn,.avatar-btn{ width:38px; height:38px; border-radius:50%; background:var(--vp-navy); color:#fff; overflow:hidden; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+.user-chip .chip-name{ font-weight:800; font-size:15px; color:var(--vp-navy); }
+
+/* ---- Títulos ---- */
+h1.page-title{ font-size:30px; font-weight:800; letter-spacing:-.8px; color:var(--vp-navy); gap:12px; }
+h1.page-title::before,body[data-section] h1.page-title::before{ width:5px; height:30px; background:var(--vp-green); }
+p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
+
+/* ---- Buscador + botones ---- */
+.sale-tools{ display:flex; gap:10px; align-items:center; }
+.sale-search,.search-box.sale-search{ flex:1; min-width:0; height:52px; border-radius:999px; border:1.5px solid var(--vp-line); background:#fff; box-shadow:none; }
+.sale-search input{ font-weight:600; font-size:15px; }
+.tool-btn{ width:52px; height:52px; border-radius:18px; border:1.5px solid var(--vp-line); background:#fff; color:var(--vp-navy); display:flex; align-items:center; justify-content:center; }
+.tool-btn:hover{ border-color:var(--vp-green); color:var(--vp-green-d); }
+.chip{ border-radius:999px; font-weight:800; padding:12px 22px; border-color:var(--vp-line); background:#fff; color:var(--vp-navy); }
+.chip.active{ background:var(--vp-green); border-color:var(--vp-green); color:#fff; box-shadow:0 6px 14px rgba(22,193,91,.3); }
+.chip-row.sticky-index{ background:#fff; }
+.btn.primary,body[data-section] .btn.primary{ background:var(--vp-green); color:#fff; border-radius:999px; }
+.product-card{ border-radius:20px; }
+
+/* ---- Estado vacío con botón ---- */
+.empty-state .empty-title{ font-size:22px; font-weight:800; color:var(--vp-navy); }
+.empty-state .empty-text{ font-size:15px; max-width:300px; }
+.vp-empty-cta{
+  margin:22px auto 0; display:inline-flex; align-items:center; gap:14px; border:0; cursor:pointer;
+  background:var(--vp-green); color:#fff; font-weight:800; font-size:16px; padding:18px 30px 18px 24px;
+  border-radius:999px; box-shadow:0 10px 24px rgba(22,193,91,.32); font-family:inherit;
+}
+.vp-empty-cta i{ width:1px; height:24px; background:rgba(255,255,255,.45); }
+.vp-empty-cta svg{ width:24px; height:24px; }
+
+/* ===================== CELULAR (<700px): barra inferior ===================== */
+@media (max-width:699px){
+  .bottomnav{
+    background:#fff; padding:10px 6px calc(10px + env(safe-area-inset-bottom));
+    display:grid; grid-template-columns:repeat(5,1fr); align-items:end;
+    box-shadow:0 -1px 0 var(--vp-line), 0 -10px 28px rgba(22,33,62,.06);
+  }
+  .navbtn[data-view="home"],.navbtn[data-view="stats"],.navbtn[data-view="customers"],
+  .navbtn[data-view="cash"],.navbtn[data-view="account"]{ display:none !important; }
+  .navbtn[data-view="history"]{ order:1; } .navbtn[data-view="products"]{ order:2; }
+  .navbtn[data-view="sale"]{ order:3; } .navbtn[data-view="menu"]{ order:4; } .navbtn.vp-more{ order:5; display:flex; }
+  .navbtn{ background:none !important; color:var(--vp-navy) !important; gap:5px; }
+  .navbtn span:last-child{ font-size:11px; font-weight:700; }
+  .navbtn.active:not([data-view="sale"]) span:last-child{ color:var(--vp-green-d); }
+  .navbtn.active:not([data-view="sale"]) .navicon{ color:var(--vp-green-d); }
+  /* El + central = Nueva venta */
+  .navbtn[data-view="sale"]{ justify-self:center; padding:0; margin-top:-34px; }
+  .navbtn[data-view="sale"] span:last-child{ display:none; }
+  .navbtn[data-view="sale"] .navicon{
+    width:64px; height:64px; border-radius:50%; background:var(--vp-green); color:#fff;
+    box-shadow:0 10px 22px rgba(22,193,91,.4); border:5px solid #fff; outline:1px solid transparent;
+  }
+  .navbtn[data-view="sale"] .navicon svg{ width:28px; height:28px; stroke-width:2.6; }
+  .navbtn[data-view="sale"].active .navicon{ box-shadow:0 0 0 4px var(--vp-soft), 0 10px 22px rgba(22,193,91,.4); }
+  .cartbar{ bottom:calc(92px + env(safe-area-inset-bottom)); }
+}
+
+/* ===================== TABLET (700–1099px): menú lateral compacto ===================== */
+@media (min-width:700px){
+  body{ background:#F5F7FB; }
+  .app{ grid-template-columns:104px 1fr; background:#F5F7FB; }
+  .topbar{ background:#F5F7FB; padding:22px 36px 10px; }
+  .view{ background:transparent; max-width:1500px; width:100%; }
+  .bottomnav{ background:#fff; gap:6px; padding:20px 10px; }
+  .navbtn.vp-more{ display:none !important; }
+  .navbtn{ color:var(--vp-mute) !important; border-radius:16px; }
+  .navbtn.active{ background:var(--vp-soft) !important; color:var(--vp-green-d) !important; }
+  .navbtn[data-view="sale"]{ order:-1; margin-bottom:12px; background:var(--vp-green) !important; color:#fff !important; box-shadow:0 10px 22px rgba(22,193,91,.35); padding:14px 4px; }
+  .navbtn[data-view="sale"].active{ background:var(--vp-green-d) !important; }
+  .navbtn[data-view="sale"] .navicon svg{ stroke-width:2.6; }
+  .user-chip{ box-shadow:0 4px 14px rgba(22,33,62,.07); }
+}
+
+/* ===================== PC (>=1100px): menú lateral ancho ===================== */
+@media (min-width:1100px){
+  .app{ grid-template-columns:248px 1fr; }
+  .bottomnav{ padding:26px 16px 22px; gap:6px; }
+  .navbtn{ flex-direction:row !important; justify-content:flex-start; gap:14px; padding:13px 16px !important; }
+  .navbtn .navicon{ margin:0 !important; }
+  .navbtn span:last-child{ font-size:14.5px !important; font-weight:700; white-space:nowrap; text-align:left; }
+  .navbtn[data-view="sale"]{ justify-content:center; padding:16px !important; }
+  .navbtn[data-view="sale"] span:last-child{ font-size:15px !important; }
+  .topbar{ padding:26px 44px 12px; } .view{ padding:14px 44px 140px; }
+  h1.page-title{ font-size:36px; }
+  .sale-tools{ max-width:760px; }
+}
+/* ---- Menú "Más" (celular) ---- */
+.vp-sheet-bg{ position:fixed; inset:0; background:rgba(22,33,62,.38); z-index:250; display:none; }
+.vp-sheet-bg.show{ display:block; }
+.vp-sheet{ position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:26px 26px 0 0; padding:14px 18px calc(22px + env(safe-area-inset-bottom)); box-shadow:0 -12px 40px rgba(22,33,62,.2); }
+.vp-sheet::before{ content:''; display:block; width:42px; height:5px; border-radius:3px; background:var(--vp-line); margin:0 auto 14px; }
+.vp-sheet button{ width:100%; display:flex; align-items:center; gap:14px; border:0; background:none; padding:14px 8px; font:700 16px var(--sans); color:var(--vp-navy); border-radius:14px; text-align:left; }
+.vp-sheet button:active{ background:var(--vp-soft); }
+.vp-sheet button svg{ width:22px; height:22px; color:var(--vp-green-d); }
+@media (min-width:700px){ .vp-sheet-bg{ display:none !important; } }
+</style>
+
 </head>
 <body>
 <noscript>
@@ -22917,5 +23038,66 @@ function mdSaveDesign(abrir){
   document.addEventListener('visibilitychange', () => { if(!document.hidden) apply(); });
 })();
 </script>
+<script id="vp-redesign-js">
+(function(){
+  var S='fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  try{
+    ICONS.vpPlus='<svg viewBox="0 0 24 24" '+S+' stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg>';
+    ICONS.vpHistory='<svg viewBox="0 0 24 24" '+S+'><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7.5V12l3 2"/></svg>';
+    ICONS.vpMore='<svg viewBox="0 0 24 24" '+S+'><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+  }catch(e){}
+  var q=function(s,r){return (r||document).querySelector(s);};
+  var all=function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
+  function setup(){
+    var b=q('.brand');
+    if(b && !q('.vp-wordmark')){ var w=document.createElement('span'); w.className='vp-wordmark'; w.innerHTML='Vendo<b>Plus</b>'; b.insertBefore(w,b.firstChild); }
+    var sale=q('.navbtn[data-view="sale"]'); if(sale) sale.dataset.icon='vpPlus';
+    var hist=q('.navbtn[data-view="history"]'); if(hist) hist.dataset.icon='vpHistory';
+    var nav=q('.bottomnav');
+    if(nav && !q('.vp-more')){
+      var m=document.createElement('button'); m.className='navbtn vp-more'; m.dataset.view='more';
+      m.innerHTML='<span class="navicon">'+ICONS.vpMore+'</span><span>Más</span>';
+      m.onclick=openMore; nav.appendChild(m);
+    }
+    all('.navbtn').forEach(function(btn){ var h=btn.querySelector('.navicon'); if(h&&btn.dataset.icon) h.innerHTML=icon(btn.dataset.icon); });
+    markMore();
+  }
+  var MORE=[['home','home','Inicio'],['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y gastos'],['account','person','Mi cuenta']];
+  function openMore(){
+    var bg=q('.vp-sheet-bg');
+    if(!bg){
+      bg=document.createElement('div'); bg.className='vp-sheet-bg';
+      bg.innerHTML='<div class="vp-sheet">'+MORE.map(function(i){return '<button data-go="'+i[0]+'">'+icon(i[1])+'<span>'+i[2]+'</span></button>';}).join('')+'</div>';
+      bg.addEventListener('click',function(e){
+        var t=e.target.closest('[data-go]');
+        if(t){ bg.classList.remove('show'); goTo(t.dataset.go); }
+        else if(e.target===bg) bg.classList.remove('show');
+      });
+      document.body.appendChild(bg);
+    }
+    bg.classList.add('show');
+  }
+  function markMore(){
+    var m=q('.vp-more'); if(!m) return;
+    var on=MORE.some(function(i){return i[0]===document.body.dataset.section;});
+    m.classList.toggle('active',on);
+  }
+  function emptyCta(){
+    all('.empty-state').forEach(function(es){
+      var t=q('.empty-title',es);
+      if(!t||t.textContent.trim()!=='Sin productos aquí'||q('.vp-empty-cta',es)) return;
+      var btn=document.createElement('button'); btn.className='vp-empty-cta';
+      btn.innerHTML=ICONS.vpPlus+'<i></i><span>Agregar nuevos productos</span>';
+      btn.onclick=function(){ goTo('products'); };
+      es.appendChild(btn);
+    });
+  }
+  setup();
+  try{ new MutationObserver(markMore).observe(document.body,{attributes:true,attributeFilter:['data-section']}); }catch(e){}
+  try{ var v=document.getElementById('view'); new MutationObserver(emptyCta).observe(v,{childList:true,subtree:true}); emptyCta(); }catch(e){}
+  try{ new MutationObserver(function(){ if(!q('.vp-wordmark')||!q('.vp-more')) setup(); }).observe(document.querySelector('.app'),{childList:true,subtree:true}); }catch(e){}
+})();
+</script>
+
 </body>
 </html>
