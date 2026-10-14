@@ -3188,8 +3188,8 @@
   @media (min-width:700px){ .page-back{ display:none; } }
   .navbtn.nav-pc{ display:none; }
   @media (min-width:700px){ .navbtn.nav-pc{ display:flex; } }
-  .navbtn.active[data-view="customers"], .navbtn.active[data-view="cash"], .navbtn.active[data-view="money"], .navbtn.active[data-view="reports"]{ background:var(--brand-soft); color:var(--brand-ink); }
-  body[data-section="customers"] h1.page-title::before, body[data-section="cash"] h1.page-title::before, body[data-section="money"] h1.page-title::before, body[data-section="reports"] h1.page-title::before{ background:var(--brand); }
+  .navbtn.active[data-view="customers"], .navbtn.active[data-view="cash"], .navbtn.active[data-view="reports"]{ background:var(--brand-soft); color:var(--brand-ink); }
+  body[data-section="customers"] h1.page-title::before, body[data-section="cash"] h1.page-title::before, body[data-section="reports"] h1.page-title::before{ background:var(--brand); }
 
   /* ---------- Inicio ---------- */
   button.stat-card.stat-tap{ font-family:inherit; text-align:left; cursor:pointer; color:var(--ink); }
@@ -4217,7 +4217,7 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
     box-shadow:0 -1px 0 var(--vp-line), 0 -10px 28px rgba(22,33,62,.06);
   }
   .navbtn[data-view="home"],.navbtn[data-view="stats"],.navbtn[data-view="customers"],
-  .navbtn[data-view="cash"],.navbtn[data-view="money"],.navbtn[data-view="account"]{ display:none !important; }
+  .navbtn[data-view="cash"],.navbtn[data-view="account"]{ display:none !important; }
   .navbtn[data-view="history"]{ order:1; } .navbtn[data-view="products"]{ order:2; }
   .navbtn[data-view="sale"]{ order:3; } .navbtn[data-view="menu"]{ order:4; } .navbtn.vp-more{ order:5; display:flex; }
   .navbtn{ background:none !important; color:var(--vp-navy) !important; gap:5px; }
@@ -4490,41 +4490,8 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .cc2-lbl{ display:block; font-size:22px; font-weight:800; color:#12803F; margin-top:10px; }
 .cc2-amt{ font-size:52px; font-weight:800; letter-spacing:-1px; line-height:1.1; color:#0B6F37; margin-top:2px; }
 .cc2-hero small{ display:block; margin-top:10px; font-size:14px; font-weight:600; line-height:1.4; color:var(--ink-soft,#6B7592); }
-.btn.cc2-close{ background:#0F6E49; color:#fff; border:0; margin-top:20px; height:58px; font-size:19px; border-radius:14px; }
+.btn.cc2-close{ margin-top:20px; height:58px; font-size:19px; border-radius:14px; }
 .btn.cc2-cut{ margin-top:12px; height:58px; font-size:19px; border-radius:14px; }
-.mny-act{ display:flex; align-items:center; gap:16px; width:100%; border:0; border-radius:22px; padding:18px 20px; font:inherit; font-size:20px; font-weight:800; text-align:left; cursor:pointer; margin-top:14px; }
-.mny-act.in{ background:#E9F8EF; color:#12803F; }
-.mny-act.out{ background:#FDECEE; color:#D9263A; }
-.mny-act-ico{ width:58px; height:58px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:rgba(22,193,91,.16); flex:none; }
-.mny-act.out .mny-act-ico{ background:rgba(217,38,58,.13); }
-.mny-circle{ width:32px; height:32px; border-radius:50%; background:currentColor; display:flex; align-items:center; justify-content:center; }
-.mny-circle svg{ width:18px; height:18px; color:#fff; }
-.mny-act-txt{ flex:1; }
-.mny-chev svg{ width:22px; height:22px; }
-.mny-card{ border:1px solid var(--border); border-radius:24px; padding:16px; background:var(--surface,#fff); margin-top:22px; }
-.mny-date{ width:100%; display:flex; align-items:center; gap:12px; border:1.5px solid var(--border); border-radius:14px; background:var(--surface,#fff); padding:14px 16px; font:inherit; font-weight:700; font-size:15px; color:var(--ink); cursor:pointer; }
-.mny-date-txt{ flex:1; text-align:left; }
-.mny-date svg{ width:20px; height:20px; }
-.mny-two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
-.mny-tile{ border-radius:18px; padding:14px 12px; display:flex; gap:10px; align-items:flex-start; min-width:0; }
-.mny-tile.in{ background:#E9F8EF; color:#12803F; }
-.mny-tile.out{ background:#FDECEE; color:#D9263A; }
-.mny-tile-ico{ width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.6); flex:none; }
-.mny-tile-ico svg{ width:20px; height:20px; }
-.mny-tile-txt{ display:flex; flex-direction:column; min-width:0; }
-.mny-tile-txt > span{ font-size:14px; font-weight:600; color:var(--ink-soft,#6B7592); }
-.mny-tile-txt b{ font-size:23px; font-weight:800; line-height:1.2; }
-.mny-tile-txt small{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); }
-.mny-bal{ display:flex; align-items:center; gap:14px; padding:16px 2px 14px; border-top:1px solid var(--border); margin-top:14px; }
-.mny-bal-ico{ width:56px; height:56px; border-radius:16px; background:var(--surface-alt,#EEF1F8); display:flex; align-items:center; justify-content:center; flex:none; }
-.mny-bal-ico svg{ width:28px; height:28px; }
-.mny-bal-txt{ display:flex; flex-direction:column; }
-.mny-bal-txt > span{ font-size:15px; font-weight:600; color:var(--ink-soft,#6B7592); }
-.mny-bal-txt b{ font-size:34px; font-weight:800; letter-spacing:-.5px; line-height:1.15; color:var(--vp-navy,#16213E); }
-.mny-more{ width:100%; display:flex; align-items:center; gap:12px; border:1.5px solid var(--border); border-radius:14px; background:var(--surface,#fff); padding:15px 16px; font:inherit; font-weight:700; font-size:15px; color:var(--ink); cursor:pointer; text-align:left; }
-.mny-more-txt{ flex:1; }
-.mny-more svg{ width:22px; height:22px; }
-.kv-row.tot{ font-weight:800; color:var(--ink); border-bottom:0; }
 </style>
 </head>
 <body>
@@ -4597,7 +4564,6 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
-    <button class="navbtn nav-pc nav-2l" data-view="money" data-icon="wallet" onclick="goTo('money')"><span class="navicon"></span><span>Ingreso y gastos</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -18188,7 +18154,7 @@ function savePayment(customerId){
   vibrate([15, 60, 15]);
   toast('Abono registrado', { icon:icon('check'), variant:'toast-success', subtitle:c.name + ' · ' + formatMoney(amount) + ' · ahora debe ' + formatMoney(Math.max(0, pay.balanceAfter)) });
   openPaymentDetail(pay.id, true);
-  if(currentView === 'customers' || currentView === 'home' || currentView === 'cash' || currentView === 'money') renderBgKeepModal();
+  if(currentView === 'customers' || currentView === 'home' || currentView === 'cash') renderBgKeepModal();
 }
 function paymentReceiptRows(p){
   return [
@@ -18611,7 +18577,7 @@ function renderCash(){
       <div class="cc2-amt">${formatMoney(sum.expected)}</div>
       <small>Abierta ${fmtDay(sess.openedAt)} ${fmtTime(sess.openedAt)}${sess.openedBy ? ' · ' + escapeHtml(sess.openedBy) : ''} · fondo ${formatMoney(sum.opening)}</small>
     </div>
-    ${puede ? `<button class="btn block cc2-close" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}">${icon('check')} Cerrar caja</button>` : ''}
+    ${puede ? `<button class="btn dark block cc2-close" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}">${icon('check')} Cerrar caja</button>` : ''}
     <button class="btn ghost block cc2-cut" onclick="openCashCutSheet()">${icon('document')} Corte</button>
   `;
 }
@@ -18627,9 +18593,10 @@ function openCashCutSheet(){
     </div>
     ${puede && sess ? `
       <button class="btn primary block" onclick="openCashCut('X')">${icon('document')} Hacer corte parcial</button>
-      <div class="cash-actions two" style="margin-top:10px;">
+      <div class="cash-actions" style="margin-top:10px;">
         <button class="btn ghost" onclick="openCashMove('entrada')">${icon('plus')} Entrada</button>
         <button class="btn ghost" onclick="openCashMove('salida')">${icon('minus')} Salida</button>
+        <button class="btn ghost" onclick="openExpenseForm()">${icon('wallet')} Gasto</button>
       </div>` : ''}
     <div class="section-title">Cortes anteriores</div>
     ${cutsTabHTML()}
@@ -18637,139 +18604,6 @@ function openCashCutSheet(){
   `, { dismissible:true });
 }
 
-/* =========================================================
-   INGRESO Y GASTOS
-========================================================= */
-let moneyPeriod = 'today', moneyFrom = '', moneyTo = '';
-function moneyRange(){ return periodRangeFor(moneyPeriod, moneyFrom, moneyTo); }
-function openMoneyPeriod(){
-  openPeriodSheet({ title:'Periodo', id:moneyPeriod, from:moneyFrom, to:moneyTo,
-    apply:(id, f, t) => { moneyPeriod = id; if(id === 'custom'){ moneyFrom = f; moneyTo = t; } } });
-}
-function moneyDayText(d){
-  return d.getDate() + ' de ' + d.toLocaleDateString('es-MX', { month:'short' }).replace('.', '') + ' ' + d.getFullYear();
-}
-function moneyLabel(){
-  const r = moneyRange();
-  const last = new Date(r[1].getTime() - 1);
-  if(isSameDay(r[0], last)){
-    return moneyPeriod === 'custom' ? moneyDayText(r[0]) : periodName(moneyPeriod) + ', ' + moneyDayText(r[0]);
-  }
-  return moneyPeriod === 'custom' ? reportRangeLabel(r) : periodName(moneyPeriod) + ' · ' + reportRangeLabel(r);
-}
-function moneyData(){
-  const r = moneyRange();
-  const inR = iso => { const d = new Date(iso); return d >= r[0] && d < r[1]; };
-  const sales = DB.getSales().filter(x => !x.cancelled && inR(x.date));
-  const orders = sales.filter(x => !saleIsReturn(x));
-  const returns = sales.filter(saleIsReturn);
-  const byMethod = {};
-  let fiado = 0, refunds = 0;
-  orders.forEach(x => salePayParts(x).forEach(p => {
-    if(p.method === 'credito') fiado += p.amount;
-    else byMethod[p.method] = (byMethod[p.method] || 0) + p.amount;
-  }));
-  returns.forEach(x => salePayParts(x).forEach(p => { if(p.method !== 'credito') refunds += Math.abs(p.amount); }));
-  const abonos = DB.getPayments().filter(p => !p.cancelled && inR(p.at));
-  const abonosTot = abonos.reduce((a, p) => a + (Number(p.amount) || 0), 0);
-  const entradas = [];
-  DB.getCash().forEach(c => (c.movements || []).forEach(m => { if(m.type === 'entrada' && inR(m.at)) entradas.push(m); }));
-  const entradasTot = entradas.reduce((a, m) => a + (Number(m.amount) || 0), 0);
-  const exps = expensesBetween(r[0], r[1]).sort((a, b) => new Date(b.date || b.at) - new Date(a.date || a.at));
-  const gastos = exps.reduce((a, e) => a + (Number(e.amount) || 0), 0);
-  const ventasTot = Object.keys(byMethod).reduce((a, k) => a + byMethod[k], 0);
-  const ingresos = round2(ventasTot + abonosTot + entradasTot - refunds);
-  return {
-    byMethod, fiado:round2(fiado), refunds:round2(refunds), ventasTot:round2(ventasTot),
-    orders:orders.length, returns:returns.length, abonos, abonosTot:round2(abonosTot),
-    entradas, entradasTot:round2(entradasTot), exps, gastos:round2(gastos),
-    ingresos, ingresosN:orders.length + returns.length + abonos.length + entradas.length,
-    balance:round2(ingresos - gastos)
-  };
-}
-function moneyN(n){ return n + ' movimiento' + (n === 1 ? '' : 's'); }
-function renderMoney(){
-  const d = moneyData();
-  const hoy = moneyPeriod === 'today';
-  return `
-    ${subViewBackHTML()}
-    <h1 class="page-title">Ingreso y gastos</h1>
-    <p class="page-sub">Registra el dinero que entra y sale de tu negocio.</p>
-    ${can('manejarCaja') ? `
-      <button class="mny-act in" onclick="openCashMove('entrada')">
-        <span class="mny-act-ico"><span class="mny-circle">${icon('plus')}</span></span>
-        <span class="mny-act-txt">Agregar ingreso</span>
-        <span class="mny-chev">${icon('chevronRight')}</span>
-      </button>` : ''}
-    ${can('registrarGastos') ? `
-      <button class="mny-act out" onclick="openExpenseForm()">
-        <span class="mny-act-ico"><span class="mny-circle">${icon('minus')}</span></span>
-        <span class="mny-act-txt">Agregar gasto</span>
-        <span class="mny-chev">${icon('chevronRight')}</span>
-      </button>` : ''}
-    <div class="mny-card">
-      <button class="mny-date" onclick="openMoneyPeriod()">
-        <span class="mny-date-ico">${icon('calendar')}</span>
-        <span class="mny-date-txt">${escapeHtml(moneyLabel())}</span>
-        <span class="mny-date-chev">${icon('chevronDown')}</span>
-      </button>
-      <div class="mny-two">
-        <div class="mny-tile in">
-          <span class="mny-tile-ico">${icon('arrowUp')}</span>
-          <span class="mny-tile-txt"><span>Ingresos</span><b>${formatMoney(d.ingresos)}</b><small>${moneyN(d.ingresosN)}</small></span>
-        </div>
-        <div class="mny-tile out">
-          <span class="mny-tile-ico">${icon('arrowDown')}</span>
-          <span class="mny-tile-txt"><span>Gastos</span><b>${formatMoney(d.gastos)}</b><small>${moneyN(d.exps.length)}</small></span>
-        </div>
-      </div>
-      <div class="mny-bal">
-        <span class="mny-bal-ico">${icon('wallet')}</span>
-        <span class="mny-bal-txt"><span>${hoy ? 'Balance del día' : 'Balance'}</span><b>${formatMoney(d.balance)}</b></span>
-      </div>
-      <button class="mny-more" onclick="openMoneyDetail()">
-        <span class="mny-more-ico">${icon('document')}</span>
-        <span class="mny-more-txt">Ver información detallada</span>
-        <span class="mny-chev">${icon('chevronRight')}</span>
-      </button>
-    </div>`;
-}
-EXTRA_VIEWS.money = renderMoney;
-function openMoneyDetail(){
-  const d = moneyData();
-  const row = (a, b, cls) => `<div class="kv-row ${cls || ''}"><span>${a}</span><b>${b}</b></div>`;
-  const methods = Object.keys(d.byMethod).filter(k => d.byMethod[k] > 0.004);
-  openModal(`
-    <i class="fs-marker" hidden></i>
-    <div class="sheet-header">
-      <h2>Información detallada</h2>
-      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
-    </div>
-    <p class="sheet-text">${escapeHtml(moneyLabel())}</p>
-    <div class="section-title">Ingresos</div>
-    <div class="card" style="padding:4px 14px;">
-      ${row('Ventas (' + d.orders + ')', formatMoney(d.ventasTot))}
-      ${methods.map(k => row('&nbsp;&nbsp;· ' + escapeHtml(paymentOf(k).name), formatMoney(d.byMethod[k]))).join('')}
-      ${d.abonos.length ? row('Abonos de clientes (' + d.abonos.length + ')', formatMoney(d.abonosTot)) : ''}
-      ${d.entradas.length ? row('Entradas de efectivo (' + d.entradas.length + ')', formatMoney(d.entradasTot)) : ''}
-      ${d.returns ? row('Devoluciones (' + d.returns + ')', '−' + formatMoney(d.refunds)) : ''}
-      ${row('Total de ingresos', formatMoney(d.ingresos), 'tot')}
-    </div>
-    ${d.fiado > 0.004 ? `<p class="md-hint">Además hubo ${formatMoney(d.fiado)} en ventas a crédito (fiado) que aún no se cobran.</p>` : ''}
-    <div class="section-title">Gastos</div>
-    ${d.exps.length ? `<div class="card mov-card">${d.exps.map(e => `
-      <button class="mov-row" onclick="openExpense('${e.id}')">
-        <span class="mov-ico">${icon(expenseCat(e.category).ico)}</span>
-        <span class="mov-main"><b>${escapeHtml(e.concept || expenseCat(e.category).name)}</b><small>${formatDateTime(e.date || e.at)} · ${e.fromCash ? 'de la caja' : paymentOf(e.method).name}</small></span>
-        <span class="mov-amt exp">${formatMoney(e.amount)}</span>
-      </button>`).join('')}</div>` : `<div class="todo-empty">Sin gastos en este periodo.</div>`}
-    <div class="card" style="padding:4px 14px;margin-top:12px;">
-      ${row('Total de gastos', formatMoney(d.gastos))}
-      ${row('Balance', formatMoney(d.balance), 'tot')}
-    </div>
-    <button type="button" class="btn primary block" style="margin-top:18px;" onclick="closeModal()">Listo</button>
-  `, { dismissible:true });
-}
 EXTRA_VIEWS.cash = renderCash;
 
 function openCashOpen(){
@@ -18875,6 +18709,7 @@ function openCashCut(kind){
     return;
   }
   openModal(`
+    <i class="fs-marker" hidden></i>
     <div class="sheet-header">
       <h2>Cerrar caja</h2>
       <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
@@ -18891,7 +18726,7 @@ function openCashCut(kind){
         ${MXN_DENOMS.map(d => `<label class="denom"><span>${icx(d >= 20 ? 'cash' : 'coin')}${formatMoney(d).replace('.00', '')}</span><input type="number" inputmode="numeric" min="0" step="1" data-d="${d}" placeholder="0" oninput="denomSum(${sum.expected})"></label>`).join('')}
       </div>
     </details>
-    <div class="qp-total" id="ccDiff"><span>Escribe lo que contaste</span><b>—</b></div>
+    <div class="qp-total" id="ccDiff" style="display:none;"></div>
     <div class="two-fields" style="margin-top:14px;">
       <div class="field">
         <label for="ccKeep">Se queda en caja para mañana</label>
@@ -18918,7 +18753,8 @@ function denomSum(expected){
 function cutDiff(expected){
   const box = document.getElementById('ccDiff'); if(!box) return;
   const raw = (document.getElementById('ccCounted') || {}).value;
-  if(raw === '' || raw == null){ box.className = 'qp-total'; box.innerHTML = '<span>Escribe lo que contaste</span><b>—</b>'; return; }
+  if(raw === '' || raw == null){ box.className = 'qp-total'; box.innerHTML = ''; box.style.display = 'none'; return; }
+  box.style.display = '';
   const d = round2((parseFloat(raw) || 0) - expected);
   box.className = 'qp-total ' + (Math.abs(d) < 0.005 ? 'ok' : 'bad');
   box.innerHTML = Math.abs(d) < 0.005 ? '<span>¡La caja cuadra!</span><b>' + icon('check') + '</b>' : `<span>${d > 0 ? 'Sobran' : 'Faltan'}</span><b>${formatMoney(Math.abs(d))}</b>`;
@@ -19531,51 +19367,10 @@ function scannerSheetHTML(){
     <h3 class="sheet-title">Lector de códigos</h3>
     <p class="sheet-text">Enlaza tu lector de códigos de barras y cobra más rápido: escaneas y el producto se agrega solo al carrito. Esto se guarda en este dispositivo.</p>
 
-    <div class="pr-card ${on ? 'on' : ''}">
-      <div class="pr-head">
-        <span class="acc-ico ${on ? 'green' : ''}">${icon('barcode')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Mi lector</span>
-          <span class="acc-sub" id="scLast">${c.lastAt ? 'Último código: <b>' + escapeHtml(c.lastCode) + '</b> · ' + (isSameDay(new Date(c.lastAt), new Date()) ? 'hoy ' + fmtTime(c.lastAt) : formatDateShort(c.lastAt)) : 'Todavía no has escaneado nada'}</span>
-        </span>
-        <span class="pr-state ${on ? 'on' : 'idle'}" id="scState"><span class="pr-dot"></span><span>${estado}</span></span>
-      </div>
-      <div class="seg" style="max-width:none; margin:13px 0 0;">
-        ${Object.keys(SCANNER_CONNS).map(k => `<button class="${conn === k ? 'active' : ''}" onclick="setScannerPref('conn','${k}')">${SCANNER_CONNS[k].name}</button>`).join('')}
-      </div>
-      ${scannerStepsHTML(conn)}
-      ${conn === 'cam' ? `
-        <div class="pr-actions">
-          <button class="btn dark" onclick="closeModal(); goTo('sale'); setTimeout(() => openScanner(), 80);" ${scanSupported() ? '' : 'disabled'}>${icon('camera')} Abrir la cámara</button>
-        </div>
-        ${scanSupported() ? '' : `<div class="pr-note warn" style="margin:12px 0 0;">Este navegador no puede leer códigos con la cámara. Usa <b>Chrome en Android</b> o un lector Bluetooth.</div>`}` : `
-        <label class="sc-test ${c.lastAt ? '' : 'pulse'}" for="scTest">
-          <span class="sc-test-ico">${icon('barcode')}</span>
-          <input id="scTest" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done"
-                 placeholder="Toca aquí y escanea un producto" onkeydown="scTestKey(event)" oninput="scTestInput()">
-        </label>
-        <div id="scResult"></div>`}
-      ${conn === 'usb' && serial ? `
-        <div class="sc-serial">
-          <span class="acc-txt">
-            <span class="acc-label">${serialPort ? 'Enlazado por puerto COM' : '¿Lo conectaste y no escribe nada?'}</span>
-            <span class="acc-sub">${serialPort ? 'Los códigos llegan directo a la app.' : 'Algunos lectores de PC vienen en modo <b>puerto COM</b>. Enlázalo aquí (Chrome o Edge).'}</span>
-          </span>
-          ${serialPort
-            ? `<button class="btn ghost" onclick="serialDisconnect(true)">${icon('close')} Desenlazar</button>`
-            : `<button class="btn dark" onclick="serialConnect(true)">${icon('usb')} Enlazar</button>`}
-        </div>` : ''}
-    </div>
-
     <div class="toggle-row">
       <span class="acc-ico violet">${icon('bell')}</span>
       <span class="acc-txt"><span class="acc-label">Sonido al escanear</span><span class="acc-sub">Un "bip" cuando el producto se agrega.</span></span>
       <label class="switch"><input type="checkbox" ${c.beep ? 'checked' : ''} onchange="setScannerPref('beep', this.checked)"><span class="track"></span></label>
-    </div>
-    <div class="toggle-row">
-      <span class="acc-ico green">${icon('cart')}</span>
-      <span class="acc-txt"><span class="acc-label">Escanear desde cualquier pantalla</span><span class="acc-sub">Si escaneas estando en Inicio u otra pantalla, te lleva a Nueva venta y agrega el producto.</span></span>
-      <label class="switch"><input type="checkbox" ${c.anywhere ? 'checked' : ''} onchange="setScannerPref('anywhere', this.checked)"><span class="track"></span></label>
     </div>
 
     <p class="print-tip">
@@ -23710,7 +23505,7 @@ function mdSaveDesign(abrir){
         '<button class="btn primary block" onclick="closeModal(); afterSaleNew();">'+icon('plus')+' Nueva venta</button>'+
       '</div>';
   };
-  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['money','wallet','Ingreso y gastos'],['account','person','Mi cuenta']];
+  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
     if(!bg){
