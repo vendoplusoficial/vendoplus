@@ -129,20 +129,10 @@
     background:var(--sec-home);
     display:flex; align-items:center; justify-content:center;
     box-shadow:0 12px 28px rgba(37,211,102,0.35);
-    animation:splash-spin .85s cubic-bezier(.65,0,.35,1) .05s both;
   }
   #splash .splash-mark svg{ width:46px; height:46px; }
-  @keyframes splash-spin{
-    0%{ transform:rotate(0deg) scale(.86); opacity:0; }
-    18%{ opacity:1; }
-    100%{ transform:rotate(360deg) scale(1); opacity:1; }
-  }
   @keyframes splash-out{
     to{ opacity:0; visibility:hidden; }
-  }
-  @media (prefers-reduced-motion: reduce){
-    #splash .splash-mark{ animation:splash-appear .3s ease both; }
-    @keyframes splash-appear{ from{ opacity:0; } to{ opacity:1; } }
   }
 
   /* ---------- Topbar ---------- */
@@ -13340,7 +13330,7 @@ function openUsersSheet(){
       ${list.map(u => {
         const esYo = me && u.id === me.id;
         const sub = roleOf(u.role).name + (esYo ? ' · Tú' : '') + (u.pin ? '' : ' · sin NIP');
-        const clickable = soyDueno;
+        const clickable = soyDueno || esYo;
         return `
           <button class="acc-row" ${clickable ? `onclick="openUserDetail('${u.id}')"` : 'disabled style="opacity:1;"'}>
             <span class="acc-ico ${u.role === 'dueno' ? 'gold' : (u.role === 'admin' ? 'blue' : 'green')} ${userPhoto(u) ? 'has-photo' : ''}">
@@ -13355,13 +13345,14 @@ function openUsersSheet(){
       }).join('')}
     </div>` : `
     <div class="acc-list">
-      <div class="acc-row">
+      <button class="acc-row" onclick="openUserDetail('${me ? me.id : ''}')">
         <span class="acc-ico green ${userPhoto(me) ? 'has-photo' : ''}">${userPhoto(me) ? `<img src="${userPhoto(me)}" alt="">` : `<span class="ini">${userInitials(me)}</span>`}</span>
         <span class="acc-txt">
           <span class="acc-label">${escapeHtml(me ? me.name : '')}</span>
           <span class="acc-sub">${roleOf(me ? me.role : 'empleado').name} · Este es tu usuario</span>
         </span>
-      </div>
+        <span class="acc-chev">${icon('chevronRight')}</span>
+      </button>
     </div>`;
 
   openModal(`
@@ -13377,40 +13368,7 @@ function openUsersSheet(){
         ${icon('plus')} Agregar usuario
       </button>` : ''}
 
-    <div class="acc-list" style="margin-top:14px;">
-      <button class="acc-row" onclick="openMyPhotoForm()">
-        <span class="acc-ico ${userPhoto(me) ? 'has-photo' : 'green'}">${userPhoto(me) ? `<img src="${userPhoto(me)}" alt="">` : icon('camera')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Mi foto</span>
-          <span class="acc-sub">${userPhoto(me) ? 'Cambiar o quitar mi foto' : 'Ponle una foto a tu usuario'}</span>
-        </span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <button class="acc-row" onclick="openMyPinForm()">
-        <span class="acc-ico gold">${icon('key')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Mi NIP</span>
-          <span class="acc-sub">${(me && me.pin) ? 'Cambiar mi NIP de 4 dígitos' : 'Aún no tienes NIP'}</span>
-        </span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <button class="acc-row" onclick="openShiftsSheet()">
-        <span class="acc-ico violet">${icon('clock')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">${can('verTodasVentas') ? 'Turnos' : 'Mis turnos'}</span>
-          <span class="acc-sub">${multi ? (visibleShifts().length + ' turno' + (visibleShifts().length === 1 ? '' : 's') + ' registrado' + (visibleShifts().length === 1 ? '' : 's')) : 'Se registran cuando hay varios usuarios'}</span>
-        </span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <button class="acc-row" onclick="openNipRecovery()">
-        <span class="acc-ico blue">${icon('phone')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Olvidé mi NIP</span>
-          <span class="acc-sub">Se recupera con un código al correo del Dueño</span>
-        </span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      ${multi ? `
+    ${multi ? `<div class="acc-list" style="margin-top:14px;">
         <button class="acc-row" onclick="switchUser()">
           <span class="acc-ico">${icon('swap')}</span>
           <span class="acc-txt">
@@ -13418,8 +13376,8 @@ function openUsersSheet(){
             <span class="acc-sub">Cierra tu turno y vuelve a la selección</span>
           </span>
           <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>` : ''}
-    </div>
+        </button>
+    </div>` : ''}
 
     <div class="sheet-actions">
       <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
@@ -13548,10 +13506,52 @@ function saveNewUser(){
 }
 
 /* ---------- Ver y modificar un usuario (solo el Dueño) ---------- */
+/* Opciones de un usuario: foto, NIP, turnos y recuperar NIP.
+   Viven dentro del detalle de cada usuario. */
+function userOptionsHTML(u){
+  const me = activeUser();
+  const esYo = !!me && me.id === u.id;
+  const n = DB.getShifts().filter(s => s.userId === u.id).length;
+  const row = (fn, ico, cls, label, sub) => `
+      <button class="acc-row" onclick="${fn}">
+        <span class="acc-ico ${cls}">${ico}</span>
+        <span class="acc-txt"><span class="acc-label">${label}</span><span class="acc-sub">${sub}</span></span>
+        <span class="acc-chev">${icon('chevronRight')}</span>
+      </button>`;
+  return `<div class="acc-list">
+    ${row(`openUserPhotoForm('${u.id}')`, userPhoto(u) ? `<img src="${userPhoto(u)}" alt="">` : icon('camera'), userPhoto(u) ? 'has-photo' : 'green',
+          esYo ? 'Mi foto' : 'Foto', userPhoto(u) ? 'Cambiar o quitar la foto' : (esYo ? 'Ponle una foto a tu usuario' : 'Ponle una foto a este usuario'))}
+    ${row(`openSetPinForm('${u.id}', ${esYo ? 'true' : 'false'})`, icon('key'), 'gold',
+          esYo ? 'Mi NIP' : 'NIP', u.pin ? 'Cambiar el NIP de 4 dígitos' : 'Aún no tiene NIP')}
+    ${row(`openShiftsSheet('${u.id}')`, icon('clock'), 'violet',
+          esYo ? 'Mis turnos' : 'Turnos', n + ' turno' + (n === 1 ? '' : 's') + ' registrado' + (n === 1 ? '' : 's'))}
+    ${row(`openNipRecovery('${u.id}')`, icon('mail'), 'blue',
+          esYo ? 'Olvidé mi NIP' : 'Olvidó su NIP', 'Se recupera con un código al correo del Dueño')}
+  </div>`;
+}
+/* A dónde regresar al cerrar foto, NIP o turnos */
+function backToUser(id){ if(id && userById(id)) openUserDetail(id); else openUsersSheet(); }
+
 function openUserDetail(id){
-  if(!requireOwner('Solo el Dueño puede modificar usuarios')) return;
   const u = userById(id);
   if(!u) return;
+  const me = activeUser();
+  if(!isOwner()){
+    /* Cada quien ve solo su propio usuario */
+    if(!me || me.id !== u.id){ requireOwner('Solo el Dueño puede ver otros usuarios'); return; }
+    openModal(`
+      <div class="sheet-header">
+        <h2>${escapeHtml(u.name)}</h2>
+        <button class="sheet-close" onclick="openUsersSheet()">${icon('close')}</button>
+      </div>
+      <p class="sheet-text">${roleOf(u.role).name} · Este es tu usuario</p>
+      ${userOptionsHTML(u)}
+      <div class="sheet-actions">
+        <button class="btn primary block" onclick="openUsersSheet()">Volver</button>
+      </div>
+    `, { dismissible:true });
+    return;
+  }
   const esDueno = u.role === 'dueno';
   const perms = Object.assign(defaultPerms(u.role), u.perms || {});
 
@@ -13562,6 +13562,9 @@ function openUserDetail(id){
     </div>
     <p class="sheet-text">${roleOf(u.role).sub}</p>
 
+    ${userOptionsHTML(u)}
+
+    <div class="section-title">Datos y permisos</div>
     <div class="field">
       <label for="udName">Nombre</label>
       <input id="udName" type="text" value="${escapeHtml(u.name)}">
@@ -13594,13 +13597,7 @@ function openUserDetail(id){
       </div>
     `).join('')}
 
-    <button class="btn ghost block" style="margin-top:16px;" onclick="openUserPhotoForm('${u.id}')">
-      ${icon('camera')} Cambiar su foto
-    </button>
-    <button class="btn ghost block" style="margin-top:10px;" onclick="openSetPinForm('${u.id}')">
-      ${icon('key')} Cambiar su NIP
-    </button>
-    <div style="margin-top:12px;">${nipRecoveryNoteHTML(esDueno)}</div>
+    <div style="margin-top:16px;">${nipRecoveryNoteHTML(esDueno)}</div>
     ${!esDueno ? `
       <button class="btn danger block" style="margin-top:10px;" onclick="confirmDeleteUser('${u.id}')">
         ${icon('trash')} Eliminar usuario
@@ -13709,7 +13706,7 @@ function openUserPhotoForm(id){
       <input id="userPhotoInput" type="file" accept="image/*" style="display:none" onchange="onUserPhotoSelected(this)">
     </div>
     <div class="sheet-actions">
-      <button class="btn ghost block" onclick="openUsersSheet()">Cancelar</button>
+      <button class="btn ghost block" onclick="backToUser('${u.id}')">Cancelar</button>
       <button class="btn primary block" onclick="saveUserPhoto('${u.id}')">Guardar</button>
     </div>
   `, { dismissible:true });
@@ -13766,7 +13763,7 @@ function saveUserPhoto(id){
   paintChrome();
   render();
   toast('Foto actualizada', { variant:'toast-success', icon:icon('check') });
-  openUsersSheet();
+  backToUser(id);
 }
 
 /* ---------- Mi NIP ---------- */
@@ -13801,7 +13798,7 @@ function openSetPinForm(id, mine){
       <input id="spPin2" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" style="letter-spacing:8px; text-align:center;">
     </div>
     <div class="sheet-actions">
-      <button class="btn ghost block" onclick="openUsersSheet()">Cancelar</button>
+      <button class="btn ghost block" onclick="backToUser('${u.id}')">Cancelar</button>
       <button class="btn primary block" onclick="saveSetPin('${u.id}', ${esMio ? 'true' : 'false'})">Guardar NIP</button>
     </div>
   `, { dismissible:true });
@@ -13811,7 +13808,8 @@ function saveSetPin(id, esMio){
   const list = DB.getUsers();
   const u = list.find(x => x.id === id);
   if(!u) return;
-  if(!esMio && !isOwner()){ requireOwner('Solo el Dueño puede cambiar el NIP de otros'); return; }
+  const yo = activeUser();
+  if(!isOwner() && !(yo && yo.id === u.id)){ requireOwner('Solo el Dueño puede cambiar el NIP de otros'); return; }
   const oldEl = document.getElementById('spOld');
   if(oldEl && u.pin && oldEl.value.replace(/\D/g,'') !== u.pin){
     toast('Tu NIP actual no es correcto', { variant:'toast-danger', icon:icon('close') });
@@ -13824,14 +13822,15 @@ function saveSetPin(id, esMio){
   u.pin = a;
   DB.saveUsers(list);
   toast('NIP guardado', { variant:'toast-success', icon:icon('check') });
-  openUsersSheet();
+  backToUser(id);
 }
 
 /* =========================================================
    TURNOS — hoja de consulta
 ========================================================= */
-function openShiftsSheet(){
-  const shifts = visibleShifts();
+function openShiftsSheet(userId){
+  const uo = userId ? userById(userId) : null;
+  const shifts = uo ? visibleShifts().filter(s => s.userId === uo.id) : visibleShifts();
   const todos = can('verTodasVentas');
   const body = shifts.length === 0 ? `
     <div class="empty-state">
@@ -13866,12 +13865,12 @@ function openShiftsSheet(){
 
   openModal(`
     <div class="sheet-header">
-      <h2>${todos ? 'Turnos' : 'Mis turnos'}</h2>
-      <button class="sheet-close" onclick="openUsersSheet()">${icon('close')}</button>
+      <h2>${uo ? (activeUser() && activeUser().id === uo.id ? 'Mis turnos' : 'Turnos de ' + escapeHtml(userFirstName(uo) || uo.name)) : (todos ? 'Turnos' : 'Mis turnos')}</h2>
+      <button class="sheet-close" onclick="backToUser('${uo ? uo.id : ''}')">${icon('close')}</button>
     </div>
     ${body}
     <div class="sheet-actions">
-      <button class="btn primary block" onclick="openUsersSheet()">Volver</button>
+      <button class="btn primary block" onclick="backToUser('${uo ? uo.id : ''}')">Volver</button>
     </div>
   `, { dismissible:true });
 }
