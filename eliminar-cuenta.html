@@ -1,586 +1,685 @@
-
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#101a2b">
-  <meta name="description" content="Solicita la eliminación de tu cuenta y de los datos asociados a VendoPlus.">
-  <title>Eliminar cuenta | VendoPlus</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eliminar cuenta · Vendo</title>
+<meta name="description" content="Pide que eliminemos tu cuenta de Vendo y todos los datos de tu negocio. Llena el formulario y nuestro equipo de soporte se encarga.">
+<meta name="theme-color" content="#1C1F52">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234F46E5'/%3E%3Cstop offset='1' stop-color='%237C3AED'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cg transform='translate(4 4)' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.3 8.6h13.4l-1.05 10.9a1.7 1.7 0 0 1-1.7 1.5H8.05a1.7 1.7 0 0 1-1.7-1.5L5.3 8.6Z'/%3E%3Cpath d='M9 8.6V7.2a3 3 0 0 1 6 0v1.4'/%3E%3Cpath d='m9.3 14.3 1.9 1.9 3.6-3.9'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  /* Mismos colores, letra y formas que el punto de venta Vendo */
+  :root{
+    --brand:#4F46E5;
+    --brand-2:#7C3AED;
+    --brand-soft:#EEEFFF;
+    --brand-ink:#3730A3;
+    --brand-rgb:79,70,229;
 
-  <style>
-    :root {
-      --navy: #101a2b;
-      --navy-light: #192840;
-      --green: #38d6a0;
-      --green-dark: #149b70;
-      --paper: #f5f7f8;
-      --white: #ffffff;
-      --text: #263449;
-      --muted: #718096;
-      --border: #e5eaf0;
+    --bg:#F3F4FA;
+    --surface:#FFFFFF;
+    --surface-alt:#EEF0F7;
+    --ink:#16213E;
+    --ink-mid:#5B6482;
+    --ink-soft:#8A93AC;
+    --ink-faint:#C9CEDD;
+    --border:#E4E7F1;
+    --danger:#E1594C;
+    --danger-bg:#FBEAE8;
+    --danger-ink:#B23A2E;
+    --warn-bg:#FFF4D9;
+    --warn-ink:#8A6A18;
+    --success:#33A873;
+    --success-bg:#E7F7EF;
+
+    --radius-card:18px;
+    --radius-btn:13px;
+    --shadow-card:0 1px 2px rgba(22,33,62,.04), 0 6px 18px rgba(22,33,62,.05);
+    --hero:linear-gradient(160deg,#2C2F7E 0%, #1C1F52 62%, #13153A 100%);
+    --sans:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --mono:'SFMono-Regular', ui-monospace, 'Courier New', Courier, monospace;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; font-family:var(--sans); background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+  }
+  button, input, select, textarea{ font-family:inherit; }
+  button{ cursor:pointer; }
+  a{ color:var(--brand-ink); font-weight:700; }
+  svg{ display:block; }
+  :focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+  .wrap{ width:100%; max-width:1080px; margin:0 auto; padding:0 16px; }
+
+  /* ---------- Encabezado ---------- */
+  .hero{
+    background:var(--hero); color:#fff; position:relative; overflow:hidden;
+    padding:calc(18px + env(safe-area-inset-top)) 0 64px;
+  }
+  .hero::after{
+    content:''; position:absolute; right:-120px; top:-140px; width:420px; height:420px; border-radius:50%;
+    background:radial-gradient(circle, rgba(124,58,237,.38), rgba(124,58,237,0) 68%); pointer-events:none;
+  }
+  .hero .wrap{ position:relative; z-index:1; }
+  .brand{ display:inline-flex; align-items:center; gap:11px; color:#fff; text-decoration:none; }
+  .brand-mark{
+    width:42px; height:42px; border-radius:13px; flex-shrink:0;
+    background:linear-gradient(135deg, var(--brand), var(--brand-2));
+    display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,0,0,.25);
+  }
+  .brand-mark svg{ width:22px; height:22px; }
+  .brand b{ display:block; font-size:20px; font-weight:800; letter-spacing:-.3px; line-height:1.1; }
+  .brand small{ display:block; font-size:11.5px; font-weight:600; opacity:.72; margin-top:2px; }
+  .hero-txt{ margin-top:34px; max-width:600px; }
+  .eyebrow{
+    display:inline-block; font-size:11.5px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase;
+    color:#C9CCFB; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
+    padding:5px 11px; border-radius:999px;
+  }
+  .hero h1{ font-size:34px; line-height:1.12; font-weight:800; letter-spacing:-.6px; margin:14px 0 10px; }
+  .hero p{ font-size:16px; font-weight:500; color:rgba(255,255,255,.76); margin:0; max-width:520px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+  .chips svg{ width:15px; height:15px; color:#C9CCFB; flex-shrink:0; }
+  .chips span{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:12.5px; font-weight:700; color:rgba(255,255,255,.9);
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
+    padding:7px 12px; border-radius:999px;
+  }
+
+  /* ---------- Contenido ---------- */
+  .main{
+    display:grid; gap:14px; margin-top:-36px; position:relative; z-index:2;
+    grid-template-areas:'steps' 'form' 'del' 'faq';
+  }
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card); padding:20px 18px; min-width:0;
+  }
+  .a-steps{ grid-area:steps; }
+  .a-form{ grid-area:form; }
+  .a-del{ grid-area:del; }
+  .a-faq{ grid-area:faq; }
+
+  .section-title{
+    font-size:16px; font-weight:800; color:var(--ink); margin:0 0 14px;
+    display:flex; align-items:center; gap:9px; letter-spacing:-.1px;
+  }
+  .section-title::before{ content:''; display:block; width:4px; height:17px; border-radius:3px; background:var(--brand); flex-shrink:0; }
+
+  .steps{ list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+  .steps li{ display:flex; gap:13px; padding:10px 0; position:relative; }
+  .steps li:not(:last-child)::after{
+    content:''; position:absolute; left:16px; top:46px; bottom:-6px; width:2px; border-radius:2px; background:var(--brand-soft);
+  }
+  .num{
+    width:34px; height:34px; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:var(--brand-soft); color:var(--brand-ink); font-weight:800; font-size:15px;
+  }
+  .steps b{ display:block; font-size:15px; font-weight:800; margin-top:6px; }
+  .steps p{ margin:3px 0 0; font-size:13.5px; color:var(--ink-mid); font-weight:500; }
+
+  .note{
+    margin-top:14px; display:flex; gap:11px; align-items:flex-start;
+    background:var(--brand-soft); color:var(--brand-ink); border-radius:14px; padding:12px 14px;
+    font-size:13px; font-weight:600; line-height:1.45;
+  }
+  .note svg{ width:20px; height:20px; flex-shrink:0; margin-top:1px; }
+  .note b{ display:block; font-size:13.5px; font-weight:800; margin-bottom:2px; }
+
+  .del-list{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr; gap:8px; }
+  .del-list li{
+    display:flex; align-items:center; gap:12px; background:var(--bg); border:1px solid var(--border);
+    border-radius:14px; padding:10px 12px; font-size:13.5px; font-weight:600; color:var(--ink-mid);
+  }
+  .del-list .ico{
+    width:36px; height:36px; border-radius:11px; background:var(--surface); box-shadow:0 0 0 1px var(--border);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--brand-ink);
+  }
+  .del-list .ico svg{ width:18px; height:18px; }
+  .del-list b{ display:block; color:var(--ink); font-size:14px; font-weight:800; }
+  .warn{
+    margin-top:12px; display:flex; gap:11px; align-items:flex-start;
+    background:var(--danger-bg); color:var(--danger-ink); border-radius:14px; padding:12px 14px;
+    font-size:13px; font-weight:600; line-height:1.45;
+  }
+  .warn svg{ width:20px; height:20px; flex-shrink:0; margin-top:1px; }
+  .warn b{ display:block; font-size:13.5px; font-weight:800; margin-bottom:2px; }
+
+  .faq details{ border-bottom:1px solid var(--border); }
+  .faq details:last-child{ border-bottom:none; }
+  .faq summary{
+    list-style:none; cursor:pointer; padding:14px 0; font-size:14.5px; font-weight:800;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .faq summary::-webkit-details-marker{ display:none; }
+  .faq summary svg{ width:18px; height:18px; color:var(--ink-soft); flex-shrink:0; transition:transform .18s ease; }
+  .faq details[open] summary svg{ transform:rotate(180deg); }
+  .faq details p{ margin:-4px 0 14px; font-size:13.5px; color:var(--ink-mid); font-weight:500; }
+
+  /* ---------- Formulario ---------- */
+  .form-head{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .form-ico{
+    width:44px; height:44px; border-radius:14px; flex-shrink:0; background:var(--danger-bg); color:var(--danger);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .form-ico svg{ width:22px; height:22px; }
+  .form-head h2{ margin:0; font-size:19px; font-weight:800; letter-spacing:-.2px; line-height:1.2; }
+  .form-head p{ margin:2px 0 0; font-size:13px; color:var(--ink-soft); font-weight:600; }
+
+  .field{ margin-bottom:14px; }
+  .field label, .field .label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px; }
+  .field label i, .field .label i{ font-style:normal; font-weight:600; color:var(--ink-faint); }
+  .field input, .field select, .field textarea{
+    width:100%; border:1.5px solid var(--border); border-radius:12px; padding:13px 14px;
+    font-size:16px; background:var(--surface); color:var(--ink); font-weight:600; outline:none;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .field textarea{ resize:vertical; min-height:84px; line-height:1.45; }
+  .field input::placeholder, .field textarea::placeholder{ color:var(--ink-faint); font-weight:600; }
+  .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--brand); }
+  .field select{
+    appearance:none; -webkit-appearance:none; padding-right:34px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238A93AC' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 11px center; background-size:16px;
+  }
+  .field-hint{ font-size:12px; margin-top:6px; font-weight:600; color:var(--ink-soft); }
+  .field-error{ display:none; font-size:12px; margin-top:6px; font-weight:700; color:var(--danger); }
+  .field.has-error input, .field.has-error select, .field.has-error textarea{ border-color:var(--danger); background:var(--danger-bg); }
+  .field.has-error .field-error{ display:block; }
+  .field.has-error .field-hint{ display:none; }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:7px; position:relative; }
+  .chip-row input, .field .chip-row input{ position:absolute; left:0; top:0; width:1px; height:1px; padding:0; margin:0; border:0; opacity:0; pointer-events:none; }
+  .chip-row label{
+    margin:0; display:inline-flex; align-items:center; padding:8px 13px; border-radius:999px; cursor:pointer;
+    background:var(--surface-alt); color:var(--ink-mid); font-size:13px; font-weight:700; border:1.5px solid transparent;
+    transition:background .15s ease, color .15s ease;
+  }
+  .chip-row input:checked + label{ background:var(--brand); color:#fff; box-shadow:0 4px 10px rgba(var(--brand-rgb),.28); }
+  .chip-row input:focus-visible + label{ outline:2px solid var(--brand); outline-offset:2px; }
+
+  .check{
+    display:flex; gap:12px; align-items:flex-start; cursor:pointer; margin:4px 0 16px;
+    background:var(--bg); border:1.5px solid var(--border); border-radius:14px; padding:12px 13px;
+    font-size:13.5px; font-weight:600; color:var(--ink-mid); line-height:1.45;
+  }
+  .check{ position:relative; }
+  .check input{ position:absolute; left:0; top:0; width:1px; height:1px; margin:0; opacity:0; pointer-events:none; }
+  .check .box{
+    width:22px; height:22px; border-radius:7px; border:2px solid var(--ink-faint); background:var(--surface);
+    flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; margin-top:1px;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .check .box svg{ width:14px; height:14px; opacity:0; }
+  .check input:checked + .box{ background:var(--brand); border-color:var(--brand); }
+  .check input:checked + .box svg{ opacity:1; }
+  .check input:focus-visible + .box{ outline:2px solid var(--brand); outline-offset:2px; }
+  .check b{ color:var(--ink); }
+  .check.has-error{ border-color:var(--danger); background:var(--danger-bg); }
+
+  .hp{ position:absolute !important; left:-9999px !important; width:1px; height:1px; overflow:hidden; }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    border:none; border-radius:var(--radius-btn); padding:15px 18px; font-size:15.5px; font-weight:800;
+    background:var(--surface-alt); color:var(--ink); text-decoration:none; transition:transform .12s ease, opacity .15s ease;
+  }
+  .btn:active{ transform:scale(.98); }
+  .btn svg{ width:18px; height:18px; }
+  .btn.primary{ background:var(--brand); color:#fff; box-shadow:0 8px 20px rgba(var(--brand-rgb),.28); }
+  .btn.ghost{ background:var(--surface); border:1.5px solid var(--border); color:var(--ink); }
+  .btn.block{ width:100%; }
+  .btn[disabled]{ opacity:.65; cursor:default; transform:none; }
+  .spin{ width:18px; height:18px; border-radius:50%; border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff; animation:spin .7s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .fine{ margin:12px 0 0; font-size:12px; color:var(--ink-soft); font-weight:600; text-align:center; line-height:1.45; }
+
+  /* ---------- Resultado ---------- */
+  .result{ text-align:center; padding:8px 2px 2px; }
+  .result-ico{
+    width:68px; height:68px; border-radius:22px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;
+    background:var(--success-bg); color:var(--success);
+  }
+  .result-ico svg{ width:34px; height:34px; }
+  .result.fail .result-ico{ background:var(--warn-bg); color:var(--warn-ink); }
+  .result h2{ margin:0; font-size:21px; font-weight:800; letter-spacing:-.3px; }
+  .result > p{ margin:8px auto 0; max-width:360px; font-size:14px; color:var(--ink-mid); font-weight:500; }
+  .folio{
+    display:inline-block; margin-top:14px; padding:7px 15px; border-radius:999px;
+    background:var(--brand); color:#fff; font-family:var(--mono); font-weight:800; font-size:14px; letter-spacing:1px;
+  }
+  .summary{ text-align:left; margin:16px 0 0; background:var(--bg); border:1px solid var(--border); border-radius:14px; padding:4px 14px; }
+  .summary div{ display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px; }
+  .summary div:last-child{ border-bottom:none; }
+  .summary span{ color:var(--ink-soft); font-weight:600; white-space:nowrap; }
+  .summary b{ text-align:right; font-weight:700; word-break:break-word; }
+  .result-actions{ display:grid; gap:9px; margin-top:16px; }
+  .result .fine a{ font-weight:800; }
+
+  /* ---------- Pie ---------- */
+  .foot{ padding-top:26px; padding-bottom:calc(30px + env(safe-area-inset-bottom)); text-align:center; font-size:13px; color:var(--ink-soft); font-weight:600; }
+  .foot a{ color:var(--brand-ink); }
+  .foot small{ display:block; margin-top:6px; color:var(--ink-faint); }
+
+  .toast{
+    position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom)); transform:translate(-50%, 20px);
+    background:var(--ink); color:#fff; font-size:13.5px; font-weight:700; padding:11px 16px; border-radius:12px;
+    box-shadow:0 10px 26px rgba(22,33,62,.25); opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:50;
+    max-width:calc(100% - 32px); text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%, 0); }
+
+  @media (min-width:600px){
+    .del-list{ grid-template-columns:1fr 1fr; }
+    .card{ padding:22px 22px; }
+  }
+  @media (min-width:900px){
+    .hero{ padding-top:28px; padding-bottom:84px; }
+    .hero h1{ font-size:42px; }
+    .hero-txt{ margin-top:46px; }
+    .main{
+      grid-template-columns:minmax(0,1fr) 420px; gap:18px; align-items:start; margin-top:-52px;
+      grid-template-areas:'steps form' 'del form' 'faq form';
+      grid-template-rows:auto auto 1fr;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        Roboto, Arial, sans-serif;
-      background: var(--paper);
-      color: var(--text);
-      line-height: 1.7;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    a {
-      color: inherit;
-    }
-
-    .topbar {
-      background: var(--navy);
-      color: white;
-      border-bottom: 1px solid rgba(255,255,255,.09);
-    }
-
-    .nav {
-      max-width: 1120px;
-      margin: auto;
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      font-weight: 800;
-      font-size: 21px;
-      letter-spacing: -.7px;
-    }
-
-    .brand-icon {
-      display: grid;
-      place-items: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
-      background: var(--green);
-      color: var(--navy);
-      font-size: 17px;
-      font-weight: 900;
-      box-shadow: 0 5px 20px rgba(56,214,160,.18);
-    }
-
-    .nav-link {
-      color: #d0d9e5;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .nav-link:hover {
-      color: var(--green);
-    }
-
-    .hero {
-      background:
-        radial-gradient(ellipse at 80% 15%, rgba(56,214,160,.12), transparent 38%),
-        var(--navy);
-      color: white;
-      padding: 76px 24px 100px;
-    }
-
-    .hero-inner {
-      max-width: 850px;
-      margin: auto;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      padding: 7px 12px;
-      border: 1px solid rgba(56,214,160,.25);
-      border-radius: 999px;
-      background: rgba(56,214,160,.08);
-      color: var(--green);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 1.3px;
-      text-transform: uppercase;
-      margin-bottom: 24px;
-    }
-
-    .eyebrow-dot {
-      width: 7px;
-      height: 7px;
-      background: var(--green);
-      border-radius: 50%;
-    }
-
-    h1 {
-      max-width: 720px;
-      font-size: clamp(38px, 6vw, 62px);
-      line-height: 1.08;
-      letter-spacing: -2.5px;
-      font-weight: 800;
-      margin-bottom: 23px;
-    }
-
-    h1 span {
-      color: var(--green);
-    }
-
-    .hero p {
-      max-width: 630px;
-      color: #c2ccda;
-      font-size: 17px;
-      line-height: 1.8;
-    }
-
-    .main {
-      max-width: 900px;
-      margin: -42px auto 0;
-      padding: 0 22px 76px;
-      position: relative;
-    }
-
-    .card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      box-shadow: 0 18px 55px rgba(16,26,43,.07);
-      padding: clamp(25px, 5vw, 46px);
-      margin-bottom: 22px;
-    }
-
-    .card-heading {
-      display: flex;
-      align-items: flex-start;
-      gap: 17px;
-      margin-bottom: 18px;
-    }
-
-    .number {
-      flex: 0 0 43px;
-      width: 43px;
-      height: 43px;
-      display: grid;
-      place-items: center;
-      background: #e5fbf2;
-      color: #11845e;
-      border-radius: 14px;
-      font-weight: 900;
-      font-size: 17px;
-    }
-
-    h2 {
-      color: var(--navy);
-      font-size: 23px;
-      line-height: 1.35;
-      letter-spacing: -.6px;
-      margin-bottom: 8px;
-    }
-
-    h3 {
-      color: var(--navy);
-      font-size: 16px;
-      margin: 23px 0 7px;
-    }
-
-    p {
-      margin-bottom: 13px;
-    }
-
-    .muted {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .steps {
-      display: grid;
-      gap: 13px;
-      margin: 25px 0;
-    }
-
-    .step {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      padding: 17px;
-      background: #f8fafb;
-      border: 1px solid #edf1f4;
-      border-radius: 14px;
-    }
-
-    .step-icon {
-      flex: 0 0 34px;
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      background: white;
-      color: var(--green-dark);
-      border: 1px solid var(--border);
-      font-weight: 800;
-    }
-
-    .step strong {
-      display: block;
-      color: var(--navy);
-      margin-bottom: 3px;
-    }
-
-    .step p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .email-box {
-      background: var(--navy);
-      border-radius: 18px;
-      padding: 26px;
-      color: white;
-      margin-top: 25px;
-    }
-
-    .email-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: #aebccd;
-      font-weight: 800;
-      margin-bottom: 9px;
-    }
-
-    .email-address {
-      color: var(--green);
-      font-size: clamp(17px, 4vw, 23px);
-      font-weight: 800;
-      overflow-wrap: anywhere;
-      text-decoration: none;
-    }
-
-    .email-address:hover {
-      text-decoration: underline;
-    }
-
-    .subject {
-      color: #d4deea;
-      font-size: 14px;
-      margin: 15px 0 20px;
-    }
-
-    .button {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      padding: 14px 21px;
-      border-radius: 12px;
-      background: var(--green);
-      color: var(--navy);
-      font-weight: 800;
-      font-size: 14px;
-      text-decoration: none;
-      transition: transform .2s, background .2s;
-    }
-
-    .button:hover {
-      background: #64e6ba;
-      transform: translateY(-2px);
-    }
-
-    .data-list {
-      list-style: none;
-      display: grid;
-      gap: 12px;
-      margin: 19px 0;
-    }
-
-    .data-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 11px;
-    }
-
-    .check {
-      color: var(--green-dark);
-      font-weight: 900;
-    }
-
-    .notice {
-      background: #f1f8f5;
-      border: 1px solid #d9eee4;
-      border-radius: 14px;
-      padding: 19px;
-      margin-top: 20px;
-      font-size: 14px;
-      color: #385b4e;
-    }
-
-    .notice strong {
-      color: #176a4e;
-    }
-
-    .footer {
-      background: var(--white);
-      border-top: 1px solid var(--border);
-      padding: 30px 22px;
-    }
-
-    .footer-inner {
-      max-width: 900px;
-      margin: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 18px;
-      flex-wrap: wrap;
-    }
-
-    .footer-brand {
-      font-weight: 800;
-      color: var(--navy);
-    }
-
-    .footer p {
-      margin: 4px 0 0;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .footer a {
-      color: var(--green-dark);
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 600px) {
-      .nav {
-        padding: 15px 19px;
-      }
-
-      .brand {
-        font-size: 18px;
-      }
-
-      .brand-icon {
-        width: 38px;
-        height: 38px;
-      }
-
-      .hero {
-        padding: 57px 21px 80px;
-      }
-
-      h1 {
-        letter-spacing: -1.6px;
-      }
-
-      .hero p {
-        font-size: 15px;
-      }
-
-      .main {
-        padding: 0 14px 48px;
-      }
-
-      .card {
-        border-radius: 17px;
-        padding: 23px 19px;
-      }
-
-      .card-heading {
-        gap: 12px;
-      }
-
-      h2 {
-        font-size: 20px;
-      }
-
-      .email-box {
-        padding: 21px;
-      }
-
-      .button {
-        width: 100%;
-      }
-    }
-  </style>
+    .a-form{ position:sticky; top:20px; padding:24px; }
+  }
+  @media (max-width:380px){
+    .hero h1{ font-size:30px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; }
+    .spin{ animation-duration:1.6s; }
+  }
+</style>
 </head>
-
 <body>
-  <header class="topbar">
-    <nav class="nav">
-      <a class="brand" href="https://vendoplusoficial.com/" aria-label="VendoPlus, inicio">
-        <span class="brand-icon">VP</span>
-        <span>VendoPlus</span>
-      </a>
-      <a class="nav-link" href="https://vendoplusoficial.com/">
-        Ir al sitio principal ↗
-      </a>
-    </nav>
-  </header>
 
-  <section class="hero">
-    <div class="hero-inner">
-      <div class="eyebrow">
-        <span class="eyebrow-dot"></span>
-        Privacidad y control
+<header class="hero">
+  <div class="wrap">
+    <span class="brand" aria-label="Vendo">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5.3 8.6h13.4l-1.05 10.9a1.7 1.7 0 0 1-1.7 1.5H8.05a1.7 1.7 0 0 1-1.7-1.5L5.3 8.6Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.6V7.2a3 3 0 0 1 6 0v1.4" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="m9.3 14.3 1.9 1.9 3.6-3.9" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span><b>Vendo</b><small>Punto de venta para cualquier negocio</small></span>
+    </span>
+
+    <div class="hero-txt">
+      <span class="eyebrow">Cuenta y privacidad</span>
+      <h1>Eliminar tu cuenta</h1>
+      <p>Si ya no quieres usar Vendo, pide aquí que borremos tu cuenta y todos los datos de tu negocio. Nuestro equipo de soporte lo hace a mano.</p>
+      <div class="chips">
+        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.9"/><path d="M12 7.2V12l3.1 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Máximo 30 días</span>
+        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.2 5 6v6c0 4.2 3 7.4 7 8.8 4-1.4 7-4.6 7-8.8V6l-7-2.8Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="m9 12 2.2 2.2L15.5 10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Confirmamos que eres tú</span>
+        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.2" stroke="currentColor" stroke-width="1.9"/><path d="m4.5 7 7.5 5.8L19.5 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Te avisamos al terminar</span>
       </div>
-      <h1>Tu cuenta, <span>tu decisión.</span></h1>
-      <p>
-        En VendoPlus respetamos tus decisiones. Si deseas dejar de utilizar
-        nuestra plataforma, aquí encontrarás cómo solicitar la eliminación
-        de tu cuenta y de los datos asociados.
-      </p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap main">
+
+  <!-- Cómo funciona -->
+  <section class="card a-steps" aria-labelledby="t-steps">
+    <h2 class="section-title" id="t-steps">Cómo se elimina tu cuenta</h2>
+    <ol class="steps">
+      <li>
+        <span class="num">1</span>
+        <div><b>Envía la solicitud</b><p>Llena el formulario con el correo con el que te registraste en Vendo.</p></div>
+      </li>
+      <li>
+        <span class="num">2</span>
+        <div><b>Confirmamos que eres tú</b><p>Te escribimos a ese correo para comprobar que la cuenta es tuya. Así nadie más puede pedir que se borre.</p></div>
+      </li>
+      <li>
+        <span class="num">3</span>
+        <div><b>Borramos tu cuenta</b><p>En un plazo máximo de 30 días eliminamos tu cuenta y tus datos, y te avisamos cuando quede lista.</p></div>
+      </li>
+    </ol>
+    <div class="note">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6L12 3Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="m8.8 12.2 2.2 2.2 4.3-4.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span><b>¿Por qué no hay un botón para borrarla en la app?</b>Para cuidar tu información, la eliminación la hace nuestro equipo a mano. Así nadie puede borrar tu cuenta por error o sin tu permiso.</span>
     </div>
   </section>
 
-  <main class="main">
-    <section class="card">
-      <div class="card-heading">
-        <div class="number">01</div>
+  <!-- Formulario -->
+  <section class="card a-form" id="formCard" aria-labelledby="t-form">
+    <div id="formView">
+      <div class="form-head">
+        <span class="form-ico">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 7h15M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8L18 7M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
         <div>
-          <h2>¿Quieres eliminar tu cuenta?</h2>
-          <p class="muted">
-            Puedes solicitarlo por correo electrónico. No necesitas realizar
-            la solicitud desde la aplicación.
-          </p>
+          <h2 id="t-form">Solicitar eliminación</h2>
+          <p>Llega directo a soporte de Vendo</p>
         </div>
       </div>
 
-      <div class="steps">
-        <div class="step">
-          <div class="step-icon">1</div>
-          <div>
-            <strong>Escribe a nuestro equipo</strong>
-            <p>Envía tu solicitud desde la dirección de correo asociada a tu cuenta, si tienes acceso a ella.</p>
+      <form id="delForm" novalidate>
+        <div class="field" data-f="name">
+          <label for="fName">Tu nombre</label>
+          <input id="fName" name="name" type="text" autocomplete="name" maxlength="80" placeholder="Nombre y apellido">
+          <div class="field-error" id="eName">Escribe tu nombre.</div>
+        </div>
+
+        <div class="field" data-f="email">
+          <label for="fEmail">Correo con el que te registraste</label>
+          <input id="fEmail" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" maxlength="100" placeholder="tucorreo@ejemplo.com">
+          <div class="field-hint">Es el correo con el que entras a Vendo.</div>
+          <div class="field-error">Escribe el correo de tu cuenta.</div>
+        </div>
+
+        <div class="field" data-f="alt">
+          <label for="fAlt">Otro correo para contactarte <i>(opcional)</i></label>
+          <input id="fAlt" name="contact" type="email" inputmode="email" autocapitalize="off" spellcheck="false" maxlength="100" placeholder="Solo si ya no usas el de tu cuenta">
+          <div class="field-error">Revisa este correo, parece que falta algo.</div>
+        </div>
+
+        <div class="field">
+          <label for="fBiz">Nombre de tu negocio <i>(opcional)</i></label>
+          <input id="fBiz" name="business" type="text" maxlength="80" placeholder="Como aparece en Vendo">
+        </div>
+
+        <div class="field">
+          <span class="label" id="lReason">¿Por qué te vas? <i>(opcional)</i></span>
+          <div class="chip-row" role="radiogroup" aria-labelledby="lReason">
+            <input type="radio" name="reason" id="r1" value="Ya no lo uso"><label for="r1">Ya no lo uso</label>
+            <input type="radio" name="reason" id="r2" value="Me cambio a otra app"><label for="r2">Me cambio a otra app</label>
+            <input type="radio" name="reason" id="r3" value="Tuve problemas con la app"><label for="r3">Tuve problemas</label>
+            <input type="radio" name="reason" id="r4" value="Cerré mi negocio"><label for="r4">Cerré mi negocio</label>
+            <input type="radio" name="reason" id="r5" value="Privacidad"><label for="r5">Privacidad</label>
+            <input type="radio" name="reason" id="r6" value="Otro"><label for="r6">Otro</label>
           </div>
         </div>
 
-        <div class="step">
-          <div class="step-icon">2</div>
-          <div>
-            <strong>Identificamos tu cuenta</strong>
-            <p>Incluye el correo de tu cuenta VendoPlus. Podemos pedirte información adicional razonable para verificar que eres el titular.</p>
-          </div>
+        <div class="field">
+          <label for="fMsg">¿Algo más que debamos saber? <i>(opcional)</i></label>
+          <textarea id="fMsg" name="message" rows="3" maxlength="600" placeholder="Ej. Tengo dos negocios con ese correo, solo quiero borrar uno."></textarea>
         </div>
 
-        <div class="step">
-          <div class="step-icon">3</div>
-          <div>
-            <strong>Procesamos la solicitud</strong>
-            <p>Revisaremos la solicitud y te informaremos si necesitamos algún dato adicional o si existe información que deba conservarse.</p>
-          </div>
+        <!-- Si un robot llena este campo, la solicitud no se envía -->
+        <div class="hp" aria-hidden="true">
+          <label for="fHoney">No llenes este campo</label>
+          <input id="fHoney" name="_honey" type="text" tabindex="-1" autocomplete="off">
         </div>
-      </div>
 
-      <div class="email-box">
-        <div class="email-label">Correo de soporte</div>
-        <a class="email-address" href="mailto:soporte.vendoplus@gmail.com">
-          soporte.vendoplus@gmail.com
-        </a>
-        <p class="subject">
-          <strong>Asunto:</strong> Solicitud de eliminación de cuenta VendoPlus
-        </p>
-        <a class="button"
-           href="mailto:soporte.vendoplus@gmail.com?subject=Solicitud%20de%20eliminaci%C3%B3n%20de%20cuenta%20VendoPlus&body=Hola%2C%20quiero%20solicitar%20la%20eliminaci%C3%B3n%20de%20mi%20cuenta%20VendoPlus.%0A%0ACorreo%20asociado%20a%20mi%20cuenta%3A%20%0A%0AGracias.">
-          Enviar solicitud por correo <span aria-hidden="true">↗</span>
-        </a>
-      </div>
-    </section>
+        <label class="check" id="cConfirm">
+          <input type="checkbox" id="fConfirm" name="confirm">
+          <span class="box"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span>Entiendo que se borrarán <b>mi cuenta y todos los datos de mi negocio</b>, y que no se puede deshacer.</span>
+        </label>
 
-    <section class="card">
-      <div class="card-heading">
-        <div class="number">02</div>
-        <div>
-          <h2>¿Qué datos se eliminan?</h2>
-          <p class="muted">
-            La eliminación depende de los datos asociados a tu cuenta y de
-            las obligaciones aplicables.
-          </p>
-        </div>
-      </div>
-
-      <p>Una vez verificada y procesada la solicitud, se eliminarán la cuenta y los datos personales asociados que ya no sean necesarios, según corresponda, como:</p>
-
-      <ul class="data-list">
-        <li><span class="check">✓</span><span>Los datos del perfil de la cuenta.</span></li>
-        <li><span class="check">✓</span><span>La información del negocio vinculada a la cuenta, cuando proceda.</span></li>
-        <li><span class="check">✓</span><span>Los demás datos personales asociados que no deban conservarse.</span></li>
-      </ul>
-
-      <div class="notice">
-        <strong>Información que podría conservarse</strong>
-        <p style="margin: 8px 0 0;">
-          Ciertos registros de pagos, facturación, contabilidad, seguridad o
-          cumplimiento legal podrían conservarse cuando exista una obligación
-          legítima. Se mantendrán solo durante el periodo requerido por la
-          normativa aplicable o necesario para atender esa obligación y,
-          posteriormente, se eliminarán cuando corresponda.
-        </p>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="card-heading">
-        <div class="number">03</div>
-        <div>
-          <h2>Plazos y seguimiento</h2>
-        </div>
-      </div>
-
-      <p>
-        Las solicitudes se revisan manualmente. El tiempo de procesamiento
-        puede depender de la verificación de identidad, de los datos
-        involucrados y de las obligaciones de conservación aplicables.
-      </p>
-
-      <p>
-        Si necesitamos información adicional para completar la solicitud,
-        nos pondremos en contacto contigo mediante el correo que nos
-        proporcionaste.
-      </p>
-
-      <p>
-        Si tienes dudas sobre la eliminación de tu cuenta o tus datos,
-        puedes escribirnos a
-        <a href="mailto:soporte.vendoplus@gmail.com" style="color: var(--green-dark); font-weight: 700;">
-          soporte.vendoplus@gmail.com
-        </a>.
-      </p>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <div>
-        <div class="footer-brand">VendoPlus</div>
-        <p>Herramientas para administrar tu negocio.</p>
-      </div>
-      <a href="https://vendoplusoficial.com/">Volver a VendoPlus ↗</a>
+        <button class="btn primary block" id="sendBtn" type="submit">Enviar solicitud</button>
+        <p class="fine">Tus datos solo se usan para atender esta solicitud.</p>
+      </form>
     </div>
-  </footer>
+    <div id="resultView" hidden aria-live="polite"></div>
+  </section>
+
+  <!-- Qué se elimina -->
+  <section class="card a-del" aria-labelledby="t-del">
+    <h2 class="section-title" id="t-del">Qué se elimina</h2>
+    <ul class="del-list">
+      <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7" stroke="currentColor" stroke-width="1.9"/><path d="M4.8 20c0-3.9 3.2-6.4 7.2-6.4s7.2 2.5 7.2 6.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span><span><b>Tu cuenta</b>Nombre, correo y datos de acceso</span></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 9.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M3.2 9.5 5 4h14l1.8 5.5a2.6 2.6 0 0 1-4.9 1.2 2.6 2.6 0 0 1-4.9 0 2.6 2.6 0 0 1-4.9 0 2.6 2.6 0 0 1-2.9-1.2Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M10 20v-5h4v5" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span><span><b>Tu negocio</b>Nombre, logo, dirección y horario</span></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.4 12 4l8 4.4v7.2L12 20l-8-4.4V8.4Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M4 8.4 12 12.8m0 0 8-4.4M12 12.8V20" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span><span><b>Tus productos</b>Categorías, precios e inventario</span></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h12v17.2c0 .6-.6 1-1.1.7L15 19.4l-1.9 1.5a1 1 0 0 1-1.2 0L10 19.4l-1.9 1.5c-.5.3-1.1-.1-1.1-.7V3Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 8h6M9 11.5h6M9 15h3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><span><b>Tus ventas</b>Historial, tickets y cotizaciones</span></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9.2" cy="8" r="3.4" stroke="currentColor" stroke-width="1.9"/><path d="M3 20c0-3.4 2.8-5.8 6.2-5.8S15.4 16.6 15.4 20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M16.4 5.2a3.2 3.2 0 0 1 0 6.2M18.2 13.9c1.9.8 3.1 2.4 3.1 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span><b>Usuarios</b>Las personas que agregaste a tu caja</span></li>
+      <li><span class="ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2.4" stroke="currentColor" stroke-width="1.9"/><path d="M10.5 17.8h3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span><span><b>Menú Digital</b>Tu menú y los pedidos que recibiste</span></li>
+    </ul>
+    <div class="warn">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4 2.8 19.5h18.4L12 4Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 10v4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1.1" fill="currentColor"/></svg>
+      <span><b>No se puede deshacer</b>Si quieres conservar algo, por ejemplo el reporte de tus ventas, guárdalo antes de enviar la solicitud.</span>
+    </div>
+  </section>
+
+  <!-- Preguntas -->
+  <section class="card a-faq faq" aria-labelledby="t-faq">
+    <h2 class="section-title" id="t-faq">Preguntas frecuentes</h2>
+    <details>
+      <summary>¿Cuánto tarda?<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <p>Te contactamos para confirmar tu identidad y eliminamos tu cuenta en un plazo máximo de 30 días. Te avisamos cuando esté lista.</p>
+    </details>
+    <details>
+      <summary>¿Se cancela mi suscripción?<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <p>Si pagas Vendo desde App Store o Google Play, cancela la suscripción en tu tienda de apps. Eliminar la cuenta no detiene los cobros de la tienda.</p>
+    </details>
+    <details>
+      <summary>¿Puedo arrepentirme?<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <p>Sí, mientras no la hayamos eliminado. Responde a nuestro mensaje de confirmación o escríbenos a soporte. Una vez eliminada, ya no se puede recuperar.</p>
+    </details>
+    <details>
+      <summary>¿Y si ya no uso ese correo?<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <p>Escribe el correo con el que te registraste y agrega otro donde podamos escribirte. Te pediremos algunos datos para comprobar que el negocio es tuyo.</p>
+    </details>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  ¿Dudas? Escríbenos a <a href="mailto:soporte.vendoplus@gmail.com">soporte.vendoplus@gmail.com</a>
+  <small>© <span id="year">2026</span> Vendo · Punto de venta</small>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  /* =====================================================
+     La solicitud se manda por correo a soporte con FormSubmit
+     (formsubmit.co), que no necesita servidor propio.
+     La PRIMERA vez que alguien la use, FormSubmit manda a
+     soporte.vendoplus@gmail.com un correo para activar el
+     formulario: hay que abrirlo y tocar "Activate Form".
+     Si algo falla, la página ofrece mandarla desde el correo
+     de la persona, con el mensaje ya escrito.
+  ===================================================== */
+  var SUPPORT = 'soporte.vendoplus@gmail.com';
+  var ENDPOINT = 'https://formsubmit.co/ajax/' + SUPPORT;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var form = $('delForm');
+  var btn = $('sendBtn');
+  $('year').textContent = new Date().getFullYear();
+
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+  function digits(s){ return String(s || '').replace(/\D/g, ''); }
+  function toast(msg){
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  /* ---------- Validación ---------- */
+  function fieldOf(name){ return form.querySelector('[data-f="' + name + '"]'); }
+  function setErr(name, msg){
+    var f = fieldOf(name); if(!f) return;
+    f.classList.toggle('has-error', !!msg);
+    var e = f.querySelector('.field-error'); if(e && msg) e.textContent = msg;
+  }
+  function validate(){
+    var errs = [];
+    var name = $('fName').value.trim();
+    var nameMsg = name.length < 3 ? 'Escribe tu nombre.' : '';
+    setErr('name', nameMsg); if(nameMsg) errs.push($('fName'));
+
+    var mail = $('fEmail').value.trim();
+    var mMsg = !mail ? 'Escribe el correo con el que te registraste.' : (!EMAIL_RE.test(mail) ? 'Revisa tu correo, parece que falta algo.' : '');
+    setErr('email', mMsg); if(mMsg) errs.push($('fEmail'));
+
+    var alt = $('fAlt').value.trim();
+    var aMsg = alt && !EMAIL_RE.test(alt) ? 'Revisa este correo, parece que falta algo.' : '';
+    setErr('alt', aMsg); if(aMsg) errs.push($('fAlt'));
+
+    var ok = $('fConfirm').checked;
+    $('cConfirm').classList.toggle('has-error', !ok); if(!ok) errs.push($('fConfirm'));
+    return errs;
+  }
+  ['fName', 'fEmail', 'fAlt'].forEach(function(id){
+    $(id).addEventListener('input', function(){ if(this.closest('.field').classList.contains('has-error')) validate(); });
+  });
+  $('fConfirm').addEventListener('change', function(){ if(this.checked) $('cConfirm').classList.remove('has-error'); });
+
+  /* ---------- Datos de la solicitud ---------- */
+  function newFolio(){
+    var t = Date.now().toString(36).toUpperCase().slice(-4);
+    var r = Math.random().toString(36).toUpperCase().slice(2, 4);
+    return 'EC-' + t + r;
+  }
+  function reasonValue(){ var r = form.querySelector('input[name="reason"]:checked'); return r ? r.value : ''; }
+  function collect(){
+    var now = new Date();
+    return {
+      folio: newFolio(),
+      name: $('fName').value.trim().slice(0, 80),
+      email: $('fEmail').value.trim().toLowerCase().slice(0, 100),
+      alt: $('fAlt').value.trim().toLowerCase().slice(0, 100),
+      business: $('fBiz').value.trim().slice(0, 80),
+      reason: reasonValue(),
+      message: $('fMsg').value.trim().slice(0, 600),
+      date: now.toLocaleString('es-MX', { dateStyle:'long', timeStyle:'short' })
+    };
+  }
+  function mailText(d){
+    return 'Hola, quiero que eliminen mi cuenta de Vendo y todos los datos de mi negocio.\n\n'
+      + 'Folio: ' + d.folio + '\n'
+      + 'Nombre: ' + d.name + '\n'
+      + 'Correo con el que me registré: ' + d.email + '\n'
+      + (d.alt ? 'Otro correo para contactarme: ' + d.alt + '\n' : '')
+      + (d.business ? 'Negocio: ' + d.business + '\n' : '')
+      + (d.reason ? 'Motivo: ' + d.reason + '\n' : '')
+      + (d.message ? '\nComentarios: ' + d.message + '\n' : '')
+      + '\nEntiendo que se borrarán mi cuenta y todos mis datos, y que no se puede deshacer.\n'
+      + 'Fecha: ' + d.date;
+  }
+  function mailSubject(d){ return 'Eliminar cuenta · ' + d.folio + ' · ' + d.email; }
+  function mailtoHref(d){ return 'mailto:' + SUPPORT + '?subject=' + encodeURIComponent(mailSubject(d)) + '&body=' + encodeURIComponent(mailText(d)); }
+
+  /* ---------- Envío ---------- */
+  function send(d){
+    var payload = {
+      _subject: mailSubject(d),
+      _template: 'table',
+      _captcha: 'false',
+      _honey: $('fHoney').value,
+      'Folio': d.folio,
+      'Solicitud': 'Eliminar la cuenta y todos los datos del negocio',
+      'Nombre': d.name,
+      'Correo de la cuenta': d.email,
+      'Otro correo de contacto': d.alt || '(no lo dio)',
+      'Negocio': d.business || '(no lo dio)',
+      'Motivo': d.reason || '(no lo dio)',
+      'Comentarios': d.message || '(sin comentarios)',
+      'Confirmó que entiende que no se puede deshacer': 'Sí',
+      'Fecha': d.date
+    };
+    payload._replyto = d.alt || d.email;
+    var ctrl = ('AbortController' in window) ? new AbortController() : null;
+    var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 15000);
+    return fetch(ENDPOINT, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+      body:JSON.stringify(payload),
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(j){
+        return r.ok && (j.success === true || j.success === 'true');
+      });
+    }).catch(function(){ return false; })
+      .then(function(ok){ clearTimeout(timer); return ok; });
+  }
+
+  function busy(on){
+    btn.disabled = on;
+    btn.innerHTML = on ? '<span class="spin" aria-hidden="true"></span> Enviando…' : 'Enviar solicitud';
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var errs = validate();
+    if(errs.length){
+      errs[0].focus({ preventScroll:true });
+      errs[0].closest('.field, .check').scrollIntoView({ behavior:'smooth', block:'center' });
+      toast(errs.length === 1 && errs[0].id === 'fConfirm' ? 'Marca la casilla para confirmar' : 'Revisa los datos marcados en rojo');
+      return;
+    }
+    var d = collect();
+    /* Un robot llenó el campo oculto: no se manda nada */
+    if($('fHoney').value){ showDone(d); return; }
+    busy(true);
+    send(d).then(function(ok){
+      busy(false);
+      if(ok) showDone(d); else showFallback(d);
+    });
+  });
+
+  /* ---------- Resultado ---------- */
+  function summaryHTML(d){
+    return '<div class="summary">'
+      + '<div><span>Nombre</span><b>' + esc(d.name) + '</b></div>'
+      + '<div><span>Correo</span><b>' + esc(d.email) + '</b></div>'
+      + (d.alt ? '<div><span>Contacto</span><b>' + esc(d.alt) + '</b></div>' : '')
+      + (d.business ? '<div><span>Negocio</span><b>' + esc(d.business) + '</b></div>' : '')
+      + '<div><span>Enviada</span><b>' + esc(d.date) + '</b></div>'
+      + '</div>';
+  }
+  function showView(html){
+    $('formView').hidden = true;
+    var r = $('resultView'); r.innerHTML = html; r.hidden = false;
+    var card = $('formCard');
+    var top = card.getBoundingClientRect().top + window.pageYOffset - 16;
+    if(card.getBoundingClientRect().top < 0 || window.innerWidth < 900) window.scrollTo({ top:top, behavior:'smooth' });
+    var h = r.querySelector('h2'); if(h){ h.setAttribute('tabindex', '-1'); h.focus({ preventScroll:true }); }
+  }
+  function showDone(d){
+    showView(
+      '<div class="result">'
+      + '<div class="result-ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      + '<h2>Recibimos tu solicitud</h2>'
+      + '<p>Te vamos a escribir a <b>' + esc(d.alt || d.email) + '</b> para confirmar que la cuenta es tuya. Después la eliminamos y te avisamos.</p>'
+      + '<span class="folio">' + esc(d.folio) + '</span>'
+      + summaryHTML(d)
+      + '<p class="fine">Guarda tu folio. Si en 3 días hábiles no sabes nada de nosotros, escríbenos a <a href="mailto:' + SUPPORT + '?subject=' + encodeURIComponent('Seguimiento ' + d.folio) + '">' + SUPPORT + '</a>.</p>'
+      + '</div>'
+    );
+  }
+  function showFallback(d){
+    showView(
+      '<div class="result fail">'
+      + '<div class="result-ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5h16v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="m4.5 7 7.5 6 7.5-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      + '<h2>Falta un paso</h2>'
+      + '<p>No pudimos enviarla desde aquí. Mándala desde tu correo: el mensaje ya va escrito, solo toca enviar.</p>'
+      + '<span class="folio">' + esc(d.folio) + '</span>'
+      + '<div class="result-actions">'
+      + '<a class="btn primary block" id="mailBtn" href="' + esc(mailtoHref(d)) + '"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5h16v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="m4.5 7 7.5 6 7.5-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg> Enviar desde mi correo</a>'
+      + '<button class="btn ghost block" type="button" id="copyBtn"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.2" stroke="currentColor" stroke-width="1.9"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.9"/></svg> Copiar el mensaje</button>'
+      + '<button class="btn ghost block" type="button" id="retryBtn">Intentar de nuevo</button>'
+      + '</div>'
+      + '<p class="fine">Si no se abre tu correo, copia el mensaje y mándalo a <b>' + SUPPORT + '</b>.</p>'
+      + '</div>'
+    );
+    $('copyBtn').addEventListener('click', function(){ copyText(mailText(d)); });
+    $('retryBtn').addEventListener('click', function(){
+      $('resultView').hidden = true; $('formView').hidden = false;
+      btn.focus({ preventScroll:true });
+    });
+  }
+  function copyText(text){
+    function viejo(){
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+      toast(ok ? 'Mensaje copiado' : 'No se pudo copiar, selecciónalo a mano');
+    }
+    if(navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(function(){ toast('Mensaje copiado'); }, viejo);
+    } else viejo();
+  }
+})();
+</script>
 </body>
 </html>
