@@ -1,77 +1,806 @@
-# Política de Privacidad de Vendo+
 
-**Última actualización:** 13 de octubre de 2026
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f7f9f7">
+  <meta name="description" content="Conoce cómo Vendo+ recopila, utiliza y protege tus datos personales y la información de tu negocio.">
+  <title>Política de Privacidad | Vendo+</title>
 
-## 1. Introducción
+  <style>
+    :root {
+      --green: #16865b;
+      --green-dark: #106644;
+      --green-light: #e8f5ee;
+      --ink: #17251e;
+      --muted: #66736b;
+      --border: #e5ebe6;
+      --surface: #ffffff;
+      --background: #f7f9f7;
+    }
 
-Vendo+ es una aplicación de punto de venta que permite a los usuarios administrar información de sus negocios, productos, precios y ventas. Esta política explica cómo se recopila, utiliza, almacena y protege la información relacionada con el uso de Vendo+.
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-## 2. Información que recopilamos
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 100px;
+    }
 
-Según las funciones utilizadas, Vendo+ puede procesar:
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--background);
+      color: var(--ink);
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
 
-- **Datos de cuenta:** dirección de correo electrónico, identificadores de usuario y datos necesarios para iniciar sesión.
-- **Datos del negocio:** nombre del negocio, productos, precios, inventario, ventas y otra información que el usuario decida registrar.
-- **Fotografías y archivos:** imágenes de productos u otros archivos que el usuario decida subir.
-- **Datos de suscripción:** información sobre el estado de la suscripción, periodo de prueba, renovaciones y pagos.
-- **Datos técnicos:** información necesaria para mantener la seguridad, funcionamiento y diagnóstico de la aplicación, cuando esté disponible.
+    a {
+      color: var(--green-dark);
+      text-decoration: none;
+    }
 
-No introduzcas información personal de terceros que no tengas autorización para administrar.
+    a:hover {
+      text-decoration: underline;
+    }
 
-## 3. Cómo utilizamos la información
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
 
-La información se utiliza para:
+    .nav {
+      max-width: 1120px;
+      margin: auto;
+      min-height: 76px;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
 
-- Crear y administrar cuentas.
-- Permitir el acceso a las funciones del punto de venta.
-- Guardar y sincronizar la información de los negocios.
-- Gestionar el acceso a las funciones de pago y las suscripciones.
-- Verificar compras realizadas mediante Google Play cuando corresponda.
-- Mantener la seguridad, prevenir usos indebidos y solucionar errores.
-- Cumplir obligaciones legales aplicables.
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--ink);
+      font-size: 23px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
 
-## 4. Servicios de terceros
+    .brand:hover {
+      text-decoration: none;
+    }
 
-Vendo+ puede utilizar los siguientes servicios para prestar sus funciones:
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      background: var(--green);
+      color: white;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 5px 14px #16865b30;
+    }
 
-- **Supabase:** autenticación, almacenamiento y administración de datos.
-- **Google Play:** gestión de compras y suscripciones realizadas desde la aplicación Android.
-- **Stripe:** procesamiento de pagos de las versiones o servicios web que utilicen Stripe, cuando corresponda.
-- **Twilio:** envío de mensajes de verificación, si esta función está habilitada.
+    .brand-icon svg {
+      width: 23px;
+      height: 23px;
+    }
 
-Estos proveedores pueden procesar los datos necesarios para prestar sus servicios de acuerdo con sus propias políticas y las instrucciones aplicables.
+    .nav-label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
 
-Vendo+ no pretende vender los datos personales de los usuarios a terceros.
+    .hero {
+      padding: 76px 24px 70px;
+      background:
+        radial-gradient(ellipse at 85% 15%, #d9f0e3 0%, transparent 34%),
+        linear-gradient(145deg, #ffffff 0%, #f0f7f1 100%);
+      border-bottom: 1px solid var(--border);
+    }
 
-## 5. Pagos y suscripciones
+    .hero-inner {
+      max-width: 1000px;
+      margin: auto;
+    }
 
-Los pagos realizados mediante Google Play se gestionan a través de los mecanismos de facturación de Google Play. Los pagos realizados en la web mediante Stripe, cuando estén disponibles, se procesan mediante Stripe.
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--green-light);
+      color: var(--green-dark);
+      padding: 7px 12px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+    }
 
-Vendo+ puede recibir información técnica relacionada con la compra, como identificadores de transacción o el estado de la suscripción, para verificar el acceso al servicio. No almacenamos deliberadamente los datos completos de las tarjetas bancarias en los sistemas de Vendo+.
+    .eyebrow span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
 
-## 6. Almacenamiento y seguridad
+    h1 {
+      margin-top: 23px;
+      max-width: 760px;
+      font-size: clamp(36px, 6vw, 61px);
+      line-height: 1.1;
+      letter-spacing: -2.6px;
+      font-weight: 800;
+    }
 
-Adoptamos medidas razonables para proteger la información frente al acceso, modificación, pérdida o divulgación no autorizados. Los datos pueden almacenarse en los sistemas de los proveedores tecnológicos utilizados por Vendo+.
+    h1 em {
+      font-style: normal;
+      color: var(--green);
+    }
 
-Ningún sistema de almacenamiento o transmisión de información puede garantizar una seguridad absoluta.
+    .hero-description {
+      max-width: 650px;
+      margin-top: 20px;
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
 
-## 7. Conservación y eliminación de datos
+    .updated {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 25px;
+      color: var(--muted);
+      font-size: 13px;
+    }
 
-Conservamos la información durante el tiempo necesario para prestar el servicio, mantener la cuenta, cumplir obligaciones legales y resolver controversias.
+    .updated svg {
+      width: 17px;
+      height: 17px;
+      color: var(--green);
+    }
 
-Los usuarios pueden solicitar la eliminación de su cuenta y de los datos asociados escribiendo al contacto indicado al final de esta política. Algunos datos podrán conservarse cuando exista una obligación legal legítima.
+    .layout {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 48px 24px 76px;
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 32px;
+      align-items: start;
+    }
 
-## 8. Privacidad de menores
+    .sidebar {
+      position: sticky;
+      top: 100px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 23px 16px;
+    }
 
-Vendo+ está dirigida a personas que pueden utilizar legalmente sus funciones comerciales y no está diseñada específicamente para niños. Si consideras que un menor nos ha proporcionado datos personales de forma indebida, contáctanos para que podamos revisar la situación.
+    .sidebar h2 {
+      padding: 0 10px;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 15px;
+    }
 
-## 9. Cambios en esta política
+    .sidebar a {
+      display: block;
+      padding: 9px 11px;
+      margin: 3px 0;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #56645b;
+      transition: background .2s, color .2s;
+    }
 
-Podemos actualizar esta política para reflejar cambios en la aplicación, los servicios utilizados o las obligaciones legales. Publicaremos la versión vigente en esta página e indicaremos su fecha de actualización.
+    .sidebar a:hover {
+      background: var(--green-light);
+      color: var(--green-dark);
+      text-decoration: none;
+    }
 
-## 10. Contacto
+    .content {
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: clamp(24px, 5vw, 48px);
+      box-shadow: 0 12px 40px #18291d05;
+    }
 
-Para consultas sobre privacidad, acceso o eliminación de datos, contacta al equipo de Vendo+:
+    .intro-card {
+      background: #f0f7f1;
+      border: 1px solid #e0eee3;
+      border-radius: 14px;
+      padding: 22px 24px;
+      margin-bottom: 40px;
+    }
 
-**Correo electrónico:** [AÑADE AQUÍ TU CORREO DE SOPORTE]
+    .intro-card p {
+      color: #3d5948;
+      font-size: 14px;
+    }
+
+    .content section {
+      scroll-margin-top: 100px;
+      padding-top: 30px;
+      margin-top: 30px;
+      border-top: 1px solid var(--border);
+    }
+
+    .content section:first-of-type {
+      padding-top: 0;
+      margin-top: 0;
+      border-top: 0;
+    }
+
+    .content h2 {
+      font-size: clamp(20px, 3vw, 25px);
+      letter-spacing: -.6px;
+      line-height: 1.4;
+      margin-bottom: 15px;
+    }
+
+    .content h3 {
+      font-size: 16px;
+      margin: 22px 0 8px;
+    }
+
+    .content p {
+      font-size: 15px;
+      color: #536158;
+      margin-bottom: 13px;
+    }
+
+    .content ul {
+      list-style: none;
+      margin: 15px 0 18px;
+    }
+
+    .content li {
+      position: relative;
+      padding: 7px 0 7px 26px;
+      color: #536158;
+      font-size: 14px;
+    }
+
+    .content li::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 17px;
+      width: 8px;
+      height: 8px;
+      border-radius: 3px;
+      background: #51a77b;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .data-item {
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 17px;
+      background: #fff;
+    }
+
+    .data-item .symbol {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      background: var(--green-light);
+      border-radius: 10px;
+      color: var(--green-dark);
+      font-size: 17px;
+      margin-bottom: 12px;
+    }
+
+    .data-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .data-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .contact-card {
+      margin-top: 35px;
+      border-radius: 16px;
+      padding: 25px;
+      background: var(--ink);
+      color: white;
+    }
+
+    .contact-card h2 {
+      color: white;
+    }
+
+    .contact-card p {
+      color: #c2d0c6;
+    }
+
+    .contact-card a {
+      display: inline-block;
+      color: #9ce3b9;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 30px 24px;
+      background: #fff;
+    }
+
+    .footer-inner {
+      max-width: 1120px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer p {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .footer-brand {
+      font-weight: 800;
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    @media (max-width: 760px) {
+      .nav {
+        min-height: 66px;
+        padding: 12px 18px;
+      }
+
+      .brand {
+        font-size: 21px;
+      }
+
+      .nav-label {
+        font-size: 11px;
+      }
+
+      .hero {
+        padding: 55px 21px 48px;
+      }
+
+      h1 {
+        letter-spacing: -1.6px;
+      }
+
+      .hero-description {
+        font-size: 15px;
+      }
+
+      .layout {
+        display: block;
+        padding: 24px 14px 48px;
+      }
+
+      .sidebar {
+        position: static;
+        margin-bottom: 18px;
+        padding: 17px;
+      }
+
+      .sidebar nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2px;
+      }
+
+      .sidebar a {
+        font-size: 12px;
+      }
+
+      .content {
+        padding: 25px 20px;
+        border-radius: 16px;
+      }
+
+      .data-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .intro-card {
+        padding: 18px;
+      }
+
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media print {
+      .topbar, .sidebar {
+        display: none;
+      }
+
+      .layout {
+        display: block;
+        padding: 0;
+      }
+
+      .content {
+        border: 0;
+        box-shadow: none;
+      }
+
+      body {
+        background: #fff;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="nav">
+      <a class="brand" href="https://vendoplusoficial.com/"
+         aria-label="Vendo+ inicio">
+        <span class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true">
+            <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/>
+            <path d="M9 8h6M9 12h6M9 16h3"/>
+          </svg>
+        </span>
+        Vendo+
+      </a>
+      <span class="nav-label">Centro de privacidad</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="eyebrow"><span></span> Privacidad y seguridad</div>
+        <h1>Tu negocio es tuyo.<br><em>Tus datos también.</em></h1>
+        <p class="hero-description">
+          La transparencia es parte de un buen negocio. Aquí te explicamos
+          qué información utiliza Vendo+, para qué la necesitamos y cómo
+          puedes solicitar su eliminación.
+        </p>
+        <div class="updated">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 7v5l3 2"/>
+          </svg>
+          Última actualización: 13 de octubre de 2026
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+
+      <aside class="sidebar">
+        <h2>En esta página</h2>
+        <nav aria-label="Contenido de la política">
+          <a href="#introduccion">Introducción</a>
+          <a href="#datos">Datos que recopilamos</a>
+          <a href="#uso">Uso de los datos</a>
+          <a href="#terceros">Servicios de terceros</a>
+          <a href="#pagos">Pagos y suscripciones</a>
+          <a href="#seguridad">Seguridad</a>
+          <a href="#conservacion">Conservación y eliminación</a>
+          <a href="#menores">Privacidad de menores</a>
+          <a href="#derechos">Tus derechos</a>
+          <a href="#contacto">Contacto</a>
+        </nav>
+      </aside>
+
+      <article class="content">
+
+        <div class="intro-card">
+          <p>
+            <strong>En pocas palabras:</strong> Vendo+ utiliza información
+            para permitirte iniciar sesión, administrar tu negocio,
+            guardar tus registros y comprobar tu suscripción. No vendemos
+            deliberadamente tus datos personales. A continuación encontrarás
+            los detalles sobre el tratamiento de la información.
+          </p>
+        </div>
+
+        <section id="introduccion">
+          <h2>1. Introducción</h2>
+          <p>
+            Esta Política de Privacidad describe cómo Vendo+ recopila,
+            utiliza, almacena y protege la información relacionada con
+            el uso de nuestra aplicación de punto de venta y nuestros
+            servicios web.
+          </p>
+          <p>
+            Al utilizar Vendo+, puedes registrar información de tu negocio,
+            como productos, precios, inventario y ventas. Debes asegurarte
+            de tener autorización para introducir información personal
+            de otras personas.
+          </p>
+        </section>
+
+        <section id="datos">
+          <h2>2. ¿Qué información recopilamos?</h2>
+          <p>
+            La información procesada depende de las funciones que utilices
+            y de los datos que decidas introducir.
+          </p>
+
+          <div class="data-grid">
+            <div class="data-item">
+              <div class="symbol">♙</div>
+              <strong>Datos de cuenta</strong>
+              <span>
+                Correo electrónico, identificador de usuario y datos
+                necesarios para autenticar tu cuenta.
+              </span>
+            </div>
+
+            <div class="data-item">
+              <div class="symbol">▤</div>
+              <strong>Información del negocio</strong>
+              <span>
+                Nombres de productos, precios, inventario, ventas
+                y registros que decidas guardar.
+              </span>
+            </div>
+
+            <div class="data-item">
+              <div class="symbol">▧</div>
+              <strong>Imágenes y archivos</strong>
+              <span>
+                Fotografías de productos y archivos que subas
+                voluntariamente para utilizar las funciones de la app.
+              </span>
+            </div>
+
+            <div class="data-item">
+              <div class="symbol">✓</div>
+              <strong>Suscripciones</strong>
+              <span>
+                Estado de la suscripción, fechas de vigencia e
+                identificadores necesarios para verificar compras.
+              </span>
+            </div>
+          </div>
+
+          <p>
+            También pueden procesarse datos técnicos y registros de
+            funcionamiento cuando sean necesarios para la seguridad,
+            el mantenimiento o la solución de errores.
+          </p>
+        </section>
+
+        <section id="uso">
+          <h2>3. ¿Cómo utilizamos tus datos?</h2>
+          <p>La información puede utilizarse para:</p>
+          <ul>
+            <li>Crear, autenticar y administrar tu cuenta.</li>
+            <li>Guardar y sincronizar los datos de tu negocio.</li>
+            <li>Mostrar productos, inventario, precios y ventas.</li>
+            <li>Administrar el acceso a las funciones de Vendo+.</li>
+            <li>Verificar compras, periodos de prueba y suscripciones.</li>
+            <li>Proteger las cuentas y detectar usos no autorizados.</li>
+            <li>Resolver problemas técnicos y mejorar el funcionamiento.</li>
+            <li>Cumplir obligaciones legales aplicables.</li>
+          </ul>
+          <p>
+            No utilizamos los datos para fines incompatibles con los
+            descritos en esta política sin informar de ello cuando
+            corresponda o sin obtener el consentimiento necesario.
+          </p>
+        </section>
+
+        <section id="terceros">
+          <h2>4. Servicios de terceros</h2>
+          <p>
+            Para operar Vendo+, podemos utilizar proveedores tecnológicos
+            que procesan información necesaria para prestar sus servicios.
+            Estos pueden incluir:
+          </p>
+          <ul>
+            <li>
+              <strong>Supabase:</strong> autenticación, base de datos
+              y almacenamiento de información, según la configuración
+              de la aplicación.
+            </li>
+            <li>
+              <strong>Google Play:</strong> distribución de la aplicación
+              Android y gestión de compras o suscripciones realizadas
+              mediante Google Play.
+            </li>
+            <li>
+              <strong>Stripe:</strong> procesamiento de pagos de los
+              servicios web que utilicen Stripe.
+            </li>
+            <li>
+              <strong>Twilio:</strong> envío de mensajes de verificación
+              si esta función está habilitada.
+            </li>
+          </ul>
+          <p>
+            La información compartida con estos proveedores se limita
+            a la necesaria para las funciones correspondientes. Cada
+            proveedor puede tratar datos conforme a sus condiciones,
+            políticas y obligaciones legales.
+          </p>
+          <p>
+            No vendemos deliberadamente información personal a terceros.
+            La información también podrá comunicarse cuando sea legalmente
+            necesario, para proteger la seguridad del servicio o con
+            autorización del usuario.
+          </p>
+        </section>
+
+        <section id="pagos">
+          <h2>5. Pagos y suscripciones</h2>
+          <p>
+            En la aplicación Android distribuida por Google Play, las
+            compras y suscripciones se gestionan mediante Google Play
+            Billing cuando corresponda. En los servicios web, los pagos
+            pueden procesarse mediante Stripe.
+          </p>
+          <p>
+            Para validar una suscripción, Vendo+ puede procesar
+            identificadores de compra, tokens de verificación, el producto
+            contratado y el estado o periodo de vigencia de la suscripción.
+          </p>
+          <p>
+            Los proveedores de pago gestionan los datos de pago sujetos
+            a sus propios procesos y políticas. Vendo+ no pretende
+            almacenar los números completos de las tarjetas bancarias
+            en sus propios sistemas.
+          </p>
+        </section>
+
+        <section id="seguridad">
+          <h2>6. Seguridad y almacenamiento</h2>
+          <p>
+            Aplicamos medidas razonables de seguridad para reducir el
+            riesgo de acceso, pérdida, modificación o divulgación no
+            autorizados de la información.
+          </p>
+          <p>
+            Los datos pueden almacenarse en infraestructura de proveedores
+            tecnológicos utilizados por Vendo+. El acceso a los datos
+            depende de las funciones, permisos y configuraciones de
+            seguridad correspondientes.
+          </p>
+          <p>
+            Aunque trabajamos para proteger la información, ningún sistema
+            conectado a internet puede garantizar seguridad absoluta.
+          </p>
+        </section>
+
+        <section id="conservacion">
+          <h2>7. Conservación y eliminación de datos</h2>
+          <p>
+            Conservamos la información durante el tiempo necesario para
+            proporcionar el servicio, mantener la cuenta, gestionar las
+            suscripciones, cumplir obligaciones legales y resolver
+            posibles controversias.
+          </p>
+          <p>
+            Puedes solicitar la eliminación de tu cuenta y de los datos
+            asociados utilizando los datos de contacto indicados al final
+            de esta página. Revisaremos la solicitud y eliminaremos los
+            datos que corresponda, salvo aquellos que deban conservarse
+            por una obligación legal u otra razón legítima aplicable.
+          </p>
+          <p>
+            La eliminación de la cuenta en Vendo+ no necesariamente
+            cancela una suscripción contratada a través de Google Play.
+            Si corresponde, debes cancelarla también desde Google Play.
+          </p>
+        </section>
+
+        <section id="menores">
+          <h2>8. Privacidad de menores</h2>
+          <p>
+            Vendo+ es una herramienta comercial y no está diseñada
+            específicamente para niños. No recopilamos deliberadamente
+            datos personales de niños en situaciones en las que la ley
+            exija autorización parental sin contar con ella.
+          </p>
+          <p>
+            Si consideras que un menor nos ha proporcionado datos
+            personales de forma indebida, ponte en contacto con nosotros
+            para que podamos revisar la situación.
+          </p>
+        </section>
+
+        <section id="derechos">
+          <h2>9. Tus derechos y cambios en la política</h2>
+          <p>
+            Dependiendo de la legislación aplicable, puedes tener derecho
+            a solicitar acceso, rectificación, eliminación u otra gestión
+            de tus datos personales, así como a retirar un consentimiento
+            cuando corresponda.
+          </p>
+          <p>
+            Para ejercer tus derechos, utiliza el contacto indicado
+            a continuación. Es posible que necesitemos verificar tu
+            identidad antes de atender la solicitud.
+          </p>
+          <p>
+            Podemos actualizar esta política para reflejar cambios en
+            Vendo+, los proveedores utilizados o los requisitos legales.
+            Publicaremos la versión actualizada en esta misma dirección
+            e indicaremos su fecha de actualización.
+          </p>
+        </section>
+
+        <div class="contact-card" id="contacto">
+          <h2>10. ¿Tienes alguna pregunta?</h2>
+          <p>
+            Si necesitas información sobre privacidad, tus datos o la
+            eliminación de tu cuenta, contacta con el equipo de Vendo+.
+          </p>
+          <p><strong>Correo de soporte:</strong></p>
+          <!-- Reemplaza el correo de ejemplo por tu correo real -->
+          <a href="mailto:soporte.vendoplus@gmail.com">
+            soporte.vendoplus@gmail.com
+          </a>
+
+        </div>
+
+      </article>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">Vendo+</div>
+        <p>Una forma más sencilla de administrar tu negocio.</p>
+      </div>
+      <p>© 2026 Vendo+. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
 
