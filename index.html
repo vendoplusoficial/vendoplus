@@ -4415,6 +4415,19 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 @media (prefers-reduced-motion:reduce){ .vp-confetti{ display:none; } }
 </style>
 
+<style id="cc-style">
+/* Caja cerrada: diseño "Para iniciar una venta abre una caja" */
+.cc-empty{ text-align:center; padding:56px 20px 32px; }
+.cc-ill svg{ width:176px; height:132px; display:block; margin:0 auto; }
+.cc-title{ font-size:22px; font-weight:800; line-height:1.3; color:var(--vp-navy,#16213E); max-width:320px; margin:14px auto 0; }
+.cc-sub{ font-size:14px; font-weight:600; line-height:1.5; color:var(--ink-soft,#6B7592); max-width:310px; margin:8px auto 0; }
+.cc-btn{ display:inline-block; margin-top:24px; background:var(--vp-green,#16C15B); color:#fff; border:0; border-radius:999px; padding:17px 46px; font-size:18px; font-weight:800; font-family:inherit; box-shadow:0 10px 22px rgba(22,193,91,.28); cursor:pointer; }
+.cc-btn:active{ transform:scale(.97); }
+.cc-link{ display:block; margin:10px auto 0; background:none; border:0; color:var(--ink-soft,#6B7592); font-weight:700; font-size:14px; font-family:inherit; padding:10px 16px; cursor:pointer; }
+.cc-card{ max-width:400px; padding:22px 20px 14px; }
+.cc-card .cc-empty{ padding:4px 4px 0; }
+@media (max-width:699px){ #cc-layer .modal-overlay{ align-items:flex-end; } #cc-layer .cc-card{ border-radius:var(--radius-sheet) var(--radius-sheet) 0 0; max-width:none; margin:0; padding-bottom:calc(14px + env(safe-area-inset-bottom,0px)); } }
+</style>
 </head>
 <body>
 <noscript>
@@ -5977,7 +5990,7 @@ function renderSale(){
     </div>
     ${typeof parkedBarHTML === 'function' ? parkedBarHTML() : ''}
     ${chips}
-    ${grid}
+    ${(typeof cashStalePanelHTML === 'function' && cashStalePanelHTML()) || grid}
     <p class="kbd-hint no-print"><b>F2</b> buscar · <b>F4</b> carrito · <b>F8</b> venta libre · <b>F9</b> cobrar · <b>Esc</b> cerrar</p>
     ${cartCount > 0 ? `
       <div class="cartbar no-print">
@@ -18162,16 +18175,7 @@ function cashGate(action, o){
     });
     return false;
   }
-  if(s){
-    const sum = cashSummary(s);
-    askConfirm({
-      title:'Falta cerrar la caja ' + cashDayName(s.openedAt),
-      text:'Para vender hoy necesitas una caja nueva. Primero haz el corte de esa caja (debe haber <b>' + formatMoney(sum.expected) + '</b> en efectivo) y enseguida abres la de hoy.',
-      ok:'Hacer el corte', cancel:'Ahora no', icon:icon('cashbox')
-    }, () => { cashGateNext = { action: o.after || action || null }; openCashCut('Z'); });
-    return false;
-  }
-  cashAskOpen(action, o);
+  cashLockedOverlay({ stale:!!s, sess:s, action:action, o:o });
   return false;
 }
 /** Al empezar una venta (primer producto al carrito). */
@@ -20695,19 +20699,77 @@ function homeCashCardHTML(){
     <span class="acc-chev">${icon('chevronRight')}</span>
   </button>`;
 }
+/* Ilustración: caja con candado (caja cerrada) */
+function cashLockedSVG(){
+  return `<svg viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="100" cy="132" rx="62" ry="7" fill="#EEF1F8"/>
+    <path d="M100 12v10M78 20l5 8M122 20l-5 8" stroke="#16213E" stroke-width="3" stroke-linecap="round"/>
+    <path d="M56 78 70 48h60l14 30" stroke="#16213E" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
+    <rect x="42" y="78" width="116" height="50" rx="7" stroke="#16213E" stroke-width="3.4" fill="#fff"/>
+    <rect x="88" y="92" width="24" height="19" rx="4" stroke="#16213E" stroke-width="3.2" fill="#fff"/>
+    <path d="M93 92v-5a7 7 0 0 1 14 0v5" stroke="#16213E" stroke-width="3.2" stroke-linecap="round"/>
+    <circle cx="100" cy="100" r="2.2" fill="#16213E"/><path d="M100 101v5" stroke="#16213E" stroke-width="2.4" stroke-linecap="round"/>
+  </svg>`;
+}
+/* Contenido del diseño (sirve dentro de la pantalla o dentro de la ventanita) */
+function cashLockedBodyHTML(o){
+  o = o || {};
+  return `<div class="cc-empty">
+    <div class="cc-ill">${cashLockedSVG()}</div>
+    <div class="cc-title">${o.title}</div>
+    ${o.sub ? `<div class="cc-sub">${o.sub}</div>` : ''}
+    ${o.btn ? `<button type="button" class="cc-btn" id="ccGo" onclick="${o.onclick || ''}">${o.btn}</button>` : ''}
+  </div>`;
+}
+/* Caja de un día anterior sin cerrar: ocupa el lugar de los productos desde que entras */
+function cashStalePanelHTML(){
+  if(!DB.getProducts().length) return '';
+  const s = cashCurrent();
+  if(!s || !cashIsStale(s)) return '';
+  const puede = can('manejarCaja');
+  return cashLockedBodyHTML({
+    title: 'Se te olvidó cerrar la caja ' + cashDayName(s.openedAt) + ', ajá',
+    sub: puede ? 'Haz su corte y abre la de hoy para poder vender.' : 'Pídele al Dueño o al Administrador que haga el corte.',
+    btn: puede ? 'Hacer el corte' : '',
+    onclick: 'cashCloseOld()'
+  });
+}
+/* Ventanita que aparece al querer vender (o cobrar) sin caja del día */
+function cashLockedOverlay(cfg){
+  cfg = cfg || {};
+  const s = cfg.sess || null;
+  let layer = document.getElementById('cc-layer');
+  if(!layer){ layer = document.createElement('div'); layer.id = 'cc-layer'; document.body.appendChild(layer); }
+  const close = () => { layer.innerHTML = ''; document.removeEventListener('keydown', onKey, true); };
+  const onKey = e => { if(e.key === 'Escape'){ e.stopPropagation(); e.preventDefault(); close(); } };
+  const body = cfg.stale
+    ? cashLockedBodyHTML({
+        title: 'Se te olvidó cerrar la caja ' + cashDayName(s.openedAt) + ', ajá',
+        sub: 'Haz su corte (debe haber <b>' + formatMoney(cashSummary(s).expected) + '</b> en efectivo) y enseguida abres la de hoy.',
+        btn: 'Hacer el corte'
+      })
+    : cashLockedBodyHTML({ title: 'Para iniciar una venta abre una caja del día de hoy', btn: 'Abrir caja' });
+  layer.innerHTML = `<div class="modal-overlay modal-center" id="ccOverlay">
+      <div class="modal-sheet modal-card cc-card" role="dialog" aria-modal="true">
+        ${body}
+        <button type="button" class="cc-link" id="ccNo">Ahora no</button>
+      </div>
+    </div>`;
+  layer.querySelector('#ccNo').onclick = close;
+  layer.querySelector('#ccOverlay').addEventListener('click', e => { if(e.target.id === 'ccOverlay') close(); });
+  layer.querySelector('#ccGo').onclick = () => {
+    close(); shieldClicks();
+    const act = cfg.action, o = cfg.o || {};
+    if(cfg.stale){ cashGateNext = { action: o.after || act || null }; openCashCut('Z'); }
+    else cashAskOpen(act, o);
+  };
+  document.addEventListener('keydown', onKey, true);
+}
+/* Ya no hay aviso amarillo en Nueva venta: la caja se pide al querer vender.
+   Solo queda el aviso de "agrega tus productos" cuando no hay ninguno. */
 function cashSaleBannerHTML(){
   if(!DB.getProducts().length) return noProductsBannerHTML('12px 0 4px');
-  const s = cashCurrent();
-  if(s && !cashIsStale(s)) return '';
-  const puede = can('manejarCaja');
-  const sub = s ? (puede ? 'Haz su corte y abre la de hoy para poder vender' : 'Pídele al Dueño o al Administrador que haga el corte')
-                : (!puede ? 'Pídele al Dueño o al Administrador que la abra para poder vender'
-                  : 'Toca aquí, o agrega tu primer producto y te pedimos el fondo');
-  return `<button class="alert-card ${s ? 'danger' : ''}" onclick="cashGate(null)" style="margin:12px 0 4px;">
-    <span class="alert-ico">${icon('cashbox')}</span>
-    <span class="alert-txt"><span class="alert-title">${s ? 'Falta cerrar la caja ' + cashDayName(s.openedAt) : 'Abre la caja para vender'}</span><span class="alert-sub">${sub}</span></span>
-    <span class="acc-chev">${icon('chevronRight')}</span>
-  </button>`;
+  return '';
 }
 function homeAlertsHTML(){
   let h = '';
