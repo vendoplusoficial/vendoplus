@@ -4421,12 +4421,20 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .cc-ill svg{ width:176px; height:132px; display:block; margin:0 auto; }
 .cc-title{ font-size:22px; font-weight:800; line-height:1.3; color:var(--vp-navy,#16213E); max-width:320px; margin:14px auto 0; }
 .cc-sub{ font-size:14px; font-weight:600; line-height:1.5; color:var(--ink-soft,#6B7592); max-width:310px; margin:8px auto 0; }
-.cc-btn{ display:inline-block; margin-top:24px; background:var(--vp-green,#16C15B); color:#fff; border:0; border-radius:999px; padding:17px 46px; font-size:18px; font-weight:800; font-family:inherit; box-shadow:0 10px 22px rgba(22,193,91,.28); cursor:pointer; }
+.cc-btn{ display:inline-block; margin-top:24px; background:var(--vp-green,#16C15B); color:#fff; border:0; border-radius:999px; padding:17px 46px; font-size:18px; font-weight:800; font-family:inherit; box-shadow:none; cursor:pointer; }
 .cc-btn:active{ transform:scale(.97); }
 .cc-link{ display:block; margin:10px auto 0; background:none; border:0; color:var(--ink-soft,#6B7592); font-weight:700; font-size:14px; font-family:inherit; padding:10px 16px; cursor:pointer; }
 .cc-card{ max-width:400px; padding:22px 20px 14px; }
 .cc-card .cc-empty{ padding:4px 4px 0; }
-@media (max-width:699px){ #cc-layer .modal-overlay{ align-items:flex-end; } #cc-layer .cc-card{ border-radius:var(--radius-sheet) var(--radius-sheet) 0 0; max-width:none; margin:0; padding-bottom:calc(14px + env(safe-area-inset-bottom,0px)); } }
+.cc-x{ position:absolute; top:14px; right:14px; width:40px; height:40px; border:0; border-radius:50%; background:var(--bg-soft,#EEF1F8); color:var(--ink-soft,#6B7592); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; z-index:2; }
+.cc-x svg{ width:18px; height:18px; }
+.cc-card{ position:relative; }
+@media (max-width:699px){
+  #cc-layer .modal-overlay{ align-items:stretch; justify-content:stretch; padding:0; }
+  #cc-layer .cc-card{ position:relative; width:100%; max-width:none; height:100%; max-height:none; margin:0; border-radius:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px)); box-shadow:none; }
+  #cc-layer .cc-card .cc-empty{ padding:0; width:100%; }
+  #cc-layer .cc-x{ top:calc(14px + env(safe-area-inset-top,0px)); right:14px; }
+}
 </style>
 </head>
 <body>
@@ -7171,10 +7179,6 @@ function confirmarCobro(){
 
   vibrate([15, 60, 15]);
   showTicket(sale, { fromCheckout:true });
-  if(userPrefs().notifSales !== false){
-    toast('Venta ' + orderNumberLabel(sale.number) + ' cobrada', { icon:icon('check'), variant:'toast-success toast-top',
-      subtitle: formatMoney(sale.total + (sale.tip || 0)) + ' · ' + paymentOf(sale.paymentMethod).name + (sale.change ? ' · cambio ' + formatMoney(sale.change) : ''), duration:2200 });
-  }
 }
 
 /* =========================================================
@@ -20748,14 +20752,16 @@ function cashLockedOverlay(cfg){
         sub: 'Haz su corte (debe haber <b>' + formatMoney(cashSummary(s).expected) + '</b> en efectivo) y enseguida abres la de hoy.',
         btn: 'Hacer el corte'
       })
-    : cashLockedBodyHTML({ title: 'Para iniciar una venta abre una caja del día de hoy', btn: 'Abrir caja' });
+    : cashLockedBodyHTML({ title: 'Para iniciar una venta tienes que abrir tu caja', btn: 'Abrir caja' });
   layer.innerHTML = `<div class="modal-overlay modal-center" id="ccOverlay">
       <div class="modal-sheet modal-card cc-card" role="dialog" aria-modal="true">
+        <button type="button" class="cc-x" id="ccX" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         ${body}
         <button type="button" class="cc-link" id="ccNo">Ahora no</button>
       </div>
     </div>`;
   layer.querySelector('#ccNo').onclick = close;
+  layer.querySelector('#ccX').onclick = close;
   layer.querySelector('#ccOverlay').addEventListener('click', e => { if(e.target.id === 'ccOverlay') close(); });
   layer.querySelector('#ccGo').onclick = () => {
     close(); shieldClicks();
