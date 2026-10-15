@@ -4603,6 +4603,52 @@ body, button, input, select, textarea{ font-family:var(--sans); }
 .mdn-full-actions{ display:flex; flex-direction:column; gap:10px; padding-top:12px; }
 .mdn-full-actions .btn{ height:54px; font-size:16px; border-radius:999px; }
 @media (min-width:700px){ .modal-sheet:has(.mdn-full){ min-height:min(560px, 86vh); } }
+
+/* ===== Menú Digital sencillo ===== */
+.mdi-todos-btn{ position:fixed; right:18px; bottom:calc(98px + env(safe-area-inset-bottom)); z-index:30; display:inline-flex; align-items:center; gap:8px;
+  background:#fff; border:1.5px solid var(--vp-line,#E6EAF3); border-radius:999px; padding:11px 16px 11px 20px; font:inherit; font-size:15px; font-weight:800;
+  color:var(--ink-soft,#6B7592); box-shadow:0 8px 22px rgba(22,33,62,.12); cursor:pointer; }
+.mdi-todos-btn span{ min-width:24px; height:24px; padding:0 7px; border-radius:999px; background:#EEF1F7; color:var(--vp-navy,#16213E); font-size:13px; display:inline-flex; align-items:center; justify-content:center; }
+.mdi-todos-btn:active{ transform:scale(.96); }
+@media (min-width:700px){ .mdi-todos-btn{ right:28px; bottom:28px; } }
+body:has(#modal-layer .modal-sheet) .mdi-todos-btn{ visibility:hidden; }
+#mdiCloudStatus.md-pub.ok{ display:none; }
+.mdi-today-sum{ margin:-4px 0 14px; font-size:14px; font-weight:600; color:var(--ink-soft,#6B7592); }
+.mdi-today-sum b{ color:var(--vp-navy,#16213E); }
+body[data-section="menu"] #view{ padding-bottom:calc(170px + env(safe-area-inset-bottom)); }
+.mdx-head{ align-items:center; }
+.mdx-head .mdx-gear{ margin-top:0; }
+
+/* ===== Usuario agregado / eliminado: cuadro chico al centro ===== */
+.modal-sheet.modal-card:has(.udc){ max-width:340px; width:calc(100% - 40px); padding:26px 22px 20px; border-radius:26px; }
+.udc{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; }
+.udc-ico{ width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.udc-ico svg{ width:30px; height:30px; }
+.udc-ico.add{ background:var(--vp-green,#16C15B); color:#fff; }
+.udc-ico.del{ background:#FDECEC; color:#E5484D; }
+.udc h2{ margin:4px 0 2px; font-size:21px; font-weight:800; color:var(--vp-navy,#16213E); }
+.udc-who{ display:flex; align-items:center; gap:10px; background:#F5F7FB; border-radius:16px; padding:10px 14px; width:100%; text-align:left; }
+.udc-who .ud-av{ width:42px; height:42px; font-size:15px; margin:0; flex:none; }
+.udc-txt{ display:flex; flex-direction:column; min-width:0; }
+.udc-txt b{ font-size:15.5px; font-weight:800; color:var(--vp-navy,#16213E); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.udc-txt small{ font-size:12.5px; font-weight:700; color:var(--ink-soft,#6B7592); }
+.udc-note{ margin:2px 0 4px; font-size:13.5px; font-weight:600; color:var(--ink-soft,#6B7592); }
+.btn.udc-ok{ height:48px; border-radius:999px; margin-top:4px; }
+
+/* ===== Al entrar a una sección: la pantalla sube desde abajo, suave ===== */
+@keyframes vpViewUp{ from{ opacity:0; transform:translate3d(0, 28px, 0); } to{ opacity:1; transform:translate3d(0, 0, 0); } }
+#view.view-enter > *:not(.cartbar):not(.vp-fixed){ animation:vpViewUp .55s cubic-bezier(.22, 1, .36, 1) both !important; animation-delay:0s !important; }
+#view.view-enter > .vp-fixed{ animation:fadeIn .4s ease both !important; }
+@media (prefers-reduced-motion: reduce){ #view.view-enter > *{ animation:none !important; } }
+
+/* Pedidos entrantes: rayita izquierda gris (nuevo y por cobrar) */
+.mdi-card.st-nuevo, .mdi-card.st-pend{ border-left-color:#C9CFDB !important; }
+/* Detalle del pedido: subtotal, total y botones hasta abajo */
+.modal-sheet:has(.fs-marker) .mdi-dwrap{ min-height:100%; display:flex; flex-direction:column; }
+.mdi-dmain{ flex:0 0 auto; }
+.mdi-dfoot{ margin-top:auto; padding-top:8px; }
+/* Usuario eliminado: bote de basura rojo */
+.mdx-done-ico.ud-del{ background:#FDECEC; color:#E5484D; }
 </style>
 </head>
 <body>
@@ -5803,7 +5849,7 @@ function goTo(view){
   void el.offsetWidth;
   el.classList.add('view-enter');
   clearTimeout(goTo._t);
-  goTo._t = setTimeout(() => el.classList.remove('view-enter'), 520);
+  goTo._t = setTimeout(() => el.classList.remove('view-enter'), 700);
 }
 
 function render(){
@@ -7412,14 +7458,15 @@ const DEFAULT_PRINT = {
   spacing:  'normal',
   copies:   1,
   feedMm:   10,
-  logo:     false,
+  logo:     true,
+  escFont:  'chica',
   footer:   '\u00a1Gracias por su visita!'
 };
 
 function printPrefs(){
   let guardado = {};
   try{ guardado = JSON.parse(localStorage.getItem(PRINT_KEY) || '{}') || {}; }catch(e){ guardado = {}; }
-  return Object.assign({}, DEFAULT_PRINT, guardado, { logo:false });   // el logo ya no se imprime
+  return Object.assign({}, DEFAULT_PRINT, guardado);
 }
 function savePrintPrefs(p){
   try{ localStorage.setItem(PRINT_KEY, JSON.stringify(p)); }catch(e){}
@@ -8749,31 +8796,57 @@ function escposRaster(dataUrl, dots){
   return new Promise(function(res){
     try{
       const img = new Image();
+      if(!/^data:/i.test(String(dataUrl))) img.crossOrigin = 'anonymous';
       img.onerror = function(){ res(null); };
       img.onload = function(){
         try{
-          const W = Math.max(8, Math.floor((dots * 0.6) / 8) * 8);
-          const H = Math.max(1, Math.min(280, Math.round(img.height * (W / img.width))));
-          const cv = document.createElement('canvas');
-          cv.width = W; cv.height = H;
+          /* 1) Se lee la imagen y se recorta el borde blanco/transparente */
+          const sw = img.naturalWidth || img.width, shh = img.naturalHeight || img.height;
+          const sc = Math.min(1, 900 / Math.max(sw, shh));
+          const w0 = Math.max(1, Math.round(sw * sc)), h0 = Math.max(1, Math.round(shh * sc));
+          const c0 = document.createElement('canvas'); c0.width = w0; c0.height = h0;
+          const x0 = c0.getContext('2d'); x0.fillStyle = '#fff'; x0.fillRect(0, 0, w0, h0); x0.drawImage(img, 0, 0, w0, h0);
+          const d0 = x0.getImageData(0, 0, w0, h0).data;
+          let minX = w0, minY = h0, maxX = -1, maxY = -1;
+          for(let y = 0; y < h0; y++) for(let x = 0; x < w0; x++){
+            const k = (y * w0 + x) * 4;
+            if(d0[k] * 0.299 + d0[k + 1] * 0.587 + d0[k + 2] * 0.114 < 235){ if(x < minX) minX = x; if(x > maxX) maxX = x; if(y < minY) minY = y; if(y > maxY) maxY = y; }
+          }
+          if(maxX < 0){ res(null); return; }                 /* imagen en blanco */
+          const cw = maxX - minX + 1, ch = maxY - minY + 1;
+          /* 2) Tamaño en el ticket: hasta la mitad del ancho y 180 puntos de alto */
+          let W = Math.floor((dots * 0.5) / 8) * 8;
+          let H = Math.round(ch * (W / cw));
+          if(H > 180){ H = 180; W = Math.max(8, Math.floor((cw * (H / ch)) / 8) * 8); H = Math.round(ch * (W / cw)); }
+          W = Math.max(8, W); H = Math.max(1, H);
+          const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
           const cx = cv.getContext('2d');
           cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
-          cx.drawImage(img, 0, 0, W, H);
+          cx.imageSmoothingQuality = 'high';
+          cx.drawImage(c0, minX, minY, cw, ch, 0, 0, W, H);
           const px = cx.getImageData(0, 0, W, H).data;
+          /* 3) Tramado Floyd–Steinberg: las sombras y colores salen como puntitos, no como manchas */
+          const g = new Float32Array(W * H);
+          for(let k = 0; k < W * H; k++){ const q = k * 4; g[k] = px[q] * 0.299 + px[q + 1] * 0.587 + px[q + 2] * 0.114; }
           const bytesPorFila = W / 8;
-          const out = [0x1D, 0x76, 0x30, 0x00,
-                       bytesPorFila & 0xFF, (bytesPorFila >> 8) & 0xFF,
-                       H & 0xFF, (H >> 8) & 0xFF];
+          const out = [0x1D, 0x76, 0x30, 0x00, bytesPorFila & 0xFF, (bytesPorFila >> 8) & 0xFF, H & 0xFF, (H >> 8) & 0xFF];
+          const bits = new Uint8Array(W * H);
+          for(let y = 0; y < H; y++){
+            for(let x = 0; x < W; x++){
+              const k = y * W + x, old = g[k], nw = old < 128 ? 0 : 255, err = old - nw;
+              bits[k] = nw === 0 ? 1 : 0;
+              if(x + 1 < W) g[k + 1] += err * 7 / 16;
+              if(y + 1 < H){
+                if(x > 0) g[k + W - 1] += err * 3 / 16;
+                g[k + W] += err * 5 / 16;
+                if(x + 1 < W) g[k + W + 1] += err * 1 / 16;
+              }
+            }
+          }
           for(let y = 0; y < H; y++){
             for(let b = 0; b < bytesPorFila; b++){
               let byte = 0;
-              for(let bit = 0; bit < 8; bit++){
-                const x = b * 8 + bit;
-                const i = (y * W + x) * 4;
-                const lum = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114);
-                const alpha = px[i + 3];
-                if(alpha > 40 && lum < 165) byte |= (0x80 >> bit);
-              }
+              for(let bit = 0; bit < 8; bit++){ if(bits[y * W + b * 8 + bit]) byte |= (0x80 >> bit); }
               out.push(byte);
             }
           }
@@ -8787,10 +8860,19 @@ function escposRaster(dataUrl, dots){
 }
 
 /** Arma el ticket en ESC/POS con el MISMO contenido de ticketPrintHTML(). */
+function escposSmall(p){ return ((p || printPrefs()).escFont || 'chica') === 'chica'; }
+/** Con letra chica (Font B) caben más letras por renglón. */
+function escposColumnsFor(p){
+  p = p || printPrefs();
+  if(!escposSmall(p)) return escposColumns(p);
+  if(p.preset === '58') return 42;
+  if(p.preset === '80') return 64;
+  return Math.max(28, Math.min(64, Math.floor(escposDots(p) / 9)));
+}
 async function escposTicketBytes(sale){
   const p    = printPrefs();
   const cfg  = printerPrefs();
-  const cols = escposColumns(p);
+  const cols = escposColumnsFor(p);
   const cs   = cfg.charset;
   const biz  = ticketBusiness();
   const u    = (typeof currentUser === 'function' ? currentUser() : null) || {};
@@ -8812,6 +8894,7 @@ async function escposTicketBytes(sale){
   if(cfg.noChino) raw([0x1C, 0x2E]);                   /* apagar modo chino (FS .) */
   raw([0x1B, 0x74, cs === 'cp850' ? 0x02 : 0x00]);     /* tabla de caracteres */
   raw([0x1B, 0x52, 0x0C]);                             /* juego: Latinoamerica */
+  raw([0x1B, 0x4D, escposSmall(p) ? 0x01 : 0x00]);     /* letra chica (Font B) o normal (Font A) */
 
   /* ----- Encabezado ----- */
   cen();
@@ -12983,6 +13066,21 @@ function printSettingsHTML(){
     </div>
 
     <div class="field">
+      <label>Letra en la impresora t\u00e9rmica</label>
+      <div class="seg" style="max-width:none; margin-bottom:0;">
+        ${segBtn('escFont', 'chica', 'Chica \u00b7 m\u00e1s profesional')}
+        ${segBtn('escFont', 'normal', 'Normal')}
+      </div>
+      <div class="field-hint">Si tu impresora imprime letras raras con \u00abChica\u00bb, elige \u00abNormal\u00bb.</div>
+    </div>
+
+    <div class="toggle-row">
+      <span class="acc-ico green">${icon('camera')}</span>
+      <span class="acc-txt"><span class="acc-label">Logo del negocio en el ticket</span><span class="acc-sub">${((currentUser() || {}).business || {}).logo ? 'Se imprime arriba, centrado' : 'Primero sube tu logo en Mi cuenta \u203a Informaci\u00f3n de mi negocio'}</span></span>
+      <label class="switch"><input type="checkbox" ${p.logo ? 'checked' : ''} onchange="setPrintPref('logo', this.checked, true)"><span class="track"></span></label>
+    </div>
+
+    <div class="field">
       <label>Separaci\u00f3n entre l\u00edneas</label>
       <div class="seg" style="max-width:none; margin-bottom:0;">
         ${segBtn('spacing', 'compacto', 'Compacta')}
@@ -13750,13 +13848,14 @@ function previewRoleHint(){
 
 /* ---------- Pantalla completa de "usuario creado / actualizado" ---------- */
 function userDoneScreen(u, o){
+  if(o.compact) return userDoneCard(u, o);
   const foto = userPhoto(u);
   const lines = (o.lines || []).map(l => `
         <div class="ud-line"><span>${l.label}</span><b>${l.value}</b></div>`).join('');
   openModal(`
     <i class="fs-marker" hidden></i>
     <div class="mdx-done ud-done">
-      <span class="mdx-done-ico">${icon('check')}</span>
+      <span class="mdx-done-ico ${o.kind === 'del' ? 'ud-del' : ''}">${icon(o.kind === 'del' ? 'trash' : o.kind === 'add' ? 'plus' : 'check')}</span>
       <h2>${o.title}</h2>
       <div class="ud-who">
         <span class="ud-av">${foto ? `<img src="${foto}" alt="">` : userInitials(u)}</span>
@@ -13767,6 +13866,22 @@ function userDoneScreen(u, o){
     </div>
     <button type="button" class="btn primary block ud-ok" onclick="${o.back}">Listo</button>
   `, { dismissible:true });
+}
+/* Cuadro chico al centro (usuario agregado o eliminado) */
+function userDoneCard(u, o){
+  const foto = userPhoto(u);
+  openModal(`
+    <div class="udc">
+      <span class="udc-ico ${o.kind === 'del' ? 'del' : 'add'}">${icon(o.kind === 'del' ? 'trash' : 'plus')}</span>
+      <h2>${o.title}</h2>
+      <div class="udc-who">
+        <span class="ud-av">${foto ? `<img src="${foto}" alt="">` : userInitials(u)}</span>
+        <span class="udc-txt"><b>${escapeHtml(u.name)}</b><small>${roleOf(u.role).name}</small></span>
+      </div>
+      ${o.note ? `<p class="udc-note">${o.note}</p>` : ''}
+      <button type="button" class="btn primary block udc-ok" onclick="${o.back}">Listo</button>
+    </div>
+  `, { dismissible:true, center:true, card:true, grip:false });
 }
 /* Lo que tenía el usuario al abrir su detalle, para saber qué cambió */
 let userEditSnap = null;
@@ -13806,7 +13921,7 @@ function saveNewUser(){
   paintChrome();
   render();
   const nuevo = DB.getUsers()[DB.getUsers().length - 1];
-  userDoneScreen(nuevo, { title:'¡Has creado un nuevo usuario!', back:'openUsersSheet()',
+  userDoneScreen(nuevo, { kind:'add', title:'¡Has creado un nuevo usuario!', back:'openUsersSheet()',
     lines:[ { label:'Entra con', value:'Su NIP de 4 dígitos' } ] });
 }
 
@@ -13990,7 +14105,7 @@ function doDeleteUser(id){
   if(me) setActiveUser(me.id);
   paintChrome();
   render();
-  userDoneScreen(u, { title:'Usuario eliminado correctamente', back:'openUsersSheet()',
+  userDoneScreen(u, { kind:'del', title:'Usuario eliminado correctamente', back:'openUsersSheet()',
     lines:[ { label:'Sus ventas y turnos', value:'Se quedan en el historial' } ] });
 }
 
@@ -16421,12 +16536,18 @@ function mdiAfterDecision(id){
       </div>
       <div class="mdn-full-actions">
         <button class="btn whatsapp block" onclick="mdiNotify('${id}')">${icon('whatsapp')} Avisar a ${escapeHtml(nombre)} por WhatsApp</button>
-        <button class="btn ghost block" onclick="mdiDoneClose()">Listo</button>
+        ${ok ? `<button class="btn primary block" onclick="mdiChargeFromDone('${id}')">${icon('cash')} Cobrar pedido</button>`
+             : `<button class="btn ghost block" onclick="mdiDoneClose()">Listo</button>`}
       </div>
     </div>
   `, { dismissible:true });
   mdiPaintBadge();
   if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
+}
+/* Después de aceptar: abre el pedido "Aceptado · falta cobrarlo" */
+function mdiChargeFromDone(id){
+  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
+  mdiOpen(id);
 }
 function mdiDoneClose(){ closeModal(); if(currentView === 'menu' || currentView === 'home') render(); }
 
@@ -16463,88 +16584,67 @@ function mdiCardHTML(o){
 function mdiSectionHTML(){
   mdiMigrate();
   try{ MdiCloud.soon(); }catch(e){}
-  const todosLos = MDI.all().slice().sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
-  /* Cada lunes se reinicia la lista: los terminados, rechazados y cancelados
-     de semanas anteriores ya no se muestran aquí (no se borran: los cobrados
-     siguen en Historial). Los nuevos y por cobrar se ven siempre. */
-  const semana = startOfWeek(new Date());
-  const enCurso = o => { const id = mdiStage(o).id; return id === 'nuevo' || id === 'pendiente'; };
-  const all = todosLos.filter(o => enCurso(o) || new Date(o.receivedAt || o.createdAt) >= semana);
-  const c = Object.assign({}, mdiCounts(), {
-    rechazado: all.filter(o => mdiStage(o).id === 'rechazado').length,
-    cancelado: all.filter(o => mdiStage(o).id === 'cancelado').length,
-    total: all.length
-  });
-  const filtro = mdiFilter === 'confirmado' ? 'pendiente' : mdiFilter;
-  const list = filtro === 'todos' ? all : filtro === 'pendiente' ? all.filter(o => mdiStage(o).id === 'pendiente') : all.filter(o => o.status === filtro);
-  const semanaNota = (filtro === 'todos' || filtro === 'rechazado' || filtro === 'cancelado') ? `
-    <div class="hist-week mdi-week">
-      <span class="hist-week-ico">${icon('calendar')}</span>
-      <span class="hist-week-txt"><b>Esta semana · desde el lunes ${semana.toLocaleDateString('es-MX', { day:'numeric', month:'long' })}</b>Se reinicia cada lunes. Los pedidos cobrados de antes siguen en Historial.</span>
-      <button type="button" class="hist-week-btn" onclick="historyFilters.period='all'; historyFilters.status='all'; historyFilters.origin='menu'; historyFilters.search=''; goTo('history');">Ver en Historial</button>
-    </div>` : '';
-  const tabs = [
-    { id:'nuevo', label:'Nuevos', n:c.nuevo, alert:'red' },
-    { id:'pendiente', label:'Pendiente a cobrar', n:c.pendiente, alert:'amber' },
-    { id:'rechazado', label:'Rechazados', n:c.rechazado },
-    { id:'cancelado', label:'Cancelados', n:c.cancelado },
-    { id:'todos', label:'Todos', n:c.total },
-  ].filter(t => t.id !== 'cancelado' || t.n || filtro === 'cancelado');
-  const hoy = all.filter(o => isSameDay(new Date(o.createdAt), new Date()));
-  const cobradosHoy = hoy.filter(o => mdiIsPaid(o));
-  const vendidoHoy = cobradosHoy.reduce((a, o) => a + mdiOrderTotal(o), 0);
-  const emptyTxt = {
-    nuevo:'No hay pedidos nuevos', pendiente:'No hay pedidos pendientes de cobro', rechazado:'No hay pedidos rechazados',
-    cancelado:'No hay pedidos cancelados', todos:'Aún no te llegan pedidos'
-  }[filtro] || 'No hay pedidos';
-
-  const card = o => {
-    const st = mdiStage(o);
-    const cu = o.customer || {};
-    const cls = { nuevo:'st-nuevo', pendiente:'st-pend', finalizado:'st-ok', rechazado:'st-no', cancelado:'st-cancel' }[st.id] || '';
-    const pill = st.id === 'nuevo' ? 'Nuevo' : st.label;
-    const n = (o.lines || []).length;
-    return `
+  const all = MDI.all().slice().sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
+  /* Pedidos entrantes: solo los que siguen en curso (nuevos y aceptados por cobrar).
+     Al aceptarlo se queda aquí y su etiqueta cambia de "Nuevo" a "Por cobrar". */
+  const activos = all.filter(o => { const id = mdiStage(o).id; return id === 'nuevo' || id === 'pendiente'; });
+  const nuevos = activos.filter(o => mdiStage(o).id === 'nuevo').length;
+  const deHoy = all.filter(o => isSameDay(new Date(o.receivedAt || o.createdAt), new Date()));
+  return `
+    <div class="section-title mdi-title" id="mdiSection">Pedidos entrantes ${nuevos ? `<span class="mdi-count">${nuevos} nuevo${nuevos === 1 ? '' : 's'}</span>` : ''}</div>
+    ${typeof mdiCloudStatusHTML === 'function' ? mdiCloudStatusHTML() : ''}
+    ${activos.length ? `<div class="mdi-list">${activos.map(mdiCardSimpleHTML).join('')}</div>` : `
+      <div class="mdi-empty">
+        <span class="mdi-empty-ico">${icon('inbox')}</span>
+        <b>Sin pedidos por ahora</b>
+        <span>Cuando un cliente pida desde tu Menú Digital, aparecerá aquí.</span>
+      </div>`}
+    <button type="button" class="mdi-todos-btn vp-fixed" onclick="mdiOpenToday()">Todos <span>${deHoy.length}</span></button>
+  `;
+}
+/* Tarjeta de un pedido (la misma en la lista y en "Todos") */
+function mdiCardSimpleHTML(o){
+  const st = mdiStage(o);
+  const cu = o.customer || {};
+  const cls = { nuevo:'st-nuevo', pendiente:'st-pend', finalizado:'st-ok', rechazado:'st-no', cancelado:'st-cancel' }[st.id] || '';
+  const pill = st.id === 'nuevo' ? 'Nuevo' : st.label;
+  const n = (o.lines || []).length;
+  return `
       <button type="button" class="mdi-card ${cls}" onclick="mdiOpen('${o.id}')">
         <div class="mdi-card-top">
           <span class="mdi-code">${escapeHtml(o.code)}</span>
           <span class="mdi-pill ${st.cls}">${pill}</span>
           ${mdiIsDelivery(o) ? `<span class="mdi-pill del">${icon('truck')} Domicilio</span>` : ''}
-          ${mdiIsModified(o) ? `<span class="mdi-pill mod">Modificado</span>` : ''}
           <span class="mdi-time">${mdiAgo(o.receivedAt || o.createdAt)}</span>
         </div>
         <div class="mdi-name">${icon('person')} ${escapeHtml(cu.name || 'Cliente sin nombre')}</div>
         <div class="mdi-items">${mdiItemsText(o) || '—'}</div>
         <div class="mdi-card-foot"><span>${n} producto${n === 1 ? '' : 's'}</span><b>${formatMoney(mdiOrderTotal(o))}</b></div>
       </button>`;
-  };
-
-  return `
-    <div class="section-title mdi-title" id="mdiSection">Pedidos entrantes ${c.nuevo ? `<span class="mdi-count">${c.nuevo} nuevo${c.nuevo === 1 ? '' : 's'}</span>` : ''}</div>
-    ${typeof mdiCloudStatusHTML === 'function' ? mdiCloudStatusHTML() : ''}
-
-    <div class="mdi-today">
-      <div><span>Hoy</span><b>${hoy.length}</b><small>pedido${hoy.length === 1 ? '' : 's'}</small></div>
-      <div><span>Por revisar</span><b class="${c.nuevo ? 'warn' : ''}">${c.nuevo}</b><small>esperan respuesta</small></div>
-      <div><span>Vendido hoy</span><b>${formatMoney(vendidoHoy)}</b><small>${cobradosHoy.length} cobrado${cobradosHoy.length === 1 ? '' : 's'}</small></div>
+}
+/* "Todos": los pedidos de HOY (cobrados, por cobrar, nuevos, rechazados y cancelados) */
+function mdiOpenToday(){
+  vibrate(8);
+  const hoy = MDI.all().filter(o => isSameDay(new Date(o.receivedAt || o.createdAt), new Date()))
+    .sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
+  const cobrados = hoy.filter(o => mdiIsPaid(o));
+  const vendido = cobrados.reduce((a, o) => a + mdiOrderTotal(o), 0);
+  openModal(`
+    <i class="fs-marker" hidden></i>
+    <div class="sheet-header">
+      <h2>Pedidos de hoy</h2>
+      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
     </div>
-
-    <div class="mdi-tabs" role="tablist">
-      ${tabs.map(t => `<button role="tab" class="${filtro === t.id ? 'active' : ''}" onclick="mdiSetFilter('${t.id}')">${t.label}${t.n ? `<span class="${t.alert ? 'alert ' + t.alert : ''}">${t.n}</span>` : ''}</button>`).join('')}
-    </div>
-
-    ${list.length ? `<div class="mdi-list">${list.map(card).join('')}</div>` : `
+    ${hoy.length ? `
+      <p class="mdi-today-sum">${hoy.length} pedido${hoy.length === 1 ? '' : 's'} · ${cobrados.length} cobrado${cobrados.length === 1 ? '' : 's'} · <b>${formatMoney(vendido)}</b></p>
+      <div class="mdi-list">${hoy.map(mdiCardSimpleHTML).join('')}</div>` : `
       <div class="mdi-empty">
         <span class="mdi-empty-ico">${icon('inbox')}</span>
-        <b>${emptyTxt}</b>
-        <span>Cuando un cliente pida desde tu Menú Digital, aparecerá aquí.</span>
+        <b>Hoy todavía no hay pedidos</b>
+        <span>Aquí verás los pedidos del día: cobrados, rechazados y cancelados.</span>
       </div>`}
-
-    <div class="mdi-foot-actions">
-      <button class="btn ghost" onclick="statsOrigin='menu'; statsSel=null; goTo('stats');">${icon('chart')} Estadísticas del menú</button>
-    </div>
-    <p class="md-hint">Por WhatsApp el cliente solo te manda su folio (MD-…). Búscalo aquí para ver lo que pidió.</p>
-  `;
+    <button class="btn ghost block" style="margin-top:16px;" onclick="closeModal(); statsOrigin='menu'; statsSel=null; goTo('stats');">${icon('chart')} Estadísticas del menú</button>
+  `, { dismissible:true });
 }
 
 /* =========================================================
@@ -16703,7 +16803,8 @@ function mdiDetailHTML(o){
   const quitados = mod ? (o.original || []).filter(x => !(o.lines || []).some(l => (l.productId || mdiNorm(l.name)) === (x.productId || mdiNorm(x.name)) && (l.sizeId || '') === (x.sizeId || ''))) : [];
 
   return `
-    ${st.id === 'pendiente' ? '<i class="fs-marker" hidden></i>' : ''}
+    <i class="fs-marker" hidden></i>
+    <div class="mdi-dwrap"><div class="mdi-dmain">
     <div class="sheet-header">
       <div class="sheet-header-left" style="min-width:0;">
         <h2>Pedido ${escapeHtml(o.code)}</h2>
@@ -16744,9 +16845,10 @@ function mdiDetailHTML(o){
       <div class="mdi-line-actions">
         <button class="btn ghost" onclick="mdiEditLine('${o.id}', -1)">${icon('plus')} Agregar producto</button>
         ${mod ? `<button class="btn ghost" onclick="mdiRestore('${o.id}')">${icon('undo')} Volver al original</button>` : ''}
-      </div>` : ''}
-
-    ${mdiTotalsHTML(o)}`}
+      </div>` : ''}`}
+    </div>
+    <div class="mdi-dfoot">
+    ${o.status === 'rechazado' ? '' : mdiTotalsHTML(o)}
 
     ${editable ? `
       ${faltan ? `<div class="mdi-banner warn">${icon('alert')}<span><b>Falta elegir ${faltan} producto${faltan === 1 ? '' : 's'}</b>Hay productos que no están en tu catálogo. Toca ${icx('edit')} para cambiarlos antes de confirmar.</span></div>` : ''}
@@ -16765,6 +16867,7 @@ function mdiDetailHTML(o){
         ${(o.status === 'rechazado' || o.status === 'cancelado') && !o.pendingNext && isOwner() ? `<button class="btn danger" onclick="mdiDelete('${o.id}')">${icon('trash')} Eliminar</button>` : ''}
       </div>
     `}
+    </div></div>
   `;
 }
 function mdiClose(){ mdiUI = { id:null, compare:false, text:'', result:null }; closeModal(); if(currentView === 'menu' || currentView === 'home') render(); }
@@ -17322,7 +17425,8 @@ function mdOffCardHTML(){
 }
 renderMenuDigital = function(){
   const cfg = mdCfg();
-  const titulo = `
+  const titulo = cfg.active ? `
+    <h1 class="page-title">Menú Digital</h1>` : `
     <h1 class="page-title">Menú Digital</h1>
     <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>`;
   if(!cfg.active) return titulo + mdOffCardHTML();
@@ -24044,7 +24148,8 @@ function quickPrinterAvail(t){
   if(env.native) return true;
   if(t === 'bt') return env.webBT || env.webSerial;
   if(t === 'usb') return env.webUSB || env.webSerial;
-  return true;
+  /* Wi-Fi: el navegador no puede abrir la impresora desde una página https (solo la app) */
+  return typeof printerAgentOK === 'function' ? printerAgentOK('') : false;
 }
 function quickPrinterHTML(){
   const q = printerQuick || {};
@@ -24052,7 +24157,7 @@ function quickPrinterHTML(){
     const ok = quickPrinterAvail(t);
     return `<button type="button" class="qp-opt ${ok ? '' : 'off'}" ${ok ? `onclick="quickPrinterPick('${t}')"` : 'disabled'}>
         <span class="qp-ico">${icon(ico)}</span>
-        <span class="qp-txt"><b>${title}</b><small>${ok ? sub : 'No disponible en este navegador'}</small></span>
+        <span class="qp-txt"><b>${title}</b><small>${ok ? sub : (t === 'wifi' ? 'Solo en la app de Vendo+ (el navegador no puede)' : 'No disponible en este navegador')}</small></span>
         <span class="acc-chev">${icon('chevronRight')}</span>
       </button>`;
   };
