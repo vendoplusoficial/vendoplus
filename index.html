@@ -4680,6 +4680,9 @@ body[data-section="menu"] #view{ padding-bottom:calc(170px + env(safe-area-inset
 .vp-sheet-bg.show.hiding{ animation:fadeOut .24s ease both; }
 .vp-sheet-bg.show.hiding .vp-sheet{ animation:vpSheetOut .24s cubic-bezier(.4, 0, 1, 1) both; }
 @media (prefers-reduced-motion: reduce){ .vp-sheet-bg.show, .vp-sheet-bg.show .vp-sheet, .modal-overlay:has(.fs-marker), .modal-overlay:has(.fs-marker) .modal-sheet{ animation:none !important; } }
+
+.mdn-later{ display:block; width:100%; background:none; border:0; padding:12px 8px 4px; font:inherit; font-size:15px; font-weight:700; color:var(--ink-soft,#6B7592); cursor:pointer; text-align:center; }
+.mdn-later:active{ opacity:.6; }
 </style>
 </head>
 <body>
@@ -9422,7 +9425,7 @@ function showTicket(sale, opts){
   let html = `
     <div class="sheet-header no-print">
       <h2>${opts.fromCheckout ? 'Venta cobrada' : (ret ? 'Devolución ' + escapeHtml(sale.folio || '') : 'Detalle de venta')}</h2>
-      <button class="sheet-close" onclick="closeModal(); ${opts.fromCheckout ? 'afterSaleClosed();' : 'render();'}">${icon('close')}</button>
+      <button class="sheet-close" onclick="closeModal(); ${opts.fromCheckout ? `afterSaleClosed('${sale.id}');` : 'render();'}">${icon('close')}</button>
     </div>
     ${opts.fromCheckout ? saleDoneBoxHTML(sale) + stockAlertHTML() : ''}
     <div id="ticket-print">${ticketHTML(sale)}</div>
@@ -9682,7 +9685,13 @@ function sendTicketWhatsApp(id){
     extraHTML:`<div class="field"><input id="waTicketTel" type="tel" inputmode="numeric" maxlength="16" placeholder="Ej. 981 123 4567"></div>` },
     card => go((card.querySelector('#waTicketTel') || {}).value));
 }
-function afterSaleClosed(){ stockAlert = []; goTo('home'); }
+function afterSaleClosed(saleId){
+  stockAlert = [];
+  const s = saleId ? DB.getSales().find(x => x.id === saleId) : null;
+  /* Si se cobró un pedido del Menú Digital, la X regresa al Menú Digital */
+  if(s && (s.menuOrderId || s.origin === 'menu')){ goTo('menu'); return; }
+  goTo('home');
+}
 
 /* =========================================================
    VISTA: HISTORIAL
@@ -16549,7 +16558,8 @@ function mdiAfterDecision(id){
       </div>
       <div class="mdn-full-actions">
         <button class="btn whatsapp block" onclick="mdiNotify('${id}')">${icon('whatsapp')} Avisar a ${escapeHtml(nombre)} por WhatsApp</button>
-        ${ok ? `<button class="btn ghost block" onclick="mdiChargeFromDone('${id}')">${icon('cash')} Cobrar pedido</button>`
+        ${ok ? `<button class="btn ghost block" onclick="mdiChargeFromDone('${id}')">${icon('cash')} Cobrar pedido</button>
+             <button type="button" class="mdn-later" onclick="mdiDoneClose()">Salir y cobrar pedido después</button>`
              : `<button class="btn ghost block" onclick="mdiDoneClose()">Listo</button>`}
       </div>
     </div>
@@ -24073,7 +24083,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
       c+='<i style="left:'+l+'%;width:'+sz+'px;height:'+(sz+(r==='2px'?4:0))+'px;background:'+cols[i%cols.length]+';border-radius:'+r+';animation-delay:'+d+'s;--dx:'+(Math.round(Math.random()*60)-30)+'px"></i>';
     }
     return '<div class="vp-confetti no-print" aria-hidden="true">'+c+'</div>'+
-      '<button class="sheet-close vp-x no-print" onclick="closeModal(); afterSaleClosed();" aria-label="Cerrar">'+icon('close')+'</button>'+
+      '<button class="sheet-close vp-x no-print" onclick="closeModal(); afterSaleClosed(\''+sale.id+'\');" aria-label="Cerrar">'+icon('close')+'</button>'+
       '<div class="vp-done-main">'+
         '<div class="vp-done-hero no-print">'+
           '<div class="vp-done-circle"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 12.5 4.2 4.2L18.5 7.8"/></svg></div>'+
