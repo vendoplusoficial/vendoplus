@@ -4683,6 +4683,37 @@ body[data-section="menu"] #view{ padding-bottom:calc(170px + env(safe-area-inset
 
 .mdn-later{ display:block; width:100%; background:none; border:0; padding:12px 8px 4px; font:inherit; font-size:15px; font-weight:700; color:var(--ink-soft,#6B7592); cursor:pointer; text-align:center; }
 .mdn-later:active{ opacity:.6; }
+
+/* ===== Ruedita de tamaños / cantidad ===== */
+.wh-sub{ margin:2px 0 0; font-size:15px; font-weight:600; color:var(--ink-soft,#6B7592); }
+.wh-box{ display:flex; align-items:stretch; gap:0; margin:6px 0 18px; }
+.wh-col{ position:relative; flex:1.25; min-width:0; height:336px; padding-right:14px; border-right:1.5px solid var(--vp-line,#E6EAF3); }
+.wh-sel{ position:absolute; left:8px; right:22px; top:144px; height:48px; border-radius:14px; background:#E9F9EF; border:1.5px solid #34C46A; pointer-events:none; }
+.wh-list{ position:relative; height:100%; overflow-y:auto; scroll-snap-type:y mandatory; overscroll-behavior:contain; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,.15) 0, #000 18%, #000 82%, rgba(0,0,0,.15) 100%); mask-image:linear-gradient(to bottom, rgba(0,0,0,.15) 0, #000 18%, #000 82%, rgba(0,0,0,.15) 100%); }
+.wh-list::-webkit-scrollbar{ display:none; }
+.wh-pad{ height:144px; }
+.wh-item{ display:flex; align-items:center; justify-content:center; width:calc(100% - 28px); margin:0 14px; height:48px; scroll-snap-align:center; background:none; border:0; border-bottom:1px solid #EEF1F6;
+  font:inherit; font-size:18px; font-weight:600; color:var(--ink-soft,#6B7592); cursor:pointer; transition:color .15s, transform .15s; padding:0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wh-item.on{ color:var(--vp-navy,#16213E); font-weight:800; font-size:19.5px; border-bottom-color:transparent; }
+.wh-item.off{ text-decoration:line-through; }
+.wh-price{ flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; padding-left:22px; }
+.wh-price span{ font-size:15px; font-weight:600; color:var(--ink-soft,#6B7592); }
+.wh-price b{ font-size:clamp(28px, 9vw, 40px); font-weight:800; letter-spacing:-1px; color:var(--vp-navy,#16213E); line-height:1.1; overflow-wrap:anywhere; }
+.wh-price small{ margin-top:6px; font-size:13px; font-weight:700; color:#0F8F46; min-height:16px; }
+.btn.wh-ok{ height:54px; font-size:17px; border-radius:999px; }
+.wh-actions{ display:flex; gap:10px; }
+.wh-actions .btn.danger{ flex:none; width:54px; height:54px; border-radius:999px; padding:0; }
+.wh-other{ display:block; width:100%; margin-top:10px; background:none; border:0; font:inherit; font-size:14px; font-weight:700; color:var(--ink-soft,#6B7592); text-decoration:underline; cursor:pointer; padding:8px; }
+
+/* ===== Tamaños en el formulario: Tamaño · Precio costo · Precio total ===== */
+.size-head{ display:flex; align-items:center; gap:8px; background:#F1F3F8; border-radius:12px; padding:9px 12px; margin:2px 0 10px; font-size:13.5px; font-weight:700; color:var(--ink-soft,#6B7592); }
+.size-head span:nth-child(1){ flex:1.4; min-width:0; }
+.size-head span:nth-child(2), .size-head span:nth-child(3){ flex:1; min-width:0; }
+.size-head i{ flex:none; width:40px; }
+.size-row .pf-size-cost{ flex:1; min-width:0; border:1.5px solid var(--border); border-radius:12px; padding:12px 12px; font-size:14.5px; background:var(--surface); color:var(--ink); font-weight:600; }
+.size-row .pf-size-cost:focus{ border-color:var(--accent-strong); outline:none; }
+.size-row.has-error .pf-size-cost{ border-color:var(--accent-2); background:var(--danger-bg); }
 </style>
 </head>
 <body>
@@ -6685,6 +6716,145 @@ function changeSizeQty(productId, sizeId, delta){
   renderBackgroundIfSale();
 }
 
+
+/* =========================================================
+   RUEDITA: ¿Cuántos kilos / litros / metros?
+   Se desliza hacia arriba y abajo; el de en medio es el elegido.
+========================================================= */
+const WH_ROW = 48;
+let wheel = null;   // { pid, kind:'size'|'qty', items:[{label, price, sizeId, qty, off}], i }
+function whHTML(title, sub, items, i, extra){
+  return `
+    <div class="sheet-header">
+      <div style="min-width:0;"><h2>${title}</h2><p class="wh-sub">${sub}</p></div>
+      <button class="sheet-close" onclick="wheel=null; closeModal()" aria-label="Cerrar">${icon('close')}</button>
+    </div>
+    <div class="wh-box">
+      <div class="wh-col">
+        <div class="wh-sel" aria-hidden="true"></div>
+        <div class="wh-list" id="whList" onscroll="whOnScroll()">
+          <div class="wh-pad"></div>
+          ${items.map((it, k) => `<button type="button" class="wh-item ${it.off ? 'off' : ''}" data-k="${k}" onclick="whPick(${k})">${escapeHtml(it.label)}</button>`).join('')}
+          <div class="wh-pad"></div>
+        </div>
+      </div>
+      <div class="wh-price">
+        <span>Precio</span>
+        <b id="whPrice">${formatMoney(items[i] ? items[i].price : 0)}</b>
+        <small id="whNote"></small>
+      </div>
+    </div>
+    ${extra || ''}`;
+}
+function whMount(i){
+  const list = document.getElementById('whList'); if(!list) return;
+  list.scrollTop = i * WH_ROW;
+  whPaint(i);
+}
+function whIndex(){
+  const list = document.getElementById('whList'); if(!list || !wheel) return 0;
+  return Math.max(0, Math.min(wheel.items.length - 1, Math.round(list.scrollTop / WH_ROW)));
+}
+function whPaint(i){
+  if(!wheel) return;
+  if(i == null) i = whIndex();
+  wheel.i = i;
+  const it = wheel.items[i];
+  document.querySelectorAll('#whList .wh-item').forEach(el => {
+    const d = Math.abs(Number(el.dataset.k) - i);
+    el.classList.toggle('on', d === 0);
+    el.style.opacity = d === 0 ? 1 : d === 1 ? .85 : d === 2 ? .62 : .4;
+  });
+  const pr = document.getElementById('whPrice'); if(pr && it) pr.textContent = formatMoney(it.price);
+  const note = document.getElementById('whNote');
+  if(note && it) note.textContent = it.off ? 'Ya no hay suficientes' : (it.note || '');
+}
+function whOnScroll(){
+  if(whOnScroll._r) return;
+  whOnScroll._r = requestAnimationFrame(() => { whOnScroll._r = 0; const i = whIndex(); if(!wheel || i !== wheel.i) whPaint(i); });
+}
+function whPick(k){
+  const list = document.getElementById('whList'); if(!list) return;
+  list.scrollTo({ top:k * WH_ROW, behavior:'smooth' });
+}
+
+/* Producto con tamaños (medio kilo, 1 kg, 2 kg…) */
+let whCloseAfterAdd = false, whInChange = false;
+const _whOpenSizePicker = openSizePicker;
+openSizePicker = function(productId){
+  if(whInChange && whCloseAfterAdd){ whCloseAfterAdd = false; wheel = null; closeModal(); return; }
+  whCloseAfterAdd = false;
+  const p = findProduct(productId);
+  if(!p || !p.sizesOn || !p.sizes || !p.sizes.length) return;
+  const st = stockInfo(p);
+  const usado = cartStockUse(productId);
+  const items = p.sizes.map(s => {
+    const enCarrito = cartQtyForSize(productId, s.id);
+    return { label:s.label, price:s.price, sizeId:s.id,
+             off: st.control && usado + lineStockUse(p, { sizeId:s.id, qty:1 }) > st.stock + 1e-9,
+             note: enCarrito ? 'En el carrito: ' + enCarrito : '' };
+  });
+  const prev = wheel && wheel.pid === productId && wheel.kind === 'size' ? wheel.i : null;
+  let i = prev != null ? prev : Math.max(0, items.findIndex(x => !x.off));
+  wheel = { pid:productId, kind:'size', items, i };
+  openModal(whHTML('¿Cuántos ' + sizeUnitOf(p.sizeUnit).many + '?', escapeHtml(p.name), items, i,
+    `<button class="btn primary block wh-ok" onclick="whSizeOk()">Listo</button>`), { dismissible:true });
+  whMount(i);
+};
+const _whChangeSizeQty = changeSizeQty;
+changeSizeQty = function(){ whInChange = true; try{ return _whChangeSizeQty.apply(this, arguments); }finally{ whInChange = false; } };
+function whSizeOk(){
+  if(!wheel) return;
+  const it = wheel.items[whIndex()];
+  if(!it) return;
+  if(it.off){ toast('Ya no hay suficientes para ' + it.label, { icon:icon('alert'), variant:'toast-danger toast-top' }); return; }
+  whCloseAfterAdd = true;
+  changeSizeQty(wheel.pid, it.sizeId, 1);
+}
+
+/* Producto por kilo, litro o metro (sin tamaños): 0.5 kg, 1 kg, 1.5 kg… */
+const _whOpenQtyPad = openQtyPad;
+function whQtyValues(p){
+  const u = productUnit(p), step = productStep(p);
+  const tope = u.id === 'gramo' || u.id === 'mililitro' ? 5000 : u.id === 'centimetro' ? 500 : 20;
+  const n = Math.max(1, Math.min(80, Math.floor(tope / step + 1e-9)));
+  const out = [];
+  for(let k = 1; k <= n; k++) out.push(r3(step * k));
+  return out;
+}
+openQtyPad = function(productId){
+  const p = findProduct(productId); if(!p) return;
+  const u = productUnit(p);
+  const ya = cart.find(c => c.productId === productId && !c.sizeId && !c.note && !c.disc && c.manualPrice == null);
+  const vals = whQtyValues(p);
+  if(ya && !vals.some(v => Math.abs(v - ya.qty) < 1e-9)){ return _whOpenQtyPad(productId); }   /* cantidad escrita a mano: se edita escribiéndola */
+  qtyPad = { productId, qty: ya ? ya.qty : vals[0], editing: !!ya };
+  const st = stockInfo(p);
+  const otros = r3(cartStockUse(p.id) - (ya ? lineStockUse(p, ya) : 0));
+  const items = vals.map(v => ({ label:fmtQty(v, u.id), price:round2(v * p.price), qty:v, off: st.control && otros + v > st.stock + 1e-9 }));
+  let i = ya ? vals.findIndex(v => Math.abs(v - ya.qty) < 1e-9) : vals.findIndex(v => Math.abs(v - 1) < 1e-9);
+  if(i < 0) i = 0;
+  wheel = { pid:productId, kind:'qty', items, i };
+  const palabra = { kilo:'kilos', gramo:'gramos', litro:'litros', mililitro:'mililitros', metro:'metros', centimetro:'centímetros' }[u.id] || u.many;
+  openModal(whHTML('¿Cuántos ' + palabra + '?', escapeHtml(p.name) + ' · ' + formatMoney(p.price) + ' por ' + (u.one || u.short), items, i, `
+    <input type="hidden" id="qpQty" value="${items[i].qty}">
+    <div class="wh-actions">
+      ${qtyPad.editing ? `<button class="btn danger" onclick="wheel=null; qpRemove()" aria-label="Quitar">${icon('trash')}</button>` : ''}
+      <button class="btn primary block wh-ok" onclick="whQtyOk()">${qtyPad.editing ? 'Guardar' : 'Listo'}</button>
+    </div>
+    <button type="button" class="wh-other" onclick="wheel=null; openQtyPadClassic('${productId}')">Escribir otra cantidad o por dinero</button>`), { dismissible:true });
+  whMount(i);
+};
+function openQtyPadClassic(pid){ _whOpenQtyPad(pid); }
+function whQtyOk(){
+  if(!wheel) return;
+  const it = wheel.items[whIndex()];
+  if(it.off){ toast('Ya no hay suficientes', { icon:icon('alert'), variant:'toast-danger toast-top' }); return; }
+  const el = document.getElementById('qpQty'); if(el) el.value = it.qty;
+  wheel = null;
+  qpSave();
+}
+
 /* ---------- Carrito / checkout (modal) ---------- */
 /* Título de una hoja (sirve para saber si se está repintando la misma) */
 function sheetTitleOf(sheet){
@@ -7338,7 +7508,7 @@ function saleItemFromCart(c){
   // ese precio multiplicado por los litros/kilos que representa el tamaño.
   const size = (c.sizeId && p && p.sizes) ? p.sizes.find(sz => sz.id === c.sizeId) : null;
   const unitFactor = (size && size.unitQty != null) ? size.unitQty : 1;
-  const cost = (p && p.cost != null) ? round2(p.cost * unitFactor) : null;
+  const cost = (size && size.cost != null) ? round2(size.cost) : (p && p.cost != null) ? round2(p.cost * unitFactor) : null;
   const listPrice = round2(cartLineBase(c));
   const disc = lineDiscAmount(c);
   const it = {
@@ -11035,7 +11205,7 @@ function openProductForm(productId){
       <input id="pfPrice" type="number" min="0" step="0.5" placeholder="0.00" value="${editing ? editing.price : ''}" oninput="updateProductFormWarnings()">
       <div class="field-hint" style="color:var(--ink-soft);">${escapeHtml(priceTaxHint())}</div>
     </div>
-    <div class="field" id="pfCostField">
+    <div class="field" id="pfCostField" style="display:${sizesOn ? 'none' : 'block'};">
       <label id="pfCostLabel">${priceFieldLabel('produccion', sizesOn, sizeUnit)}</label>
       <input id="pfCost" type="number" min="0" step="0.5" placeholder="0.00" value="${editing && editing.cost != null ? editing.cost : ''}" oninput="updateProductFormWarnings()">
     </div>
@@ -11120,8 +11290,11 @@ function openProductForm(productId){
       </div>
       <div class="field">
         <label id="pfSizesLabel">Tamaños y precios (en ${su.many})</label>
+        <div class="size-head ${typeof can === 'function' && !can('verGanancias') ? 'no-cost' : ''}"><span>Tamaño</span>${typeof can === 'function' && !can('verGanancias') ? '' : '<span>Precio costo</span>'}<span>Precio total</span><i></i></div>
         <div id="pfSizeRows">
-          ${(sizesOn && editing && editing.sizes && editing.sizes.length ? editing.sizes : [{}]).map((s, i) => sizeRowHTML(s, sizeUnit, i)).join('')}
+          ${(sizesOn && editing && editing.sizes && editing.sizes.length
+              ? editing.sizes.map(s => Object.assign({}, s, { cost: s.cost != null ? s.cost : (editing.cost != null ? round2(editing.cost * (s.unitQty || 1)) : null) }))
+              : [{}]).map((s, i) => sizeRowHTML(s, sizeUnit, i)).join('')}
         </div>
         <button type="button" class="btn ghost block" style="margin-top:2px;" onclick="addSizeRow()">${icon('plus')} Agregar tamaño</button>
       </div>
@@ -11210,6 +11383,10 @@ function toggleSizeFields(on){
   if(box) box.style.display = on ? 'block' : 'none';
   const priceField = document.getElementById('pfPriceField');
   if(priceField) priceField.style.display = on ? 'none' : 'block';
+  const costField = document.getElementById('pfCostField');
+  if(costField) costField.style.display = (on || (typeof can === 'function' && !can('verGanancias'))) ? 'none' : 'block';
+  const consHint = document.getElementById('pfConsistencyHint');
+  if(consHint && on){ consHint.style.display = 'none'; consHint.innerHTML = ''; }
   const wholeBox = document.getElementById('pfWholeBox');
   if(wholeBox) wholeBox.style.display = on ? 'none' : 'block';
   /* Si arriba ya eligió "Kilo" (o gramo) como unidad de venta, los
@@ -11304,7 +11481,8 @@ function sizeRowHTML(s, unit, idx){
   return `
     <div class="size-row" data-id="${s.id || ''}">
       <input type="text" class="pf-size-label" placeholder="${sizePlaceholder(u, i)}" value="${s.label ? escapeHtml(s.label) : ''}" oninput="updateProductFormWarnings()">
-      <input type="number" class="pf-size-price" inputmode="decimal" min="0" step="0.5" placeholder="Precio" value="${s.price != null && s.price !== '' ? s.price : ''}" oninput="updateProductFormWarnings()">
+      ${typeof can === 'function' && !can('verGanancias') ? '' : `<input type="number" class="pf-size-cost" inputmode="decimal" min="0" step="0.5" placeholder="Ej. $${[12, 22, 40, 60][Math.min(i, 3)]}" value="${s.cost != null && s.cost !== '' ? s.cost : ''}" oninput="updateProductFormWarnings()">`}
+      <input type="number" class="pf-size-price" inputmode="decimal" min="0" step="0.5" placeholder="Ej. $${[25, 45, 80, 120][Math.min(i, 3)]}" value="${s.price != null && s.price !== '' ? s.price : ''}" oninput="updateProductFormWarnings()">
       <button type="button" class="icon-btn" onclick="removeSizeRow(this)">${icon('trash')}</button>
     </div>`;
 }
@@ -11322,8 +11500,10 @@ function removeSizeRow(btn){
   } else {
     const lbl = row.querySelector('.pf-size-label');
     const pr = row.querySelector('.pf-size-price');
+    const co = row.querySelector('.pf-size-cost');
     if(lbl) lbl.value = '';
     if(pr) pr.value = '';
+    if(co) co.value = '';
   }
   updateProductFormWarnings();
 }
@@ -11406,9 +11586,11 @@ function saveProductForm(productId){
     if(isNaN(price) || price < 0){ markError('pfPriceField', 'Ingresa un precio de venta válido', 'pfPrice'); }
   }
 
-  const costRaw = document.getElementById('pfCost').value.trim();
-  const cost = costRaw === '' ? null : parseFloat(costRaw);
+  const costRaw = sizesOn ? '' : document.getElementById('pfCost').value.trim();
+  let cost = costRaw === '' ? null : parseFloat(costRaw);
   if(cost !== null && (isNaN(cost) || cost < 0)){ markError('pfCostField', 'Ingresa un precio de producción válido', 'pfCost'); }
+  /* Con tamaños, el costo va en cada tamaño (lo que ya tenía se conserva si no se ve la columna) */
+  const sizesAntes = (productId && (DB.getProducts().find(x => x.id === productId) || {}).sizes) || [];
 
   // Existencias (opcional)
   const stockOn = document.getElementById('pfStockOn').checked;
@@ -11445,7 +11627,16 @@ function saveProductForm(productId){
       // partir de su nombre (medio litro = 0.5, 2 litros = 2...). Con esto
       // la ganancia se calcula por litro/kilo real y no con el precio de
       // producción completo sin importar el tamaño vendido.
-      sizes.push({ id: row.dataset.id || ('sz' + Date.now() + Math.floor(Math.random()*1000)), label, price: round2(sPrice), unitQty: parseSizeQty(label) });
+      const costEl = row.querySelector('.pf-size-cost');
+      const cRaw = costEl ? costEl.value.trim() : null;
+      let sCost = null;
+      if(cRaw === null){ const old = sizesAntes.find(z => z.id === row.dataset.id); sCost = old && old.cost != null ? old.cost : null; }
+      else if(cRaw !== ''){
+        sCost = parseFloat(cRaw);
+        if(isNaN(sCost) || sCost < 0){ sizeError = true; row.classList.add('has-error'); if(!firstErrorEl) firstErrorEl = costEl; return; }
+        sCost = round2(sCost);
+      }
+      sizes.push({ id: row.dataset.id || ('sz' + Date.now() + Math.floor(Math.random()*1000)), label, price: round2(sPrice), cost: sCost, unitQty: parseSizeQty(label) });
     });
     if(sizeError){
       toast('Cada tamaño necesita un nombre y un precio válido', { variant:'toast-danger', icon:icon('close') });
@@ -11453,7 +11644,7 @@ function saveProductForm(productId){
     } else if(sizes.length === 0){
       toast('Agrega al menos un tamaño con su precio', { variant:'toast-danger', icon:icon('close') });
       ok = false;
-    } else if(cost !== null && !isNaN(cost) && sizes.some(s => s.price < round2(cost * s.unitQty))){
+    } else if(sizes.some(s => s.cost != null && s.price < s.cost)){
       // No deja agregar/guardar el producto si algún tamaño (litro/kilo, etc.)
       // se vende por debajo de lo que cuesta producirlo.
       toast('Un tamaño se vende por debajo de lo que cuesta producirlo', { variant:'toast-danger', icon:icon('alert'), subtitle:'Sube el precio de ese tamaño o revisa el precio de producción', duration:3600 });
@@ -11462,6 +11653,9 @@ function saveProductForm(productId){
       // El precio "principal" del producto ya no lo define el usuario aquí;
       // se usa el más bajo de los tamaños solo como referencia interna.
       price = round2(Math.min.apply(null, sizes.map(s => s.price)));
+      /* Costo por litro/kilo/metro (para el valor del inventario): promedio de los tamaños con costo */
+      const conCosto = sizes.filter(s => s.cost != null && s.unitQty > 0);
+      cost = conCosto.length ? round2(conCosto.reduce((a, s) => a + s.cost / s.unitQty, 0) / conCosto.length) : null;
     }
   }
 
