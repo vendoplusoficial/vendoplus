@@ -4569,6 +4569,9 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 body, button, input, select, textarea{ font-family:var(--sans); }
 
 /* ===== Agregar impresora rápido ===== */
+/* Cajas de búsqueda: el texto nunca se sale de su caja */
+.search-box input, .sale-search input{ min-width:0; text-overflow:ellipsis; white-space:nowrap; overflow:hidden; }
+.search-box input::placeholder, .sale-search input::placeholder{ text-overflow:ellipsis; white-space:nowrap; overflow:hidden; }
 .qp-list{ display:flex; flex-direction:column; gap:10px; margin:4px 0 6px; }
 .qp-opt{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:#fff; border:1.5px solid var(--vp-line,#E6EAF3); border-radius:18px; padding:14px; font:inherit; color:var(--vp-navy,#16213E); cursor:pointer; }
 .qp-opt:active{ background:#F5F7FB; }
@@ -4588,6 +4591,18 @@ body, button, input, select, textarea{ font-family:var(--sans); }
 .qp-wait b{ font-size:19px; font-weight:800; color:var(--vp-navy,#16213E); }
 .qp-wait small{ font-size:14px; font-weight:600; color:var(--ink-soft,#6B7592); max-width:320px; }
 @keyframes qpPulse{ from{ transform:scale(.94); opacity:.75; } to{ transform:scale(1.04); opacity:1; } }
+
+/* ===== Menú Digital: "Pedido aceptado" a pantalla completa ===== */
+.modal-sheet:has(.mdn-full){ display:flex; flex-direction:column; }
+.mdn-done.mdn-full{ flex:1; display:flex; flex-direction:column; min-height:0; padding:0; text-align:center; }
+.mdn-full-main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 6px; }
+.mdn-full .mdn-done-ico{ width:92px; height:92px; margin-bottom:8px; }
+.mdn-full .mdn-done-ico svg{ width:46px; height:46px; }
+.mdn-full h2{ font-size:28px; font-weight:800; letter-spacing:-.6px; margin:6px 0 8px; color:var(--vp-navy,#16213E); }
+.mdn-full p{ font-size:16px; max-width:330px; margin:0 auto; }
+.mdn-full-actions{ display:flex; flex-direction:column; gap:10px; padding-top:12px; }
+.mdn-full-actions .btn{ height:54px; font-size:16px; border-radius:999px; }
+@media (min-width:700px){ .modal-sheet:has(.mdn-full){ min-height:min(560px, 86vh); } }
 </style>
 </head>
 <body>
@@ -6175,7 +6190,7 @@ function renderSale(){
       <div class="search-box sale-search">
         ${icon('search')}
         <input id="saleSearch" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false"
-               placeholder="Buscar producto o escanear código" value="${escapeHtml(saleSearch)}"
+               placeholder="Buscar o escanear" value="${escapeHtml(saleSearch)}"
                oninput="onSaleSearch(this.value)" onkeydown="onSaleSearchKey(event)">
         ${q ? `<button class="search-clear" onclick="clearSaleSearch()" aria-label="Borrar búsqueda">${icon('close')}</button>` : ''}
       </div>
@@ -16395,13 +16410,19 @@ function mdiAfterDecision(id){
   const ok = o.status === 'confirmado';
   const nombre = (((o.customer && o.customer.name) || '').trim().split(/\s+/)[0]) || 'el cliente';
   mdiUI = { id:null, compare:false, text:'', result:null };
+  /* Pantalla completa: el mensaje al centro y los botones hasta abajo */
   openModal(`
-    <div class="mdn-done">
-      <span class="mdn-done-ico ${ok ? 'ok' : 'no'}">${icon(ok ? 'check' : 'close')}</span>
-      <h2>${ok ? 'Pedido aceptado' : 'Pedido rechazado'}</h2>
-      <p>${ok ? 'Ahora lo verás en <b>Por cobrar</b>. Avísale a ' + escapeHtml(nombre) + ' que ya lo estás preparando.' : 'Avísale a ' + escapeHtml(nombre) + ' para que sepa que no se pudo surtir.'}</p>
-      <button class="btn whatsapp block" onclick="mdiNotify('${id}')">${icon('whatsapp')} Avisar a ${escapeHtml(nombre)} por WhatsApp</button>
-      <button class="btn ghost block" style="margin-top:8px;" onclick="mdiDoneClose()">Listo</button>
+    <i class="fs-marker" hidden></i>
+    <div class="mdn-done mdn-full">
+      <div class="mdn-full-main">
+        <span class="mdn-done-ico ${ok ? 'ok' : 'no'}">${icon(ok ? 'check' : 'close')}</span>
+        <h2>${ok ? 'Pedido aceptado' : 'Pedido rechazado'}</h2>
+        <p>${ok ? 'Ahora lo verás en <b>Por cobrar</b>. Avísale a ' + escapeHtml(nombre) + ' que ya lo estás preparando.' : 'Avísale a ' + escapeHtml(nombre) + ' para que sepa que no se pudo surtir.'}</p>
+      </div>
+      <div class="mdn-full-actions">
+        <button class="btn whatsapp block" onclick="mdiNotify('${id}')">${icon('whatsapp')} Avisar a ${escapeHtml(nombre)} por WhatsApp</button>
+        <button class="btn ghost block" onclick="mdiDoneClose()">Listo</button>
+      </div>
     </div>
   `, { dismissible:true });
   mdiPaintBadge();
@@ -16682,6 +16703,7 @@ function mdiDetailHTML(o){
   const quitados = mod ? (o.original || []).filter(x => !(o.lines || []).some(l => (l.productId || mdiNorm(l.name)) === (x.productId || mdiNorm(x.name)) && (l.sizeId || '') === (x.sizeId || ''))) : [];
 
   return `
+    ${st.id === 'pendiente' ? '<i class="fs-marker" hidden></i>' : ''}
     <div class="sheet-header">
       <div class="sheet-header-left" style="min-width:0;">
         <h2>Pedido ${escapeHtml(o.code)}</h2>
@@ -17839,7 +17861,7 @@ renderHistoryShell = function(){
   }else if(historyFilters.origin !== 'all'){
     html = html.replace(/<span class="filters-trigger-badge">(\d+)<\/span>/, (m, n) => `<span class="filters-trigger-badge">${Number(n) + 1}</span>`);
   }
-  return html.replace('placeholder="Buscar por pedido o producto"', 'placeholder="Buscar por pedido, producto, folio MD o cliente"');
+  return html.replace('placeholder="Buscar por pedido o producto"', 'placeholder="Buscar pedido, cliente o folio MD"');
 };
 
 /* Etiqueta del origen en el ticket y en el detalle */
