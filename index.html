@@ -4649,6 +4649,9 @@ body[data-section="menu"] #view{ padding-bottom:calc(170px + env(safe-area-inset
 .mdi-dfoot{ margin-top:auto; padding-top:8px; }
 /* Usuario eliminado: bote de basura rojo */
 .mdx-done-ico.ud-del{ background:#FDECEC; color:#E5484D; }
+
+/* Etiqueta "Por cobrar" en verde (la de "Nuevo" sigue amarilla) */
+.mdi-pill.pend{ background:#DDF6E6 !important; color:#0E7A3D !important; }
 </style>
 </head>
 <body>
@@ -16536,7 +16539,7 @@ function mdiAfterDecision(id){
       </div>
       <div class="mdn-full-actions">
         <button class="btn whatsapp block" onclick="mdiNotify('${id}')">${icon('whatsapp')} Avisar a ${escapeHtml(nombre)} por WhatsApp</button>
-        ${ok ? `<button class="btn primary block" onclick="mdiChargeFromDone('${id}')">${icon('cash')} Cobrar pedido</button>`
+        ${ok ? `<button class="btn ghost block" onclick="mdiChargeFromDone('${id}')">${icon('cash')} Cobrar pedido</button>`
              : `<button class="btn ghost block" onclick="mdiDoneClose()">Listo</button>`}
       </div>
     </div>
@@ -22647,9 +22650,40 @@ function mdiBackgroundAlert(nuevos){
     }
   }catch(e){}
 }
+/* Voz: "Pedido entrante".
+   App de Android: la voz del teléfono (si la app está en segundo plano, la dice el aviso).
+   Página web: la voz del navegador. */
+function mdiSpeak(text){
+  text = text || 'Pedido entrante';
+  const now = Date.now();
+  if(now - (mdiSpeak._t || 0) < 2500) return;
+  mdiSpeak._t = now;
+  const web = () => {
+    try{
+      const ss = window.speechSynthesis; if(!ss || typeof SpeechSynthesisUtterance === 'undefined') return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'es-MX'; u.rate = 0.95; u.volume = 1;
+      const vs = ss.getVoices() || [];
+      const v = vs.find(x => /^es[-_]MX/i.test(x.lang)) || vs.find(x => /^es[-_](US|419)/i.test(x.lang)) || vs.find(x => /^es/i.test(x.lang));
+      if(v) u.voice = v;
+      ss.cancel(); ss.speak(u);
+    }catch(e){}
+  };
+  const VA = window.VendoApp;
+  if(VA && VA.native && typeof VA.call === 'function'){
+    /* En segundo plano y con avisos permitidos, la voz la dice el aviso del sistema */
+    let avisos = false; try{ avisos = typeof Notification !== 'undefined' && Notification.permission === 'granted'; }catch(e){}
+    if(document.hidden && avisos) return;
+    VA.call('tts.speak', { text:text }).catch(web);
+    return;
+  }
+  web();
+}
+try{ if(window.speechSynthesis) speechSynthesis.getVoices(); }catch(e){}
 function mdiAnnounce(nuevos){
   mdiPaintBadge();
   if(!nuevos || !nuevos.length) return;
+  mdiSpeak('Pedido entrante');
   mdiBackgroundAlert(nuevos);
   const o = nuevos[nuevos.length - 1];
   vibrate([30, 60, 30]);
