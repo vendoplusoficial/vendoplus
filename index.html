@@ -4652,6 +4652,34 @@ body[data-section="menu"] #view{ padding-bottom:calc(170px + env(safe-area-inset
 
 /* Etiqueta "Por cobrar" en verde (la de "Nuevo" sigue amarilla) */
 .mdi-pill.pend{ background:#DDF6E6 !important; color:#0E7A3D !important; }
+
+/* Pedidos: nuevos con rayita amarilla, por cobrar con rayita gris; "N nuevos" amarillo */
+.mdi-card.st-nuevo{ border-left-color:var(--accent-strong,#F5BF3C) !important; }
+.mdi-card.st-pend{ border-left-color:#C9CFDB !important; }
+.mdi-count{ background:var(--accent-strong,#F5BF3C) !important; color:#4A3300 !important; }
+
+/* ===== Todo fluido: pantallas completas, menú Más y hojas ===== */
+@keyframes vpFsIn{ from{ opacity:0; transform:translate3d(0, 34px, 0); } to{ opacity:1; transform:translate3d(0, 0, 0); } }
+@keyframes vpFsOut{ from{ opacity:1; transform:translate3d(0, 0, 0); } to{ opacity:0; transform:translate3d(0, 18px, 0); } }
+@keyframes vpSheetIn{ from{ transform:translate3d(0, 100%, 0); } to{ transform:translate3d(0, 0, 0); } }
+@keyframes vpSheetOut{ from{ transform:translate3d(0, 0, 0); } to{ transform:translate3d(0, 100%, 0); } }
+@media (max-width:699px){
+  /* Pantallas completas (Pedidos de hoy, pedido, cerrar caja, corte…): suben desde abajo */
+  .modal-overlay:has(.fs-marker):not(.is-swap):not(.is-closing){ animation:fadeIn .28s ease both; }
+  .modal-overlay:has(.fs-marker):not(.is-swap):not(.is-closing) .modal-sheet{ animation:vpFsIn .5s cubic-bezier(.22, 1, .36, 1) both; }
+  .modal-overlay.is-closing:has(.fs-marker){ animation:fadeOut .24s ease both; }
+  .modal-overlay.is-closing:has(.fs-marker) .modal-sheet{ animation:vpFsOut .24s ease-in both; }
+  /* Hojas que suben desde abajo: un poco más lentas y suaves */
+  .modal-sheet, .dm-sheet{ animation-name:vpSheetIn; animation-duration:.46s; }
+  .modal-overlay.is-closing .modal-sheet, .dm-overlay.is-closing .dm-sheet{ animation:vpSheetOut .26s cubic-bezier(.4, 0, 1, 1) both; }
+}
+.modal-sheet, .dm-sheet, .vp-sheet{ will-change:transform; backface-visibility:hidden; }
+/* Menú Más (3 rayitas) */
+.vp-sheet-bg.show{ animation:fadeIn .26s ease both; }
+.vp-sheet-bg.show .vp-sheet{ animation:vpSheetIn .44s cubic-bezier(.32, .72, 0, 1) both; }
+.vp-sheet-bg.show.hiding{ animation:fadeOut .24s ease both; }
+.vp-sheet-bg.show.hiding .vp-sheet{ animation:vpSheetOut .24s cubic-bezier(.4, 0, 1, 1) both; }
+@media (prefers-reduced-motion: reduce){ .vp-sheet-bg.show, .vp-sheet-bg.show .vp-sheet, .modal-overlay:has(.fs-marker), .modal-overlay:has(.fs-marker) .modal-sheet{ animation:none !important; } }
 </style>
 </head>
 <body>
@@ -8896,7 +8924,7 @@ async function escposTicketBytes(sale){
   raw([0x1B, 0x40]);                                   /* reiniciar */
   if(cfg.noChino) raw([0x1C, 0x2E]);                   /* apagar modo chino (FS .) */
   raw([0x1B, 0x74, cs === 'cp850' ? 0x02 : 0x00]);     /* tabla de caracteres */
-  raw([0x1B, 0x52, 0x0C]);                             /* juego: Latinoamerica */
+  raw([0x1B, 0x52, 0x00]);                             /* juego: EUA (el $ sale como $; los acentos los da la tabla de arriba) */
   raw([0x1B, 0x4D, escposSmall(p) ? 0x01 : 0x00]);     /* letra chica (Font B) o normal (Font A) */
 
   /* ----- Encabezado ----- */
@@ -16552,7 +16580,10 @@ function mdiChargeFromDone(id){
   if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
   mdiOpen(id);
 }
-function mdiDoneClose(){ closeModal(); if(currentView === 'menu' || currentView === 'home') render(); }
+function mdiDoneClose(){
+  if(mdiFromToday){ mdiFromToday = false; mdiBackToToday(); return; }
+  closeModal(); if(currentView === 'menu' || currentView === 'home') render();
+}
 
 function mdiItemsText(o){
   const ls = o.lines || [];
@@ -16596,7 +16627,7 @@ function mdiSectionHTML(){
   return `
     <div class="section-title mdi-title" id="mdiSection">Pedidos entrantes ${nuevos ? `<span class="mdi-count">${nuevos} nuevo${nuevos === 1 ? '' : 's'}</span>` : ''}</div>
     ${typeof mdiCloudStatusHTML === 'function' ? mdiCloudStatusHTML() : ''}
-    ${activos.length ? `<div class="mdi-list">${activos.map(mdiCardSimpleHTML).join('')}</div>` : `
+    ${activos.length ? `<div class="mdi-list">${activos.map(o => mdiCardSimpleHTML(o, false)).join('')}</div>` : `
       <div class="mdi-empty">
         <span class="mdi-empty-ico">${icon('inbox')}</span>
         <b>Sin pedidos por ahora</b>
@@ -16605,15 +16636,30 @@ function mdiSectionHTML(){
     <button type="button" class="mdi-todos-btn vp-fixed" onclick="mdiOpenToday()">Todos <span>${deHoy.length}</span></button>
   `;
 }
+/* Si el pedido se abrió desde "Pedidos de hoy", al cerrarlo se regresa ahí */
+let mdiFromToday = false, mdiTodayY = 0;
+function mdiOpenFromToday(id){
+  const sh = document.querySelector('#modal-layer .modal-sheet');
+  mdiTodayY = sh ? sh.scrollTop : 0;
+  mdiFromToday = true;
+  mdiOpen(id);
+}
+/* Al cambiar de sección se olvida */
+(function(){ const _g = goTo; goTo = function(){ mdiFromToday = false; return _g.apply(this, arguments); }; })();
+function mdiBackToToday(){
+  mdiUI = { id:null, compare:false, text:'', result:null };
+  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
+  mdiOpenToday(true);
+}
 /* Tarjeta de un pedido (la misma en la lista y en "Todos") */
-function mdiCardSimpleHTML(o){
+function mdiCardSimpleHTML(o, enHoy){
   const st = mdiStage(o);
   const cu = o.customer || {};
   const cls = { nuevo:'st-nuevo', pendiente:'st-pend', finalizado:'st-ok', rechazado:'st-no', cancelado:'st-cancel' }[st.id] || '';
   const pill = st.id === 'nuevo' ? 'Nuevo' : st.label;
   const n = (o.lines || []).length;
   return `
-      <button type="button" class="mdi-card ${cls}" onclick="mdiOpen('${o.id}')">
+      <button type="button" class="mdi-card ${cls}" onclick="${enHoy === true ? `mdiOpenFromToday('${o.id}')` : `mdiFromToday=false; mdiOpen('${o.id}')`}">
         <div class="mdi-card-top">
           <span class="mdi-code">${escapeHtml(o.code)}</span>
           <span class="mdi-pill ${st.cls}">${pill}</span>
@@ -16626,8 +16672,9 @@ function mdiCardSimpleHTML(o){
       </button>`;
 }
 /* "Todos": los pedidos de HOY (cobrados, por cobrar, nuevos, rechazados y cancelados) */
-function mdiOpenToday(){
-  vibrate(8);
+function mdiOpenToday(volviendo){
+  if(volviendo !== true){ vibrate(8); mdiTodayY = 0; }
+  mdiFromToday = false;
   const hoy = MDI.all().filter(o => isSameDay(new Date(o.receivedAt || o.createdAt), new Date()))
     .sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
   const cobrados = hoy.filter(o => mdiIsPaid(o));
@@ -16636,11 +16683,11 @@ function mdiOpenToday(){
     <i class="fs-marker" hidden></i>
     <div class="sheet-header">
       <h2>Pedidos de hoy</h2>
-      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
+      <button class="sheet-close" onclick="mdiFromToday=false; closeModal()" aria-label="Cerrar">${icon('close')}</button>
     </div>
     ${hoy.length ? `
       <p class="mdi-today-sum">${hoy.length} pedido${hoy.length === 1 ? '' : 's'} · ${cobrados.length} cobrado${cobrados.length === 1 ? '' : 's'} · <b>${formatMoney(vendido)}</b></p>
-      <div class="mdi-list">${hoy.map(mdiCardSimpleHTML).join('')}</div>` : `
+      <div class="mdi-list">${hoy.map(o => mdiCardSimpleHTML(o, true)).join('')}</div>` : `
       <div class="mdi-empty">
         <span class="mdi-empty-ico">${icon('inbox')}</span>
         <b>Hoy todavía no hay pedidos</b>
@@ -16648,6 +16695,7 @@ function mdiOpenToday(){
       </div>`}
     <button class="btn ghost block" style="margin-top:16px;" onclick="closeModal(); statsOrigin='menu'; statsSel=null; goTo('stats');">${icon('chart')} Estadísticas del menú</button>
   `, { dismissible:true });
+  if(volviendo === true && mdiTodayY){ const sh = document.querySelector('#modal-layer .modal-sheet'); if(sh) sh.scrollTop = mdiTodayY; }
 }
 
 /* =========================================================
@@ -16810,6 +16858,7 @@ function mdiDetailHTML(o){
     <div class="mdi-dwrap"><div class="mdi-dmain">
     <div class="sheet-header">
       <div class="sheet-header-left" style="min-width:0;">
+        ${mdiFromToday ? `<button class="sheet-back" onclick="mdiClose()" aria-label="Pedidos de hoy">${icon('chevronLeft')}</button>` : ''}
         <h2>Pedido ${escapeHtml(o.code)}</h2>
         <span class="mdi-pill ${st.cls}">${st.label}</span>
       </div>
@@ -16873,7 +16922,10 @@ function mdiDetailHTML(o){
     </div></div>
   `;
 }
-function mdiClose(){ mdiUI = { id:null, compare:false, text:'', result:null }; closeModal(); if(currentView === 'menu' || currentView === 'home') render(); }
+function mdiClose(){
+  if(mdiFromToday){ mdiFromToday = false; mdiBackToToday(); return; }
+  mdiUI = { id:null, compare:false, text:'', result:null }; closeModal(); if(currentView === 'menu' || currentView === 'home') render();
+}
 
 /* ---------- Editar productos del pedido ---------- */
 function mdiSet(id, key, val){ MDI.update(id, o => { if(o.status === 'nuevo') o[key] = val; }); vibrate(8); mdiOpen(id, true); }
@@ -17074,6 +17126,7 @@ function mdiCharge(id){
   const envio = mdiDeliveryFee(o);
   if(envio > 0){ const fid = '_libre_' + uid(''); customItems[fid] = { name:'Envío a domicilio', price:envio }; cart.push({ productId:fid, qty:1 }); }
   mdiUI = { id:null, compare:false, text:'', result:null };
+  mdiFromToday = false;
   shieldClicks();
   closeModal();
   goTo('sale');
@@ -18718,7 +18771,7 @@ function linesDocBytes(rows){
   const out = [];
   const raw = a => { for(let i = 0; i < a.length; i++) out.push(a[i]); };
   const ln = s => { raw(escEncode(s == null ? '' : s, cs)); out.push(0x0A); };
-  raw([0x1B, 0x40]); if(cfg.noChino) raw([0x1C, 0x2E]); raw([0x1B, 0x74, cs === 'cp850' ? 0x02 : 0x00]); raw([0x1B, 0x52, 0x0C]);
+  raw([0x1B, 0x40]); if(cfg.noChino) raw([0x1C, 0x2E]); raw([0x1B, 0x74, cs === 'cp850' ? 0x02 : 0x00]); raw([0x1B, 0x52, 0x00]);
   raw([0x1B, 0x61, 0x01]); raw([0x1B, 0x45, 1]); escWrap(stripEmoji(biz.title), cols).forEach(ln); raw([0x1B, 0x45, 0]);
   raw([0x1B, 0x61, 0x00]);
   rows.forEach(r => {
@@ -19251,7 +19304,7 @@ function openCashCut(kind){
       <button class="btn dark block" onclick="saveCashClose()">${icon('check')} Cerrar caja</button>
     </div>
   `, { dismissible:true });
-  setTimeout(() => { const e = document.getElementById('ccCounted'); if(e) e.focus(); }, 80);
+  setTimeout(() => { const e = document.getElementById('ccCounted'); if(e) e.focus(); }, 560);
 }
 function denomSum(expected){
   let t = 0;
@@ -24063,12 +24116,18 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
       bg.innerHTML='<div class="vp-sheet">'+MORE.map(function(i){return '<button data-go="'+i[0]+'">'+icon(i[1])+'<span>'+i[2]+'</span></button>';}).join('')+'</div>';
       bg.addEventListener('click',function(e){
         var t=e.target.closest('[data-go]');
-        if(t){ bg.classList.remove('show'); if(t.dataset.go==='feedback'){ if(typeof openFeedback==='function') openFeedback(); } else goTo(t.dataset.go); }
-        else if(e.target===bg) bg.classList.remove('show');
+        if(t){ hideMore(bg); if(t.dataset.go==='feedback'){ if(typeof openFeedback==='function') openFeedback(); } else goTo(t.dataset.go); }
+        else if(e.target===bg) hideMore(bg);
       });
       document.body.appendChild(bg);
     }
+    bg.classList.remove('hiding');
     bg.classList.add('show');
+  }
+  function hideMore(bg){
+    if(!bg.classList.contains('show')) return;
+    bg.classList.add('hiding');
+    setTimeout(function(){ bg.classList.remove('show','hiding'); }, 240);
   }
   function markMore(){
     var m=q('.vp-more'); if(!m) return;
