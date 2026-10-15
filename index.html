@@ -7490,7 +7490,6 @@ const DEFAULT_PRINT = {
   copies:   1,
   feedMm:   10,
   logo:     true,
-  escFont:  'chica',
   footer:   '\u00a1Gracias por su visita!'
 };
 
@@ -8895,7 +8894,7 @@ function escposRaster(dataUrl, dots){
 }
 
 /** Arma el ticket en ESC/POS con el MISMO contenido de ticketPrintHTML(). */
-function escposSmall(p){ return ((p || printPrefs()).escFont || 'chica') === 'chica'; }
+function escposSmall(p){ return false; }   /* la letra chica (Font B) cambiaba el $ por ¥ en algunas impresoras */
 /** Con letra chica (Font B) caben más letras por renglón. */
 function escposColumnsFor(p){
   p = p || printPrefs();
@@ -8929,7 +8928,7 @@ async function escposTicketBytes(sale){
   raw([0x1C, 0x2E]);                                   /* apagar modo chino (FS .): en ese modo el $ sale como ¥ */
   raw([0x1B, 0x74, cs === 'cp850' ? 0x02 : 0x00]);     /* tabla de caracteres */
   raw([0x1B, 0x52, 0x00]);                             /* juego: EUA (el $ sale como $; los acentos los da la tabla de arriba) */
-  raw([0x1B, 0x4D, escposSmall(p) ? 0x01 : 0x00]);     /* letra chica (Font B) o normal (Font A) */
+  raw([0x1B, 0x4D, 0x00]);                             /* letra normal (Font A) */
 
   /* ----- Encabezado ----- */
   cen();
@@ -13086,15 +13085,6 @@ function printSettingsHTML(){
       <label>Tama\u00f1o de la letra <b id="lblPrintSize">${p.fontSize} px</b></label>
       <input type="range" min="9" max="18" step="1" value="${p.fontSize}"
              oninput="setPrintPref('fontSize', Number(this.value))">
-    </div>
-
-    <div class="field">
-      <label>Letra en la impresora t\u00e9rmica</label>
-      <div class="seg" style="max-width:none; margin-bottom:0;">
-        ${segBtn('escFont', 'chica', 'Chica \u00b7 m\u00e1s profesional')}
-        ${segBtn('escFont', 'normal', 'Normal')}
-      </div>
-      <div class="field-hint">Si tu impresora imprime letras raras con \u00abChica\u00bb, elige \u00abNormal\u00bb.</div>
     </div>
 
     <div class="toggle-row">
