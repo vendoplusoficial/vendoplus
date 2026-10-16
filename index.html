@@ -4714,6 +4714,74 @@ body[data-section="menu"] #view{ padding-bottom:calc(170px + env(safe-area-inset
 .size-row .pf-size-cost{ flex:1; min-width:0; border:1.5px solid var(--border); border-radius:12px; padding:12px 12px; font-size:14.5px; background:var(--surface); color:var(--ink); font-weight:600; }
 .size-row .pf-size-cost:focus{ border-color:var(--accent-strong); outline:none; }
 .size-row.has-error .pf-size-cost{ border-color:var(--accent-2); background:var(--danger-bg); }
+
+/* ===== Menú Digital · Clásico nuevo: CATÁLOGO ===== */
+body.dm-cat{ background:#fff; }
+body.dm-cat .dm{ background:#fff; box-shadow:none; }
+.cg-top{ position:sticky; top:0; z-index:20; background:rgba(255,255,255,.96); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); padding:calc(12px + env(safe-area-inset-top, 0px)) 0 10px; }
+.cg-toprow{ display:flex; align-items:center; gap:10px; padding:0 16px; }
+.cg-rail{ flex:1; min-width:0; display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding:2px 2px 4px; scroll-padding:0 16px; }
+.cg-rail::-webkit-scrollbar{ display:none; }
+.cg-chip{ flex:none; height:46px; padding:0 22px; border-radius:999px; border:1.5px solid #E8E9EF; background:#fff; color:#141726;
+  font-family:'Barlow Condensed','Arial Narrow',var(--sans),sans-serif; font-weight:700; font-size:18px; letter-spacing:.3px; text-transform:uppercase; cursor:pointer; transition:background .2s, border-color .2s; }
+.cg-chip.active{ background:var(--dm-soft,#FCE9D7); border-color:transparent; }
+.cg-srch-btn{ flex:none; width:50px; height:50px; border-radius:50%; border:0; background:#fff; color:#141726; box-shadow:0 4px 16px rgba(20,23,38,.12); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.cg-srch-btn svg{ width:21px; height:21px; }
+.cg-srch-btn.on{ background:var(--dm-soft,#FCE9D7); box-shadow:none; }
+.cg-srch{ display:flex; align-items:center; gap:10px; margin:12px 16px 0; padding:0 8px 0 16px; height:48px; border-radius:999px; background:#F4F5F8; color:#6B7080; }
+.cg-srch[hidden]{ display:none; }
+.cg-srch svg{ width:18px; height:18px; flex:none; }
+.cg-srch input{ flex:1; min-width:0; border:0; background:none; font:inherit; font-size:16px; font-weight:600; color:#141726; outline:none; }
+.cg-srch-x{ width:36px; height:36px; border-radius:50%; border:0; background:#fff; color:#6B7080; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.cg-srch-x svg{ width:15px; height:15px; }
+.cg-view{ padding:0 0 calc(120px + env(safe-area-inset-bottom, 0px)) !important; max-width:none !important; overflow:hidden; }
+.cg-hero{ position:relative; text-align:center; padding:8px 16px 18px; }
+.cg-blob{ position:absolute; top:34px; width:150px; height:150px; border-radius:50%; background:var(--dm-soft,#FCE9D7); opacity:1; z-index:0; }
+.cg-blob.l{ left:-92px; } .cg-blob.r{ right:-92px; }
+.cg-title{ position:relative; z-index:1; margin:0; font-family:'Anton','Impact','Arial Narrow Bold',sans-serif; font-weight:400; font-size:clamp(54px, 17vw, 84px); line-height:1.02; letter-spacing:.5px; text-transform:uppercase; color:#0E0F17; }
+.cg-hours{ position:relative; z-index:1; display:flex; margin:-6px auto 14px; justify-content:center; }
+.cg-banner{ margin:0 16px 16px !important; position:relative; z-index:1; }
+.dm-owner-note{ margin:12px 16px !important; }
+.cg-grid{ position:relative; z-index:1; display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:0 14px; }
+@media (min-width:700px){ .cg-grid{ grid-template-columns:repeat(3, 1fr); gap:18px; padding:0 22px; } }
+@media (min-width:1000px){ .cg-grid{ grid-template-columns:repeat(4, 1fr); } }
+.cg-card{ position:relative; display:flex; flex-direction:column; background:#fff; border-radius:24px; border:2px solid transparent; box-shadow:0 6px 22px rgba(20,23,38,.06), 0 1px 3px rgba(20,23,38,.04); overflow:hidden; transition:border-color .2s, box-shadow .2s; }
+.cg-card.in-cart{ border-color:rgba(var(--dm-rgb,232,180,140), .7); box-shadow:0 8px 24px rgba(var(--dm-rgb,232,180,140), .18); }
+.cg-card.out{ opacity:.6; }
+.cg-tap{ display:block; width:100%; background:none; border:0; padding:0; text-align:left; cursor:pointer; font:inherit; color:inherit; }
+.cg-photo{ position:relative; width:100%; aspect-ratio:1/1.02; display:flex; align-items:center; justify-content:center; background:#fff; color:#C9CDD8; overflow:hidden; }
+.cg-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
+.cg-photo > svg{ width:40px; height:40px; }
+.cg-flag{ position:absolute; top:10px; left:10px; background:#141726; color:#fff; font-size:12px; font-weight:800; padding:4px 10px; border-radius:999px; }
+.cg-name{ padding:12px 16px 0; font-family:'Barlow Condensed','Arial Narrow',var(--sans),sans-serif; font-weight:700; font-size:21px; line-height:1.08; color:#141726;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.cg-unit{ padding:4px 16px 0; font-size:12.5px; font-weight:700; color:#7A7F8E; }
+.cg-card .dm-slot{ margin-top:auto; }
+.cg-bar{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 8px; padding:8px 14px 16px; cursor:pointer; min-height:52px; }
+.cg-price{ font-family:'Barlow Condensed','Arial Narrow',var(--sans),sans-serif; font-weight:800; font-size:27px; line-height:1; color:#141726; letter-spacing:-.2px; white-space:nowrap; }
+.cg-price small{ font-size:15px; font-weight:700; color:#7A7F8E; }
+.cg-q{ display:flex; align-items:center; gap:2px; background:#fff; border:1.5px solid #E8E9EF; border-radius:999px; padding:2px; }
+.cg-q button{ width:28px; height:28px; border-radius:50%; border:0; background:#F4F5F8; color:#141726; font-size:18px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.cg-q button:disabled{ opacity:.35; }
+.cg-q span{ min-width:22px; text-align:center; font-weight:800; font-size:15px; color:#141726; }
+.cg-q + .cg-price{ font-size:20px; margin-left:auto; }
+.cg-inped{ font-size:13px; font-weight:800; color:#7A7F8E; }
+.cg-none{ position:relative; z-index:1; }
+/* Canasta blanca */
+body.dm-cat .dm-cartbar{ left:auto; right:0; transform:none; width:auto; max-width:none; padding:0 14px; }
+@media (min-width:700px){ body.dm-cat .dm-cartbar{ right:max(14px, calc((100vw - 1180px) / 2 + 14px)); } }
+.cg-cart{ display:flex; align-items:center; gap:12px; background:#fff; border:0; border-radius:999px; padding:10px 18px 10px 12px; box-shadow:0 10px 30px rgba(20,23,38,.16), 0 2px 6px rgba(20,23,38,.06); cursor:pointer; font:inherit; color:#141726; animation:cartbarPop .32s cubic-bezier(.34,1.56,.64,1); }
+.dm-cartbar.no-pop .cg-cart{ animation:none; }
+.cg-cart-pics{ display:flex; }
+.cg-cart-pics span{ width:48px; height:48px; border-radius:50%; overflow:hidden; border:2.5px solid #fff; background:#F4F5F8; box-shadow:0 2px 6px rgba(20,23,38,.12); }
+.cg-cart-pics span + span{ margin-left:-16px; }
+.cg-cart-pics img{ width:100%; height:100%; object-fit:cover; display:block; }
+.cg-cart-bag{ position:relative; display:flex; align-items:center; justify-content:center; width:38px; height:38px; }
+.cg-cart-bag svg{ width:30px; height:30px; color:#141726; }
+.cg-cart-bag i{ position:absolute; top:-8px; right:-8px; min-width:24px; height:24px; padding:0 6px; border-radius:999px; background:var(--dm-soft,#FCE9D7); color:#141726; font-style:normal; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.cg-cart-sep{ width:1.5px; height:30px; background:#E8E9EF; }
+.cg-cart-tot{ font-family:'Barlow Condensed','Arial Narrow',var(--sans),sans-serif; font-size:24px; font-weight:800; white-space:nowrap; }
+.cg-cart-chev{ display:flex; margin-left:-4px; } .cg-cart-chev svg{ width:18px; height:18px; }
 </style>
 </head>
 <body>
@@ -14945,7 +15013,7 @@ function mdColorName(hex){ const c = MD_COLORS.find(x => x.hex === (mdValidColor
 
 /* Diseños del Menú Digital (cómo lo ven los clientes) */
 const MD_DESIGNS = [
-  { id:'clasico', name:'Clásico', short:'lista por categorías', desc:'Lista por categorías con tarjetas. Ideal para ver muchos productos de un vistazo.' },
+  { id:'clasico', name:'Clásico', short:'catálogo en cuadrícula', desc:'Catálogo en cuadrícula con fotos grandes y tarjetas blancas. Ideal para ver muchos productos de un vistazo.' },
   { id:'visual',  name:'Visual',  short:'un producto por pantalla', desc:'Un producto por pantalla con foto grande; se desliza como en redes. Luce más con buenas fotos.' },
 ];
 function mdValidDesign(d){ return MD_DESIGNS.some(x => x.id === d) ? d : 'clasico'; }
@@ -23535,6 +23603,178 @@ function fdRefresh(){
   dmRenderCartbar = function(){ baseBar.apply(this, arguments); fdFab(); };
 })();
 
+
+/* =========================================================================
+   DISEÑO CLÁSICO (nuevo): "CATÁLOGO" en cuadrícula
+   Arriba las categorías (TODO · …) y el buscador, el título grande y las
+   tarjetas blancas sin marco. Al elegir un producto su tarjeta se marca con
+   un marco delgado y aparece − / +. Abajo, la canasta blanca.
+========================================================================= */
+const cg = { cat:'all' };
+function cgPriceHTML(p){
+  if(hasSizes(p)) return `<small>Desde</small> ${formatMoney(Math.min.apply(null, p.sizes.map(s => s.price)))}`;
+  const u = productUnit(p);
+  return formatMoney(p.price) + (u.plain ? '' : `<small> /${escapeHtml(u.short)}</small>`);
+}
+/* Parte de abajo de cada tarjeta (también la usa dmRefreshCards) */
+dmCardBar = function(p){
+  const q = dmQtyOf(p.id);
+  const id = escapeHtml(p.id);
+  if(q > 0 && !hasSizes(p)){
+    const full = dmStockUse(p.id) + productStep(p) > dmMaxFor(p) + 1e-9;
+    return `<div class="cg-bar">
+      <div class="cg-q">
+        <button type="button" onclick="dmStepCard('${id}',-1)" aria-label="Quitar">−</button>
+        <span>${escapeHtml(dmQtyText(p, q))}</span>
+        <button type="button" onclick="dmStepCard('${id}',1)" aria-label="Agregar" ${full ? 'disabled' : ''}>+</button>
+      </div>
+      <b class="cg-price">${formatMoney(dmAmountOf(p.id))}</b>
+    </div>`;
+  }
+  if(q > 0){
+    return `<div class="cg-bar" onclick="dmOpenProduct('${id}')"><span class="cg-inped">${fmtNum(q)} en tu pedido</span><b class="cg-price">${formatMoney(dmAmountOf(p.id))}</b></div>`;
+  }
+  return `<div class="cg-bar" onclick="dmOpenProduct('${id}')"><b class="cg-price">${cgPriceHTML(p)}</b></div>`;
+};
+function cgCardHTML(p){
+  const out = stockInfo(p).level === 'out';
+  const q = dmQtyOf(p.id);
+  const pic = p.image
+    ? `<img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('span'),{innerHTML:ICONS.plate}).firstChild)">`
+    : icon('plate');
+  return `
+    <div class="dm-card cg-card ${q > 0 ? 'in-cart' : ''} ${out ? 'out' : ''}" id="dmc-${escapeHtml(p.id)}">
+      <button type="button" class="cg-tap" onclick="dmOpenProduct('${escapeHtml(p.id)}')">
+        <div class="cg-photo">${pic}${out ? '<span class="cg-flag">Agotado</span>' : ''}</div>
+        <div class="cg-name">${escapeHtml(p.name)}</div>
+        ${unitTagText(p) ? `<div class="cg-unit">${unitTagText(p)}</div>` : ''}
+      </button>
+      <div class="dm-slot">${dmCardBar(p)}</div>
+    </div>`;
+}
+function cgVisible(d){
+  const { list } = fdProds(d);
+  const words = mdiNorm(dm.q || '').split(' ').filter(Boolean);
+  return list.filter(x =>
+    (cg.cat === 'all' || x.c.id === cg.cat) &&
+    (!words.length || (() => { const t = mdiNorm(x.p.name + ' ' + (x.p.description || '') + ' ' + x.c.name); return words.every(w => t.includes(w)); })())
+  ).map(x => x.p);
+}
+function cgFill(){
+  const grid = document.getElementById('cgGrid'); if(!grid) return;
+  const list = cgVisible(dmData());
+  grid.innerHTML = list.map(cgCardHTML).join('');
+  const none = document.getElementById('cgNone'); if(none) none.hidden = list.length > 0;
+}
+function cgSetCat(id, btn){
+  cg.cat = id;
+  const rail = document.getElementById('cgRail');
+  if(rail){
+    rail.querySelectorAll('.cg-chip').forEach(b => b.classList.toggle('active', b.dataset.cat === id));
+    if(btn) rail.scrollTo({ left:btn.offsetLeft - rail.offsetWidth / 2 + btn.offsetWidth / 2, behavior:'smooth' });
+  }
+  cgFill();
+  const hero = document.querySelector('.cg-hero');
+  if(hero && window.scrollY > hero.offsetTop) window.scrollTo({ top:0, behavior:'smooth' });
+}
+function cgToggleSearch(open){
+  const row = document.getElementById('cgSrch'), btn = document.getElementById('cgSrchBtn');
+  if(!row) return;
+  if(open == null) open = row.hidden;
+  row.hidden = !open; dm.srchOpen = open;
+  if(btn) btn.classList.toggle('on', open);
+  const inp = document.getElementById('cgSrchInput');
+  if(open){ setTimeout(() => inp && inp.focus(), 40); }
+  else if(dm.q){ dm.q = ''; if(inp) inp.value = ''; cgFill(); }
+  dmMeasure();
+}
+function cgSearchInput(v){
+  clearTimeout(cgSearchInput._t);
+  cgSearchInput._t = setTimeout(() => { dm.q = v; cgFill(); }, 150);
+}
+function cgRender(d){
+  const root = document.getElementById('dmRoot');
+  document.body.classList.add('dm-cat');
+  dmApplyColor(d.cfg.color);
+  const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.content = '#FFFFFF';
+  const nombre = (d.b.name || '').trim() || 'Nuestro menú';
+  document.title = nombre + ' · ' + ((typeof bizIsFood === 'function' && !bizIsFood()) ? 'Catálogo digital' : 'Menú Digital');
+  if(typeof fdFonts === 'function') fdFonts();
+  const { cats } = fdProds(d);
+  if(cg.cat !== 'all' && !cats.some(c => c.id === cg.cat)) cg.cat = 'all';
+  const abierto = !!(dm.srchOpen || (dm.q || '').trim());
+  const aviso = d.cfg.paused
+    ? `<div class="dm-banner cg-banner">${icon('pause')}<span><b>Por ahora no estamos recibiendo pedidos</b>Puedes ver el catálogo; vuelve a intentarlo más tarde.</span></div>`
+    : (mdClosedNow(d.cfg) ? `<div class="dm-banner cg-banner">${icon('clock')}<span><b>Estamos cerrados en este momento</b>Puedes ver el catálogo${hrsNextOpen(mdMenuHours(d.cfg)) ? '; recibimos pedidos de nuevo ' + hrsNextOpen(mdMenuHours(d.cfg)) : ''}.</span></div>` : '');
+  root.innerHTML = `
+    <header class="cg-top" id="dmTop">
+      <div class="cg-toprow">
+        <nav class="cg-rail" id="cgRail" aria-label="Categorías">
+          ${[{ id:'all', name:'Todo' }].concat(cats).map(c => `<button type="button" class="cg-chip ${c.id === cg.cat ? 'active' : ''}" data-cat="${escapeHtml(c.id)}" onclick="cgSetCat(this.dataset.cat, this)">${escapeHtml(c.name)}</button>`).join('')}
+        </nav>
+        <button type="button" class="cg-srch-btn ${abierto ? 'on' : ''}" id="cgSrchBtn" onclick="cgToggleSearch()" aria-label="Buscar producto">${icon('search')}</button>
+      </div>
+      <div class="cg-srch" id="cgSrch" ${abierto ? '' : 'hidden'}>
+        ${icon('search')}<input id="cgSrchInput" type="search" placeholder="Buscar producto…" autocomplete="off" enterkeyhint="search" value="${escapeHtml(dm.q || '')}" oninput="cgSearchInput(this.value)" onkeydown="if(event.key==='Enter') this.blur()">
+        <button type="button" class="cg-srch-x" onclick="cgToggleSearch(false)" aria-label="Cerrar búsqueda">${icon('close')}</button>
+      </div>
+    </header>
+    <main class="dm-view cg-view">
+      <div class="cg-hero"><i class="cg-blob l" aria-hidden="true"></i><i class="cg-blob r" aria-hidden="true"></i><h1 class="cg-title">Catálogo</h1></div>
+      ${dmHoursLineHTML(d.cfg).replace('class="dm-hours"', 'class="dm-hours cg-hours"')}
+      ${aviso}
+      ${d.prods.length ? `<div class="cg-grid" id="cgGrid"></div>` : `<div class="dm-empty">${icon('bag')}<h2>Aún no hay productos</h2><p>Pronto verás aquí el catálogo del negocio.</p></div>`}
+      <div class="dm-empty cg-none" id="cgNone" hidden>${icon('search')}<h2>Sin resultados</h2><p>Prueba con otra palabra o revisa otra categoría.</p></div>
+    </main>`;
+  cgFill();
+  if(typeof DMR !== 'undefined' && DMR.note){
+    const v = root.querySelector('.dm-view');
+    if(v) v.insertAdjacentHTML('afterbegin', `<div class="dm-banner dm-owner-note">${icon('alert')}<span><b>${escapeHtml(DMR.note.t)}</b>${escapeHtml(DMR.note.s)}</span></div>`);
+  }
+  dmMeasure();
+  dmRenderCartbar();
+}
+/* La canasta blanca: fotos de lo que llevas, la bolsita con el número y el total */
+function cgCartHTML(){
+  const n = dmUnits();
+  const t = mdTotals(dm.cart);
+  const fotos = [];
+  dm.cart.forEach(l => { const p = dmFind(l.productId); if(p && p.image && !fotos.includes(p.image) && fotos.length < 2) fotos.push(p.image); });
+  return `<button type="button" class="cg-cart" onclick="dmOpenSheet('cart')" aria-label="Ver pedido">
+    ${fotos.length ? `<span class="cg-cart-pics">${fotos.map(f => `<span><img src="${escapeHtml(f)}" alt=""></span>`).join('')}</span>` : ''}
+    <span class="cg-cart-bag">${icon('bag')}<i>${n}</i></span>
+    <span class="cg-cart-sep"></span>
+    <b class="cg-cart-tot">${formatMoney(t.total)}</b>
+    <span class="cg-cart-chev">${icon('chevronRight')}</span>
+  </button>`;
+}
+(function(){
+  const prevRender = dmRender;
+  dmRender = function(){
+    const d = dmData();
+    if(d.ok && d.cfg.design !== 'visual'){
+      if(typeof fdTeardown === 'function') fdTeardown();
+      cgRender(d);
+      return;
+    }
+    document.body.classList.remove('dm-cat');
+    return prevRender.apply(this, arguments);
+  };
+  const prevBar = dmRenderCartbar;
+  dmRenderCartbar = function(){
+    const r = prevBar.apply(this, arguments);
+    const bar = document.getElementById('dmCartbar');
+    if(bar && document.body.classList.contains('dm-cat') && dmUnits()) bar.innerHTML = cgCartHTML();
+    return r;
+  };
+  const prevRefresh = dmRefreshCards;
+  dmRefreshCards = function(){
+    const r = prevRefresh.apply(this, arguments);
+    if(document.body.classList.contains('dm-cat') && !document.getElementById('cgGrid') && document.getElementById('dmRoot')) { /* nada */ }
+    return r;
+  };
+})();
+
 /* ---------- Elegir el diseño (en Mesa) ---------- */
 (function(){
   const baseList = mdChecklist;
@@ -23565,11 +23805,13 @@ function mdDesignPreview(id, pal){
       <circle cx="90" cy="68" r="6" fill="#fff" stroke="${ink}" stroke-width="1.4"/>
       <rect x="26" y="108" width="48" height="5" rx="2.5" fill="${ink}" opacity=".75"/><rect x="32" y="117" width="36" height="3.5" rx="1.7" fill="${line}"/></svg>`;
   }
-  const card = (x, y) => `<rect x="${x}" y="${y}" width="40" height="38" rx="5" fill="#fff" stroke="${line}"/><rect x="${x}" y="${y}" width="40" height="22" rx="5" fill="${pal.soft}"/><rect x="${x + 4}" y="${y + 26}" width="24" height="3.5" rx="1.7" fill="${ink}" opacity=".75"/><rect x="${x + 4}" y="${y + 32}" width="16" height="3" rx="1.5" fill="${pal.ink}" opacity=".7"/>`;
+  const card = (x, y, sel) => `<rect x="${x}" y="${y}" width="40" height="36" rx="6" fill="#fff" stroke="${sel ? pal.main : '#ECEDF2'}" stroke-width="${sel ? 1.4 : 1}"/><circle cx="${x + 20}" cy="${y + 13}" r="8" fill="${pal.soft}"/><rect x="${x + 5}" y="${y + 25}" width="22" height="3.2" rx="1.6" fill="${ink}" opacity=".8"/><rect x="${x + 5}" y="${y + 30}" width="13" height="3" rx="1.5" fill="${ink}"/>`;
   return `<svg class="md-dz-pv" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="130" fill="#fff" stroke="${line}"/>
-    <rect x="8" y="8" width="16" height="16" rx="5" fill="${pal.main}"/><rect x="29" y="11" width="34" height="5" rx="2.5" fill="${ink}"/><rect x="29" y="18.5" width="20" height="3" rx="1.5" fill="${line}"/><circle cx="88" cy="16" r="8" fill="${pal.ink}" opacity=".85"/>
-    <rect x="8" y="30" width="22" height="9" rx="4.5" fill="${pal.main}"/><rect x="34" y="30" width="22" height="9" rx="4.5" fill="#fff" stroke="${line}"/><rect x="60" y="30" width="22" height="9" rx="4.5" fill="#fff" stroke="${line}"/>
-    ${card(8, 46)}${card(52, 46)}${card(8, 88)}${card(52, 88)}</svg>`;
+    <rect x="7" y="7" width="20" height="9" rx="4.5" fill="${pal.soft}"/><rect x="30" y="7" width="24" height="9" rx="4.5" fill="#fff" stroke="${line}"/><rect x="57" y="7" width="24" height="9" rx="4.5" fill="#fff" stroke="${line}"/><circle cx="90" cy="11.5" r="5" fill="#fff" stroke="${line}"/>
+    <circle cx="-2" cy="33" r="12" fill="${pal.soft}"/><circle cx="102" cy="33" r="12" fill="${pal.soft}"/>
+    <text x="50" y="38" text-anchor="middle" font-family="Impact,Arial Narrow,sans-serif" font-size="17" fill="${ink}">CATÁLOGO</text>
+    ${card(7, 46, true)}${card(53, 46)}${card(7, 87)}${card(53, 87)}
+    <rect x="52" y="117" width="42" height="9" rx="4.5" fill="#fff" stroke="${line}"/></svg>`;
 }
 let mdDesignDraft = 'clasico';
 function mdOpenDesignForm(){
