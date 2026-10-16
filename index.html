@@ -11312,7 +11312,32 @@ function openProductForm(productId){
 
 /* Redimensiona/recorta cualquier imagen a un cuadro fijo (cover) para que
    el tamaño de la tarjeta de producto nunca cambie, sin importar la foto original. */
-const PRODUCT_IMAGE_SIZE = 320;
+const PRODUCT_IMAGE_SIZE = 1200;   /* lado más largo: se ve nítida en el Menú Digital y en pantallas de alta resolución */
+/* Achica la foto en pasos (de mitad en mitad) para que no se vea pixeleada,
+   sin recortarla: las tarjetas la acomodan solas (object-fit: cover). */
+function vpPhotoDataUrl(img, maxSide){
+  let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  const k = Math.min(1, maxSide / Math.max(w, h));
+  const W = Math.max(1, Math.round(w * k)), H = Math.max(1, Math.round(h * k));
+  let src = img, sw = w, sh = h;
+  while(sw / 2 >= W * 1.15 && sh / 2 >= H * 1.15){
+    const c = document.createElement('canvas');
+    c.width = Math.round(sw / 2); c.height = Math.round(sh / 2);
+    const x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.drawImage(src, 0, 0, c.width, c.height);
+    src = c; sw = c.width; sh = c.height;
+  }
+  const out = document.createElement('canvas');
+  out.width = W; out.height = H;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, 0, 0, W, H);
+  let url = '';
+  try{ url = out.toDataURL('image/webp', 0.86); }catch(e){}
+  if(!/^data:image\/webp/.test(url)) url = out.toDataURL('image/jpeg', 0.86);
+  return url;
+}
 function onProductPhotoSelected(input){
   const file = input.files && input.files[0];
   if(!file) return;
@@ -11322,17 +11347,7 @@ function onProductPhotoSelected(input){
   reader.onload = function(e){
     const img = new Image();
     img.onload = function(){
-      const size = PRODUCT_IMAGE_SIZE;
-      const canvas = document.createElement('canvas');
-      canvas.width = size; canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const scale = Math.max(size / img.width, size / img.height);
-      const w = img.width * scale, h = img.height * scale;
-      const dx = (size - w) / 2, dy = (size - h) / 2;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, dx, dy, w, h);
-      productFormImage = canvas.toDataURL('image/jpeg', 0.85);
+      productFormImage = vpPhotoDataUrl(img, PRODUCT_IMAGE_SIZE);
 
       const box = document.getElementById('pfPhotoBox');
       if(box){
