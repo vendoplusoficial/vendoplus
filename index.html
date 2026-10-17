@@ -4616,12 +4616,53 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
   .nav-open-btn svg{ width:22px; height:22px; }
   .nav-open-btn:hover{ background:#F5F7FB; }
   body.nav-hidden .app{ grid-template-columns:minmax(0,1fr) !important; grid-template-areas:"topbar" "view" !important; }
-  body.nav-hidden .bottomnav{ display:none !important; }
+  body.nav-hidden:not(.nav-peek) .bottomnav{ display:none !important; }
+  /* Barra encimada: se desliza desde la izquierda, la pantalla de atrás no se mueve */
+  body.nav-hidden.nav-peek .bottomnav{ display:flex !important; position:fixed !important; left:0; top:0; bottom:0; height:100dvh !important; z-index:61;
+    width:104px; box-shadow:12px 0 40px rgba(16,22,42,.18) !important; animation:navPeekIn .32s cubic-bezier(.22,1,.36,1) both; }
+  .nav-backdrop{ display:none; }
+  body.nav-hidden.nav-peek .nav-backdrop{ display:block; position:fixed; inset:0; z-index:60; background:rgba(16,22,42,.28); animation:fadeIn .25s ease both; }
+  @keyframes navPeekIn{ from{ transform:translate3d(-100%,0,0); } to{ transform:translate3d(0,0,0); } }
   body.nav-hidden .nav-open-btn{ display:flex; }
+  @media (min-width:1100px){ body.nav-hidden.nav-peek .bottomnav{ width:248px; } }
   body.nav-hidden .topbar{ max-width:1500px !important; width:100%; justify-self:center; margin-left:auto; margin-right:auto; }
   .nav-collapse{ order:99; }
   body.nav-hidden .cartbar{ left:50% !important; }
   body.nav-hidden .modal-overlay{ padding-left:0 !important; }
+}
+
+/* ===== Nueva venta en PC: carrito fijo a la derecha ===== */
+.sale-panel{ display:none; }
+@media (min-width:1100px){
+  body.sale-panel-on .app{ padding-right:420px; }
+  body.sale-panel-on .cartbar{ display:none !important; }
+  body.sale-panel-on .sale-panel{ display:block; position:fixed; top:0; right:0; bottom:0; width:420px; z-index:30; padding:18px 18px 18px 0; }
+  .sp-card{ height:100%; background:#fff; border-radius:26px; box-shadow:0 10px 34px rgba(22,33,62,.08), 0 0 0 1px #EEF0F5; padding:22px 22px 18px; display:flex; flex-direction:column; overflow:hidden; }
+  .sp-card > .sheet-header{ flex:none; padding-bottom:14px; margin-bottom:4px; border-bottom:1px solid #EEF0F5; }
+  .sp-card > .sheet-header h2{ font-size:28px; }
+  .sp-card .cart-list{ flex:1 1 auto; min-height:0; overflow-y:auto; }
+  .sp-card .cart-foot{ background:#fff; box-shadow:none; border-top:1px solid #EEF0F5; padding-top:10px; }
+  .sp-card .cart-actions{ display:flex; gap:10px; margin-top:14px; }
+  .sp-card .cart-actions .btn{ height:54px; border-radius:16px; font-size:16px; }
+  .sp-card .link-danger{ display:block; width:100%; margin-top:10px; }
+  .sp-empty{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; padding:20px 10px; color:var(--ink-soft,#6B7592); }
+  .sp-empty svg{ width:150px; height:auto; margin-bottom:6px; }
+  .sp-empty b{ font-size:18px; font-weight:800; color:var(--vp-navy,#16213E); }
+  .sp-empty span{ font-size:14px; font-weight:600; }
+  .sp-empty .btn{ margin-top:12px; }
+  body.sale-panel-on .topbar-index{ right:0; }
+  .sp-card .cart-item{ gap:10px; padding:14px 0; }
+  .sp-card .cart-item-photo{ width:52px; height:52px; flex:none; }
+  .sp-card .cart-item-name{ font-size:15px; font-weight:700; line-height:1.25; }
+  .sp-card .cart-item-price{ font-size:13px; }
+  .sp-card .cart-item-subtotal{ font-size:15px; font-weight:800; min-width:68px; text-align:right; }
+  .sp-card .cart-total-pill{ font-size:16px; padding:6px 14px 6px 6px; }
+  .sp-card .totals-row.grand{ font-size:22px; }
+  .sp-card .qty-control{ flex:none; gap:2px; padding:3px; }
+  .sp-card .qty-control .qty-btn{ width:30px; height:30px; }
+  .sp-card .qty-control .qty-val{ min-width:24px; }
+  .sp-card .cart-item-info{ flex:1; min-width:0; }
+  .sp-card .cart-item-subtotal{ min-width:62px; }
 }
 </style>
 </head>
@@ -24206,16 +24247,86 @@ printTicket = function(venta){
   abrir.setAttribute('aria-label', 'Mostrar menú'); abrir.title = 'Mostrar menú';
   abrir.innerHTML = (ICONS.vpMore || icon('list'));
   brand.insertBefore(abrir, brand.firstChild);
+  /* Fondo oscuro detrás de la barra cuando se abre encima de la pantalla */
+  var fondo = document.createElement('div');
+  fondo.className = 'nav-backdrop no-print';
+  document.querySelector('.app').appendChild(fondo);
   function poner(oculta, guardar){
     document.body.classList.toggle('nav-hidden', !!oculta);
+    if(!oculta) document.body.classList.remove('nav-peek');
     if(guardar){ try{ localStorage.setItem(KEY, oculta ? '1' : '0'); }catch(e){} }
     window.dispatchEvent(new Event('resize'));
   }
-  cerrar.addEventListener('click', function(){ poner(true, true); });
-  abrir.addEventListener('click', function(){ poner(false, true); });
+  /* Abierta encima (sin mover la pantalla de atrás) */
+  function asomar(v){ document.body.classList.toggle('nav-peek', !!v); }
+  cerrar.addEventListener('click', function(){
+    if(document.body.classList.contains('nav-peek')) asomar(false);   /* la quita de encima */
+    else poner(true, true);                                            /* de fija a oculta */
+  });
+  abrir.addEventListener('click', function(){ asomar(true); });
+  fondo.addEventListener('click', function(){ asomar(false); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && document.body.classList.contains('nav-peek')) asomar(false); });
+  /* Al elegir una sección desde la barra encimada, se cierra sola */
+  nav.addEventListener('click', function(e){
+    if(!document.body.classList.contains('nav-peek')) return;
+    var b = e.target.closest('.navbtn');
+    if(b) setTimeout(function(){ asomar(false); }, 60);
+  });
   var guardado = false;
   try{ guardado = localStorage.getItem(KEY) === '1'; }catch(e){}
   poner(guardado, false);
+})();
+</script>
+<script id="vp-sale-panel">
+/* =========================================================
+   NUEVA VENTA EN PC: EL CARRITO SIEMPRE A LA DERECHA
+   En pantallas anchas el carrito se queda fijo a un lado (no hace falta
+   abrirlo). Lo que antes reabría la hoja del carrito ahora solo lo
+   repinta. Cobrar sigue abriendo la pantalla de "Cobrar pedido".
+========================================================= */
+(function(){
+  var app = document.querySelector('.app');
+  if(!app) return;
+  var mq = window.matchMedia('(min-width:1100px)');
+  var panel = document.createElement('aside');
+  panel.className = 'sale-panel no-print';
+  panel.id = 'salePanel';
+  app.appendChild(panel);
+  function activo(){ return mq.matches && currentView === 'sale' && !document.body.classList.contains('dm-mode'); }
+  window.salePanelOn = activo;
+  function vacioHTML(){
+    var n = (typeof parkedCount === 'function') ? parkedCount() : 0;
+    return '<div class="sheet-header"><div class="sheet-header-left"><h2>Carrito</h2></div></div>' +
+      '<div class="sp-empty">' + illustration('cartEmpty') +
+        '<b>No tienes nada agregado en el carrito</b>' +
+        '<span>Toca un producto para agregarlo a la venta.</span>' +
+        (n ? '<button class="btn ghost block" onclick="openParkedList()">' + icon('pause') + ' Ver ventas en espera (' + n + ')</button>' : '') +
+      '</div>';
+  }
+  function pintar(){
+    var on = activo();
+    document.body.classList.toggle('sale-panel-on', on);
+    if(!on){ if(panel.innerHTML) panel.innerHTML = ''; return; }
+    var lista = panel.querySelector('.cart-list');
+    var y = lista ? lista.scrollTop : 0;
+    var html = cart.length ? cartSheetHTML('cart').replace(/<button class="sheet-close"[^>]*>[\s\S]*?<\/button>/, '') : vacioHTML();
+    panel.innerHTML = '<div class="sp-card">' + html + '</div>';
+    var l2 = panel.querySelector('.cart-list'); if(l2 && y) l2.scrollTop = y;
+  }
+  window.salePanelPaint = pintar;
+  var _render = render;
+  render = function(){ var r = _render.apply(this, arguments); try{ pintar(); }catch(e){} return r; };
+  var _open = openCartSheet;
+  openCartSheet = function(step){
+    if(activo() && (step === 'cart' || !cart.length)){
+      if(document.querySelector('#modal-layer .modal-sheet')) closeModal();
+      pintar();
+      return;
+    }
+    return _open.apply(this, arguments);
+  };
+  try{ mq.addEventListener('change', function(){ pintar(); }); }catch(e){ try{ mq.addListener(pintar); }catch(_){} }
+  pintar();
 })();
 </script>
 </body>
