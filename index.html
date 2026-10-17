@@ -4590,6 +4590,39 @@ body.dm-cat .dm-cartbar{ left:auto; right:0; transform:none; width:auto; max-wid
 /* ===== Mi cuenta: íconos en gris (la membresía conserva su color) ===== */
 body[data-section="account"] #view .acc-ico{ background:#F1F3F7 !important; color:#5B6275 !important; }
 body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
+
+/* ===== Acceso en PC: panel izquierdo con fondo blanco (no azul) ===== */
+@media (min-width:900px){
+  .auth-screen:not(:has(.auth-photo))::before{ background:#fff !important; border-right:1px solid #EDEFF4; }
+  .auth-screen:not(:has(.auth-photo)) .auth-side{ color:#16213E; }
+  .auth-side-title{ color:#16213E; }
+  .auth-side-sub{ color:#6B7592 !important; }
+  .auth-side-art{ background:radial-gradient(circle at 50% 45%, #EEF2F8, #F6F8FB 60%, rgba(255,255,255,0) 72%) !important; }
+  .auth-side-art:not(.wide) svg > ellipse:first-child{ opacity:.35; }
+  .auth-side-chips > span{ color:#16213E !important; background:#fff !important; border:1px solid #E6EAF3 !important; box-shadow:0 2px 8px rgba(22,33,62,.05); padding:6px 14px 6px 6px !important; gap:8px; }
+  .auth-side-chips > span .ic{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0 !important; border:0 !important; border-radius:50%; background:#F1F3F7 !important; color:#5B6275; }
+  .auth-side-chips > span .ic svg{ width:15px; height:15px; color:#5B6275; }
+}
+
+/* ===== Ocultar / mostrar la barra lateral (tablet y PC) ===== */
+.nav-collapse, .nav-open-btn{ display:none; }
+@media (min-width:700px){
+  .nav-collapse{ display:flex; flex:none; margin-top:auto; align-self:center; width:46px; height:46px; border-radius:14px; border:1px solid #E8EBF2; background:#fff;
+    box-shadow:0 4px 14px rgba(22,33,62,.08); color:var(--vp-navy,#16213E); align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .nav-collapse svg{ width:20px; height:20px; }
+  .nav-collapse:hover{ background:#F5F7FB; }
+  .nav-open-btn{ width:50px; height:50px; border-radius:15px; border:1px solid #E8EBF2; background:#fff; box-shadow:0 4px 14px rgba(22,33,62,.08);
+    color:var(--vp-navy,#16213E); align-items:center; justify-content:center; cursor:pointer; padding:0; flex:none; margin-right:10px; }
+  .nav-open-btn svg{ width:22px; height:22px; }
+  .nav-open-btn:hover{ background:#F5F7FB; }
+  body.nav-hidden .app{ grid-template-columns:minmax(0,1fr) !important; grid-template-areas:"topbar" "view" !important; }
+  body.nav-hidden .bottomnav{ display:none !important; }
+  body.nav-hidden .nav-open-btn{ display:flex; }
+  body.nav-hidden .topbar{ max-width:1500px !important; width:100%; justify-self:center; margin-left:auto; margin-right:auto; }
+  .nav-collapse{ order:99; }
+  body.nav-hidden .cartbar{ left:50% !important; }
+  body.nav-hidden .modal-overlay{ padding-left:0 !important; }
+}
 </style>
 </head>
 <body>
@@ -11755,6 +11788,38 @@ Object.assign(ILLUSTRATIONS, {
     <circle cx="112" cy="28" r="11.5" fill="#8FB0E0" stroke="#FFFFFF" stroke-width="3"/>
     <path d="M107 28.4l3.4 3.4 6.4-6.8" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
+  // Tablet de punto de venta con ventas al alza (volver a entrar)
+  welcomeBack: `
+  <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="80" cy="146" rx="44" ry="6" fill="#EEF1F7"/>
+    <path d="M136 30v8M132 34h8" stroke="#FFD666" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M22 40v6M19 43h6" stroke="#8FB0E0" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="140" cy="96" r="3" fill="#E1594C" opacity=".85"/>
+    <circle cx="20" cy="104" r="2.6" fill="#6B86AD" opacity=".7"/>
+    <!-- base y soporte -->
+    <path d="M73 106h14l3 22H70l3-22Z" fill="#E8EBF2" stroke="#16213E" stroke-width="2.2" stroke-linejoin="round"/>
+    <rect x="52" y="127" width="56" height="9" rx="4.5" fill="#FFFFFF" stroke="#16213E" stroke-width="2.2"/>
+    <!-- tablet -->
+    <rect x="26" y="32" width="108" height="76" rx="10" fill="#FFFFFF" stroke="#16213E" stroke-width="2.4"/>
+    <rect x="35" y="41" width="90" height="58" rx="5" fill="#F4F6FB"/>
+    <!-- encabezado y total -->
+    <rect x="42" y="48" width="30" height="4.5" rx="2.25" fill="#C9D2E3"/>
+    <rect x="42" y="57" width="22" height="6" rx="3" fill="#16213E"/>
+    <!-- barras de ventas -->
+    <rect x="44" y="80" width="9" height="12" rx="2.5" fill="#C9D2E3"/>
+    <rect x="58" y="74" width="9" height="18" rx="2.5" fill="#8FB0E0"/>
+    <rect x="72" y="68" width="9" height="24" rx="2.5" fill="#FFD666"/>
+    <rect x="86" y="60" width="9" height="32" rx="2.5" fill="#25D366"/>
+    <path d="M48.5 75 62.5 69l14-6 14-8" stroke="#16213E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+    <!-- ticket -->
+    <path d="M104 52h14v38l-3.5-2.5-3.5 2.5-3.5-2.5-3.5 2.5V52Z" fill="#FFFFFF" stroke="#16213E" stroke-width="1.8" stroke-linejoin="round"/>
+    <rect x="107.5" y="58" width="7" height="2.4" rx="1.2" fill="#C9D2E3"/>
+    <rect x="107.5" y="64" width="7" height="2.4" rx="1.2" fill="#C9D2E3"/>
+    <rect x="107.5" y="72" width="7" height="3" rx="1.5" fill="#FFD666"/>
+    <!-- palomita -->
+    <circle cx="128" cy="36" r="13" fill="#25D366" stroke="#FFFFFF" stroke-width="3"/>
+    <path d="M122.5 36.4l3.8 3.8 7-7.4" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
   // Sobre con el código de verificación (crear cuenta, entrar, recuperar)
   mailCode: `
   <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -12050,7 +12115,7 @@ function renderAuth(){
    propia (en celular no se muestra). */
 const AUTH_SIDE = {
   signup:  { illu:'mailCode',   t:'Tu negocio, en tu bolsillo',  s:'Crea tu cuenta con tu correo y empieza a vender en minutos.' },
-  login:   { illu:'mailCode',   t:'¡Qué gusto verte de nuevo!',   s:'Entra con tu correo y sigue justo donde te quedaste.' },
+  login:   { illu:'welcomeBack',   t:'¡Qué gusto verte de nuevo!',   s:'Entra con tu correo y sigue justo donde te quedaste.' },
   otp:     { illu:'lockShield', t:'Tu cuenta, protegida',          s:'Confirmamos que el correo es tuyo para cuidar tu información.' },
   name:    { illu:'shopOwner',  t:'Ya casi está listo',            s:'Ponle nombre a tu negocio y entra a administrarlo.' },
   users:   { illu:'shopOwner',      t:'Cada quien con su cuenta',      s:'Elige tu nombre para ver tus ventas y tu turno.' },
@@ -12119,7 +12184,7 @@ function authEmailHTML(){
       <h1 class="auth-title">${isLogin ? 'Entra a tu cuenta' : 'Empieza a administrar tu negocio'}</h1>
       <p class="auth-sub">${sub}</p>
 
-      <div class="auth-illu">${ILLUSTRATIONS.mailCode}</div>
+      <div class="auth-illu">${isLogin ? ILLUSTRATIONS.welcomeBack : ILLUSTRATIONS.mailCode}</div>
 
       <div class="field" style="margin-bottom:10px;">
         <label for="authEmail">Correo electrónico</label>
@@ -12148,10 +12213,6 @@ function authEmailHTML(){
         <button class="btn dark xl block" id="authEmailBtn" ${ready ? '' : 'disabled'} onclick="sendCode()">
           ${icon('mail')} ${isLogin ? 'Entrar' : (conCodigo ? 'Enviar código a mi correo' : 'Crear cuenta')}
         </button>
-        ${cloud ? '' : `
-        <button class="btn outline xl block" onclick="appleSignIn()">
-          ${icon('apple')} ${isLogin ? 'Entrar con Apple' : 'Crear cuenta con Apple'}
-        </button>`}
         <p class="auth-foot">
           ${isLogin
             ? `¿Aún no tienes cuenta? <button onclick="authStart('signup')">Créala aquí</button>`
@@ -24124,5 +24185,38 @@ printTicket = function(venta){
 })();
 </script>
 <script>try{ sessionStorage.removeItem('vendo_tema_preview'); }catch(e){}</script>
+<script id="vp-nav-toggle">
+/* =========================================================
+   OCULTAR LA BARRA LATERAL (tablet y PC)
+   Abajo de la barra hay un botón "<" para ocultarla; ya oculta, junto al
+   logo aparece el botón de 3 rayitas para volver a abrirla. Se recuerda.
+========================================================= */
+(function(){
+  var KEY = 'vp_nav_hidden';
+  var nav = document.querySelector('.bottomnav');
+  var brand = document.querySelector('.topbar .brand');
+  if(!nav || !brand) return;
+  var cerrar = document.createElement('button');
+  cerrar.type = 'button'; cerrar.className = 'nav-collapse no-print';
+  cerrar.setAttribute('aria-label', 'Ocultar menú'); cerrar.title = 'Ocultar menú';
+  cerrar.innerHTML = icon('chevronLeft');
+  nav.appendChild(cerrar);
+  var abrir = document.createElement('button');
+  abrir.type = 'button'; abrir.className = 'nav-open-btn no-print';
+  abrir.setAttribute('aria-label', 'Mostrar menú'); abrir.title = 'Mostrar menú';
+  abrir.innerHTML = (ICONS.vpMore || icon('list'));
+  brand.insertBefore(abrir, brand.firstChild);
+  function poner(oculta, guardar){
+    document.body.classList.toggle('nav-hidden', !!oculta);
+    if(guardar){ try{ localStorage.setItem(KEY, oculta ? '1' : '0'); }catch(e){} }
+    window.dispatchEvent(new Event('resize'));
+  }
+  cerrar.addEventListener('click', function(){ poner(true, true); });
+  abrir.addEventListener('click', function(){ poner(false, true); });
+  var guardado = false;
+  try{ guardado = localStorage.getItem(KEY) === '1'; }catch(e){}
+  poner(guardado, false);
+})();
+</script>
 </body>
 </html>
