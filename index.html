@@ -4607,7 +4607,7 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 /* ===== Ocultar / mostrar la barra lateral (tablet y PC) ===== */
 .nav-collapse, .nav-open-btn{ display:none; }
 @media (min-width:700px){
-  .nav-collapse{ display:flex; flex:none; margin-top:auto; align-self:center; width:46px; height:46px; border-radius:14px; border:1px solid #E8EBF2; background:#fff;
+  .nav-collapse{ display:flex; flex:none; margin-top:auto; align-self:flex-end; margin-right:6px; width:46px; height:46px; border-radius:14px; border:1px solid #E8EBF2; background:#fff;
     box-shadow:0 4px 14px rgba(22,33,62,.08); color:var(--vp-navy,#16213E); align-items:center; justify-content:center; cursor:pointer; padding:0; }
   .nav-collapse svg{ width:20px; height:20px; }
   .nav-collapse:hover{ background:#F5F7FB; }
@@ -24277,6 +24277,16 @@ printTicket = function(venta){
   poner(guardado, false);
 })();
 </script>
+<script id="vp-cart-clean">
+/* Quita del carrito lo que ya no existe (por ejemplo al cambiar de cuenta o
+   si se borró el producto). Así nunca aparece un carrito de $0.00. */
+function cartSanitize(){
+  if(!Array.isArray(cart) || !cart.length) return;
+  var antes = cart.length;
+  cart = cart.filter(function(c){ return c && findProduct(c.productId); });
+  if(cart.length !== antes && !cart.length){ customItems = {}; checkout = newCheckout(); }
+}
+</script>
 <script id="vp-sale-panel">
 /* =========================================================
    NUEVA VENTA EN PC: EL CARRITO SIEMPRE A LA DERECHA
@@ -24292,7 +24302,9 @@ printTicket = function(venta){
   panel.className = 'sale-panel no-print';
   panel.id = 'salePanel';
   app.appendChild(panel);
-  function activo(){ return mq.matches && currentView === 'sale' && !document.body.classList.contains('dm-mode'); }
+  /* Sin productos en el catálogo no hay carrito que mostrar */
+  function hayProductos(){ try{ return DB.getProducts().some(function(p){ return p && p.active; }); }catch(e){ return true; } }
+  function activo(){ return mq.matches && currentView === 'sale' && !document.body.classList.contains('dm-mode') && hayProductos(); }
   window.salePanelOn = activo;
   function vacioHTML(){
     var n = (typeof parkedCount === 'function') ? parkedCount() : 0;
@@ -24315,9 +24327,10 @@ printTicket = function(venta){
   }
   window.salePanelPaint = pintar;
   var _render = render;
-  render = function(){ var r = _render.apply(this, arguments); try{ pintar(); }catch(e){} return r; };
+  render = function(){ try{ cartSanitize(); }catch(e){} var r = _render.apply(this, arguments); try{ pintar(); }catch(e){} return r; };
   var _open = openCartSheet;
   openCartSheet = function(step){
+    try{ cartSanitize(); }catch(e){}
     if(activo() && (step === 'cart' || !cart.length)){
       if(document.querySelector('#modal-layer .modal-sheet')) closeModal();
       pintar();
@@ -24326,6 +24339,13 @@ printTicket = function(venta){
     return _open.apply(this, arguments);
   };
   try{ mq.addEventListener('change', function(){ pintar(); }); }catch(e){ try{ mq.addListener(pintar); }catch(_){} }
+  /* Nunca se cobra un carrito vacío ($0): si quedaron productos que ya no existen, se quitan */
+  var _cobro = confirmarCobro;
+  confirmarCobro = function(){
+    cartSanitize();
+    if(!cart.length){ closeModal(); toast('El carrito está vacío', { icon:icon('alert'), subtitle:'Agrega productos para poder cobrar' }); render(); return; }
+    return _cobro.apply(this, arguments);
+  };
   pintar();
 })();
 </script>
