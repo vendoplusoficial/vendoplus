@@ -4305,7 +4305,7 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 .mdi-week{ margin-top:2px; }
 .hist-more{ text-align:center; padding:18px 0 8px; font-size:13px; font-weight:700; color:var(--ink-soft,#6B7592); }
 .btn.ud-ok{ height:54px; font-size:16px; border-radius:999px; margin-top:8px; }
-@media (min-width:700px){ .modal-sheet:has(.ud-done){ min-height:min(620px, 88vh); } }
+@media (min-width:700px){ .modal-sheet:has(.ud-done), .modal-sheet:has(.mdx-done){ min-height:min(620px, 88vh); } }
 
 /* ===== Carrito: los productos tienen su propio espacio y lo de abajo queda fijo ===== */
 .modal-sheet:has(.cart-marker){ display:flex; flex-direction:column; overflow:hidden; }
@@ -4618,7 +4618,7 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
   body.nav-hidden .app{ grid-template-columns:minmax(0,1fr) !important; grid-template-areas:"topbar" "view" !important; }
   body.nav-hidden:not(.nav-peek) .bottomnav{ display:none !important; }
   /* Barra encimada: se desliza desde la izquierda, la pantalla de atrás no se mueve */
-  body.nav-hidden.nav-peek .bottomnav{ display:flex !important; position:fixed !important; left:0; top:0; bottom:0; height:100dvh !important; z-index:61;
+  body.nav-hidden.nav-peek .bottomnav{ display:flex !important; position:fixed !important; left:0; top:0; bottom:auto; height:calc(100dvh / var(--z)) !important; z-index:61;
     width:104px; box-shadow:12px 0 40px rgba(16,22,42,.18) !important; animation:navPeekIn .32s cubic-bezier(.22,1,.36,1) both; }
   .nav-backdrop{ display:none; }
   body.nav-hidden.nav-peek .nav-backdrop{ display:block; position:fixed; inset:0; z-index:60; background:rgba(16,22,42,.28); animation:fadeIn .25s ease both; }
@@ -4675,8 +4675,16 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 }
 /* ===== Barra lateral: "Mi cuenta" hasta abajo, arriba del botón para cerrar ===== */
 @media (min-width:700px){
+  .bottomnav .navbtn[data-view="sale"]{ order:1 !important; }
+  .bottomnav .navbtn[data-view="products"]{ order:2 !important; }
+  .bottomnav .navbtn[data-view="menu"]{ order:3 !important; }
+  .bottomnav .navbtn[data-view="cash"]{ order:4 !important; }
+  .bottomnav .navbtn[data-view="history"]{ order:5 !important; }
+  .bottomnav .navbtn[data-view="stats"]{ order:6 !important; }
+  .bottomnav .navbtn[data-view="customers"]{ order:7 !important; }
+  .bottomnav .navbtn.vp-fb{ order:8 !important; }
   .bottomnav .navbtn[data-view="account"]{ order:98; margin-top:auto !important; }
-  .bottomnav .navbtn.vp-fb{ order:97 !important; margin-top:0 !important; }
+  .bottomnav .navbtn.vp-fb{ margin-top:0 !important; }
   .bottomnav .nav-collapse{ order:99; margin-top:10px !important; }
 }
 /* ===== Nueva venta: acceso rápido al Menú Digital ===== */
