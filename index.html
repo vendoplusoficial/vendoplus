@@ -4682,9 +4682,9 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
   .bottomnav .navbtn[data-view="history"]{ order:5 !important; }
   .bottomnav .navbtn[data-view="stats"]{ order:6 !important; }
   .bottomnav .navbtn[data-view="customers"]{ order:7 !important; }
-  .bottomnav .navbtn.vp-fb{ order:97 !important; }
-  .bottomnav .navbtn[data-view="account"]{ order:98; margin-top:0 !important; }
-  .bottomnav .navbtn.vp-fb{ margin-top:auto !important; }
+  .bottomnav .navbtn.vp-fb{ order:8 !important; }
+  .bottomnav .navbtn[data-view="account"]{ order:98; margin-top:auto !important; }
+  .bottomnav .navbtn.vp-fb{ margin-top:0 !important; }
   .bottomnav .nav-collapse{ order:99; margin-top:10px !important; }
 }
 /* ===== Nueva venta: acceso rápido al Menú Digital ===== */
@@ -4692,19 +4692,6 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 .tool-btn.md-quick svg{ color:var(--vp-green-d,#0F8F46); }
 .md-quick .mdq-n{ position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:var(--accent-strong,#F5BF3C); color:#4A3300; font-style:normal; font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
 @media (max-width:699px){ .tool-btn.md-quick{ width:52px; padding:0; } .md-quick .mdq-txt{ display:none; } }
-
-/* PC: Opiniones y Venta realizada a pantalla completa, como en celular */
-@media (min-width:700px){
-  .modal-overlay:has(.vp-done-sheet), .modal-overlay:has(.fb-card){ padding:0 !important; align-items:stretch !important; justify-content:stretch !important; background:#fff !important; }
-  .modal-sheet.vp-done-sheet, .modal-sheet:has(.fb-card){ width:100% !important; max-width:none !important; min-height:0 !important; margin:0 !important; border-radius:0 !important; height:calc(100dvh / var(--z,1)) !important; max-height:calc(100dvh / var(--z,1)) !important; overflow-x:hidden !important; overflow-y:auto !important; display:flex !important; flex-direction:column !important; box-shadow:none !important; animation:none !important; padding:28px 40px 32px !important; }
-  .modal-sheet:has(.fb-card) .sheet-grip{ display:none; }
-  .modal-sheet:has(.fb-card) > *:not(.sheet-header){ max-width:560px; width:100%; margin-left:auto; margin-right:auto; }
-  .modal-sheet:has(.fb-card) > .sheet-header{ max-width:560px; width:100%; margin-left:auto; margin-right:auto; }
-  .modal-sheet:has(.fb-card) .fb-send{ margin-bottom:8px; }
-  .modal-sheet.vp-done-sheet .vp-x{ right:40px; top:28px; }
-  .modal-sheet.vp-done-sheet > *:not(.vp-x):not(.vp-confetti):not(.vp-done-main){ max-width:560px; width:100%; margin-left:auto; margin-right:auto; box-sizing:border-box; }
-  .modal-sheet.vp-done-sheet .vp-done-main{ max-width:560px; width:100%; margin:0 auto; }
-}
 </style>
 </head>
 <body>
