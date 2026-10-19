@@ -4664,6 +4664,26 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
   .sp-card .cart-item-info{ flex:1; min-width:0; }
   .sp-card .cart-item-subtotal{ min-width:62px; }
 }
+
+/* ===== PC: todo un poco más chico para que quepa bien en la pantalla ===== */
+@media (min-width:1100px){
+  :root{ --z:.88; }
+  .dm, .dm-cartbar, #dmLayer, #dmGhost, .dm-toast{ zoom:1 !important; }
+  .dm{ min-height:100dvh; }
+  body.sale-panel-on .app{ padding-right:410px; }
+  body.sale-panel-on .sale-panel{ width:410px; }
+}
+/* ===== Barra lateral: "Mi cuenta" hasta abajo, arriba del botón para cerrar ===== */
+@media (min-width:700px){
+  .bottomnav .navbtn[data-view="account"]{ order:98; margin-top:auto !important; }
+  .bottomnav .navbtn.vp-fb{ order:97 !important; margin-top:0 !important; }
+  .bottomnav .nav-collapse{ order:99; margin-top:10px !important; }
+}
+/* ===== Nueva venta: acceso rápido al Menú Digital ===== */
+.tool-btn.md-quick{ position:relative; width:auto; padding:0 14px; gap:8px; color:var(--vp-navy,#16213E); font:inherit; font-size:14px; font-weight:700; white-space:nowrap; cursor:pointer; }
+.tool-btn.md-quick svg{ color:var(--vp-green-d,#0F8F46); }
+.md-quick .mdq-n{ position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:var(--accent-strong,#F5BF3C); color:#4A3300; font-style:normal; font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
+@media (max-width:699px){ .tool-btn.md-quick{ width:52px; padding:0; } .md-quick .mdq-txt{ display:none; } }
 </style>
 </head>
 <body>
@@ -6255,6 +6275,7 @@ function renderSale(){
       </div>
       <button class="tool-btn" onclick="openScanner()" title="Escanear con la cámara" aria-label="Escanear con la cámara">${icon('barcode')}</button>
       <button class="tool-btn" onclick="openCustomItem()" title="Venta libre (F8)" aria-label="Venta libre">${icon('pen')}</button>
+      ${(() => { let n = 0; try{ n = mdiCounts().nuevo; }catch(e){} return `<button class="tool-btn md-quick" onclick="goTo('menu')" title="Menú Digital" aria-label="Menú Digital">${icon('menuBook')}<span class="mdq-txt">Menú Digital</span>${n ? `<i class="mdq-n">${n}</i>` : ''}</button>`; })()}
     </div>
     ${typeof parkedBarHTML === 'function' ? parkedBarHTML() : ''}
     ${chips}
@@ -24260,8 +24281,7 @@ printTicket = function(venta){
   /* Abierta encima (sin mover la pantalla de atrás) */
   function asomar(v){ document.body.classList.toggle('nav-peek', !!v); }
   cerrar.addEventListener('click', function(){
-    if(document.body.classList.contains('nav-peek')) asomar(false);   /* la quita de encima */
-    else poner(true, true);                                            /* de fija a oculta */
+    asomar(false);
   });
   abrir.addEventListener('click', function(){ asomar(true); });
   fondo.addEventListener('click', function(){ asomar(false); });
@@ -24272,9 +24292,8 @@ printTicket = function(venta){
     var b = e.target.closest('.navbtn');
     if(b) setTimeout(function(){ asomar(false); }, 60);
   });
-  var guardado = false;
-  try{ guardado = localStorage.getItem(KEY) === '1'; }catch(e){}
-  poner(guardado, false);
+  /* Siempre oculta: se abre encima con las 3 rayitas (nunca empuja la pantalla) */
+  poner(true, false);
 })();
 </script>
 <script id="vp-cart-clean">
