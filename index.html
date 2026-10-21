@@ -4333,14 +4333,42 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 @media (min-width:700px){ .navbtn.vp-fb{ display:flex !important; order:99; } }
 </style>
 <style id="svc-toggle-css">
-.svc-toggle{ width:100%; display:flex; align-items:center; gap:8px; margin:22px 0 10px; padding:12px 14px; border:1.5px solid var(--line,#E4E6F0); border-radius:14px; background:#fff; color:var(--ink,#1B1F3B); font:inherit; font-size:15px; font-weight:800; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.svc-toggle::before{ content:''; width:4px; height:16px; border-radius:3px; background:var(--brand,#22C55E); flex:none; }
-.svc-toggle-t{ flex:none; }
-.svc-toggle-cur{ margin-left:auto; font-size:13px; font-weight:700; color:var(--ink-soft,#6B7090); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.svc-dbl{ flex:none; color:var(--ink-soft,#6B7090); transition:transform .25s ease; }
+/* Cobrar pedido · versión simple y minimalista */
+.pay2{ --p2-line:#E9ECF3; --p2-mute:#8A93AC; display:flex; flex-direction:column; gap:12px; padding-top:4px; }
+.pay2 .p2-due{ background:none; color:var(--ink); border-radius:0; padding:6px 0 4px; margin:0; align-items:center; text-align:center; gap:4px; }
+.pay2 .p2-due span{ font-size:13px; font-weight:700; color:var(--p2-mute); }
+.pay2 .p2-due b{ font-size:40px; line-height:1.1; font-weight:800; letter-spacing:-1px; color:var(--ink); }
+.pay2 .p2-due small{ font-size:12.5px; font-weight:600; color:var(--p2-mute); }
+.pay2 .p2-card{ background:#fff; border:1px solid var(--p2-line); border-radius:16px; padding:14px; }
+.pay2 .p2-card > .field{ margin:0; }
+.pay2 .p2-h, .pay2 .field > label{ display:block; font-size:13px; font-weight:700; color:var(--ink); margin:0 0 10px; }
+.pay2 .section-title{ display:none; }
+.pay2 .p2-money{ position:relative; }
+.pay2 .p2-money i{ position:absolute; left:14px; top:50%; transform:translateY(-50%); font-style:normal; font-weight:700; color:var(--p2-mute); pointer-events:none; }
+.pay2 .p2-money input{ width:100%; padding-left:30px !important; border:1px solid var(--p2-line) !important; border-radius:12px !important; background:#fff !important; font-weight:700; }
+.pay2 .p2-money input:focus{ border-color:var(--brand) !important; box-shadow:none !important; }
+.pay2 .quick-cash{ gap:8px; margin-top:10px; }
+.pay2 .quick-cash .filter-chip{ background:var(--brand); color:#fff; border:none; border-radius:999px; padding:9px 16px; font-weight:800; font-size:13px; box-shadow:none; }
+.pay2 .quick-cash .filter-chip.active{ background:var(--brand); color:#fff; }
+.pay2 .field-hint{ font-size:12px; font-weight:600; margin-top:10px; }
+.pay2 .split-link{ margin:10px 0 0; padding:0; font-size:12.5px; font-weight:700; color:var(--p2-mute); }
+.pay2 .split-link.on{ color:var(--brand-ink); }
+.pay2 .doc-note, .pay2 .alert-card{ margin-bottom:0 !important; }
+.pay2 .p2-svc{ padding:0; }
+.svc-toggle{ width:100%; display:flex; align-items:center; gap:8px; padding:14px; border:none; background:none; color:var(--ink); font:inherit; font-size:13px; font-weight:700; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.svc-toggle-cur{ margin-left:auto; min-width:0; font-size:13px; font-weight:600; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.svc-dbl{ flex:none; color:var(--ink-soft); transition:transform .25s ease; }
 .svc-toggle.open .svc-dbl{ transform:rotate(90deg); }
-.svc-body{ display:none; }
+.svc-body{ display:none; padding:0 14px 14px; }
 .svc-body.open{ display:block; animation:svcIn .22s ease both; }
+.svc-body .co-extra{ margin:12px 0 0; }
+.pay2 .co-cust{ border:1px solid var(--p2-line); background:#fff; font-weight:600; }
+.pay2 .co-cust.on{ border-color:var(--brand); background:var(--brand-soft); }
+.pay2 .totals{ margin:0; }
+.pay2 .tip-row .filter-chip{ box-shadow:none; }
+.p2-actions{ display:flex; gap:10px; margin-top:6px; }
+.p2-actions .btn.ghost{ border:none; background:none; color:var(--p2-mute); font-weight:700; }
+.p2-actions .btn.block{ border-radius:14px; }
 @keyframes svcIn{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce){ .svc-body.open{ animation:none; } .svc-dbl{ transition:none; } }
 </style>
@@ -6968,8 +6996,8 @@ function cartSheetHTML(step){
     if(pm === 'efectivo'){
       cashFirst = `
         <div class="field">
-          <label>Efectivo recibido</label>
-          <input id="cashInput" type="number" inputmode="decimal" min="0" step="0.5" placeholder="${toPay.toFixed(2)} (exacto)" value="${escapeHtml(checkout.cash)}" oninput="onCashInput(this.value)">
+          <label for="cashInput">Efectivo recibido</label>
+          <div class="p2-money"><i>$</i><input id="cashInput" type="number" inputmode="decimal" min="0" step="0.5" placeholder="${toPay.toFixed(2)} (exacto)" value="${escapeHtml(checkout.cash)}" oninput="onCashInput(this.value)"></div>
           <div class="quick-cash">
             ${quickCashOptions(toPay).map((v, i) => `<button class="filter-chip ${cashNum && Math.abs(cashNum - v) < 0.005 ? 'active' : ''}" onclick="setQuickCash(${v})">${i === 0 ? 'Exacto' : formatMoney(v).replace('.00', '')}</button>`).join('')}
           </div>
@@ -7008,16 +7036,18 @@ function cartSheetHTML(step){
         <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
       </div>
 
-      <div class="pay-due">
+      <div class="pay2">
+      <div class="pay-due p2-due">
         <span>Total a cobrar</span>
         <b>${formatMoney(toPay)}</b>
         <small>${cartUnitsCount()} artículo${cartUnitsCount() === 1 ? '' : 's'}${totals.discount > 0 ? ' · ahorro ' + formatMoney(totals.discount) : ''}${tax.mode === 'incluido' && showsTax(tax) ? ' · IVA incluido' : ''}</small>
       </div>
 
       ${(() => { const mo = checkout.menuOrderId ? MDI.get(checkout.menuOrderId) : null; if(!mo) return ''; const c = mo.customer || {}; return `<div class="mdi-banner ok" style="margin-bottom:14px;">${icon('person')}<span><b>Pedido ${escapeHtml(mo.code)} · ${escapeHtml(c.name || 'Cliente sin nombre')}</b>Ya cargamos lo que mandó el cliente: productos, tipo de servicio${c.payment ? ', método de pago' : ''}${mdiIsDelivery(mo) ? ' y costo de envío' : ''}. Solo revisa y cobra.</span></div>`; })()}
-      ${cashFirst}
+      ${cashFirst ? `<div class="p2-card">${cashFirst}</div>` : ''}
 
-      <div class="section-title">Método de pago</div>
+      <div class="p2-card">
+      <div class="p2-h">Método de pago</div>
       <div class="opt-grid pay-grid ${methods.length === 4 ? 'four' : ''}">
         ${methods.map(p => `
           <button class="opt-card ${pm===p.id?'active':''}" onclick="setPaymentMethod('${p.id}')">
@@ -7026,11 +7056,13 @@ function cartSheetHTML(step){
         `).join('')}
       </div>
       <button class="split-link ${pm === 'mixto' ? 'on' : ''}" onclick="setPaymentMethod('${pm === 'mixto' ? 'efectivo' : 'mixto'}')">${icon('swap')} ${pm === 'mixto' ? 'Pagar con un solo método' : 'Pagar con varios métodos (ej. parte efectivo, parte tarjeta)'}</button>
-      ${payBody}
+      </div>
+      ${payBody ? `<div class="p2-card">${payBody}</div>` : ''}
 
+      <div class="p2-card p2-svc">
       <button type="button" class="svc-toggle ${window.__vpSvcOpen ? 'open' : ''}" onclick="toggleSvcTypes()" aria-expanded="${window.__vpSvcOpen ? 'true' : 'false'}" aria-label="Mostrar tipos de servicio">
         <span class="svc-toggle-t">Tipo de servicio</span>
-        <span class="svc-toggle-cur">${(SERVICE_TYPES.find(s => s.id === checkout.serviceType) || {}).name || ''}</span>
+        <span class="svc-toggle-cur">${(SERVICE_TYPES.find(s => s.id === checkout.serviceType) || {}).name || ''}${cust ? ' · ' + escapeHtml(cust.name) : ''}</span>
         <svg class="svc-dbl" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6"/></svg>
       </button>
       <div class="svc-body ${window.__vpSvcOpen ? 'open' : ''}">
@@ -7040,7 +7072,6 @@ function cartSheetHTML(step){
             <span class="opt-emoji">${icon(s.ico)}</span>${s.name}
           </button>
         `).join('')}
-      </div>
       </div>
       <div class="two-fields co-extra">
         <div class="field">
@@ -7055,21 +7086,23 @@ function cartSheetHTML(step){
           </button>
         </div>
       </div>
-
+      </div>
+      </div>
 
       ${cfg.tipsOn ? `
-        <div class="section-title">Propina</div>
+        <div class="p2-card"><div class="p2-h">Propina</div>
         <div class="filter-pill-row tip-row">
           <button class="filter-chip ${!checkout.tip ? 'active' : ''}" onclick="setTip(null)">Sin propina</button>
           ${cfg.tipOptions.map(v => `<button class="filter-chip ${checkout.tip && checkout.tip.pct == v ? 'active' : ''}" onclick="setTip(${Number(v)})">${fmtPct(v)}%</button>`).join('')}
           <button class="filter-chip ${checkout.tip && checkout.tip.amt != null ? 'active' : ''}" onclick="askTipAmount()">${checkout.tip && checkout.tip.amt != null ? formatMoney(checkout.tip.amt) : 'Otra'}</button>
-        </div>` : ''}
+        </div></div>` : ''}
 
-      ${totalRows(true)}
+      ${(totals.discount > 0 || showsTax(tax) || totals.tip > 0) ? totalRows(true) : ''}
 
-      <div style="display:flex; gap:10px; margin-top:16px;">
+      <div class="p2-actions">
         <button class="btn ghost" onclick="openCartSheet('cart')">Volver</button>
         <button class="btn whatsapp block" id="btnCobrar" onclick="confirmarCobro()">${icon('check')} Cobrar ${formatMoney(toPay)}</button>
+      </div>
       </div>
     `;
   }
