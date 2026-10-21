@@ -4737,6 +4737,9 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 /* ===== Nueva venta: acceso rápido al Menú Digital ===== */
 .tool-btn.md-quick{ position:relative; width:auto; padding:0 14px; gap:8px; color:var(--vp-navy,#16213E); font:inherit; font-size:14px; font-weight:700; white-space:nowrap; cursor:pointer; }
 .tool-btn.md-quick svg{ color:var(--vp-green-d,#0F8F46); }
+.tool-btn.cash-quick.close{ width:auto; padding:0 14px; }
+.tool-btn.cash-quick.close svg{ color:var(--vp-green-d,#0F8F46); }
+@media (max-width:699px){ .tool-btn.cash-quick.close{ width:auto; padding:0 12px; } .cash-quick.close .mdq-txt{ display:inline; } }
 .md-quick .mdq-n{ position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:var(--accent-strong,#F5BF3C); color:#4A3300; font-style:normal; font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
 @media (max-width:699px){ .tool-btn.md-quick{ width:52px; padding:0; } .md-quick .mdq-txt{ display:none; } }
 
@@ -6331,7 +6334,19 @@ function renderSale(){
       </div>
       <button class="tool-btn" onclick="openScanner()" title="Escanear con la cámara" aria-label="Escanear con la cámara">${icon('barcode')}</button>
       <button class="tool-btn" onclick="openCustomItem()" title="Venta libre (F8)" aria-label="Venta libre">${icon('pen')}</button>
-      ${(() => { let n = 0; try{ n = mdiCounts().nuevo; }catch(e){} return `<button class="tool-btn md-quick" onclick="goTo('menu')" title="Menú Digital" aria-label="Menú Digital">${icon('menuBook')}<span class="mdq-txt">Menú Digital</span>${n ? `<i class="mdq-n">${n}</i>` : ''}</button>`; })()}
+      ${(() => {
+        const isApp = !!window.VendoNative;
+        const sess = (typeof cashCurrent === 'function') ? cashCurrent() : null;
+        if(isApp){
+          /* Android: solo "Cerrar caja" (si hay caja abierta y tiene permiso) */
+          if(!sess || !can('manejarCaja')) return '';
+          const vieja = (typeof cashIsStale === 'function') && cashIsStale(sess);
+          return `<button class="tool-btn md-quick cash-quick close" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}" title="Cerrar caja" aria-label="Cerrar caja">${icon('check')}<span class="mdq-txt">Cerrar caja</span></button>`;
+        }
+        let n = 0; try{ n = mdiCounts().nuevo; }catch(e){}
+        return `<button class="tool-btn md-quick" onclick="goTo('menu')" title="Menú Digital" aria-label="Menú Digital">${icon('menuBook')}<span class="mdq-txt">Menú Digital</span>${n ? `<i class="mdq-n">${n}</i>` : ''}</button>`
+          + `<button class="tool-btn md-quick cash-quick" onclick="goTo('cash')" title="Caja" aria-label="Caja">${icon('cashbox')}<span class="mdq-txt">Caja</span></button>`;
+      })()}
     </div>
     ${typeof parkedBarHTML === 'function' ? parkedBarHTML() : ''}
     ${chips}
