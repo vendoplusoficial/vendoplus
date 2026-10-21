@@ -16989,6 +16989,7 @@ function mdiOpen(id, keepScroll){
 function mdiMountMap(o){
   const el = document.getElementById('mdiMap');
   if(!el || !mdiIsDelivery(o) || !o.customer.loc) return;
+  if(el.offsetParent === null) return;   /* oculto en "Ver más información": se pone al abrirlo */
   mdMapMount('mdi', el, { editable:false, pin:o.customer.loc, zoom:16, errText:'Usa «Abrir en Google Maps».' });
 }
 function mdiRefresh(){ if(mdiUI.id) mdiOpen(mdiUI.id, true); if(currentView === 'menu' || currentView === 'home') renderBgKeepModal(); mdiPaintBadge(); }
@@ -17126,6 +17127,27 @@ function mdiEtaMount(o){
   tr.addEventListener('mousemove', e => { if(!down) return; const dx = e.pageX - sx; if(Math.abs(dx) > 4) moved = true; tr.scrollLeft = sleft - dx; });
   tr.addEventListener('click', e => { if(moved){ e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
 }
+
+function mdiToggleMore(){
+  const open = !mdiUI.more; mdiUI.more = open;
+  const b = document.querySelector('.mdi-more'), c = document.getElementById('mdiMore');
+  if(b){ b.classList.toggle('open', open); b.setAttribute('aria-expanded', open ? 'true' : 'false'); const t = b.querySelector('span'); if(t) t.textContent = open ? 'Ocultar información' : 'Ver más información'; }
+  if(!c) return;
+  const o = mdiUI.id ? MDI.get(mdiUI.id) : null;
+  const ease = 'cubic-bezier(.22,1,.36,1)';
+  if(!c.animate){ c.classList.toggle('open', open); if(open && o) mdiMountMap(o); return; }
+  c.style.overflow = 'hidden';
+  if(open){
+    c.classList.add('open');
+    if(o) mdiMountMap(o);
+    const h = c.offsetHeight;
+    c.animate([{ height:'0px', opacity:0 }, { height:h + 'px', opacity:1 }], { duration:420, easing:ease }).onfinish = () => { c.style.overflow = ''; try{ const m = mdMaps.mdi; if(m && m.map) m.map.invalidateSize(); }catch(e){} };
+    Array.prototype.forEach.call(c.children, (el, k) => el.animate([{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:380, delay:60 + k * 60, easing:ease, fill:'backwards' }));
+  }else{
+    const h = c.offsetHeight;
+    c.animate([{ height:h + 'px', opacity:1 }, { height:'0px', opacity:0 }], { duration:300, easing:ease }).onfinish = () => { if(!mdiUI.more) c.classList.remove('open'); c.style.overflow = ''; };
+  }
+}
 function mdiOpenMaps(id){
   const o = MDI.get(id); if(!o || !mdiIsDelivery(o) || !o.customer.loc) return;
   const url = mdiMapsUrl(o.customer.loc);
@@ -17174,6 +17196,7 @@ function mdiDetailHTML(o){
   const sale = o.saleId ? DB.getSales().find(s => s.id === o.saleId) : null;
   const srcTxt = { menu:'desde el Menú Digital', link:'con el link de WhatsApp', pegado:'pegado de WhatsApp' }[o.source] || 'desde el Menú Digital';
   const faltan = mdiMissing(o);
+  const collapsible = o.status === 'confirmado' && !o.pendingNext;
 
   const lineRows = (o.lines || []).map((l, i) => {
     const p = l.productId ? findProduct(l.productId) : null;
@@ -17236,6 +17259,7 @@ function mdiDetailHTML(o){
     ${o.status === 'cancelado' ? `
       <div class="mdi-banner cancel">${icon('close')}<span><b>Pedido cancelado</b>${sale ? 'La venta ' + orderNumberLabel(sale.number) + ' quedó cancelada en Historial y ya no cuenta en tus ventas.' : 'Ya no cuenta en tus ventas.'}${o.cancelledAt ? ' Cancelado el ' + formatDateTime(o.cancelledAt) + (o.cancelledBy ? ' por ' + escapeHtml(o.cancelledBy) : '') : ''}</span></div>` : ''}
 
+    ${collapsible ? `<button type="button" class="mdi-more ${mdiUI.more ? 'open' : ''}" onclick="mdiToggleMore()" aria-expanded="${mdiUI.more ? 'true' : 'false'}"><span>${mdiUI.more ? 'Ocultar información' : 'Ver más información'}</span><svg class="svc-dbl" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6"/></svg></button><div class="mdi-more-body ${mdiUI.more ? 'open' : ''}" id="mdiMore">` : ''}
     ${o.status === 'rechazado' ? '' : mdiServiceHTML(o)}
     ${o.status === 'rechazado' || o.status === 'cancelado' ? '' : mdiDeliveryHTML(o)}
     ${o.status === 'rechazado' || o.status === 'cancelado' ? '' : mdiEtaHTML(o)}
@@ -17252,6 +17276,7 @@ function mdiDetailHTML(o){
         <button class="btn ghost" onclick="mdiEditLine('${o.id}', -1)">${icon('plus')} Agregar producto</button>
         ${mod ? `<button class="btn ghost" onclick="mdiRestore('${o.id}')">${icon('undo')} Volver al original</button>` : ''}
       </div>` : ''}`}
+    ${collapsible ? '</div>' : ''}
     </div>
     <div class="mdi-dfoot">
     ${o.status === 'rechazado' ? '' : mdiTotalsHTML(o)}
@@ -24604,6 +24629,14 @@ printTicket = function(venta){
 .mdn-done.mdn-full{ justify-content:center; }
 .mdn-full .mdn-full-main{ flex:none; padding:0 6px 6px; }
 .mdn-full .mdn-full-actions{ padding-top:14px; }
+</style>
+<style id="mdi-more-css">
+.mdi-more{ width:100%; display:flex; align-items:center; justify-content:center; gap:8px; margin:12px 0 4px; padding:12px 14px; border:1px solid var(--border,#E6EAF3); border-radius:14px; background:#fff; color:var(--ink); font:inherit; font-size:14px; font-weight:800; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .2s ease; }
+.mdi-more:active{ background:#F5F7FB; }
+.mdi-more .svc-dbl{ color:var(--ink-soft); transition:transform .3s ease; }
+.mdi-more.open .svc-dbl{ transform:rotate(90deg); }
+.mdi-more-body{ display:none; padding-top:12px; }
+.mdi-more-body.open{ display:block; }
 </style>
 <script id="vp-nav-toggle">
 /* =========================================================
