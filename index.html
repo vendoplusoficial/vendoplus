@@ -4330,7 +4330,8 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 .btn.fb-send{ height:52px; font-size:15.5px; margin-top:4px; }
 .fb-hint{ text-align:center; margin-top:10px; }
 .navbtn.vp-fb{ display:none !important; }
-@media (min-width:700px){ .navbtn.vp-fb{ display:flex !important; order:99; } }
+@media (min-width:700px){ .navbtn.vp-fb, .bottomnav .navbtn.vp-fb{ display:none !important; } }
+@media (min-width:700px){ body .bottomnav .navbtn[data-view="account"]{ margin-top:auto !important; } }
 </style>
 <style id="svc-toggle-css">
 /* Cobrar pedido · versión simple y minimalista */
