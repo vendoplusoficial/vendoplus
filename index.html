@@ -4332,6 +4332,18 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 .navbtn.vp-fb{ display:none !important; }
 @media (min-width:700px){ .navbtn.vp-fb{ display:flex !important; order:99; } }
 </style>
+<style id="svc-toggle-css">
+.svc-toggle{ width:100%; display:flex; align-items:center; gap:8px; margin:22px 0 10px; padding:12px 14px; border:1.5px solid var(--line,#E4E6F0); border-radius:14px; background:#fff; color:var(--ink,#1B1F3B); font:inherit; font-size:15px; font-weight:800; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.svc-toggle::before{ content:''; width:4px; height:16px; border-radius:3px; background:var(--brand,#22C55E); flex:none; }
+.svc-toggle-t{ flex:none; }
+.svc-toggle-cur{ margin-left:auto; font-size:13px; font-weight:700; color:var(--ink-soft,#6B7090); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.svc-dbl{ flex:none; color:var(--ink-soft,#6B7090); transition:transform .25s ease; }
+.svc-toggle.open .svc-dbl{ transform:rotate(90deg); }
+.svc-body{ display:none; }
+.svc-body.open{ display:block; animation:svcIn .22s ease both; }
+@keyframes svcIn{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce){ .svc-body.open{ animation:none; } .svc-dbl{ transition:none; } }
+</style>
 <style id="vp-font">
 /* La letra va DENTRO del index (Inter, licencia libre OFL): así la app y la
    página se ven igual, con sus negritas, sin depender de la letra del
@@ -6952,8 +6964,9 @@ function cartSheetHTML(step){
     const puedeFiar = cfg.creditOn && can('darCredito');
     const methods = basicPayMethods().concat(puedeFiar ? [paymentOf('credito')] : []);
     let payBody = '';
+    let cashFirst = '';
     if(pm === 'efectivo'){
-      payBody = `
+      cashFirst = `
         <div class="field">
           <label>Efectivo recibido</label>
           <input id="cashInput" type="number" inputmode="decimal" min="0" step="0.5" placeholder="${toPay.toFixed(2)} (exacto)" value="${escapeHtml(checkout.cash)}" oninput="onCashInput(this.value)">
@@ -7002,13 +7015,32 @@ function cartSheetHTML(step){
       </div>
 
       ${(() => { const mo = checkout.menuOrderId ? MDI.get(checkout.menuOrderId) : null; if(!mo) return ''; const c = mo.customer || {}; return `<div class="mdi-banner ok" style="margin-bottom:14px;">${icon('person')}<span><b>Pedido ${escapeHtml(mo.code)} · ${escapeHtml(c.name || 'Cliente sin nombre')}</b>Ya cargamos lo que mandó el cliente: productos, tipo de servicio${c.payment ? ', método de pago' : ''}${mdiIsDelivery(mo) ? ' y costo de envío' : ''}. Solo revisa y cobra.</span></div>`; })()}
-      <div class="section-title" style="margin-top:0;">Tipo de servicio</div>
+      ${cashFirst}
+
+      <div class="section-title">Método de pago</div>
+      <div class="opt-grid pay-grid ${methods.length === 4 ? 'four' : ''}">
+        ${methods.map(p => `
+          <button class="opt-card ${pm===p.id?'active':''}" onclick="setPaymentMethod('${p.id}')">
+            <span class="opt-emoji">${icon(p.ico)}</span>${p.name}
+          </button>
+        `).join('')}
+      </div>
+      <button class="split-link ${pm === 'mixto' ? 'on' : ''}" onclick="setPaymentMethod('${pm === 'mixto' ? 'efectivo' : 'mixto'}')">${icon('swap')} ${pm === 'mixto' ? 'Pagar con un solo método' : 'Pagar con varios métodos (ej. parte efectivo, parte tarjeta)'}</button>
+      ${payBody}
+
+      <button type="button" class="svc-toggle ${window.__vpSvcOpen ? 'open' : ''}" onclick="toggleSvcTypes()" aria-expanded="${window.__vpSvcOpen ? 'true' : 'false'}" aria-label="Mostrar tipos de servicio">
+        <span class="svc-toggle-t">Tipo de servicio</span>
+        <span class="svc-toggle-cur">${(SERVICE_TYPES.find(s => s.id === checkout.serviceType) || {}).name || ''}</span>
+        <svg class="svc-dbl" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6"/></svg>
+      </button>
+      <div class="svc-body ${window.__vpSvcOpen ? 'open' : ''}">
       <div class="opt-grid">
         ${SERVICE_TYPES.map(s => `
           <button class="opt-card ${checkout.serviceType===s.id?'active':''}" onclick="setServiceType('${s.id}')">
             <span class="opt-emoji">${icon(s.ico)}</span>${s.name}
           </button>
         `).join('')}
+      </div>
       </div>
       <div class="two-fields co-extra">
         <div class="field">
@@ -7024,16 +7056,6 @@ function cartSheetHTML(step){
         </div>
       </div>
 
-      <div class="section-title">Método de pago</div>
-      <div class="opt-grid pay-grid ${methods.length === 4 ? 'four' : ''}">
-        ${methods.map(p => `
-          <button class="opt-card ${pm===p.id?'active':''}" onclick="setPaymentMethod('${p.id}')">
-            <span class="opt-emoji">${icon(p.ico)}</span>${p.name}
-          </button>
-        `).join('')}
-      </div>
-      <button class="split-link ${pm === 'mixto' ? 'on' : ''}" onclick="setPaymentMethod('${pm === 'mixto' ? 'efectivo' : 'mixto'}')">${icon('swap')} ${pm === 'mixto' ? 'Pagar con un solo método' : 'Pagar con varios métodos (ej. parte efectivo, parte tarjeta)'}</button>
-      ${payBody}
 
       ${cfg.tipsOn ? `
         <div class="section-title">Propina</div>
@@ -7358,6 +7380,7 @@ function saveOrderDiscount(){
 
 /* ---------- Cobro: servicio, pago, efectivo, propina ---------- */
 function setServiceType(id){ checkout.serviceType = id; openCartSheet('checkout'); }
+function toggleSvcTypes(){ window.__vpSvcOpen = !window.__vpSvcOpen; const b=document.querySelector('.svc-toggle'), c=document.querySelector('.svc-body'); if(b){ b.classList.toggle('open', window.__vpSvcOpen); b.setAttribute('aria-expanded', window.__vpSvcOpen ? 'true':'false'); } if(c) c.classList.toggle('open', window.__vpSvcOpen); }
 function setPaymentMethod(id){
   if(id === 'credito'){
     if(!posCfg().creditOn){ toast('Las ventas fiadas están apagadas', { subtitle:'Actívalas en Mi cuenta › Cobro e IVA' }); return; }
