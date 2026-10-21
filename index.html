@@ -4360,7 +4360,7 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 .svc-dbl{ flex:none; color:var(--ink-soft); transition:transform .25s ease; }
 .svc-toggle.open .svc-dbl{ transform:rotate(90deg); }
 .svc-body{ display:none; padding:0 14px 14px; }
-.svc-body.open{ display:block; animation:svcIn .22s ease both; }
+.svc-body.open{ display:block; box-sizing:border-box; }
 .svc-body .co-extra{ margin:12px 0 0; }
 .pay2 .co-cust{ border:1px solid var(--p2-line); background:#fff; font-weight:600; }
 .pay2 .co-cust.on{ border-color:var(--brand); background:var(--brand-soft); }
@@ -7068,9 +7068,9 @@ function cartSheetHTML(step){
       </div>
 
       ${(() => { const mo = checkout.menuOrderId ? MDI.get(checkout.menuOrderId) : null; if(!mo) return ''; const c = mo.customer || {}; return `<div class="mdi-banner ok" style="margin-bottom:14px;">${icon('person')}<span><b>Pedido ${escapeHtml(mo.code)} · ${escapeHtml(c.name || 'Cliente sin nombre')}</b>Ya cargamos lo que mandó el cliente: productos, tipo de servicio${c.payment ? ', método de pago' : ''}${mdiIsDelivery(mo) ? ' y costo de envío' : ''}. Solo revisa y cobra.</span></div>`; })()}
-      ${cashFirst ? `<div class="p2-card">${cashFirst}</div>` : ''}
+      ${cashFirst ? `<div class="p2-card" data-fx="cash">${cashFirst}</div>` : ''}
 
-      <div class="p2-card">
+      <div class="p2-card" data-fx="method">
       <div class="p2-h">Método de pago</div>
       <div class="opt-grid pay-grid ${methods.length === 4 ? 'four' : ''}">
         ${methods.map(p => `
@@ -7081,9 +7081,9 @@ function cartSheetHTML(step){
       </div>
       <button class="split-link ${pm === 'mixto' ? 'on' : ''}" onclick="setPaymentMethod('${pm === 'mixto' ? 'efectivo' : 'mixto'}')">${icon('swap')} ${pm === 'mixto' ? 'Pagar con un solo método' : 'Pagar con varios métodos (ej. parte efectivo, parte tarjeta)'}</button>
       </div>
-      ${payBody ? `<div class="p2-card">${payBody}</div>` : ''}
+      ${payBody ? `<div class="p2-card" data-fx="body">${payBody}</div>` : ''}
 
-      <div class="p2-card p2-svc">
+      <div class="p2-card p2-svc" data-fx="svc">
       <button type="button" class="svc-toggle ${window.__vpSvcOpen ? 'open' : ''}" onclick="toggleSvcTypes()" aria-expanded="${window.__vpSvcOpen ? 'true' : 'false'}" aria-label="Mostrar tipos de servicio">
         <span class="svc-toggle-t">Tipo de servicio</span>
         <span class="svc-toggle-cur">${(SERVICE_TYPES.find(s => s.id === checkout.serviceType) || {}).name || ''}${cust ? ' · ' + escapeHtml(cust.name) : ''}</span>
@@ -7114,7 +7114,7 @@ function cartSheetHTML(step){
       </div>
 
       ${cfg.tipsOn ? `
-        <div class="p2-card"><div class="p2-h">Propina</div>
+        <div class="p2-card" data-fx="tip"><div class="p2-h">Propina</div>
         <div class="filter-pill-row tip-row">
           <button class="filter-chip ${!checkout.tip ? 'active' : ''}" onclick="setTip(null)">Sin propina</button>
           ${cfg.tipOptions.map(v => `<button class="filter-chip ${checkout.tip && checkout.tip.pct == v ? 'active' : ''}" onclick="setTip(${Number(v)})">${fmtPct(v)}%</button>`).join('')}
@@ -7123,7 +7123,7 @@ function cartSheetHTML(step){
 
       ${(totals.discount > 0 || showsTax(tax) || totals.tip > 0) ? totalRows(true) : ''}
 
-      <div class="p2-actions">
+      <div class="p2-actions" data-fx="actions">
         <button class="btn ghost" onclick="openCartSheet('cart')">Volver</button>
         <button class="btn whatsapp block" id="btnCobrar" onclick="confirmarCobro()">${icon('check')} Cobrar ${formatMoney(toPay)}</button>
       </div>
@@ -7437,7 +7437,25 @@ function saveOrderDiscount(){
 
 /* ---------- Cobro: servicio, pago, efectivo, propina ---------- */
 function setServiceType(id){ checkout.serviceType = id; openCartSheet('checkout'); }
-function toggleSvcTypes(){ window.__vpSvcOpen = !window.__vpSvcOpen; const b=document.querySelector('.svc-toggle'), c=document.querySelector('.svc-body'); if(b){ b.classList.toggle('open', window.__vpSvcOpen); b.setAttribute('aria-expanded', window.__vpSvcOpen ? 'true':'false'); } if(c) c.classList.toggle('open', window.__vpSvcOpen); }
+function toggleSvcTypes(){
+  const open = !window.__vpSvcOpen; window.__vpSvcOpen = open;
+  const b = document.querySelector('.svc-toggle'), c = document.querySelector('.svc-body');
+  if(b){ b.classList.toggle('open', open); b.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+  if(!c) return;
+  const ease = 'cubic-bezier(.22,1,.36,1)';
+  if(!c.animate){ c.classList.toggle('open', open); return; }
+  c.style.overflow = 'hidden';
+  if(open){
+    c.classList.add('open');
+    const h = c.offsetHeight;
+    c.animate([{ height:'0px', opacity:0, paddingBottom:'0px' }, { height:h + 'px', opacity:1, paddingBottom:'14px' }], { duration:340, easing:ease })
+      .onfinish = () => { c.style.overflow = ''; };
+  }else{
+    const h = c.offsetHeight;
+    c.animate([{ height:h + 'px', opacity:1, paddingBottom:'14px' }, { height:'0px', opacity:0, paddingBottom:'0px' }], { duration:260, easing:ease })
+      .onfinish = () => { if(!window.__vpSvcOpen) c.classList.remove('open'); c.style.overflow = ''; };
+  }
+}
 function setPaymentMethod(id){
   if(id === 'credito'){
     if(!posCfg().creditOn){ toast('Las ventas fiadas están apagadas', { subtitle:'Actívalas en Mi cuenta › Cobro e IVA' }); return; }
@@ -24406,6 +24424,11 @@ printTicket = function(venta){
   .stats-right{ display:flex; flex-direction:column; gap:12px; }
 }
 </style>
+<style id="vp-fx2-css">
+@media (max-width:699px){ .sale-tools .tool-btn.md-quick:not(.cash-quick){ display:none !important; } }
+.pay2 .opt-card, .pay2 .filter-chip, .pay2 .split-link, .pay2 .co-cust{ transition:background-color .25s ease, border-color .25s ease, color .25s ease, box-shadow .25s ease, transform .2s ease; }
+.pay2 .opt-card:active{ transform:scale(.96); }
+</style>
 <script id="vp-nav-toggle">
 /* =========================================================
    OCULTAR LA BARRA LATERAL (tablet y PC)
@@ -24618,6 +24641,49 @@ function cartSanitize(){
       return r;
     };
   }
+})();
+</script>
+<script id="vp-pay-fx">
+/* Cobrar pedido: lo que cambia (efectivo → tarjeta, etc.) se mueve y aparece con suavidad */
+(function(){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var EASE = 'cubic-bezier(.22,1,.36,1)';
+  function layer(){ return document.getElementById('modal-layer'); }
+  function snap(){
+    var L = layer(); if(!L) return null;
+    var pay = L.querySelector('.modal-overlay:not(.is-closing) .pay2'); if(!pay) return null;
+    var blocks = {};
+    pay.querySelectorAll(':scope > [data-fx]').forEach(function(el){ blocks[el.getAttribute('data-fx')] = el.getBoundingClientRect().top; });
+    var act = [];
+    pay.querySelectorAll('.opt-grid').forEach(function(g){ act.push(Array.prototype.findIndex.call(g.querySelectorAll('.opt-card'), function(c){ return c.classList.contains('active'); })); });
+    return { blocks:blocks, act:act };
+  }
+  function post(pre){
+    var L = layer(); var pay = L && L.querySelector('.modal-overlay .pay2'); if(!pay) return;
+    pay.querySelectorAll(':scope > [data-fx]').forEach(function(el){
+      var k = el.getAttribute('data-fx'), r = el.getBoundingClientRect();
+      if(!(k in pre.blocks)){
+        el.animate([{ opacity:0, transform:'translateY(-10px) scale(.98)' }, { opacity:1, transform:'none' }], { duration:380, easing:EASE });
+      }else{
+        var d = pre.blocks[k] - r.top;
+        if(Math.abs(d) > 1) el.animate([{ transform:'translateY(' + d + 'px)' }, { transform:'none' }], { duration:420, easing:EASE });
+      }
+    });
+    pay.querySelectorAll('.opt-grid').forEach(function(g, gi){
+      var i = Array.prototype.findIndex.call(g.querySelectorAll('.opt-card'), function(c){ return c.classList.contains('active'); });
+      if(i >= 0 && pre.act[gi] !== undefined && pre.act[gi] !== i){
+        g.querySelectorAll('.opt-card')[i].animate([{ transform:'scale(.9)' }, { transform:'scale(1.04)', offset:.55 }, { transform:'scale(1)' }], { duration:360, easing:'cubic-bezier(.34,1.3,.64,1)' });
+      }
+    });
+  }
+  var _om = window.openModal;
+  if(typeof _om !== 'function' || reduce) return;
+  window.openModal = function(){
+    var pre = null; try{ pre = snap(); }catch(e){}
+    var r = _om.apply(this, arguments);
+    if(pre){ try{ post(pre); }catch(e){} }
+    return r;
+  };
 })();
 </script>
 </body>
