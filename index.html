@@ -10423,15 +10423,22 @@ function renderStats(){
 
   return head + `
     <div class="section-title">Gráficas</div>
-    <div id="statsCharts">${statsChartsHTML()}</div>
-
-    ${salesPeriodFilterHTML()}
-
-    <div class="stat-grid stats-row">
+    <div class="stats-top">
+      <div class="stats-left"><div id="statsCharts">${statsChartsHTML()}</div></div>
+      <div class="stats-right">
+        ${salesPeriodFilterHTML()}
+        <div class="stat-grid stats-row">
+          ${ver ? `
+        <div class="stat-card"><div class="stat-label">Ganancia</div><div class="stat-value" style="${d.prof.profit < 0 ? 'color:var(--accent-2);' : ''}">${formatMoney(d.prof.profit)}</div><div class="stat-label" style="margin-top:4px;">de lo vendido, sin IVA</div></div>
+` : ''}
       <div class="stat-card"><div class="stat-label">Ventas netas</div><div class="stat-value">${formatMoney(d.net)}</div><div class="stat-label" style="margin-top:4px;">${d.iva ? 'IVA incluido, ' : ''}sin propinas</div></div>
       <div class="stat-card"><div class="stat-label">Pedidos</div><div class="stat-value">${d.orders.length}</div><div class="stat-label" style="margin-top:4px;">ticket promedio ${formatMoney(ticket)}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-grid stats-extra">
       ${ver ? `
-        <div class="stat-card"><div class="stat-label">Ganancia</div><div class="stat-value" style="${d.prof.profit < 0 ? 'color:var(--accent-2);' : ''}">${formatMoney(d.prof.profit)}</div><div class="stat-label" style="margin-top:4px;">de lo vendido, sin IVA</div></div>
         <div class="stat-card"><div class="stat-label">Te queda</div><div class="stat-value" style="${d.prof.profit - d.gastos < 0 ? 'color:var(--accent-2);' : ''}">${formatMoney(d.prof.profit - d.gastos)}</div><div class="stat-label" style="margin-top:4px;">después de ${formatMoney(d.gastos)} de gastos</div></div>` : `
         <div class="stat-card"><div class="stat-label">Devoluciones</div><div class="stat-value">${formatMoney(d.returnsTotal)}</div><div class="stat-label" style="margin-top:4px;">${d.returns.length} en el periodo</div></div>
         <div class="stat-card"><div class="stat-label">Descuentos</div><div class="stat-value">${formatMoney(d.discounts)}</div><div class="stat-label" style="margin-top:4px;">que se dieron</div></div>`}
@@ -24388,6 +24395,16 @@ printTicket = function(venta){
 .vp-fly img{ width:100%; height:100%; object-fit:cover; display:block; }
 @media (min-width:700px){ .sale-tools .tool-btn.md-quick:not(.close){ width:136px; justify-content:center; padding:0 12px; flex:none; } }
 @media (prefers-reduced-motion: reduce){ .sp-card .cart-item.vp-new, .sp-card.vp-enter *, .product-card .pc-qtybar *{ animation:none !important; } }
+</style>
+<style id="stats-layout-css">
+.stats-top{ display:block; }
+.stats-extra{ margin-top:4px; }
+@media (min-width:900px){
+  .stats-top{ display:grid; grid-template-columns:minmax(0,1.9fr) minmax(250px,1fr); gap:18px; align-items:start; }
+  body[data-section="stats"] #view .stats-top .stat-grid.stats-row{ grid-template-columns:1fr; gap:12px; margin-bottom:0; }
+  body[data-section="stats"] #view .stats-top .period-bar, .stats-right > :first-child:not(.stat-grid){ margin-top:0; }
+  .stats-right{ display:flex; flex-direction:column; gap:12px; }
+}
 </style>
 <script id="vp-nav-toggle">
 /* =========================================================
