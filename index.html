@@ -6346,9 +6346,7 @@ function renderSale(){
           const vieja = (typeof cashIsStale === 'function') && cashIsStale(sess);
           return `<button class="tool-btn md-quick cash-quick close" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}" title="Cerrar caja" aria-label="Cerrar caja">${icon('check')}<span class="mdq-txt">Cerrar caja</span></button>`;
         }
-        let n = 0; try{ n = mdiCounts().nuevo; }catch(e){}
-        return `<button class="tool-btn md-quick" onclick="goTo('menu')" title="Menú Digital" aria-label="Menú Digital">${icon('menuBook')}<span class="mdq-txt">Menú Digital</span>${n ? `<i class="mdq-n">${n}</i>` : ''}</button>`
-          + `<button class="tool-btn md-quick cash-quick" onclick="goTo('cash')" title="Caja" aria-label="Caja">${icon('cashbox')}<span class="mdq-txt">Caja</span></button>`;
+        return `<button class="tool-btn md-quick cash-quick" onclick="goTo('cash')" title="Caja" aria-label="Caja">${icon('cashbox')}<span class="mdq-txt">Caja</span></button>`;
       })()}
     </div>
     ${typeof parkedBarHTML === 'function' ? parkedBarHTML() : ''}
