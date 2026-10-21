@@ -4379,6 +4379,8 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 .pay2 .co-extra{ display:grid !important; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
 .pay2 .co-extra .field{ margin:0 !important; min-width:0; display:flex; flex-direction:column; justify-content:flex-end; }
 .pay2 .co-extra .field > label{ font-size:11.5px; margin-bottom:6px; line-height:1.2; }
+.pay2 .quick-cash{ flex-wrap:nowrap !important; gap:8px; }
+.pay2 .quick-cash .filter-chip{ flex:1 1 0; min-width:0; padding-left:6px !important; padding-right:6px !important; white-space:nowrap; text-align:center; }
 </style>
 <style id="vp-font">
 /* La letra va DENTRO del index (Inter, licencia libre OFL): así la app y la
@@ -7023,7 +7025,7 @@ function cartSheetHTML(step){
           <label for="cashInput">Efectivo recibido</label>
           <div class="p2-money"><i>$</i><input id="cashInput" type="number" inputmode="decimal" min="0" step="0.5" placeholder="${toPay.toFixed(2)} (exacto)" value="${escapeHtml(checkout.cash)}" oninput="onCashInput(this.value)"></div>
           <div class="quick-cash">
-            ${quickCashOptions(toPay).map((v, i) => `<button class="filter-chip ${cashNum && Math.abs(cashNum - v) < 0.005 ? 'active' : ''}" onclick="setQuickCash(${v})">${i === 0 ? 'Exacto' : formatMoney(v).replace('.00', '')}</button>`).join('')}
+            ${quickCashOptions(toPay).slice(0, 4).map((v, i) => `<button class="filter-chip ${cashNum && Math.abs(cashNum - v) < 0.005 ? 'active' : ''}" onclick="setQuickCash(${v})">${i === 0 ? 'Exacto' : formatMoney(v).replace('.00', '')}</button>`).join('')}
           </div>
           <div class="field-hint ${!cashNum || cashNum >= toPay ? 'ok' : 'warn'}" id="cashHint">${cashHintText(cashNum, toPay)}</div>
         </div>`;
@@ -16842,6 +16844,8 @@ function mdiAfterDecision(id){
       </div>
     </div>
   `, { dismissible:true });
+  /* Entra de abajo hacia arriba, como las demás pantallas completas */
+  const ovNew = document.getElementById('modalOverlay'); if(ovNew) ovNew.classList.remove('is-swap');
   mdiPaintBadge();
   if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
 }
@@ -24622,18 +24626,18 @@ printTicket = function(venta){
 </style>
 <style id="mdn-ok-css">
 .mdn-okwrap{ position:relative; display:flex; align-items:center; justify-content:center; width:220px; height:130px; margin:0 auto 6px; }
-.mdn-okwrap .mdn-done-ico.ok{ width:92px; height:92px; background:#16A34A; box-shadow:0 0 0 14px rgba(22,163,74,.13), 0 0 0 30px rgba(22,163,74,.07); animation:vpPop .6s cubic-bezier(.34,1.56,.64,1) both; }
+.mdn-okwrap .mdn-done-ico.ok{ width:92px; height:92px; background:#16A34A; box-shadow:0 0 0 14px rgba(22,163,74,.13), 0 0 0 30px rgba(22,163,74,.07); }
 .mdn-okwrap .mdn-done-ico.ok svg{ width:46px; height:46px; stroke-width:3; }
-.mdn-spark{ position:absolute; inset:0; width:100%; height:100%; color:#16A34A; animation:vpFadeIn .6s ease .35s both; }
-.mdn-full h2{ animation:vpRise .5s cubic-bezier(.22,1,.36,1) .15s both; }
-.mdn-full p{ animation:vpRise .5s cubic-bezier(.22,1,.36,1) .25s both; }
-.mdn-bag{ mix-blend-mode:multiply; width:200px; height:200px; object-fit:contain; margin:14px auto 0; display:block; animation:vpRise .6s cubic-bezier(.22,1,.36,1) .35s both; }
-.mdn-full-actions .mdn-wa{ display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:var(--vp-green,#16A34A) !important; animation:vpRise .5s cubic-bezier(.22,1,.36,1) .45s both; }
+.mdn-spark{ position:absolute; inset:0; width:100%; height:100%; color:#16A34A; }
+.mdn-full h2{ }
+.mdn-full p{ }
+.mdn-bag{ mix-blend-mode:multiply; width:200px; height:200px; object-fit:contain; margin:14px auto 0; display:block; }
+.mdn-full-actions .mdn-wa{ display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:var(--vp-green,#16A34A) !important; }
 .mdn-full-actions .mdn-wa span{ flex:1; text-align:center; }
 .mdn-full-actions .mdn-wa svg:last-child{ width:18px; height:18px; }
-.mdn-later{ display:flex !important; align-items:center; justify-content:center; gap:4px; animation:vpFadeIn .5s ease .6s both; }
+.mdn-later{ display:flex !important; align-items:center; justify-content:center; gap:4px; }
 .mdn-later svg{ width:16px; height:16px; }
-@media (prefers-reduced-motion: reduce){ .mdn-full *{ animation:none !important; } }
+@media (prefers-reduced-motion: reduce){ .mdn-full *{ } }
 .mdn-done.mdn-full{ justify-content:center; }
 .mdn-full .mdn-full-main{ flex:none; padding:0 6px 6px; }
 .mdn-full .mdn-full-actions{ padding-top:14px; }
