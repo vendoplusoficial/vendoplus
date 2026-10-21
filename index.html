@@ -4371,6 +4371,13 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 .p2-actions .btn.block{ border-radius:14px; }
 @keyframes svcIn{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce){ .svc-body.open{ animation:none; } .svc-dbl{ transition:none; } }
+.pay2 .quick-cash{ justify-content:center; }
+.pay2 .quick-cash .filter-chip, .pay2 .quick-cash .filter-chip.active{ background:#fff; color:var(--ink); border:1px solid var(--p2-line); font-weight:700; }
+.pay2 .quick-cash .filter-chip.active{ border-color:var(--brand); background:var(--brand-soft); }
+.pay2 .opt-card{ text-align:center; }
+.pay2 .co-extra{ display:grid !important; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
+.pay2 .co-extra .field{ margin:0 !important; min-width:0; display:flex; flex-direction:column; justify-content:flex-end; }
+.pay2 .co-extra .field > label{ font-size:11.5px; margin-bottom:6px; line-height:1.2; }
 </style>
 <style id="vp-font">
 /* La letra va DENTRO del index (Inter, licencia libre OFL): así la app y la
@@ -24312,6 +24319,35 @@ printTicket = function(venta){
 })();
 </script>
 <script>try{ sessionStorage.removeItem('vendo_tema_preview'); }catch(e){}</script>
+<style id="nav-rail-css">
+/* Barra lateral mínima (solo iconos). Al abrir las 3 rayitas se despliega con nombres y los iconos quedan en el mismo lugar. */
+.nav-burger{ display:none; }
+@media (min-width:700px){
+  body.nav-hidden .app{ grid-template-columns:88px minmax(0,1fr) !important; grid-template-areas:"nav topbar" "nav view" !important; }
+  body.nav-hidden:not(.nav-peek) .bottomnav{ display:flex !important; grid-area:nav; position:sticky; top:0; width:auto; z-index:20; }
+  body.nav-hidden .bottomnav, body.nav-hidden.nav-peek .bottomnav{ flex-direction:column; align-items:stretch; gap:6px; padding:26px 16px 22px; background:#fff; overflow:hidden auto; scrollbar-width:none; }
+  body.nav-hidden .bottomnav::-webkit-scrollbar{ display:none; }
+  body.nav-hidden.nav-peek .bottomnav{ width:248px; animation:navRailIn .22s ease both; }
+  @keyframes navRailIn{ from{ opacity:.6; } to{ opacity:1; } }
+  body.nav-hidden .nav-open-btn, body.nav-hidden .nav-collapse{ display:none !important; }
+  body.nav-hidden .nav-burger{ display:flex; order:0; flex:none; align-self:flex-start; width:54px; height:48px; margin:0 0 10px; border-radius:14px; border:1px solid #E8EBF2; background:#fff; box-shadow:0 4px 14px rgba(22,33,62,.08); color:var(--vp-navy,#16213E); align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  body.nav-hidden .nav-burger svg{ width:22px; height:22px; }
+  body.nav-hidden .nav-burger:hover{ background:#F5F7FB; }
+  /* Mismas posiciones en cerrada y abierta */
+  body.nav-hidden .navbtn{ flex-direction:row !important; justify-content:flex-start; align-items:center; gap:14px; padding:13px 16px !important; min-height:48px; box-sizing:border-box; }
+  body.nav-hidden .navbtn .navicon{ margin:0 !important; flex:none; }
+  body.nav-hidden .navbtn span:last-child{ font-size:14.5px !important; font-weight:700; white-space:nowrap; text-align:left; }
+  body.nav-hidden:not(.nav-peek) .navbtn span:last-child{ display:none; }
+  body.nav-hidden .navbtn[data-view="sale"]{ justify-content:flex-start; padding:13px 16px !important; margin-bottom:10px; border-radius:14px; }
+  body.nav-hidden:not(.nav-peek) .navbtn[data-view="sale"]{ width:56px; }
+  body.nav-hidden .navbtn[data-view="sale"] span:last-child{ font-size:14.5px !important; color:#fff; }
+  body.nav-hidden .navbtn[data-view="sale"]{ background:var(--vp-green,#16C15B) !important; color:#fff !important; box-shadow:0 8px 18px rgba(22,193,91,.3); }
+  body.nav-hidden .navbtn[data-view="sale"] .navicon{ background:none !important; box-shadow:none !important; border:0 !important; width:22px; height:22px; margin-top:0 !important; }
+  body.nav-hidden .navbtn[data-view="sale"] .navicon svg{ width:22px; height:22px; stroke-width:2.8; }
+  body.nav-hidden .navbtn[data-view="sale"].active{ background:var(--vp-green-d,#0F8F46) !important; }
+  body.nav-hidden .topbar{ max-width:none !important; }
+}
+</style>
 <script id="vp-nav-toggle">
 /* =========================================================
    OCULTAR LA BARRA LATERAL (tablet y PC)
@@ -24328,6 +24364,12 @@ printTicket = function(venta){
   cerrar.setAttribute('aria-label', 'Ocultar menú'); cerrar.title = 'Ocultar menú';
   cerrar.innerHTML = icon('chevronLeft');
   nav.appendChild(cerrar);
+  var burger = document.createElement('button');
+  burger.type = 'button'; burger.className = 'nav-burger no-print';
+  burger.setAttribute('aria-label', 'Menú'); burger.title = 'Menú';
+  burger.innerHTML = (ICONS.vpMore || icon('list'));
+  nav.insertBefore(burger, nav.firstChild);
+  nav.querySelectorAll('.navbtn').forEach(function(b){ var t = b.querySelector('span:last-child'); if(t && !b.title) b.title = t.textContent.trim(); });
   var abrir = document.createElement('button');
   abrir.type = 'button'; abrir.className = 'nav-open-btn no-print';
   abrir.setAttribute('aria-label', 'Mostrar menú'); abrir.title = 'Mostrar menú';
@@ -24349,6 +24391,7 @@ printTicket = function(venta){
     asomar(false);
   });
   abrir.addEventListener('click', function(){ asomar(true); });
+  burger.addEventListener('click', function(){ asomar(!document.body.classList.contains('nav-peek')); });
   fondo.addEventListener('click', function(){ asomar(false); });
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && document.body.classList.contains('nav-peek')) asomar(false); });
   /* Al elegir una sección desde la barra encimada, se cierra sola */
