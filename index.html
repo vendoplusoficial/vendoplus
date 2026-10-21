@@ -17039,7 +17039,7 @@ function mdiDeliveryHTML(o){
         <button class="btn ghost block mdi-gmaps" onclick="mdiOpenMaps('${o.id}')">${icon('external')} Abrir en Google Maps</button>` : `
         <div class="mdi-noloc">${icon('alert')}<span>El cliente no mandó su ubicación. Pídesela por WhatsApp.</span></div>`}
       ${editable ? `
-        <div class="mdi-fee">
+        <div class="mdi-fee" id="mdiFeeBox">
           <label for="mdiFee"><b>Costo de envío</b><small>Se suma al total y le llega al cliente al confirmar</small></label>
           <div class="mdi-fee-input"><span>$</span><input id="mdiFee" type="number" inputmode="decimal" min="0" step="1" placeholder="0.00" value="${fee == null ? '' : fee}" oninput="mdiSetFee('${o.id}', this.value)"></div>
         </div>` : `
@@ -17089,6 +17089,7 @@ function mdiEtaPick(id, m, fromTap){
   vibrate(8);
   const sl = document.getElementById('mdiEtaSlider');
   if(sl){
+    mdiNeedClear('mdiEta');
     sl.classList.add('set');
     sl.querySelectorAll('.eta-opt').forEach(b => b.classList.toggle('sel', Number(b.dataset.min) === m));
     const v = document.getElementById('mdiEtaVal'); if(v){ v.textContent = mdiEtaShort(m); if(v.animate) v.animate([{ transform:'scale(.85)', opacity:.4 }, { transform:'scale(1)', opacity:1 }], { duration:260, easing:'cubic-bezier(.34,1.56,.64,1)' }); }
@@ -17148,6 +17149,16 @@ function mdiToggleMore(){
     c.animate([{ height:h + 'px', opacity:1 }, { height:'0px', opacity:0 }], { duration:300, easing:ease }).onfinish = () => { if(!mdiUI.more) c.classList.remove('open'); c.style.overflow = ''; };
   }
 }
+
+function mdiNeed(id, msg, focusId){
+  vibrate([20, 40, 20]);
+  toast(msg, { icon:icon('alert'), variant:'toast-danger' });
+  const el = document.getElementById(id); if(!el) return;
+  el.classList.remove('mdi-need'); void el.offsetWidth; el.classList.add('mdi-need');
+  try{ el.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
+  if(focusId){ const i = document.getElementById(focusId); if(i) setTimeout(() => { try{ i.focus({ preventScroll:true }); }catch(e){} }, 380); }
+}
+function mdiNeedClear(id){ const el = document.getElementById(id); if(el) el.classList.remove('mdi-need'); }
 function mdiOpenMaps(id){
   const o = MDI.get(id); if(!o || !mdiIsDelivery(o) || !o.customer.loc) return;
   const url = mdiMapsUrl(o.customer.loc);
@@ -17177,6 +17188,7 @@ function mdiSetFee(id, v){
     if(o.status !== 'nuevo') return;
     if(n == null || !isFinite(n) || n < 0) delete o.deliveryFee; else o.deliveryFee = round2(n);
   });
+  mdiNeedClear('mdiFeeBox');
   mdiPaintTotals(id);
 }
 /* Actualiza totales y botón sin repintar la hoja (no se pierde lo que se escribe) */
@@ -17184,7 +17196,7 @@ function mdiPaintTotals(id){
   const o = MDI.get(id); if(!o) return;
   const tw = document.getElementById('mdiTotals'); if(tw) tw.outerHTML = mdiTotalsHTML(o);
   const btn = document.getElementById('mdiConfirmBtn');
-  if(btn){ btn.innerHTML = icon('check') + ' Aceptar · ' + formatMoney(mdiOrderTotal(o)); btn.disabled = !mdiCanConfirm(o); }
+  if(btn){ btn.innerHTML = icon('check') + ' Aceptar · ' + formatMoney(mdiOrderTotal(o)); btn.disabled = false; }
   const need = document.getElementById('mdiFeeNeed'); if(need) need.hidden = mdiHasFee(o);
   const needEta = document.getElementById('mdiEtaNeed'); if(needEta) needEta.hidden = Number(o.etaMin) > 0;
 }
@@ -17249,8 +17261,7 @@ function mdiDetailHTML(o){
       <div class="mdi-banner ok">${icon('check')}<span><b>Pedido aceptado</b>${o.notifiedAt ? 'Ya le avisaste al cliente. Toca “Siguiente” para pasarlo a Pendiente de pago.' : 'Avísale al cliente por WhatsApp y luego toca “Siguiente” para pasarlo a Pendiente de pago.'}</span></div>
       <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que lo aceptaste'}</button>` : ''}
     ${o.status === 'confirmado' && !o.pendingNext ? `
-      <div class="mdi-banner ${mdiIsPaid(o) ? 'ok' : 'warn'}">${icon(mdiIsPaid(o) ? 'check' : 'clock')}<span><b>${mdiIsPaid(o) ? 'Pedido cobrado' : 'Aceptado · falta cobrarlo'}</b>${mdiIsPaid(o) ? (sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.')
-        : (o.notifiedAt ? 'Le avisaste al cliente ' + mdiAgo(o.notifiedAt) + '. ' : 'Avísale al cliente por WhatsApp que su pedido ya está confirmado. ') + 'Cuando te pague, toca “Cobrar”: hasta entonces no cuenta como venta.'}</span></div>
+      ${mdiIsPaid(o) ? `<div class="mdi-banner ok">${icon('check')}<span><b>Pedido cobrado</b>${sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : ''}
       ${mdiIsPaid(o)
         ? `<button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>`
         : `<button class="btn primary block mdi-notify" onclick="mdiCharge('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(mdiOrderTotal(o))}</button>`}` : ''}
@@ -17269,7 +17280,7 @@ function mdiDetailHTML(o){
       <span>Productos del pedido</span>
       ${mod ? `<span class="mdi-pill mod">Modificado</span>` : ''}
     </div>
-    <div class="mdi-lines">${lineRows || '<div class="todo-empty">El pedido quedó sin productos.</div>'}</div>
+    <div class="mdi-lines" id="mdiLines">${lineRows || '<div class="todo-empty">El pedido quedó sin productos.</div>'}</div>
     ${quitados.length ? `<div class="mdi-removed"><b>Se quitó del pedido original:</b> ${quitados.map(x => escapeHtml(mdiQtyText(x).replace(/^x/, '') + ' ' + mdiLineLabel(x))).join(' · ')}</div>` : ''}
     ${editable ? `
       <div class="mdi-line-actions">
@@ -17282,12 +17293,9 @@ function mdiDetailHTML(o){
     ${o.status === 'rechazado' ? '' : mdiTotalsHTML(o)}
 
     ${editable ? `
-      ${faltan ? `<div class="mdi-banner warn">${icon('alert')}<span><b>Falta elegir ${faltan} producto${faltan === 1 ? '' : 's'}</b>Hay productos que no están en tu catálogo. Toca ${icx('edit')} para cambiarlos antes de confirmar.</span></div>` : ''}
-      ${mdiIsDelivery(o) ? `<div class="mdi-banner warn" id="mdiFeeNeed" ${mdiHasFee(o) ? 'hidden' : ''}>${icon('truck')}<span><b>Falta el costo de envío</b>Escríbelo arriba para poder confirmar. Si no cobras envío, pon 0.</span></div>` : ''}
-      <div class="mdi-banner warn" id="mdiEtaNeed" ${Number(o.etaMin) > 0 ? 'hidden' : ''}>${icon('clock')}<span><b>Falta elegir el tiempo</b>Desliza arriba y elige en cuánto tiempo estará el pedido para poder aceptarlo.</span></div>
       <div class="mdi-decide">
         <button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>
-        <button class="btn mdi-confirm" id="mdiConfirmBtn" onclick="mdiConfirm('${o.id}')" ${mdiCanConfirm(o) ? '' : 'disabled'}>${icon('check')} Aceptar pedido · ${formatMoney(mdiOrderTotal(o))}</button>
+        <button class="btn mdi-confirm" id="mdiConfirmBtn" onclick="mdiConfirm('${o.id}')">${icon('check')} Aceptar pedido · ${formatMoney(mdiOrderTotal(o))}</button>
       </div>
     ` : `
       <div class="mdi-after">
@@ -17446,12 +17454,12 @@ function mdiIsPaid(o){ return !!(o && o.saleId); }
 function mdiConfirm(id){
   const o = MDI.get(id);
   if(!o || o.status !== 'nuevo') return;
-  if(!o.lines.length){ toast('El pedido no tiene productos'); return; }
-  if(mdiIsDelivery(o) && !mdiHasFee(o)){
-    toast('Escribe el costo de envío', { icon:icon('truck'), variant:'toast-danger', subtitle:'Si no cobras envío, pon 0' });
-    const f = document.getElementById('mdiFee'); if(f){ f.focus(); try{ f.scrollIntoView({ block:'center', behavior:'smooth' }); }catch(e){} }
-    return;
-  }
+  /* Si falta algo: no deja pasar, regresa a ese lugar y lo marca en rojo */
+  const falta = !o.lines.length ? { id:'mdiLines', msg:'El pedido no tiene productos' }
+    : mdiMissing(o) ? { id:'mdiLines', msg:'Elige el producto que falta en tu catálogo' }
+    : (mdiIsDelivery(o) && !mdiHasFee(o)) ? { id:'mdiFeeBox', msg:'Escribe el costo de envío (si no cobras, pon 0)', focus:'mdiFee' }
+    : !(Number(o.etaMin) > 0) ? { id:'mdiEta', msg:'Elige en cuánto tiempo estará el pedido' } : null;
+  if(falta){ mdiNeed(falta.id, falta.msg, falta.focus); return; }
   const inventario = DB.getProducts();
   if(o.lines.some(l => !inventario.find(p => p.id === l.productId))){ toast('Hay productos que no están en tu catálogo', { variant:'toast-danger', icon:icon('alert') }); return; }
   const uso = stockUseByProduct(o.lines, inventario);
@@ -24637,6 +24645,12 @@ printTicket = function(venta){
 .mdi-more.open .svc-dbl{ transform:rotate(90deg); }
 .mdi-more-body{ display:none; padding-top:12px; }
 .mdi-more-body.open{ display:block; }
+</style>
+<style id="mdi-need-css">
+.mdi-need{ border-radius:16px; box-shadow:0 0 0 2px var(--accent-2,#E1594C) !important; animation:dmNeed .5s ease; }
+.mdi-need .mdi-eta-t b, .mdi-need.mdi-fee label b, .mdi-need.mdi-lines{ color:var(--accent-2,#E1594C); }
+.mdi-fee.mdi-need{ border-top-color:transparent; padding:12px; margin:12px 0 2px; }
+.mdi-lines.mdi-need{ padding:2px; }
 </style>
 <script id="vp-nav-toggle">
 /* =========================================================
