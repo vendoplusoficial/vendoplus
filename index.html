@@ -12914,47 +12914,11 @@ function renderAccount(){
           </span>
           <span class="acc-chev">${icon('chevronRight')}</span>
         </button>` : ''}
-      <button class="acc-row" onclick="goTo('products')">
-        <span class="acc-ico green">${icon('box')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Inventarios</span>
-          <span class="acc-sub">${DB.getProducts().length} producto${DB.getProducts().length === 1 ? '' : 's'} · categorías y existencias</span>
-        </span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
       <button class="acc-row" onclick="openUsersSheet()">
         <span class="acc-ico violet">${icon('users')}</span>
         <span class="acc-txt">
           <span class="acc-label">${(soyDueno || can('verTodasVentas')) ? 'Usuarios' : 'Mi usuario'}</span>
           <span class="acc-sub">${usersSubtitle()}</span>
-        </span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-    </div>
-
-    <div class="section-title">Herramientas del negocio</div>
-    <div class="acc-list">
-      <button class="acc-row" onclick="cashTab='caja'; goTo('cash')">
-        <span class="acc-ico green">${icon('cashbox')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Caja y gastos</span>
-          <span class="acc-sub">${typeof cashCurrent === 'function' && cashCurrent() ? (cashIsStale(cashCurrent()) ? 'Falta el corte de la caja ' + cashDayName(cashCurrent().openedAt) : 'Caja abierta desde ' + fmtTime(cashCurrent().openedAt)) : 'Apertura, entradas, salidas, cortes y gastos'}</span>
-        </span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <button class="acc-row" onclick="goTo('customers')">
-        <span class="acc-ico gold">${icon('users')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Clientes y crédito</span>
-          <span class="acc-sub">${DB.getCustomers().length} cliente${DB.getCustomers().length === 1 ? '' : 's'}${typeof totalReceivable === 'function' && totalReceivable() > 0 ? ' · te deben ' + formatMoney(totalReceivable()) : ''}</span>
-        </span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </button>
-      <button class="acc-row" onclick="goTo('stats')">
-        <span class="acc-ico violet">${icon('chart')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Ventas</span>
-          <span class="acc-sub">Reportes por fechas, ganancia y Excel</span>
         </span>
         <span class="acc-chev">${icon('chevronRight')}</span>
       </button>
