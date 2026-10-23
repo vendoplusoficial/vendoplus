@@ -101,8 +101,9 @@
       '@media (prefers-reduced-motion: reduce){.vp-ia-card.vp-ia-salta{animation:none;box-shadow:0 0 0 3px rgba(245,191,60,.45)}}',
 
       /* ---- Producto sin foto: un punto del color de su sección ------ */
-      '.vp-ia-punto{width:13px;height:13px;border-radius:50%;display:block;flex:0 0 auto;}',
+      '.vp-ia-punto{width:13px;height:13px;border-radius:50%;display:block;flex:0 0 auto;margin:auto;}',
       '.vp-ia-punto.grande{width:26px;height:26px;}',
+      '.vp-ia-punto.mini{width:9px;height:9px;}',
       '@media (max-width:699px){.vp-ia-punto.grande{width:20px;height:20px;}}',
       /* La franja de color de arriba de la tarjeta se quita: el color de
          la sección ya lo dice el punto, y con tonos pastel la franja se
@@ -336,40 +337,88 @@
   ---------------------------------------------------------------- */
   var GRIS = '#8A93AC';
 
-  /* Color de cada producto, sacado de su categoría. Se arma de una sola
-     vez por pasada: "peek" no copia la lista, así que no pesa. */
+  /* Todos los lugares donde VendoPlus dibuja la foto de un producto.
+     "tam" es el tamaño del punto; "fila" es el renglón donde buscar el
+     nombre cuando el elemento no trae el id del producto. */
+  var LUGARES = [
+    { sel:'.pc-photo',        tam:'grande', raiz:'.product-card' },  /* Nueva venta */
+    { sel:'.pr-photo',        tam:'',       seccion:true },          /* Inventarios y vista previa del menú */
+    { sel:'.cart-item-photo', tam:'',       raiz:'.cart-item' },     /* líneas del carrito */
+    { sel:'.cartbar-thumb',   tam:'mini',   carrito:true },          /* barra del carrito */
+    { sel:'.tp-photo',        tam:'',       raiz:'.tp-row' },        /* más vendidos */
+    { sel:'.mdi-thumb',       tam:'',       raiz:'.mdi-line' },      /* pedidos del Menú Digital */
+    { sel:'.dm-photo',        tam:'grande', raiz:'.dm-card' },       /* Menú Digital: tarjeta */
+    { sel:'.dm-pd-photo',     tam:'grande', raiz:'.dm-pd' },         /* Menú Digital: detalle */
+    { sel:'.dm-thumb',        tam:'',       raiz:'.dm-l' },          /* Menú Digital: carrito */
+    { sel:'.fd-pic',          tam:'grande', raiz:'.fd-slide' },      /* diseño de menú */
+    { sel:'.cg-photo',        tam:'grande', raiz:'.cg-card' }        /* diseño de menú */
+  ];
+
+  /* Color de cada producto, por id y por nombre. Se arma una sola vez por
+     pasada: "peek" no copia la lista, así que no pesa. */
+  var colores = null;
   function mapaColores(){
-    var m = {};
+    var m = { id:{}, nom:{} };
     try{
       var cats = {};
       (Store.peek('mesa_categories', []) || []).forEach(function(c){ if(c && c.id) cats[c.id] = c.color || GRIS; });
-      (Store.peek('mesa_products', []) || []).forEach(function(p){ if(p && p.id) m[p.id] = cats[p.category] || GRIS; });
+      (Store.peek('mesa_products', []) || []).forEach(function(p){
+        if(!p || !p.id) return;
+        var col = cats[p.category] || GRIS;
+        m.id[p.id] = col;
+        if(p.name) m.nom[norm(p.name)] = col;
+      });
     }catch(e){}
     return m;
   }
 
-  function ponPunto(caja, color, grande){
-    if(!caja || caja.querySelector('img')) return;
-    if(caja.getAttribute('data-vp-punto') === color) return;   /* ya está */
-    caja.setAttribute('data-vp-punto', color);
-    caja.innerHTML = '<span class="vp-ia-punto' + (grande ? ' grande' : '') +
-                     '" style="background:' + color + '"></span>';
+  /* De un elemento al color que le toca: primero por id, luego por el
+     nombre que tenga a un lado, y si no, el gris de "sin categoría". */
+  function colorDe(caja, lugar){
+    if(!colores) colores = mapaColores();
+    var raiz = (lugar.raiz && caja.closest) ? caja.closest(lugar.raiz) : null;
+
+    var id = null;
+    var conId = caja.closest ? caja.closest('[data-pid],[data-id]') : null;
+    if(conId) id = conId.getAttribute('data-pid') || conId.getAttribute('data-id');
+    if(!id && raiz && raiz.id && raiz.id.indexOf('dmc-') === 0) id = raiz.id.slice(4);
+    if(id && colores.id[id]) return colores.id[id];
+
+    if(raiz){
+      var et = raiz.querySelector('[class*="name"],[class*="nombre"],[class*="cname"]');
+      if(et){
+        /* "Refresco · 2 litros" → "Refresco" */
+        var txt = String(et.textContent || '').split('·')[0];
+        var col = colores.nom[norm(txt)];
+        if(col) return col;
+      }
+    }
+    return null;
   }
 
-  var colores = null;
+  /* Pone el punto SIN borrar lo demás que haya en la caja (la etiqueta de
+     "Agotado", el botón de cerrar…): solo cambia el dibujo de la foto. */
+  function ponPunto(caja, color, tam){
+    if(!caja || !color || caja.querySelector('img')) return;
+    var ya = caja.querySelector('.vp-ia-punto');
+    if(ya){
+      if(ya.style.background !== color) ya.style.background = color;
+      return;
+    }
+    var ph = caja.querySelector('.cart-item-photo-ph') || caja.querySelector('svg');
+    if(!ph) return;
+    var punto = document.createElement('span');
+    punto.className = 'vp-ia-punto' + (tam ? ' ' + tam : '');
+    punto.style.background = color;
+    ph.replaceWith(punto);
+  }
+
   function pintarPuntos(){
     try{
       colores = null;
-      /* Tarjetas de Nueva venta (traen el id del producto en data-pid) */
-      var cards = document.querySelectorAll('.product-card[data-pid]');
-      for(var i = 0; i < cards.length; i++){
-        var foto = cards[i].querySelector('.pc-photo');
-        if(!foto || foto.querySelector('img')) continue;
-        if(!colores) colores = mapaColores();
-        ponPunto(foto, colores[cards[i].getAttribute('data-pid')] || GRIS, true);
-      }
-      /* Filas de Inventarios: el color se toma del encabezado de sección
-         que viene arriba, que ya trae su punto pintado. */
+
+      /* Inventarios: el color viene del encabezado de sección de arriba,
+         que ya trae su punto pintado. */
       var color = GRIS;
       var nodos = document.querySelectorAll('.cat-header, .prod-row');
       for(var j = 0; j < nodos.length; j++){
@@ -379,7 +428,35 @@
           color = (d && (d.style.backgroundColor || d.style.background)) || GRIS;
           continue;
         }
-        ponPunto(n.querySelector('.pr-photo'), color, false);
+        ponPunto(n.querySelector('.pr-photo'), color, '');
+      }
+
+      /* Todo lo demás */
+      for(var k = 0; k < LUGARES.length; k++){
+        var L = LUGARES[k];
+        if(L.carrito) continue;                 /* se hace aparte, más abajo */
+        var cajas = document.querySelectorAll(L.sel);
+        for(var i = 0; i < cajas.length; i++){
+          if(cajas[i].querySelector('img')) continue;
+          if(L.seccion && cajas[i].closest('.prod-row')) continue;   /* ya se pintó */
+          ponPunto(cajas[i], colorDe(cajas[i], L) || GRIS, L.tam);
+        }
+      }
+
+      /* La barra del carrito no trae ni id ni nombre: sus miniaturas son,
+         en orden, los primeros productos del carrito. */
+      var thumbs = document.querySelectorAll('.cartbar-thumb');
+      if(thumbs.length && typeof window.cart !== 'undefined' && Array.isArray(window.cart)){
+        if(!colores) colores = mapaColores();
+        var ids = [];
+        for(var c = 0; c < window.cart.length && ids.length < thumbs.length; c++){
+          var pid = window.cart[c] && window.cart[c].productId;
+          if(pid && colores.id[pid]) ids.push(pid);
+        }
+        for(var t = 0; t < thumbs.length; t++){
+          if(thumbs[t].querySelector('img')) continue;
+          ponPunto(thumbs[t], colores.id[ids[t]] || GRIS, 'mini');
+        }
       }
     }catch(e){}
   }
@@ -442,7 +519,7 @@
       els[i].setAttribute('data-vp-color', '1');
       if(els[i].querySelector('img')) continue;     /* con foto: se deja */
       if(!colores) colores = mapaColores();
-      els[i].style.background = colores[pid] || GRIS;
+      els[i].style.background = colores.id[pid] || GRIS;
     }
   }
   /* index.html define renderProducts más abajo que este archivo en algunos
@@ -808,7 +885,7 @@
     }
     return '<div class="vp-ia-f" style="margin-top:11px;">' +
              '<label>Descripción</label>' +
-             '<textarea rows="2" placeholder="Lo que lleva el platillo" oninput="vpIaSet(\'' + it._id + '\',\'descripcion\',this.value)">' + esc(it.descripcion) + '</textarea>' +
+             '<textarea rows="2" maxlength="160" placeholder="Lo que lleva el platillo" oninput="vpIaSet(\'' + it._id + '\',\'descripcion\',this.value)">' + esc(it.descripcion) + '</textarea>' +
            '</div>';
   }
 
@@ -980,7 +1057,7 @@
       return;
     }
     if(campo === 'categoria'){ it.categoria = String(valor || ''); pintarTarjeta(it); return; }
-    if(campo === 'descripcion'){ it.descripcion = String(valor).slice(0, 200); return; }
+    if(campo === 'descripcion'){ it.descripcion = String(valor).slice(0, 160); return; }
     if(campo === 'modoVar'){ it.modoVar = (valor === 'tamanos') ? 'tamanos' : 'separados'; return; }
   }
 
@@ -1167,11 +1244,11 @@
       return nueva.id;
     }
 
-    /* OJO: VendoPlus no tiene campo de descripción en los productos.
-       Lo que la IA leyó se guarda en "desc" (campo nuevo, opcional, que
-       viaja con el producto y se sincroniza como todo lo demás). Hoy
-       ninguna pantalla lo muestra: está ahí para cuando lo quieras usar
-       en el Menú Digital. Si no lo quieres, pon GUARDAR_DESC = false. */
+    /* La descripción va en "description", que es el campo que YA usa
+       VendoPlus: el formulario del producto trae el recuadro "Descripción
+       breve del producto", el Menú Digital la muestra debajo del nombre,
+       el buscador la toma en cuenta y sale en el respaldo en CSV.
+       El tope de 160 letras es el mismo de ese recuadro. */
     var GUARDAR_DESC = true;
 
     function base(nombre, precio, categoria, descripcion){
@@ -1192,7 +1269,7 @@
         sku: null,                  /* no se inventa el código de barras */
         wholesalePrice: null,
         wholesaleMin: null,
-        desc: (GUARDAR_DESC && String(descripcion || '').trim()) ? String(descripcion).trim().slice(0, 200) : null,
+        description: (GUARDAR_DESC && String(descripcion || '').trim()) ? String(descripcion).trim().slice(0, 160) : '',
         createdAt: ahora,
         updatedAt: ahora
       };
