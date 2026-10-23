@@ -274,6 +274,18 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
   align-items:center; justify-content:center; flex-shrink:0; padding:0;
 }
 .vp-ch-btn:active{ transform:scale(.92); }
+
+/* Celular acostado con el teclado arriba: quedan ~150 px. Se esconden las
+   sugerencias y se compacta todo para que el cuadro de texto quepa. */
+.vp-ch-caja.vp-bajita .vp-chips{ display:none; }
+.vp-ch-caja.vp-bajita .vp-ch-top{ padding:6px 12px; }
+.vp-ch-caja.vp-bajita .vp-ch-tit span{ display:none; }
+.vp-ch-caja.vp-bajita .vp-ch-cara{ width:30px; height:26px; }
+.vp-ch-caja.vp-bajita .vp-ch-btn{ width:32px; height:32px; }
+.vp-ch-caja.vp-bajita .vp-ch-msgs{ padding:8px 12px; }
+.vp-ch-caja.vp-bajita .vp-ch-abajo{ padding:6px 12px; }
+.vp-ch-caja.vp-bajita .vp-ch-abajo input{ padding:8px 12px; }
+.vp-ch-caja.vp-bajita .vp-enviar{ width:36px; height:36px; }
 .vp-ch-btn svg{ width:19px; height:19px; }
 
 /* "min-height:0" es la línea que arregla el desorden al deslizar.
@@ -710,6 +722,14 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
       if (msgs && msgs.contains(e.target)) return;   /* la lista sí se desliza */
       e.preventDefault();
     }, { passive: false });
+
+    /* Lo mismo con la rueda del mouse: como en computadora ya no se traba
+       la página, la rueda sobre el chat no debe mover lo de atrás. */
+    chat.addEventListener('wheel', function (e) {
+      if (!abierto) return;
+      if (msgs && msgs.contains(e.target)) return;
+      e.preventDefault();
+    }, { passive: false });
   }
 
   /**
@@ -746,26 +766,44 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
     var caja = chat.querySelector('.vp-ch-caja');
     if (!caja) return;
 
-    /* En computadora es un panel de esquina: lo coloca el CSS y no hay
-       teclado que lo mueva. Aquí no tocamos nada. */
-    if (window.innerWidth >= 700) {
-      if (ultimoAcomodo !== 'pc') { caja.style.top = ''; caja.style.height = ''; ultimoAcomodo = 'pc'; }
-      return;
-    }
+    var panel = esPanel();
+    /* Si giraron el celular con el chat abierto, el modo cambia:
+       se traba o se destraba la página según toque. */
+    if (panel && trabado) trabarFondo(false);
+    if (!panel && !trabado) trabarFondo(true);
 
     var vv = window.visualViewport;
-    var arriba = vv ? Math.round(vv.offsetTop || 0) : 0;
-    var alto = Math.round(vv ? vv.height : window.innerHeight);
+    var vArriba = vv ? Math.round(vv.offsetTop || 0) : 0;
+    var vAlto = Math.round(vv ? vv.height : window.innerHeight);
+    var arriba, alto;
+
+    if (panel) {
+      /* Computadora o celular acostado: panel de esquina. Se calcula lo
+         mismo que dice el CSS (18 px de margen, máximo 640 de alto), pero
+         sobre lo que SÍ se ve, para que el teclado no lo tape. */
+      var margen = 18;
+      alto = Math.min(640, vAlto - margen * 2);
+      if (alto < 200) { margen = 6; alto = vAlto - margen * 2; }   /* teclado grande, poco espacio */
+      arriba = vArriba + vAlto - alto - margen;
+    } else {
+      arriba = vArriba;
+      alto = vAlto;
+    }
 
     /* Se escribe solo cuando de verdad cambió: si no, cada movimiento del
        dedo haría recalcular la página de balde. */
-    var firma = arriba + ':' + alto;
+    var firma = (panel ? 'p' : 'c') + arriba + ':' + alto;
     if (firma === ultimoAcomodo) return;
     ultimoAcomodo = firma;
 
     caja.style.top = arriba + 'px';
     caja.style.height = alto + 'px';
+    caja.classList.toggle('vp-bajita', alto < 300);
   }
+
+  /* Mismo corte que el CSS: de 700 px para arriba el chat es un panel
+     flotante y la página de atrás se queda como está. */
+  function esPanel() { return window.innerWidth >= 700; }
 
   /* Red de seguridad.
      Mientras el chat está abierto se revisa cada tantito. Los eventos del
@@ -784,9 +822,18 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
    * Con "overflow:hidden" no basta en iPhone: Safari igual mueve la página
    * para enseñar el campo donde escribes. Con position:fixed sí se queda
    * quieta. Se apunta dónde iba para regresarla ahí al cerrar.
+   *
+   * SOLO en modo celular (chat a pantalla completa). En computadora o
+   * con el celular acostado el chat es un panel y la página se ve atrás:
+   * trabarla quitaba la barra de scroll, todo se ensanchaba unos píxeles
+   * y el encabezado se iba para arriba. Se veía como un zoom.
    */
+  var trabado = false;
   function trabarFondo(si) {
     var b = document.body, h = document.documentElement;
+    if (si && esPanel()) si = false;
+    if (si === trabado) return;
+    trabado = si;
     if (si) {
       scrollGuardado = window.scrollY || window.pageYOffset || 0;
       b.style.position = 'fixed';
@@ -849,7 +896,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
     ultimoAcomodo = '';
     /* se limpia lo que se puso a mano, para que no quede una medida vieja */
     var caja = chat.querySelector('.vp-ch-caja');
-    if (caja) { caja.style.top = ''; caja.style.height = ''; }
+    if (caja) { caja.style.top = ''; caja.style.height = ''; caja.classList.remove('vp-bajita'); }
     try { entrada.blur(); } catch (e) {}
     setTimeout(revisar, 220);
   }
