@@ -22203,6 +22203,10 @@ const Cloud = {
     }else finishAuth(msg || '¡Bienvenido de vuelta!');
   }
 };
+/* El objeto Cloud se declara con "const", y eso NO crea window.Cloud.
+   Se publica aquí para que vendo-escaner-ia.js lo encuentre. No cambia
+   nada de su contenido ni de su comportamiento. */
+window.Cloud = Cloud;
 Cloud.init();
 
 if(Cloud.ready){
