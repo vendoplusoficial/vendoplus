@@ -147,7 +147,7 @@
   /* top/left en 0 a propósito: así "translate3d" cuenta desde la esquina de
      la pantalla. Sin esto, el navegador lo coloca donde habría caído dentro
      de la página y termina encima de la barra de abajo. */
-  position:fixed; top:0; left:0; z-index:200; width:80px; height:95px;
+  position:fixed; top:0; left:0; z-index:200; width:62px; height:74px;
   touch-action:none; -webkit-user-select:none; user-select:none; cursor:grab;
   will-change:transform; contain:layout style;
   transition:opacity .22s ease, transform .26s cubic-bezier(.34,1.3,.64,1);
@@ -195,7 +195,7 @@
 
 /* ---- globito de aviso ---- */
 .vp-m-burbuja{
-  position:absolute; bottom:calc(100% + 4px); right:0; max-width:190px;
+  position:absolute; bottom:calc(100% + 4px); right:0; max-width:168px;
   background:var(--surface,#fff); color:var(--ink,#16213E);
   border:1px solid var(--border,#E8EBF2); border-radius:14px;
   padding:8px 11px; font-size:12.5px; font-weight:600; line-height:1.35;
@@ -414,7 +414,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
   function pintar() {
     if (!nodo) return;
     var m = 10;
-    var w = nodo.offsetWidth || 80, h = nodo.offsetHeight || 95;
+    var w = nodo.offsetWidth || 62, h = nodo.offsetHeight || 74;
     var navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 76;
     var maxX = window.innerWidth - w - m;
     var topeAlto = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 56) + m;
@@ -609,7 +609,12 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
     document.addEventListener('focusin', revisar, true);
     document.addEventListener('focusout', function () { setTimeout(revisar, 160); }, true);
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', function () { revisar(); acomodarChat(); });
+      var vv = window.visualViewport;
+      /* "resize" avisa que el teclado cambió el alto.
+         "scroll" avisa que el iPhone movió la parte visible. Sin este
+         segundo, el chat se queda arriba y se asoma la página de atrás. */
+      vv.addEventListener('resize', function () { revisar(); acomodarChat(); });
+      vv.addEventListener('scroll', acomodarChat);
     }
     window.addEventListener('resize', revisar);
     /* por si algo se nos escapa, una revisión muy barata cada tanto */
@@ -683,15 +688,64 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
    * encabezado se va para arriba y por abajo se asoma la página.
    * visualViewport sí dice la verdad, y además se mueve con el teclado.
    */
+  /**
+   * Pone el chat EXACTAMENTE sobre la parte de la pantalla que se ve.
+   *
+   * Por qué tanto lío, en corto:
+   * el iPhone tiene dos "pantallas". La de maquetación (layout viewport),
+   * que no cambia de tamaño nunca, y la visual, que es lo que de verdad
+   * alcanzas a ver y que el teclado encoge Y DESPLAZA hacia arriba.
+   * Un elemento con position:fixed se amarra a la de maquetación, así que
+   * cuando sale el teclado el chat se va con ella hacia arriba y se asoma
+   * la página de atrás. Eso era lo que pasaba.
+   *
+   * La cura son tres cosas juntas, y las tres hacen falta:
+   *   1. trabar el cuerpo de la página con position:fixed (abajo), para
+   *      que la de maquetación ya no se pueda mover;
+   *   2. darle al chat el alto de la visual (vv.height);
+   *   3. bajarlo tantos píxeles como se haya desplazado la visual
+   *      (vv.offsetTop), escuchando TAMBIÉN el evento "scroll" del
+   *      visualViewport, que es el que avisa de ese desplazamiento.
+   *      Antes solo se escuchaba "resize", y por eso se descuadraba.
+   */
   function acomodarChat() {
     if (!chat || !abierto) return;
     var vv = window.visualViewport;
-    if (vv) {
-      chat.style.height = vv.height + 'px';
-      chat.style.top = (vv.offsetTop || 0) + 'px';
-    } else {
+    if (!vv) {
       chat.style.height = window.innerHeight + 'px';
       chat.style.top = '0px';
+      return;
+    }
+    chat.style.height = Math.round(vv.height) + 'px';
+    chat.style.top = Math.round(vv.offsetTop || 0) + 'px';
+  }
+
+  /**
+   * Traba y destraba la página de atrás.
+   * Con "overflow:hidden" no basta en iPhone: Safari igual mueve la página
+   * para enseñar el campo donde escribes. Con position:fixed sí se queda
+   * quieta. Se apunta dónde iba para regresarla ahí al cerrar.
+   */
+  function trabarFondo(si) {
+    var b = document.body, h = document.documentElement;
+    if (si) {
+      scrollGuardado = window.scrollY || window.pageYOffset || 0;
+      b.style.position = 'fixed';
+      b.style.top = (-scrollGuardado) + 'px';
+      b.style.left = '0';
+      b.style.right = '0';
+      b.style.width = '100%';
+      h.classList.add('vp-chat-abierto');
+      b.classList.add('vp-chat-abierto');
+    } else {
+      b.style.position = '';
+      b.style.top = '';
+      b.style.left = '';
+      b.style.right = '';
+      b.style.width = '';
+      h.classList.remove('vp-chat-abierto');
+      b.classList.remove('vp-chat-abierto');
+      try { window.scrollTo(0, scrollGuardado); } catch (e) {}
     }
   }
 
@@ -710,9 +764,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
     /* Se traba la página de atrás: sin esto, el jalón dentro del chat
        arrastra la pantalla de abajo y se ve el fondo moverse.
        Se apunta en dónde iba para devolverla ahí misma al cerrar. */
-    scrollGuardado = window.scrollY || window.pageYOffset || 0;
-    document.documentElement.classList.add('vp-chat-abierto');
-    document.body.classList.add('vp-chat-abierto');
+    trabarFondo(true);
     gesto('feliz', 1600);
     if (!msgs.childElementCount) {
       var VC = window.VPCerebro;
@@ -731,9 +783,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
     chat.classList.remove('vp-abierto');
     /* Se destraba la página y se regresa justo a donde iba.
        Si esto no se hace, Vendo Plus se queda sin poder deslizarse. */
-    document.documentElement.classList.remove('vp-chat-abierto');
-    document.body.classList.remove('vp-chat-abierto');
-    try { window.scrollTo(0, scrollGuardado); } catch (e) {}
+    trabarFondo(false);
     /* se limpia lo que puso visualViewport, para que no quede un alto viejo */
     chat.style.height = '';
     chat.style.top = '';
