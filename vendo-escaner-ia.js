@@ -54,16 +54,15 @@
     s.id = 'vp-ia-css';
     s.textContent = [
       /* ---- Fila de botones de Inventarios ----------------------------
-         Son tres y no caben en un renglón en un celular. Los dos grises
-         se reparten el primer renglón y el verde, que es la acción
-         principal, ocupa el segundo completo. En pantallas anchas los
-         tres vuelven a caber en una sola línea. */
-      '.fab-row.vp-ia-row{flex-wrap:wrap;justify-content:flex-start;}',
-      '.fab-row.vp-ia-row .btn{flex:1 1 0;min-width:0;white-space:nowrap;}',
-      '.fab-row.vp-ia-row .btn.ghost{padding:12px 14px;font-size:13.5px;}',
-      '.fab-row.vp-ia-row .btn.ghost svg{width:17px;height:17px;}',
-      '.fab-row.vp-ia-row .btn.primary{flex:1 1 100%;padding:13px 16px;font-size:14.5px;}',
-      '@media (min-width:600px){.fab-row.vp-ia-row{justify-content:flex-end;}.fab-row.vp-ia-row .btn{flex:0 0 auto;}}',
+         Los tres en un solo renglón, del mismo ancho, como tres tarjetas.
+         Para que quepan de verdad las etiquetas van cortas (el icono dice
+         el resto) y el tamaño de letra se adapta al ancho del teléfono. */
+      '.fab-row.vp-ia-row{display:flex;flex-wrap:nowrap;gap:6px;justify-content:stretch;}',
+      '.fab-row.vp-ia-row .btn{flex:1 1 0;min-width:0;white-space:nowrap;gap:6px;',
+        'font-size:clamp(11.5px, 3.4vw, 14px);padding:12px 8px;border-radius:16px;}',
+      '.fab-row.vp-ia-row .btn svg{width:17px;height:17px;flex:0 0 auto;}',
+      '@media (min-width:600px){.fab-row.vp-ia-row{justify-content:flex-end;}',
+        '.fab-row.vp-ia-row .btn{flex:0 0 auto;padding:12px 18px;}}',
 
       /* ---- La hoja del escáner -------------------------------------
          Sin esto la barra de abajo quedaba "pegada" a mitad de la hoja
@@ -87,11 +86,22 @@
 
       /* ---- Contadores ----------------------------------------------- */
       '.vp-ia-count{display:flex;gap:8px;margin:0 0 14px;}',
-      '.vp-ia-count>div{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 6px;text-align:center;}',
+      '.vp-ia-count>div{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 6px;text-align:center;font-family:inherit;}',
       '.vp-ia-count b{display:block;font-size:19px;font-weight:800;color:var(--ink);line-height:1.15;}',
       '.vp-ia-count span{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:3px;}',
       '.vp-ia-count>div.on{background:var(--accent-soft);border-color:#F0DCA0;}',
       '.vp-ia-count>div.on b,.vp-ia-count>div.on span{color:#8A6000;}',
+      /* "Por revisar" es un botón: lleva al siguiente producto con aviso */
+      '.vp-ia-count>button{border:1px solid var(--border);cursor:pointer;}',
+      '.vp-ia-count>button.on:active{transform:scale(.97);}',
+      '.vp-ia-count>button.on span::after{content:" ›";font-weight:800;}',
+      /* Al llegar al producto, parpadea para que se vea cuál es */
+      '.vp-ia-card.vp-ia-salta{animation:vpIaSalta 1.1s ease;}',
+      '@keyframes vpIaSalta{0%,100%{box-shadow:0 0 0 0 rgba(245,191,60,0)}30%,60%{box-shadow:0 0 0 4px rgba(245,191,60,.45)}}',
+      '@media (prefers-reduced-motion: reduce){.vp-ia-card.vp-ia-salta{animation:none;box-shadow:0 0 0 3px rgba(245,191,60,.45)}}',
+
+      /* ---- Producto sin foto: un punto del color de su sección ------ */
+      '.vp-ia-punto{width:13px;height:13px;border-radius:50%;display:block;flex:0 0 auto;}',
 
       /* ---- Foto original -------------------------------------------- */
       '.vp-ia-foto{width:100%;border-radius:var(--radius-card);border:1px solid var(--border);display:block;margin:0 0 14px;}',
@@ -260,13 +270,28 @@
   /* --------------------------------------------------------------- */
   /* 1) El botón: se agrega solo a la pantalla de Inventarios         */
   /* --------------------------------------------------------------- */
+  /* Etiqueta corta a propósito: con "Escanear con IA" los tres botones
+     no caben en un renglón de celular (medido: hacen falta 376px y en un
+     teléfono de 360px solo hay 320). El icono dice el resto. */
   function botonHTML(){
-    return '<button class="btn ghost" onclick="vpIaAbrir()">' + ico('camera') + ' Escanear con IA</button>';
+    return '<button class="btn ghost" onclick="vpIaAbrir()">' + ico('camera') + ' Escanear</button>';
   }
+
+  /* Dentro de la fila de botones, y SOLO ahí, se acortan las etiquetas
+     largas. Fuera de esa fila no se toca una sola letra de la app. */
+  function acortar(fila){
+    return fila
+      .replace('>Agregar producto<', '>Agregar<')
+      .replace('> Agregar producto<', '> Agregar<')
+      .replace('>Nuevo producto<', '>Agregar<')
+      .replace('> Nuevo producto<', '> Agregar<');
+  }
+
   function instalarBoton(){
     /* Los estilos se ponen desde el arranque, no al abrir el escáner:
        la fila de botones de Inventarios también los necesita. */
     estilos();
+    envolverFilaProductos();
     if(typeof window.renderProducts !== 'function' || window.renderProducts.__vpIa) return false;
     var original = window.renderProducts;
     var envuelto = function(){
@@ -282,13 +307,34 @@
       var puede = (typeof can === 'function') ? can('gestionarProductos') : true;
       if(!puede) return html;
       html = html.slice(0, fin) + botonHTML() + html.slice(fin);
-      /* Marca la fila para que los tres botones se acomoden solos.
-         Es lo único que se le agrega al HTML de VendoPlus: una clase. */
-      return html.replace('class="fab-row ', 'class="fab-row vp-ia-row ');
+
+      /* La fila solo lleva botones, nunca otro <div> adentro, así que
+         basta con llegar al primer </div>. Dentro de ese trozo —y solo
+         ahí— se marca la clase y se acortan las etiquetas largas. */
+      return html.replace(/<div class="fab-row[^"]*"[^>]*>[\s\S]*?<\/div>/,
+        function(fila){
+          return acortar(fila).replace('class="fab-row', 'class="fab-row vp-ia-row');
+        });
     };
     envuelto.__vpIa = true;
     window.renderProducts = envuelto;
     return true;
+  }
+
+  /* Producto sin foto: en vez del icono de imagen, un punto del color de
+     su sección. Se envuelve renderProdRow para no tocar index.html. */
+  function envolverFilaProductos(){
+    if(typeof window.renderProdRow !== 'function' || window.renderProdRow.__vpIa) return;
+    var original = window.renderProdRow;
+    var envuelto = function(p, cat){
+      var html = original.apply(this, arguments);
+      if(typeof html !== 'string' || !p || p.image) return html;
+      var color = (cat && cat.color) || '#8A93AC';
+      return html.replace(/(<div class="pr-photo"[^>]*>)[\s\S]*?(<\/div>)/,
+        '$1<span class="vp-ia-punto" style="background:' + color + '"></span>$2');
+    };
+    envuelto.__vpIa = true;
+    window.renderProdRow = envuelto;
   }
   /* index.html define renderProducts más abajo que este archivo en algunos
      órdenes de carga, así que se intenta varias veces sin hacer ruido. */
@@ -325,13 +371,28 @@
     }catch(e){}
   }
 
-  /* El <input> NO lleva "capture": con capture, el navegador del celular
-     abre la cámara directo y ya no deja elegir de la galería. Sin él,
-     Android y iPhone muestran el menú completo (Cámara, Fotos, Archivos)
-     y el dueño escoge. En la app de Android da igual: MainActivity ya
-     arma ese mismo menú por su cuenta. */
-  function campoFoto(id){
-    return '<input id="' + id + '" type="file" accept="image/*" style="display:none" onchange="vpIaFoto(this)">';
+  /* Dos campos en vez de uno, y el dueño elige con un botón cada uno:
+       · con "capture"  → abre la cámara
+       · sin "capture"  → abre la galería
+     Hace falta porque los navegadores no se ponen de acuerdo: con capture,
+     Chrome y Safari iban directo a la cámara y no dejaban la galería; sin
+     capture, el Android nuevo abre su selector de fotos, que no trae
+     cámara. Con dos botones funciona igual en Android, iPhone y PC, y
+     además se ve claro qué hace cada uno. */
+  function campoFoto(id, camara){
+    return '<input id="' + id + '" type="file" accept="image/*"' +
+           (camara ? ' capture="environment"' : '') +
+           ' style="display:none" onchange="vpIaFoto(this)">';
+  }
+  function botonesFoto(sufijo){
+    var a = 'vpIaCam' + sufijo, b = 'vpIaGal' + sufijo;
+    return '<button class="btn primary xl block" onclick="document.getElementById(\'' + a + '\').click()">' +
+             ico('camera') + ' Tomar foto' +
+           '</button>' +
+           '<button class="btn ghost block" style="margin-top:8px;" onclick="document.getElementById(\'' + b + '\').click()">' +
+             ico('mobile') + ' Elegir de la galería' +
+           '</button>' +
+           campoFoto(a, true) + campoFoto(b, false);
   }
   function tip(texto){
     return '<div class="vp-ia-tip"><i>' + ico('check') + '</i><b>' + texto + '</b></div>';
@@ -349,8 +410,7 @@
         tip('Una hoja a la vez. Si el menú es largo, fotografíalo por partes.') +
         tip('Nada entra a tu inventario hasta que tú lo confirmes.') +
       '</div>' +
-      '<button class="btn primary xl block" onclick="document.getElementById(\'vpIaFile\').click()">' + ico('camera') + ' Tomar foto o elegir una</button>' +
-      campoFoto('vpIaFile') +
+      botonesFoto('A') +
       '<p class="vp-ia-nota" id="vpIaRestantes">' +
         (restantes == null ? 'Cada foto nueva usa un escaneo.' : 'Te quedan ' + restantes + ' escaneos este mes.') +
       '</p>';
@@ -380,11 +440,11 @@
       /* Sin icono de cámara: este botón vuelve a mandar la MISMA foto,
          no abre la cámara. El de abajo sí, y por eso lo lleva. */
       (reintentar
-        ? '<button class="btn primary xl block" onclick="vpIaReintentar()">Analizar esta foto otra vez</button>'
+        ? '<button class="btn primary xl block" style="margin-bottom:8px;" onclick="vpIaReintentar()">Analizar esta foto otra vez</button>'
         : '') +
-      '<button class="btn ghost block"' + (reintentar ? ' style="margin-top:8px;"' : '') +
-        ' onclick="document.getElementById(\'vpIaFile2\').click()">' + ico('camera') + ' Elegir otra foto</button>' +
-      campoFoto('vpIaFile2');
+      '<button class="btn ghost block" onclick="document.getElementById(\'vpIaCamB\').click()">' + ico('camera') + ' Tomar otra foto</button>' +
+      '<button class="btn ghost block" style="margin-top:8px;" onclick="document.getElementById(\'vpIaGalB\').click()">' + ico('mobile') + ' Elegir de la galería</button>' +
+      campoFoto('vpIaCamB', true) + campoFoto('vpIaGalB', false);
     openModal(html, { dismissible:true });
   }
 
@@ -722,7 +782,10 @@
     h += '<div class="vp-ia-count" id="vpIaCount">' +
            '<div><b>' + c.total + '</b><span>Detectados</span></div>' +
            '<div><b>' + c.sel + '</b><span>Elegidos</span></div>' +
-           '<div class="' + (c.pend ? 'on' : '') + '"><b>' + c.pend + '</b><span>Por revisar</span></div>' +
+           /* Este sí es botón: lleva al siguiente producto con aviso */
+           '<button type="button" class="' + (c.pend ? 'on' : '') + '" onclick="vpIaIrPendiente()">' +
+             '<b>' + c.pend + '</b><span>Por revisar</span>' +
+           '</button>' +
          '</div>';
 
     if(S.cache){
@@ -768,7 +831,8 @@
     var c = cuentas();
     var box = document.getElementById('vpIaCount');
     if(!box) return;
-    var d = box.querySelectorAll('div');
+    /* El tercero es un <button>, no un <div>: se toman los hijos tal cual */
+    var d = box.children;
     if(d[0]) d[0].querySelector('b').textContent = c.total;
     if(d[1]) d[1].querySelector('b').textContent = c.sel;
     if(d[2]){ d[2].className = c.pend ? 'on' : ''; d[2].querySelector('b').textContent = c.pend; }
@@ -850,6 +914,34 @@
 
   function verFoto(){ S.verFoto = !S.verFoto; pantallaRevision(); }
 
+  /* Toca "Por revisar" y te lleva al siguiente producto con aviso.
+     Si vuelves a tocar, al que sigue, y al final regresa al primero. */
+  var ultimoPend = -1;
+  function irPendiente(){
+    var pend = [];
+    S.items.forEach(function(it, i){ if(dudoso(it)) pend.push(i); });
+    if(!pend.length){
+      avisar('No queda nada por revisar', { icon:ico('check'), variant:'toast-success' });
+      return;
+    }
+    var sig = pend.find(function(i){ return i > ultimoPend; });
+    if(sig === undefined) sig = pend[0];
+    ultimoPend = sig;
+
+    var card = document.getElementById('c_' + S.items[sig]._id);
+    var caja = document.querySelector('.vp-ia-scroll');
+    if(!card || !caja) return;
+    /* Se deja un respiro arriba para que no quede pegado al borde */
+    caja.scrollTo({ top: Math.max(0, card.offsetTop - 12), behavior: prefiereQuieto() ? 'auto' : 'smooth' });
+    card.classList.remove('vp-ia-salta');
+    void card.offsetWidth;                 /* reinicia la animación */
+    card.classList.add('vp-ia-salta');
+    setTimeout(function(){ card.classList.remove('vp-ia-salta'); }, 1300);
+  }
+  function prefiereQuieto(){
+    try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; }
+  }
+
   /* Lo único que vuelve a gastar IA, y con límite del servidor */
   function otraVez(){
     if(typeof askConfirm !== 'function'){ analizar(true); return; }
@@ -876,6 +968,24 @@
   /* --------------------------------------------------------------- */
   /* 8) Guardar en el inventario (misma estructura de VendoPlus)      */
   /* --------------------------------------------------------------- */
+  /* Colores para las categorías que crea el escáner. Tonos crema, arena y
+     caramelo en vez del verde brillante de siempre: se ven más serios
+     juntos y se distinguen bien entre ellos sobre fondo blanco.
+     El color sale del nombre, así que "Bebidas" siempre queda del mismo
+     tono, y se evita repetir uno que ya esté en uso. */
+  var CREMAS = ['#D8B26A','#C9966B','#D4A373','#C4A484','#BFA27A','#CBB58F','#D9A88C','#B8956A'];
+  function colorCrema(nombre, cats){
+    var h = 0, s = String(nombre || '');
+    for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    var usados = {};
+    (cats || []).forEach(function(c){ if(c && c.color) usados[String(c.color).toUpperCase()] = 1; });
+    for(var k = 0; k < CREMAS.length; k++){
+      var c = CREMAS[(h + k) % CREMAS.length];
+      if(!usados[c]) return c;
+    }
+    return CREMAS[h % CREMAS.length];
+  }
+
   function unidadDe(etiquetas){
     var t = etiquetas.join(' ').toLowerCase();
     if(/\bkilo|kgs?\b|\bgramos?\b|\bgr?\b/.test(t)) return 'kilo';
@@ -932,7 +1042,7 @@
       var v = norm(nombre);
       var hay = cats.filter(function(c){ return norm(c.name) === v; })[0];
       if(hay) return hay.id;
-      var nueva = { id:'cat' + Date.now() + Math.floor(Math.random() * 1000), name:nombre.slice(0, 40), emoji:'', color:'#25D366' };
+      var nueva = { id:'cat' + Date.now() + Math.floor(Math.random() * 1000), name:nombre.slice(0, 40), emoji:'', color:colorCrema(nombre, cats) };
       cats.push(nueva); nuevasCats++;
       return nueva.id;
     }
@@ -1052,6 +1162,7 @@
   window.vpIaDesc       = abrirDesc;
   window.vpIaQuitar     = quitar;
   window.vpIaVerFoto    = verFoto;
+  window.vpIaIrPendiente = irPendiente;
   window.vpIaOtraVez    = otraVez;
   window.vpIaReintentar = reintentar;
   window.vpIaGuardar    = guardar;

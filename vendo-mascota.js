@@ -147,7 +147,7 @@
   /* top/left en 0 a propósito: así "translate3d" cuenta desde la esquina de
      la pantalla. Sin esto, el navegador lo coloca donde habría caído dentro
      de la página y termina encima de la barra de abajo. */
-  position:fixed; top:0; left:0; z-index:200; width:62px; height:74px;
+  position:fixed; top:0; left:0; z-index:200; width:46px; height:55px;
   touch-action:none; -webkit-user-select:none; user-select:none; cursor:grab;
   will-change:transform; contain:layout style;
   transition:opacity .22s ease, transform .26s cubic-bezier(.34,1.3,.64,1);
@@ -443,7 +443,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
   function pintar() {
     if (!nodo) return;
     var m = 10;
-    var w = nodo.offsetWidth || 62, h = nodo.offsetHeight || 74;
+    var w = nodo.offsetWidth || 46, h = nodo.offsetHeight || 55;
     var navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 76;
     var maxX = window.innerWidth - w - m;
     var topeAlto = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 56) + m;
