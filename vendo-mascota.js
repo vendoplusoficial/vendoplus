@@ -25,7 +25,7 @@
   ======================================================================= */
   function svgMascota() {
     return '' +
-'<svg class="vp-m-svg" viewBox="0 0 128 152" width="100%" height="100%" aria-hidden="true" focusable="false">' +
+'<svg class="vp-m-svg" viewBox="0 0 128 144" width="100%" height="100%" aria-hidden="true" focusable="false">' +
   '<defs>' +
     '<linearGradient id="vpBlanco" x1="0" y1="0" x2="0" y2="1">' +
       '<stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E9ECF3"/>' +
@@ -35,23 +35,25 @@
     '</linearGradient>' +
   '</defs>' +
 
-  /* ---- pies ---- */
-  '<g class="vp-piernas">' +
-    '<ellipse cx="51" cy="143" rx="11.5" ry="7.5" fill="url(#vpBlanco)"/>' +
-    '<ellipse cx="77" cy="143" rx="11.5" ry="7.5" fill="url(#vpBlanco)"/>' +
-  '</g>' +
+  /* ---- sin pies: flota ---- */
 
   /* ---- brazos (van antes que el cuerpo: así el cuerpo los "tapa" un poco
           por dentro y se ven pegados al tronco, no flotando) ---- */
   '<g class="vp-brazo vp-brazo-izq">' +
-    '<rect x="11" y="105" width="23" height="14.5" rx="7.25" fill="url(#vpBlanco)"/>' +
-    '<rect x="26.5" y="106.5" width="4.5" height="11.5" rx="2.25" fill="' + OSCURO + '" opacity=".9"/>' +
-    '<g id="vp-slot-mano-izq"></g>' +         /* ← ranura: objetos en la mano */
+    /* El giro va aqui dentro para no estorbarle a la animacion de saludo,
+       que usa transform de CSS sobre el grupo de afuera. */
+    '<g transform="rotate(-74 37 112)">' +
+      '<rect x="11" y="105" width="23" height="14.5" rx="7.25" fill="url(#vpBlanco)"/>' +
+      '<rect x="13.5" y="106.5" width="4.5" height="11.5" rx="2.25" fill="' + OSCURO + '" opacity=".9"/>' +
+      '<g id="vp-slot-mano-izq"></g>' +       /* ← ranura: objetos en la mano */
+    '</g>' +
   '</g>' +
   '<g class="vp-brazo vp-brazo-der">' +
-    '<rect x="94" y="105" width="23" height="14.5" rx="7.25" fill="url(#vpBlanco)"/>' +
-    '<rect x="97" y="106.5" width="4.5" height="11.5" rx="2.25" fill="' + OSCURO + '" opacity=".9"/>' +
-    '<g id="vp-slot-mano-der"></g>' +
+    '<g transform="rotate(74 91 112)">' +
+      '<rect x="94" y="105" width="23" height="14.5" rx="7.25" fill="url(#vpBlanco)"/>' +
+      '<rect x="109.5" y="106.5" width="4.5" height="11.5" rx="2.25" fill="' + OSCURO + '" opacity=".9"/>' +
+      '<g id="vp-slot-mano-der"></g>' +
+    '</g>' +
   '</g>' +
 
   /* ---- cuerpo ---- */
@@ -147,7 +149,7 @@
   /* top/left en 0 a propósito: así "translate3d" cuenta desde la esquina de
      la pantalla. Sin esto, el navegador lo coloca donde habría caído dentro
      de la página y termina encima de la barra de abajo. */
-  position:fixed; top:0; left:0; z-index:200; width:46px; height:55px;
+  position:fixed; top:0; left:0; z-index:200; width:46px; height:52px;
   touch-action:none; -webkit-user-select:none; user-select:none; cursor:grab;
   will-change:transform; contain:layout style;
   transition:opacity .22s ease, transform .26s cubic-bezier(.34,1.3,.64,1);
@@ -443,7 +445,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
   function pintar() {
     if (!nodo) return;
     var m = 10;
-    var w = nodo.offsetWidth || 46, h = nodo.offsetHeight || 55;
+    var w = nodo.offsetWidth || 46, h = nodo.offsetHeight || 52;
     var navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 76;
     var maxX = window.innerWidth - w - m;
     var topeAlto = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 56) + m;

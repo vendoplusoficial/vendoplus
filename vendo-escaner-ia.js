@@ -102,6 +102,12 @@
 
       /* ---- Producto sin foto: un punto del color de su sección ------ */
       '.vp-ia-punto{width:13px;height:13px;border-radius:50%;display:block;flex:0 0 auto;}',
+      '.vp-ia-punto.grande{width:26px;height:26px;}',
+      '@media (max-width:699px){.vp-ia-punto.grande{width:20px;height:20px;}}',
+      /* La franja de color de arriba de la tarjeta se quita: el color de
+         la sección ya lo dice el punto, y con tonos pastel la franja se
+         veía como una mancha. */
+      '.product-card .pc-top{display:none;}',
 
       /* ---- Foto original -------------------------------------------- */
       '.vp-ia-foto{width:100%;border-radius:var(--radius-card);border:1px solid var(--border);display:block;margin:0 0 14px;}',
@@ -321,20 +327,123 @@
     return true;
   }
 
-  /* Producto sin foto: en vez del icono de imagen, un punto del color de
-     su sección. Se envuelve renderProdRow para no tocar index.html. */
+  /* ---------------------------------------------------------------
+     Producto sin foto: en vez del icono de imagen, un punto del color
+     de su sección. Se hace sobre el HTML ya pintado, no cambiando las
+     funciones de VendoPlus, para que funcione igual en Inventarios y
+     en Nueva venta, en celular, tablet y PC, y sin importar qué icono
+     tenga puesto cada quien.
+  ---------------------------------------------------------------- */
+  var GRIS = '#8A93AC';
+
+  /* Color de cada producto, sacado de su categoría. Se arma de una sola
+     vez por pasada: "peek" no copia la lista, así que no pesa. */
+  function mapaColores(){
+    var m = {};
+    try{
+      var cats = {};
+      (Store.peek('mesa_categories', []) || []).forEach(function(c){ if(c && c.id) cats[c.id] = c.color || GRIS; });
+      (Store.peek('mesa_products', []) || []).forEach(function(p){ if(p && p.id) m[p.id] = cats[p.category] || GRIS; });
+    }catch(e){}
+    return m;
+  }
+
+  function ponPunto(caja, color, grande){
+    if(!caja || caja.querySelector('img')) return;
+    if(caja.getAttribute('data-vp-punto') === color) return;   /* ya está */
+    caja.setAttribute('data-vp-punto', color);
+    caja.innerHTML = '<span class="vp-ia-punto' + (grande ? ' grande' : '') +
+                     '" style="background:' + color + '"></span>';
+  }
+
+  var colores = null;
+  function pintarPuntos(){
+    try{
+      colores = null;
+      /* Tarjetas de Nueva venta (traen el id del producto en data-pid) */
+      var cards = document.querySelectorAll('.product-card[data-pid]');
+      for(var i = 0; i < cards.length; i++){
+        var foto = cards[i].querySelector('.pc-photo');
+        if(!foto || foto.querySelector('img')) continue;
+        if(!colores) colores = mapaColores();
+        ponPunto(foto, colores[cards[i].getAttribute('data-pid')] || GRIS, true);
+      }
+      /* Filas de Inventarios: el color se toma del encabezado de sección
+         que viene arriba, que ya trae su punto pintado. */
+      var color = GRIS;
+      var nodos = document.querySelectorAll('.cat-header, .prod-row');
+      for(var j = 0; j < nodos.length; j++){
+        var n = nodos[j];
+        if(n.classList.contains('cat-header')){
+          var d = n.querySelector('.cat-dot');
+          color = (d && (d.style.backgroundColor || d.style.background)) || GRIS;
+          continue;
+        }
+        ponPunto(n.querySelector('.pr-photo'), color, false);
+      }
+    }catch(e){}
+  }
+
+  /* Se pinta después de cada repintado de la app, y además un vigilante
+     por si alguna pantalla se actualiza por su cuenta. */
   function envolverFilaProductos(){
-    if(typeof window.renderProdRow !== 'function' || window.renderProdRow.__vpIa) return;
-    var original = window.renderProdRow;
-    var envuelto = function(p, cat){
-      var html = original.apply(this, arguments);
-      if(typeof html !== 'string' || !p || p.image) return html;
-      var color = (cat && cat.color) || '#8A93AC';
-      return html.replace(/(<div class="pr-photo"[^>]*>)[\s\S]*?(<\/div>)/,
-        '$1<span class="vp-ia-punto" style="background:' + color + '"></span>$2');
-    };
-    envuelto.__vpIa = true;
-    window.renderProdRow = envuelto;
+    if(typeof window.render === 'function' && !window.render.__vpIaPunto){
+      var o = window.render;
+      var w = function(){
+        var r = o.apply(this, arguments);
+        try{ pintarPuntos(); }catch(e){}
+        return r;
+      };
+      w.__vpIaPunto = true;
+      window.render = w;
+    }
+    if(!pintarPuntos.__obs && window.MutationObserver && document.body){
+      var pendiente = false;
+      var obs = new MutationObserver(function(){
+        /* Lo que vuela al carrito se pinta de inmediato: si se espera un
+           cuadro, alcanza a verse verde un instante. */
+        try{ pintarVuelo(ultimoPid); }catch(e){}
+        if(pendiente) return;
+        pendiente = true;
+        requestAnimationFrame(function(){ pendiente = false; pintarPuntos(); });
+      });
+      obs.observe(document.body, { childList:true, subtree:true });
+      pintarPuntos.__obs = obs;
+    }
+    pintarPuntos();
+    envolverVuelo();
+  }
+
+  /* ---------------------------------------------------------------
+     Lo que "vuela" al carrito cuando el producto no tiene foto: que
+     salga del color de su sección y no del verde de siempre.
+     Se apunta cuál producto se está agregando, y en cuanto aparece el
+     elemento que vuela se le pone ese color.
+  ---------------------------------------------------------------- */
+  var ultimoPid = null;
+  function envolverVuelo(){
+    ['addToCart', 'changeQtyFromGrid', 'addSizeToCart'].forEach(function(nombre){
+      var o = window[nombre];
+      if(typeof o !== 'function' || o.__vpIaVuelo) return;
+      var w = function(){
+        ultimoPid = arguments[0];
+        var r = o.apply(this, arguments);
+        try{ pintarVuelo(ultimoPid); }catch(e){}
+        return r;
+      };
+      w.__vpIaVuelo = true;
+      window[nombre] = w;
+    });
+  }
+  function pintarVuelo(pid){
+    if(!pid) return;
+    var els = document.querySelectorAll('.vp-fly:not([data-vp-color])');
+    for(var i = 0; i < els.length; i++){
+      els[i].setAttribute('data-vp-color', '1');
+      if(els[i].querySelector('img')) continue;     /* con foto: se deja */
+      if(!colores) colores = mapaColores();
+      els[i].style.background = colores[pid] || GRIS;
+    }
   }
   /* index.html define renderProducts más abajo que este archivo en algunos
      órdenes de carga, así que se intenta varias veces sin hacer ruido. */
@@ -968,12 +1077,23 @@
   /* --------------------------------------------------------------- */
   /* 8) Guardar en el inventario (misma estructura de VendoPlus)      */
   /* --------------------------------------------------------------- */
-  /* Colores para las categorías que crea el escáner. Tonos crema, arena y
-     caramelo en vez del verde brillante de siempre: se ven más serios
-     juntos y se distinguen bien entre ellos sobre fondo blanco.
-     El color sale del nombre, así que "Bebidas" siempre queda del mismo
-     tono, y se evita repetir uno que ya esté en uso. */
-  var CREMAS = ['#D8B26A','#C9966B','#D4A373','#C4A484','#BFA27A','#CBB58F','#D9A88C','#B8956A'];
+  /* Colores para las categorías que crea el escáner: pastel, pero de
+     familias distintas (rosa, vainilla, menta, lavanda, durazno, cielo…)
+     para que dos categorías seguidas no se parezcan. El color sale del
+     nombre, así que "Bebidas" siempre queda del mismo tono, y se evita
+     repetir uno que ya esté en uso. */
+  var CREMAS = [
+    '#E8A0B4',  /* rosa      */
+    '#E6C77D',  /* vainilla  */
+    '#8FCFB4',  /* menta     */
+    '#B1A5D8',  /* lavanda   */
+    '#EFA98A',  /* durazno   */
+    '#8FBEDC',  /* cielo     */
+    '#D4A3C8',  /* lila      */
+    '#B9CE8E',  /* pistache  */
+    '#E59A8E',  /* coral     */
+    '#D9BC94'   /* arena     */
+  ];
   function colorCrema(nombre, cats){
     var h = 0, s = String(nombre || '');
     for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
