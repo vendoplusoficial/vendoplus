@@ -208,43 +208,68 @@
 #vp-mascota.vp-habla .vp-m-burbuja{ opacity:1; transform:translateY(0) scale(1); }
 
 /* =======================  VENTANA DE CHAT  ======================= */
+/* En el celular: PANTALLA COMPLETA.
+   El alto lo pone el JS con visualViewport, no con 100vh: en el celular
+   100vh miente (no descuenta la barra del navegador ni el teclado), y por
+   eso antes se "desacomodaba" y se asomaba la página de atrás. */
 #vp-chat{
-  position:fixed; z-index:460; left:0; right:0; bottom:0;
-  display:flex; justify-content:center; pointer-events:none;
+  position:fixed; z-index:460; left:0; top:0; width:100%; height:100%;
+  display:flex; justify-content:center; align-items:stretch;
+  pointer-events:none; visibility:hidden;
 }
-#vp-chat.vp-abierto{ pointer-events:auto; }
+#vp-chat.vp-abierto{ pointer-events:auto; visibility:visible; }
+html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
+
 .vp-ch-caja{
-  width:100%; max-width:560px; background:var(--surface,#fff);
-  border-radius:var(--radius-sheet,24px) var(--radius-sheet,24px) 0 0;
-  box-shadow:var(--shadow-sheet,0 -10px 30px rgba(22,33,62,.16));
-  display:flex; flex-direction:column; max-height:78vh; min-height:340px;
-  transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1);
-  overflow:hidden;
+  width:100%; height:100%; background:var(--surface,#fff);
+  display:flex; flex-direction:column; overflow:hidden;
+  transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1);
+  overscroll-behavior:none;
 }
 #vp-chat.vp-abierto .vp-ch-caja{ transform:translateY(0); }
+
+/* En computadora sí es un panel, no tendría sentido taparlo todo */
 @media (min-width:700px){
-  #vp-chat{ justify-content:flex-end; padding:0 18px 18px; }
-  .vp-ch-caja{ max-width:400px; border-radius:20px; max-height:620px; }
+  #vp-chat{ justify-content:flex-end; align-items:flex-end; padding:18px; }
+  .vp-ch-caja{
+    width:400px; height:min(640px, calc(100% - 36px));
+    border-radius:20px; box-shadow:var(--shadow-pop,0 10px 26px rgba(22,33,62,.18));
+    border:1px solid var(--border,#E8EBF2);
+  }
 }
 
+/* El encabezado NO se mueve nunca: la equis siempre está arriba. */
 .vp-ch-top{
-  display:flex; align-items:center; gap:10px; padding:13px 14px;
-  border-bottom:1px solid var(--border,#E8EBF2); flex-shrink:0;
+  display:flex; align-items:center; gap:10px;
+  padding:13px 14px; padding-top:calc(13px + env(safe-area-inset-top));
+  border-bottom:1px solid var(--border,#E8EBF2);
+  flex:0 0 auto; background:var(--surface,#fff); position:relative; z-index:2;
 }
+@media (min-width:700px){ .vp-ch-top{ padding-top:13px; } }
 .vp-ch-cara{ width:40px; height:34px; flex-shrink:0; }
 .vp-ch-cara svg{ width:100%; height:100%; }
 .vp-ch-tit{ flex:1; min-width:0; }
 .vp-ch-tit b{ display:block; font-size:15px; font-weight:800; color:var(--ink,#16213E); }
 .vp-ch-tit span{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft,#8A93AC); margin-top:1px; }
 .vp-ch-btn{
-  width:32px; height:32px; border:0; background:var(--surface-alt,#F0F2F8);
-  border-radius:10px; color:var(--ink-soft,#8A93AC); display:flex;
+  width:38px; height:38px; border:0; background:var(--surface-alt,#F0F2F8);
+  border-radius:12px; color:var(--ink,#16213E); display:flex;
   align-items:center; justify-content:center; flex-shrink:0; padding:0;
 }
 .vp-ch-btn:active{ transform:scale(.92); }
-.vp-ch-btn svg{ width:17px; height:17px; }
+.vp-ch-btn svg{ width:19px; height:19px; }
 
-.vp-ch-msgs{ flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+/* "min-height:0" es la línea que arregla el desorden al deslizar.
+   Sin ella, un hijo flexible que scrollea NO se deja encoger: la caja se
+   desborda, el encabezado se empuja fuera de la pantalla y por abajo se
+   asoma la página. Es el bug clásico de flexbox.
+   "overscroll-behavior:none" evita que el jalón de más arrastre la página
+   de atrás (el efecto de liga del celular). */
+.vp-ch-msgs{
+  flex:1 1 auto; min-height:0;
+  overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:none;
+  padding:14px; display:flex; flex-direction:column; gap:10px;
+}
 .vp-msg{ max-width:88%; padding:10px 13px; border-radius:15px; font-size:14px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; animation:vp-entra .22s ease; }
 @keyframes vp-entra{ from{ opacity:0; transform:translateY(7px) } to{ opacity:1; transform:none } }
 .vp-msg.vp-yo{ align-self:flex-end; background:${VERDE}; color:#fff; border-bottom-right-radius:5px; font-weight:600; }
@@ -259,7 +284,7 @@
 .vp-pensando i{ width:6px; height:6px; border-radius:50%; background:var(--ink-faint,#C9CEDD); animation:vp-punto 1.1s ease-in-out infinite; }
 .vp-pensando i:nth-child(2){ animation-delay:.16s } .vp-pensando i:nth-child(3){ animation-delay:.32s }
 
-.vp-chips{ display:flex; flex-wrap:wrap; gap:7px; padding:0 14px 10px; flex-shrink:0; }
+.vp-chips{ display:flex; flex-wrap:wrap; gap:7px; padding:0 14px 10px; flex:0 0 auto; }
 .vp-chip{
   border:1px solid var(--border,#E8EBF2); background:var(--surface,#fff);
   color:var(--ink,#16213E); border-radius:999px; padding:7px 13px;
@@ -269,8 +294,10 @@
 
 .vp-ch-abajo{
   display:flex; gap:8px; padding:10px 14px calc(12px + env(safe-area-inset-bottom));
-  border-top:1px solid var(--border,#E8EBF2); flex-shrink:0; align-items:flex-end;
+  border-top:1px solid var(--border,#E8EBF2); flex:0 0 auto; align-items:flex-end;
+  background:var(--surface,#fff);
 }
+@media (min-width:700px){ .vp-ch-abajo{ padding-bottom:12px; } }
 .vp-ch-abajo input{
   flex:1; min-width:0; border:1px solid var(--border,#E8EBF2); background:var(--surface-alt,#F0F2F8);
   border-radius:12px; padding:11px 13px; font-size:16px; color:var(--ink,#16213E); font-family:inherit;
@@ -508,10 +535,16 @@
     return (altoBase - vv.height) > Math.max(130, altoBase * 0.2);
   }
 
-  /** ¿Hay algo encima que no debo tapar? */
-  function debeOcultarse() {
+  /**
+   * Razones de AFUERA para quitarse: algo de Vendo Plus se puso encima, o
+   * el negocio apagó el asistente. Estas valen tanto para el personaje
+   * como para el chat, y son las únicas que cierran el chat.
+   */
+  function estorbaAlgo() {
     try {
       var html = document.documentElement, body = document.body;
+      /* el negocio lo apagó desde Mi cuenta */
+      if (apagada()) return true;
       /* una hoja abierta: cobrar, carrito, formularios, confirmaciones */
       if (html.classList.contains('modal-open')) return true;
       /* cámara / escáner de códigos */
@@ -520,15 +553,28 @@
       /* pantallas donde no pinta nada: menú digital público y la de entrar */
       if (body.classList.contains('dm-mode')) return true;
       if (body.classList.contains('auth-open')) return true;
-      /* teclado arriba (si el chat está abierto, el chat manda, no estorba) */
-      if (!abierto && hayTeclado()) return true;
-      /* algún campo escribiendo */
-      if (!abierto) {
-        var a = document.activeElement;
-        if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
-      }
       /* la cuenta sin sesión todavía */
       if (!body.dataset.section) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  /**
+   * ¿Se esconde el PERSONAJE? Son las de arriba, más las suyas propias.
+   *
+   * Ojo con no mezclar las dos cosas: "escóndete" no es lo mismo que
+   * "cierra el chat". Cuando el chat está abierto el personaje se esconde
+   * (lo tapa el chat), pero eso NO quiere decir que haya que cerrar el
+   * chat. Tenerlo junto hacía que el chat se cerrara solo a los 3
+   * milisegundos de abrirse.
+   */
+  function debeOcultarse() {
+    if (estorbaAlgo()) return true;
+    if (abierto) return true;              /* el chat ya lo tapa */
+    if (hayTeclado()) return true;
+    try {
+      var a = document.activeElement;
+      if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
     } catch (e) {}
     return false;
   }
@@ -540,8 +586,11 @@
     requestAnimationFrame(function () {
       rafPend = false;
       if (!nodo) return;
+      /* El chat solo se cierra por algo de AFUERA (abrieron el cobro, el
+         escáner, se apagó el asistente). Nunca por el hecho de estar
+         abierto, que era el error de antes. */
+      if (abierto && estorbaAlgo()) cerrarChat();
       var esconder = debeOcultarse();
-      if (esconder && abierto) cerrarChat();
       nodo.classList.toggle('vp-oculta', esconder);
       if (!esconder) pintar();
     });
@@ -612,25 +661,58 @@
     chat.querySelector('#vp-ch-cerrar').onclick = cerrarChat;
     chat.querySelector('#vp-ch-enviar').onclick = enviar;
     entrada.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); enviar(); } });
-    chat.addEventListener('click', function (e) { if (e.target === chat) cerrarChat(); });
+    /* Cerrar tocando fuera de la ventana.
+       El "if" del tiempo arregla una falla fea: al tocar al personaje, este
+       se esconde entre el pointerup y el click, así que para cuando llega
+       el click el que está debajo del dedo ya es el chat… y se cerraba solo.
+       Pasaba "a veces" porque depende de cuánto tarde el toque.
+       En el celular el chat ocupa todo, así que aquí solo entra en
+       computadora, donde sí queda espacio alrededor. */
+    chat.addEventListener('click', function (e) {
+      if (e.target !== chat) return;
+      if (Date.now() - abiertoEn < 450) return;
+      cerrarChat();
+    });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && abierto) cerrarChat(); });
   }
 
-  /** Sube el chat cuando sale el teclado, para que no lo tape. */
+  /**
+   * Le da al chat el alto REAL de lo que se ve.
+   * En el celular no sirve 100vh: no descuenta la barra del navegador ni
+   * el teclado, así que la caja queda más alta que la pantalla, el
+   * encabezado se va para arriba y por abajo se asoma la página.
+   * visualViewport sí dice la verdad, y además se mueve con el teclado.
+   */
   function acomodarChat() {
     if (!chat || !abierto) return;
     var vv = window.visualViewport;
-    var abajo = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-    chat.style.bottom = abajo + 'px';
+    if (vv) {
+      chat.style.height = vv.height + 'px';
+      chat.style.top = (vv.offsetTop || 0) + 'px';
+    } else {
+      chat.style.height = window.innerHeight + 'px';
+      chat.style.top = '0px';
+    }
   }
+
+  var scrollGuardado = 0;
+  var abiertoEn = 0;        /* cuándo se abrió, para ignorar el click rezagado */
 
   function abrirChat() {
     if (abierto || !chat) return;
     if (debeOcultarse()) return;
     abierto = true;
+    abiertoEn = Date.now();
     despertar();
+    acomodarChat();                 /* el alto correcto ANTES de que entre */
     chat.classList.add('vp-abierto');
     nodo.classList.add('vp-oculta');
+    /* Se traba la página de atrás: sin esto, el jalón dentro del chat
+       arrastra la pantalla de abajo y se ve el fondo moverse.
+       Se apunta en dónde iba para devolverla ahí misma al cerrar. */
+    scrollGuardado = window.scrollY || window.pageYOffset || 0;
+    document.documentElement.classList.add('vp-chat-abierto');
+    document.body.classList.add('vp-chat-abierto');
     gesto('feliz', 1600);
     if (!msgs.childElementCount) {
       var VC = window.VPCerebro;
@@ -647,6 +729,14 @@
     if (!abierto || !chat) return;
     abierto = false;
     chat.classList.remove('vp-abierto');
+    /* Se destraba la página y se regresa justo a donde iba.
+       Si esto no se hace, Vendo Plus se queda sin poder deslizarse. */
+    document.documentElement.classList.remove('vp-chat-abierto');
+    document.body.classList.remove('vp-chat-abierto');
+    try { window.scrollTo(0, scrollGuardado); } catch (e) {}
+    /* se limpia lo que puso visualViewport, para que no quede un alto viejo */
+    chat.style.height = '';
+    chat.style.top = '';
     chat.style.bottom = '';
     try { entrada.blur(); } catch (e) {}
     setTimeout(revisar, 220);
@@ -767,10 +857,131 @@
   }
 
   /* =======================================================================
+     5b.  INTERRUPTOR EN "MI CUENTA"
+     Se mete una fila en Preferencias, con la misma pinta que las demás.
+     Apagarlo guarda la decisión en este aparato: el asistente desaparece
+     por completo y deja de gastar hasta que lo vuelvan a prender.
+  ======================================================================= */
+  var K_APAGADA = 'vp_mascota_apagada';
+
+  function apagada() {
+    try { return localStorage.getItem(K_APAGADA) === '1'; } catch (e) { return false; }
+  }
+  function encenderApagar(prender) {
+    try { localStorage.setItem(K_APAGADA, prender ? '0' : '1'); } catch (e) {}
+    if (prender) {
+      if (!document.getElementById('vp-mascota')) crear();
+      revisar();
+      if (nodo) { nodo.classList.add('vp-llega'); setTimeout(function () { nodo.classList.remove('vp-llega'); }, 700); }
+      saludar();
+    } else {
+      cerrarChat();
+      revisar();
+    }
+  }
+
+  /* La hoja de ajustes usa el MISMO openModal y las mismas clases que el
+     resto de Vendo Plus, para que no se note que viene de otro archivo. */
+  function ajustes() {
+    var abrirModal = window.openModal, cerrar = window.closeModal;
+    if (typeof abrirModal !== 'function') return;
+    var on = !apagada();
+    abrirModal(
+      '<h3 class="sheet-title">Asistente</h3>' +
+      '<div class="toggle-row">' +
+        '<span class="acc-ico green">' + caraMini() + '</span>' +
+        '<span class="acc-txt">' +
+          '<span class="acc-label">Mostrar el asistente</span>' +
+          '<span class="acc-sub">El personaje que flota en la pantalla. Tócalo para preguntarle cómo van tus ventas, tus ganancias y tu inventario.</span>' +
+        '</span>' +
+        '<label class="switch"><input type="checkbox" id="vpSwMascota" ' + (on ? 'checked' : '') +
+          '><span class="track"></span></label>' +
+      '</div>' +
+      '<p class="md-hint" style="margin-top:4px;">Se esconde solo cuando cobras, escaneas un código o escribes algo, y regresa al terminar.</p>' +
+      '<div class="sheet-actions">' +
+        '<button class="btn primary block" id="vpAjustesOk">Listo</button>' +
+      '</div>',
+      { dismissible: true });
+
+    var sw = document.getElementById('vpSwMascota');
+    if (sw) sw.onchange = function () { encenderApagar(this.checked); };
+    var ok = document.getElementById('vpAjustesOk');
+    if (ok) ok.onclick = function () {
+      if (typeof cerrar === 'function') cerrar();
+      if (typeof window.render === 'function') window.render();
+    };
+  }
+
+  /* El mismo personaje, pero simplificado para que se lea a 22 píxeles:
+     una sola hoja, cabeza sólida y ojos calados. */
+  function caraMini() {
+    return '<svg viewBox="0 0 120 120" width="22" height="22" aria-hidden="true">' +
+      '<path d="M60 44V20" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="none"/>' +
+      '<path d="M60 24c-2-10-10-14-18-12-1 9 7 17 18 12z" fill="currentColor"/>' +
+      '<rect x="12" y="40" width="96" height="68" rx="32" fill="currentColor"/>' +
+      '<rect x="40" y="60" width="12" height="28" rx="6" fill="#fff"/>' +
+      '<rect x="68" y="60" width="12" height="28" rx="6" fill="#fff"/>' +
+    '</svg>';
+  }
+
+  /** La fila que se ve en Mi cuenta › Preferencias. */
+  function filaCuenta() {
+    var on = !apagada();
+    return '' +
+      '<button class="acc-row" onclick="VPMascota.ajustes()">' +
+        '<span class="acc-ico green">' + caraMini() + '</span>' +
+        '<span class="acc-txt">' +
+          '<span class="acc-label">Asistente</span>' +
+          '<span class="acc-sub">' + (on ? 'Visible en la pantalla' : 'Oculto') + '</span>' +
+        '</span>' +
+        '<span class="acc-chev">' +
+          '<svg viewBox="0 0 24 24" fill="none" width="18" height="18">' +
+          '<path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '</span>' +
+      '</button>';
+  }
+
+  /**
+   * Se engancha a renderAccount() de Vendo Plus, igual que el propio
+   * index.html hace con removeLine y changeLineQty al final del archivo.
+   * Las funciones declaradas con "function" sí viven en window, así que se
+   * pueden envolver sin tocar el index.html.
+   */
+  function engancharCuenta() {
+    var original = window.renderAccount;
+    if (typeof original !== 'function' || original.__vp) return true;
+    var envuelto = function () {
+      var html = original.apply(this, arguments);
+      try { return meterFila(String(html)); } catch (e) { return html; }
+    };
+    envuelto.__vp = true;
+    window.renderAccount = envuelto;
+    return true;
+  }
+
+  /* Se cuela al final de la lista de "Preferencias". Si algún día cambia
+     el texto de esa sección, no se rompe nada: se agrega su propio
+     apartado hasta abajo. */
+  function meterFila(html) {
+    if (html.indexOf('VPMascota.ajustes()') >= 0) return html;
+    var fila = filaCuenta();
+    var ancla = html.indexOf('<div class="section-title">Sesión</div>');
+    if (ancla > 0) {
+      var cierre = html.lastIndexOf('</div>', ancla);
+      if (cierre > 0) return html.slice(0, cierre) + fila + html.slice(cierre);
+    }
+    return html + '<div class="section-title">Asistente</div><div class="acc-list">' + fila + '</div>';
+  }
+
+  /* =======================================================================
      6.  LO QUE QUEDA DISPONIBLE
   ======================================================================= */
   window.VPMascota = {
     abrir: abrirChat,
+    ajustes: ajustes,            /* la hoja de Mi cuenta › Asistente */
+    apagada: apagada,
+    encender: function () { encenderApagar(true); },
+    apagar: function () { encenderApagar(false); },
     costos: verCostos,   /* panel de uso y costo: solo desde la consola */
     cerrar: cerrarChat,
     saludar: saludar,
@@ -819,18 +1030,30 @@
   }
 
   function encender() {
+    /* La fila de Mi cuenta se mete SIEMPRE, aunque el asistente esté
+       apagado: si no, no habría forma de volver a prenderlo. */
+    engancharCuenta();
     if (document.getElementById('vp-mascota')) return;
     if (!sesionLista()) return;
     crear();
   }
 
+  function listoTodo() {
+    return !!document.getElementById('vp-mascota')
+        && typeof window.renderAccount === 'function' && !!window.renderAccount.__vp;
+  }
+
   function esperar() {
     encender();
-    if (document.getElementById('vp-mascota')) return;
+    if (listoTodo()) return;
     var n = 0;
+    /* Se sigue intentando hasta que estén LAS DOS cosas: el personaje en
+       pantalla y la fila metida en Mi cuenta. Antes se paraba en cuanto
+       aparecía el personaje, y si renderAccount todavía no existía, la
+       opción para ocultarlo nunca se agregaba. */
     var t = setInterval(function () {
       encender();
-      if (document.getElementById('vp-mascota') || ++n > 240) clearInterval(t);   /* hasta 2 min */
+      if (listoTodo() || ++n > 240) clearInterval(t);   /* hasta 2 min */
     }, 500);
   }
 

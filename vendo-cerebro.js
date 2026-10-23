@@ -320,23 +320,7 @@
     /* Para las fechas se usa el texto SIN limpiar los signos: normalizar()
        convierte "12/05/2026" en "12 05 2026" y ya no se reconocería. */
     var tf = sinAcentos(texto);
-	/* "hace 5 días", "hace 10 dias", etc. */
-var hace = t.match(/\bhace\s+(\d{1,3})\s*dias?\b/);
 
-if (hace) {
-  var cantidad = parseInt(hace[1], 10);
-  var fecha = new Date();
-  fecha.setDate(fecha.getDate() - cantidad);
-
-  var clave = claveDia(fecha);
-
-  return {
-    periodo: 'custom',
-    desde: clave,
-    hasta: clave,
-    etiqueta: 'hace ' + cantidad + ' días'
-  };
-}
     /* antier / anteayer */
     if (/\bante\s?ayer\b|\bantier\b/.test(t)) {
       var d = new Date(); d.setDate(d.getDate() - 2);
