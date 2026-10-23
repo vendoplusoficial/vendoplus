@@ -53,53 +53,103 @@
     var s = document.createElement('style');
     s.id = 'vp-ia-css';
     s.textContent = [
-      '.vp-ia-intro{text-align:center;padding:4px 2px 2px;}',
-      '.vp-ia-intro p{font-size:13.5px;color:var(--ink-soft);font-weight:500;margin:0 0 16px;line-height:1.5;}',
-      '.vp-ia-tips{background:var(--surface-alt);border-radius:var(--radius-card);padding:12px 14px;margin:0 0 16px;text-align:left;}',
-      '.vp-ia-tips li{font-size:12.5px;color:var(--ink-soft);font-weight:600;margin:4px 0;line-height:1.45;}',
-      '.vp-ia-count{display:flex;gap:8px;margin:2px 0 14px;}',
-      '.vp-ia-count>div{flex:1;background:var(--surface-alt);border-radius:var(--radius-btn);padding:9px 10px;text-align:center;}',
-      '.vp-ia-count b{display:block;font-size:17px;color:var(--ink);line-height:1.2;}',
-      '.vp-ia-count span{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}',
-      '.vp-ia-count.warn>div.on{background:var(--danger-bg);}',
-      '.vp-ia-count.warn>div.on b{color:var(--accent-2);}',
+      /* ---- Fila de botones de Inventarios ----------------------------
+         Son tres y no caben en un renglón en un celular. Los dos grises
+         se reparten el primer renglón y el verde, que es la acción
+         principal, ocupa el segundo completo. En pantallas anchas los
+         tres vuelven a caber en una sola línea. */
+      '.fab-row.vp-ia-row{flex-wrap:wrap;justify-content:flex-start;}',
+      '.fab-row.vp-ia-row .btn{flex:1 1 0;min-width:0;white-space:nowrap;}',
+      '.fab-row.vp-ia-row .btn.ghost{padding:12px 14px;font-size:13.5px;}',
+      '.fab-row.vp-ia-row .btn.ghost svg{width:17px;height:17px;}',
+      '.fab-row.vp-ia-row .btn.primary{flex:1 1 100%;padding:13px 16px;font-size:14.5px;}',
+      '@media (min-width:600px){.fab-row.vp-ia-row{justify-content:flex-end;}.fab-row.vp-ia-row .btn{flex:0 0 auto;}}',
+
+      /* ---- La hoja del escáner -------------------------------------
+         Sin esto la barra de abajo quedaba "pegada" a mitad de la hoja
+         y se alcanzaba a ver la lista por debajo. Ahora la hoja es una
+         columna: cabecera arriba, lista con su propio scroll en medio,
+         y la barra de botones abajo, fija y sin huecos. */
+      '.modal-sheet.vp-ia-sheet{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0;}',
+      '.vp-ia-sheet .vp-ia-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:8px;}',
+      '.vp-ia-sheet .vp-ia-bar{flex:0 0 auto;}',
+      '.vp-ia-bar{background:var(--bg);border-top:1px solid var(--border);padding:12px 0 calc(14px + env(safe-area-inset-bottom, 0px));}',
+      '.vp-ia-bar .btn+.btn{margin-top:8px;}',
+      '.vp-ia-nota{font-size:11.5px;color:var(--ink-soft);font-weight:600;text-align:center;margin:10px 0 0;line-height:1.45;}',
+
+      /* ---- Pantalla de inicio --------------------------------------- */
+      '.vp-ia-lead{font-size:14px;line-height:1.55;color:var(--ink-soft);font-weight:500;margin:0 0 18px;}',
+      '.vp-ia-tips{display:grid;gap:11px;margin:0 0 22px;}',
+      '.vp-ia-tip{display:flex;gap:11px;align-items:flex-start;}',
+      '.vp-ia-tip i{width:24px;height:24px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--success-bg);color:var(--whatsapp-ink);}',
+      '.vp-ia-tip i svg{width:13px;height:13px;}',
+      '.vp-ia-tip b{font-size:13.5px;line-height:1.5;font-weight:600;color:var(--ink);padding-top:3px;}',
+
+      /* ---- Contadores ----------------------------------------------- */
+      '.vp-ia-count{display:flex;gap:8px;margin:0 0 14px;}',
+      '.vp-ia-count>div{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 6px;text-align:center;}',
+      '.vp-ia-count b{display:block;font-size:19px;font-weight:800;color:var(--ink);line-height:1.15;}',
+      '.vp-ia-count span{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:3px;}',
+      '.vp-ia-count>div.on{background:var(--accent-soft);border-color:#F0DCA0;}',
+      '.vp-ia-count>div.on b,.vp-ia-count>div.on span{color:#8A6000;}',
+
+      /* ---- Foto original -------------------------------------------- */
       '.vp-ia-foto{width:100%;border-radius:var(--radius-card);border:1px solid var(--border);display:block;margin:0 0 14px;}',
-      '.vp-ia-card{border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-card);padding:12px;margin-bottom:10px;}',
+      /* En la pantalla de error solo es para reconocer cuál foto fue:
+         acotada, para que los botones no se vayan abajo de la pantalla */
+      '.vp-ia-foto.chica{max-height:190px;object-fit:cover;}',
+
+      /* ---- Tarjeta de producto -------------------------------------- */
+      '.vp-ia-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-card);padding:12px 13px;margin-bottom:10px;}',
+      '.vp-ia-card.dudoso{border-color:#F0DCA0;}',
       '.vp-ia-card.off{opacity:.5;}',
-      '.vp-ia-card.dudoso{border-color:var(--accent-strong);background:var(--accent-soft);}',
-      '.vp-ia-card.dup{border-color:var(--ink-faint);}',
-      '.vp-ia-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}',
-      '.vp-ia-chk{width:22px;height:22px;flex-shrink:0;accent-color:var(--whatsapp);}',
-      '.vp-ia-top input.vp-ia-nombre{flex:1;min-width:0;font-size:14.5px;font-weight:700;color:var(--ink);border:1.5px solid transparent;background:transparent;border-radius:8px;padding:6px 7px;}',
-      '.vp-ia-top input.vp-ia-nombre:focus{border-color:var(--whatsapp);background:var(--surface);outline:none;}',
+      '.vp-ia-top{display:flex;align-items:center;gap:11px;}',
+      '.vp-ia-chk{width:21px;height:21px;flex-shrink:0;accent-color:var(--whatsapp);}',
+      '.vp-ia-nombre{flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--ink);border:1.5px solid transparent;background:transparent;border-radius:10px;padding:7px 8px;font-family:inherit;}',
+      '.vp-ia-nombre:focus{border-color:var(--accent-strong);background:var(--surface);outline:none;}',
       '.vp-ia-del{background:var(--surface-alt);border:none;width:30px;height:30px;border-radius:50%;color:var(--ink-soft);flex-shrink:0;display:flex;align-items:center;justify-content:center;}',
       '.vp-ia-del svg{width:15px;height:15px;}',
-      '.vp-ia-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}',
-      '.vp-ia-f label{display:block;font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}',
-      '.vp-ia-f input,.vp-ia-f select,.vp-ia-f textarea{width:100%;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:13.5px;font-weight:600;font-family:inherit;}',
-      '.vp-ia-f input:focus,.vp-ia-f select:focus,.vp-ia-f textarea:focus{border-color:var(--whatsapp);outline:none;}',
+
+      /* ---- Campos: mismo estilo que los formularios de VendoPlus ---- */
+      '.vp-ia-grid{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;margin-top:11px;}',
       '.vp-ia-f.full{grid-column:1 / -1;}',
-      '.vp-ia-f textarea{resize:vertical;min-height:38px;}',
+      '.vp-ia-f label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;}',
+      '.vp-ia-f input,.vp-ia-f select,.vp-ia-f textarea{width:100%;border:1.5px solid var(--border);border-radius:12px;padding:11px 12px;font-size:14.5px;background:var(--surface);color:var(--ink);font-weight:600;font-family:inherit;}',
+      '.vp-ia-f input:focus,.vp-ia-f select:focus,.vp-ia-f textarea:focus{border-color:var(--accent-strong);outline:none;}',
+      '.vp-ia-f input:disabled{background:var(--surface-alt);color:var(--ink-soft);}',
+      '.vp-ia-f textarea{resize:vertical;min-height:62px;line-height:1.45;}',
       '.vp-ia-f.mal input{border-color:var(--accent-2);background:var(--danger-bg);}',
-      '.vp-ia-aviso{display:flex;gap:8px;align-items:flex-start;background:var(--surface);border:1px solid var(--accent-strong);border-radius:10px;padding:8px 10px;margin-bottom:9px;}',
-      '.vp-ia-aviso svg{width:15px;height:15px;color:var(--accent-strong);flex-shrink:0;margin-top:1px;}',
-      '.vp-ia-aviso span{font-size:12px;font-weight:600;color:var(--ink);line-height:1.4;}',
-      '.vp-ia-aviso button{margin-left:auto;background:none;border:none;color:var(--ink-soft);font-size:11.5px;font-weight:700;white-space:nowrap;padding:0 0 0 6px;}',
-      '.vp-ia-tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:999px;background:var(--surface-alt);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}',
-      '.vp-ia-tag.nueva{background:var(--success-bg);color:var(--whatsapp-ink);}',
-      '.vp-ia-tag.dup{background:var(--danger-bg);color:var(--accent-2);}',
-      '.vp-ia-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;}',
-      '.vp-ia-var{margin-top:9px;background:var(--surface-alt);border-radius:10px;padding:9px 10px;}',
-      '.vp-ia-var .vl{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;}',
-      '.vp-ia-var .vrow{display:flex;gap:6px;margin-bottom:5px;}',
-      '.vp-ia-var .vrow input{border:1.5px solid var(--border);background:var(--surface);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:600;color:var(--ink);min-width:0;font-family:inherit;}',
-      '.vp-ia-var .vrow input.vl2{flex:1;}',
-      '.vp-ia-var .vrow input.vp2{width:92px;}',
-      '.vp-ia-var select{width:100%;border:1.5px solid var(--border);background:var(--surface);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:600;color:var(--ink);margin-top:3px;font-family:inherit;}',
-      '.vp-ia-bar{position:sticky;bottom:0;background:var(--surface);padding:12px 0 2px;margin-top:4px;border-top:1px solid var(--border);}',
-      '.vp-ia-sub{font-size:11.5px;color:var(--ink-soft);font-weight:600;text-align:center;margin:8px 0 0;line-height:1.45;}',
-      '.vp-ia-load{text-align:center;padding:30px 10px;}',
-      '.vp-ia-spin{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--whatsapp);border-radius:50%;margin:0 auto 16px;animation:vpIaSpin .8s linear infinite;}',
+
+      /* ---- Botón para abrir la descripción (va cerrada) ------------- */
+      '.vp-ia-mas{margin-top:10px;background:none;border:none;padding:0;font-size:12.5px;font-weight:700;color:var(--ink-soft);display:inline-flex;align-items:center;gap:6px;}',
+      '.vp-ia-mas svg{width:13px;height:13px;}',
+
+      /* ---- Avisos dentro de la tarjeta ------------------------------ */
+      '.vp-ia-aviso{display:flex;gap:9px;align-items:flex-start;background:var(--accent-soft);border:1px solid #F0DCA0;border-radius:12px;padding:9px 11px;margin-top:11px;}',
+      '.vp-ia-aviso.gris{background:var(--surface-alt);border-color:var(--border);}',
+      '.vp-ia-aviso svg{width:15px;height:15px;color:#8A6000;flex-shrink:0;margin-top:1px;}',
+      '.vp-ia-aviso.gris svg{color:var(--ink-soft);}',
+      '.vp-ia-aviso p{flex:1;min-width:0;margin:0;font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.45;}',
+      '.vp-ia-aviso button{background:none;border:none;color:#8A6000;font-size:12px;font-weight:800;white-space:nowrap;padding:0 0 0 4px;align-self:center;}',
+
+      /* ---- Etiquetas ------------------------------------------------ */
+      '.vp-ia-tags{display:flex;flex-wrap:wrap;gap:6px;}',
+      '.vp-ia-tags:not(:empty){margin-top:10px;}',
+      '.vp-ia-tag{display:inline-flex;align-items:center;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:var(--success-bg);color:var(--whatsapp-ink);}',
+
+      /* ---- Tamaños y presentaciones --------------------------------- */
+      '.vp-ia-var{margin-top:11px;background:var(--surface-alt);border-radius:12px;padding:11px;}',
+      '.vp-ia-var>label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:8px;}',
+      '.vp-ia-vrow{display:flex;gap:7px;margin-bottom:7px;}',
+      '.vp-ia-vrow input{border:1.5px solid var(--border);background:var(--surface);border-radius:10px;padding:9px 10px;font-size:13.5px;font-weight:600;color:var(--ink);min-width:0;font-family:inherit;}',
+      '.vp-ia-vrow input:focus{border-color:var(--accent-strong);outline:none;}',
+      '.vp-ia-vrow input.et{flex:1;}',
+      '.vp-ia-vrow input.pr{width:94px;flex:0 0 94px;}',
+      '.vp-ia-var select{width:100%;border:1.5px solid var(--border);background:var(--surface);border-radius:10px;padding:9px 10px;font-size:13px;font-weight:600;color:var(--ink);margin-top:3px;font-family:inherit;}',
+
+      /* ---- Esperando a la IA ---------------------------------------- */
+      '.vp-ia-load{text-align:center;padding:34px 10px 26px;}',
+      '.vp-ia-spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--whatsapp);border-radius:50%;margin:0 auto 18px;animation:vpIaSpin .8s linear infinite;}',
       '@keyframes vpIaSpin{to{transform:rotate(360deg)}}',
       '@media (prefers-reduced-motion: reduce){.vp-ia-spin{animation-duration:2.4s}}'
     ].join('\n');
@@ -214,6 +264,9 @@
     return '<button class="btn ghost" onclick="vpIaAbrir()">' + ico('camera') + ' Escanear con IA</button>';
   }
   function instalarBoton(){
+    /* Los estilos se ponen desde el arranque, no al abrir el escáner:
+       la fila de botones de Inventarios también los necesita. */
+    estilos();
     if(typeof window.renderProducts !== 'function' || window.renderProducts.__vpIa) return false;
     var original = window.renderProducts;
     var envuelto = function(){
@@ -228,7 +281,10 @@
       fin += '</button>'.length;
       var puede = (typeof can === 'function') ? can('gestionarProductos') : true;
       if(!puede) return html;
-      return html.slice(0, fin) + botonHTML() + html.slice(fin);
+      html = html.slice(0, fin) + botonHTML() + html.slice(fin);
+      /* Marca la fila para que los tres botones se acomoden solos.
+         Es lo único que se le agrega al HTML de VendoPlus: una clase. */
+      return html.replace('class="fab-row ', 'class="fab-row vp-ia-row ');
     };
     envuelto.__vpIa = true;
     window.renderProducts = envuelto;
@@ -269,34 +325,46 @@
     }catch(e){}
   }
 
+  /* El <input> NO lleva "capture": con capture, el navegador del celular
+     abre la cámara directo y ya no deja elegir de la galería. Sin él,
+     Android y iPhone muestran el menú completo (Cámara, Fotos, Archivos)
+     y el dueño escoge. En la app de Android da igual: MainActivity ya
+     arma ese mismo menú por su cuenta. */
+  function campoFoto(id){
+    return '<input id="' + id + '" type="file" accept="image/*" style="display:none" onchange="vpIaFoto(this)">';
+  }
+  function tip(texto){
+    return '<div class="vp-ia-tip"><i>' + ico('check') + '</i><b>' + texto + '</b></div>';
+  }
+
   function pantallaInicio(){
     var html =
       '<div class="sheet-header">' +
         '<h2>Escanear productos con IA</h2>' +
         '<button class="sheet-close" onclick="vpIaCerrar()">' + ico('close') + '</button>' +
       '</div>' +
-      '<div class="vp-ia-intro">' +
-        '<p>Toma una foto de tu menú, tu carta o tu lista de precios. La IA saca los nombres y los precios, y tú los revisas antes de guardarlos.</p>' +
-        '<ul class="vp-ia-tips">' +
-          '<li>• Que se lea bien: con luz, de frente y sin sombras.</li>' +
-          '<li>• Una hoja a la vez. Si el menú es muy largo, tómale foto por partes.</li>' +
-          '<li>• Nada se guarda hasta que tú lo confirmes.</li>' +
-        '</ul>' +
-        '<button class="btn primary xl block" onclick="document.getElementById(\'vpIaFile\').click()">' + ico('camera') + ' Tomar foto o elegir una</button>' +
-        '<input id="vpIaFile" type="file" accept="image/*" capture="environment" style="display:none" onchange="vpIaFoto(this)">' +
-        '<p class="vp-ia-sub" id="vpIaRestantes">' + (restantes == null ? 'Se usa un escaneo por foto nueva.' : 'Te quedan ' + restantes + ' escaneos este mes.') + '</p>' +
-      '</div>';
+      '<p class="vp-ia-lead">Toma una foto de tu menú o de tu lista de precios. La IA saca los nombres y los precios, y tú los revisas antes de guardarlos.</p>' +
+      '<div class="vp-ia-tips">' +
+        tip('Con buena luz, de frente y sin sombras.') +
+        tip('Una hoja a la vez. Si el menú es largo, fotografíalo por partes.') +
+        tip('Nada entra a tu inventario hasta que tú lo confirmes.') +
+      '</div>' +
+      '<button class="btn primary xl block" onclick="document.getElementById(\'vpIaFile\').click()">' + ico('camera') + ' Tomar foto o elegir una</button>' +
+      campoFoto('vpIaFile') +
+      '<p class="vp-ia-nota" id="vpIaRestantes">' +
+        (restantes == null ? 'Cada foto nueva usa un escaneo.' : 'Te quedan ' + restantes + ' escaneos este mes.') +
+      '</p>';
     openModal(html, { dismissible:true });
   }
 
   function pantallaCargando(txt){
     var html =
       '<div class="sheet-header">' +
-        '<h2>Leyendo la foto…</h2>' +
+        '<h2>Leyendo la foto</h2>' +
       '</div>' +
       '<div class="vp-ia-load">' +
         '<div class="vp-ia-spin"></div>' +
-        '<p class="vp-ia-sub">' + esc(txt || 'Esto tarda unos segundos. No cierres la app.') + '</p>' +
+        '<p class="vp-ia-nota">' + esc(txt || 'Tarda unos segundos. No cierres la app.') + '</p>' +
       '</div>';
     openModal(html, { dismissible:false, grip:false });
   }
@@ -307,15 +375,16 @@
         '<h2>' + esc(titulo) + '</h2>' +
         '<button class="sheet-close" onclick="vpIaCerrar()">' + ico('close') + '</button>' +
       '</div>' +
-      '<div class="vp-ia-intro">' +
-        (S && S.foto ? '<img class="vp-ia-foto" src="' + S.foto + '" alt="">' : '') +
-        '<p>' + esc(texto) + '</p>' +
-        (reintentar
-          ? '<button class="btn primary block" onclick="vpIaReintentar()">' + ico('camera') + ' Intentar de nuevo</button>'
-          : '') +
-        '<button class="btn ghost block" style="margin-top:8px;" onclick="document.getElementById(\'vpIaFile2\').click()">Elegir otra foto</button>' +
-        '<input id="vpIaFile2" type="file" accept="image/*" capture="environment" style="display:none" onchange="vpIaFoto(this)">' +
-      '</div>';
+      (S && S.foto ? '<img class="vp-ia-foto chica" src="' + S.foto + '" alt="La foto que mandaste">' : '') +
+      '<p class="vp-ia-lead">' + esc(texto) + '</p>' +
+      /* Sin icono de cámara: este botón vuelve a mandar la MISMA foto,
+         no abre la cámara. El de abajo sí, y por eso lo lleva. */
+      (reintentar
+        ? '<button class="btn primary xl block" onclick="vpIaReintentar()">Analizar esta foto otra vez</button>'
+        : '') +
+      '<button class="btn ghost block"' + (reintentar ? ' style="margin-top:8px;"' : '') +
+        ' onclick="document.getElementById(\'vpIaFile2\').click()">' + ico('camera') + ' Elegir otra foto</button>' +
+      campoFoto('vpIaFile2');
     openModal(html, { dismissible:true });
   }
 
@@ -499,7 +568,9 @@
 
     var out = '';
     if(valor && !hay){
-      out += '<option value="nueva:' + esc(valor) + '" selected>' + esc(valor) + ' (nueva)</option>';
+      /* Sin el "(nueva)" pegado al nombre: hacía que se cortara el texto
+         en el selector. Que es nueva ya lo dice la etiqueta de abajo. */
+      out += '<option value="nueva:' + esc(valor) + '" selected>' + esc(valor) + '</option>';
     }
     out += '<option value=""' + (!valor ? ' selected' : '') + '>Sin categoría</option>';
     cats.forEach(function(c){
@@ -534,23 +605,24 @@
              '<label>Categoría</label>' +
              '<select onchange="vpIaSet(\'' + it._id + '\',\'categoria\',this.value)">' + catOpciones(it.categoria) + '</select>' +
            '</div>';
-    h +=   '<div class="vp-ia-f full">' +
-             '<label>Descripción</label>' +
-             '<textarea rows="1" placeholder="Opcional" oninput="vpIaSet(\'' + it._id + '\',\'descripcion\',this.value)">' + esc(it.descripcion) + '</textarea>' +
-           '</div>';
     h += '</div>';
 
+    /* La descripción va cerrada: con 30 productos en pantalla, un cuadro
+       de texto vacío por cada uno era puro ruido. Se abre si la IA leyó
+       algo o si el dueño toca "Agregar descripción". */
+    h += '<div id="x_' + it._id + '">' + descHTML(it) + '</div>';
+
     if(it.variantes.length){
-      h += '<div class="vp-ia-var"><div class="vl">Tamaños o presentaciones</div>';
+      h += '<div class="vp-ia-var"><label>Tamaños o presentaciones</label>';
       it.variantes.forEach(function(v, i){
-        h += '<div class="vrow">' +
-               '<input class="vl2" type="text" value="' + esc(v.etiqueta) + '" oninput="vpIaVar(\'' + it._id + '\',' + i + ',\'etiqueta\',this.value)">' +
-               '<input class="vp2" type="number" inputmode="decimal" step="0.01" min="0" value="' + (Number(v.precio) || '') + '" oninput="vpIaVar(\'' + it._id + '\',' + i + ',\'precio\',this.value)">' +
+        h += '<div class="vp-ia-vrow">' +
+               '<input class="et" type="text" value="' + esc(v.etiqueta) + '" aria-label="Tamaño" oninput="vpIaVar(\'' + it._id + '\',' + i + ',\'etiqueta\',this.value)">' +
+               '<input class="pr" type="number" inputmode="decimal" step="0.01" min="0" value="' + (Number(v.precio) || '') + '" aria-label="Precio del tamaño" oninput="vpIaVar(\'' + it._id + '\',' + i + ',\'precio\',this.value)">' +
              '</div>';
       });
       h += '<select onchange="vpIaSet(\'' + it._id + '\',\'modoVar\',this.value)">' +
-             '<option value="separados"' + (it.modoVar === 'separados' ? ' selected' : '') + '>Guardar como productos separados</option>' +
-             '<option value="tamanos"' + (it.modoVar === 'tamanos' ? ' selected' : '') + '>Guardar como tamaños del mismo producto</option>' +
+             '<option value="separados"' + (it.modoVar === 'separados' ? ' selected' : '') + '>Guardar por separado</option>' +
+             '<option value="tamanos"' + (it.modoVar === 'tamanos' ? ' selected' : '') + '>Un producto con tamaños</option>' +
            '</select>';
       h += '</div>';
     }
@@ -561,29 +633,38 @@
     return h;
   }
 
+  function descHTML(it){
+    if(!it.verDesc && !String(it.descripcion).trim()){
+      return '<button class="vp-ia-mas" onclick="vpIaDesc(\'' + it._id + '\')">' + ico('plus') + ' Agregar descripción</button>';
+    }
+    return '<div class="vp-ia-f" style="margin-top:11px;">' +
+             '<label>Descripción</label>' +
+             '<textarea rows="2" placeholder="Lo que lleva el platillo" oninput="vpIaSet(\'' + it._id + '\',\'descripcion\',this.value)">' + esc(it.descripcion) + '</textarea>' +
+           '</div>';
+  }
+
   /* --- Trozos que se repintan solos, sin reconstruir toda la tarjeta --- */
   function avisoHTML(it){
     if(!dudoso(it)) return '';
     return '<div class="vp-ia-aviso">' + ico('alert') +
-             '<span>' + esc(razon(it)) + '</span>' +
-             '<button onclick="vpIaOk(\'' + it._id + '\')">Ya lo revisé</button>' +
+             '<p>' + esc(razon(it)) + '</p>' +
+             '<button onclick="vpIaOk(\'' + it._id + '\')">Está bien</button>' +
            '</div>';
   }
   /* Ya lo tienes en el inventario: no se toca a menos que tú lo marques.
      Dejarlo marcado ES el permiso para cambiarle el precio. Nada más. */
   function dupHTML(it){
     if(!it.dupId) return '';
-    return '<div class="vp-ia-aviso">' + ico('alert') +
-             '<span>Ya tienes <b>' + esc(it.nombre) + '</b> a $' + (it.dupPrecio == null ? '?' : it.dupPrecio) + '.' +
+    return '<div class="vp-ia-aviso gris">' + ico('alert') +
+             '<p>Ya lo tienes a $' + (it.dupPrecio == null ? '?' : it.dupPrecio) + '. ' +
              (it.dupSizes
-               ? ' Se vende por tamaños, así que no se le cambia nada.'
-               : ' Si lo dejas marcado, solo se le actualiza el precio a $' + (Number(it.precio) || '?') + '.') +
-             '</span></div>';
+               ? 'Se vende por tamaños, así que no se le cambia nada.'
+               : 'Si lo dejas marcado, solo le cambia el precio a $' + (Number(it.precio) || '?') + '.') +
+             '</p></div>';
   }
   function tagsHTML(it){
     var t = '';
-    if(it.dupId) t += '<span class="vp-ia-tag dup">Ya existe</span>';
-    if(it.categoria && !categoriaExiste(it.categoria)) t += '<span class="vp-ia-tag nueva">Categoría nueva</span>';
+    if(it.categoria && !categoriaExiste(it.categoria)) t += '<span class="vp-ia-tag">Categoría nueva</span>';
     return t;
   }
   function pintar(prefijo, it, html){
@@ -597,9 +678,16 @@
     var c = document.getElementById('c_' + it._id);
     if(c){
       c.classList.toggle('dudoso', dudoso(it));
-      c.classList.toggle('dup', !!it.dupId);
       c.classList.toggle('off', !it.sel);
     }
+  }
+  /* Abre el cuadro de la descripción y deja el cursor dentro */
+  function abrirDesc(id){
+    var it = buscar(id); if(!it) return;
+    it.verDesc = true;
+    pintar('x', it, descHTML(it));
+    var ta = document.querySelector('#x_' + id + ' textarea');
+    if(ta) ta.focus();
   }
 
   function categoriaExiste(nombre){
@@ -626,7 +714,12 @@
         '<button class="sheet-close" onclick="vpIaCerrar()">' + ico('close') + '</button>' +
       '</div>';
 
-    h += '<div class="vp-ia-count' + (c.pend ? ' warn' : '') + '" id="vpIaCount">' +
+    /* Todo lo que se desplaza va dentro de .vp-ia-scroll. La barra de
+       botones queda fuera, abajo: así no se encima con la lista ni deja
+       hueco al final (el error que se veía en Android y en iPhone). */
+    h += '<div class="vp-ia-scroll">';
+
+    h += '<div class="vp-ia-count" id="vpIaCount">' +
            '<div><b>' + c.total + '</b><span>Detectados</span></div>' +
            '<div><b>' + c.sel + '</b><span>Elegidos</span></div>' +
            '<div class="' + (c.pend ? 'on' : '') + '"><b>' + c.pend + '</b><span>Por revisar</span></div>' +
@@ -654,13 +747,20 @@
 
     h += '<div id="vpIaLista">' + S.items.map(tarjeta).join('') + '</div>';
 
+    h += '</div>';   /* cierra .vp-ia-scroll */
+
     h += '<div class="vp-ia-bar">' +
-           '<button class="btn primary xl block" onclick="vpIaGuardar()">' + ico('plus') + ' Agregar productos al inventario</button>' +
-           '<button class="btn ghost block" style="margin-top:8px;" onclick="vpIaOtraVez()">' + ico('camera') + ' Volver a analizar la foto</button>' +
-           '<p class="vp-ia-sub">Corregir, quitar o elegir productos no gasta nada. Solo "Volver a analizar" usa otro escaneo.</p>' +
+           '<button class="btn primary xl block" onclick="vpIaGuardar()">Agregar al inventario</button>' +
+           /* Sin icono de cámara: no abre la cámara, vuelve a mandar la misma foto */
+           '<button class="btn ghost block" onclick="vpIaOtraVez()">Volver a analizar la foto</button>' +
+           '<p class="vp-ia-nota">Corregir, quitar o elegir productos no gasta nada.<br>Solo “Volver a analizar” usa otro escaneo.</p>' +
          '</div>';
 
     openModal(h, { dismissible:true });
+
+    /* La hoja se vuelve columna: cabecera, lista con scroll y barra fija */
+    var sh = document.querySelector('#modalOverlay .modal-sheet');
+    if(sh) sh.classList.add('vp-ia-sheet');
   }
 
   /* Se refrescan solo los contadores: así no se pierde el cursor al escribir */
@@ -668,7 +768,6 @@
     var c = cuentas();
     var box = document.getElementById('vpIaCount');
     if(!box) return;
-    box.className = 'vp-ia-count' + (c.pend ? ' warn' : '');
     var d = box.querySelectorAll('div');
     if(d[0]) d[0].querySelector('b').textContent = c.total;
     if(d[1]) d[1].querySelector('b').textContent = c.sel;
@@ -950,6 +1049,7 @@
   window.vpIaVar        = setVar;
   window.vpIaSel        = sel;
   window.vpIaOk         = marcarOk;
+  window.vpIaDesc       = abrirDesc;
   window.vpIaQuitar     = quitar;
   window.vpIaVerFoto    = verFoto;
   window.vpIaOtraVez    = otraVez;
