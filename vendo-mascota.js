@@ -207,31 +207,48 @@
 #vp-mascota.vp-izquierda .vp-m-burbuja{ right:auto; left:0; }
 #vp-mascota.vp-habla .vp-m-burbuja{ opacity:1; transform:translateY(0) scale(1); }
 
-/* =======================  VENTANA DE CHAT  ======================= */
-/* En el celular: PANTALLA COMPLETA.
-   El alto lo pone el JS con visualViewport, no con 100vh: en el celular
-   100vh miente (no descuenta la barra del navegador ni el teclado), y por
-   eso antes se "desacomodaba" y se asomaba la página de atrás. */
+/* =======================  VENTANA DE CHAT  =======================
+
+   Son DOS capas, y es a propósito:
+
+   1. #vp-chat    · una sábana blanca que SIEMPRE mide toda la pantalla de
+                    maquetación y nunca se mueve ni cambia de tamaño.
+                    Su único trabajo es que, pase lo que pase con el
+                    teclado o con el dedo, NUNCA se pueda ver la página de
+                    atrás. Antes el chat se encogía con el teclado y por
+                    ese hueco se asomaban los productos.
+
+   2. .vp-ch-caja · el chat de verdad (encabezado, mensajes, campo), que
+                    se coloca justo sobre la franja que SÍ se ve. Si queda
+                    una orilla sin cubrir, lo que se ve ahí es la sábana
+                    blanca, no la tienda.
+
+   Si algún día falla la medición, lo peor que pasa es que se vea un
+   pedazo blanco. Nunca el fondo. */
 #vp-chat{
   position:fixed; z-index:460; left:0; top:0; width:100%; height:100%;
-  display:flex; justify-content:center; align-items:stretch;
   pointer-events:none; visibility:hidden;
+  background:var(--surface,#fff);
+  overscroll-behavior:none; overflow:hidden;
 }
 #vp-chat.vp-abierto{ pointer-events:auto; visibility:visible; }
-html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
+html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscroll-behavior:none !important; }
 
 .vp-ch-caja{
-  width:100%; height:100%; background:var(--surface,#fff);
+  position:absolute; left:0; right:0; top:0; height:100%;
+  width:100%; background:var(--surface,#fff);
   display:flex; flex-direction:column; overflow:hidden;
   transform:translateY(100%); transition:transform .3s cubic-bezier(.32,.72,0,1);
   overscroll-behavior:none;
 }
 #vp-chat.vp-abierto .vp-ch-caja{ transform:translateY(0); }
 
-/* En computadora sí es un panel, no tendría sentido taparlo todo */
+/* En computadora sí es un panel en la esquina: ahí no hay teclado que
+   estorbe y taparlo todo no tendría sentido. */
 @media (min-width:700px){
-  #vp-chat{ justify-content:flex-end; align-items:flex-end; padding:18px; }
+  #vp-chat{ background:transparent; }
   .vp-ch-caja{
+    top:auto; left:auto; right:18px; bottom:18px;
     width:400px; height:min(640px, calc(100% - 36px));
     border-radius:20px; box-shadow:var(--shadow-pop,0 10px 26px rgba(22,33,62,.18));
     border:1px solid var(--border,#E8EBF2);
@@ -676,9 +693,23 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
     chat.addEventListener('click', function (e) {
       if (e.target !== chat) return;
       if (Date.now() - abiertoEn < 450) return;
+      /* Solo en computadora. En el celular el chat ocupa todo y lo que se
+         ve alrededor es su propia sábana blanca: si ahí cerrara, se
+         cerraría solo al tocar cerca del teclado. Ahí se cierra con la
+         equis y ya. */
+      if (window.innerWidth < 700) return;
       cerrarChat();
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && abierto) cerrarChat(); });
+
+    /* Último candado: dentro del chat, el dedo solo puede mover la lista
+       de mensajes. En cualquier otro lado el movimiento se ignora, para
+       que no arrastre nada ni rebote mostrando lo de atrás. */
+    chat.addEventListener('touchmove', function (e) {
+      if (!abierto) return;
+      if (msgs && msgs.contains(e.target)) return;   /* la lista sí se desliza */
+      e.preventDefault();
+    }, { passive: false });
   }
 
   /**
@@ -708,16 +739,44 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
    *      visualViewport, que es el que avisa de ese desplazamiento.
    *      Antes solo se escuchaba "resize", y por eso se descuadraba.
    */
+  var ultimoAcomodo = '';
+
   function acomodarChat() {
     if (!chat || !abierto) return;
-    var vv = window.visualViewport;
-    if (!vv) {
-      chat.style.height = window.innerHeight + 'px';
-      chat.style.top = '0px';
+    var caja = chat.querySelector('.vp-ch-caja');
+    if (!caja) return;
+
+    /* En computadora es un panel de esquina: lo coloca el CSS y no hay
+       teclado que lo mueva. Aquí no tocamos nada. */
+    if (window.innerWidth >= 700) {
+      if (ultimoAcomodo !== 'pc') { caja.style.top = ''; caja.style.height = ''; ultimoAcomodo = 'pc'; }
       return;
     }
-    chat.style.height = Math.round(vv.height) + 'px';
-    chat.style.top = Math.round(vv.offsetTop || 0) + 'px';
+
+    var vv = window.visualViewport;
+    var arriba = vv ? Math.round(vv.offsetTop || 0) : 0;
+    var alto = Math.round(vv ? vv.height : window.innerHeight);
+
+    /* Se escribe solo cuando de verdad cambió: si no, cada movimiento del
+       dedo haría recalcular la página de balde. */
+    var firma = arriba + ':' + alto;
+    if (firma === ultimoAcomodo) return;
+    ultimoAcomodo = firma;
+
+    caja.style.top = arriba + 'px';
+    caja.style.height = alto + 'px';
+  }
+
+  /* Red de seguridad.
+     Mientras el chat está abierto se revisa cada tantito. Los eventos del
+     teclado no siempre llegan (ni llegan igual en Android que en iPhone),
+     y si se pierde uno, el chat se queda descuadrado. Revisar es casi
+     gratis: si nada cambió, no se escribe nada. */
+  var vigilante = null;
+  function vigilar(si) {
+    clearInterval(vigilante);
+    vigilante = null;
+    if (si) vigilante = setInterval(acomodarChat, 120);
   }
 
   /**
@@ -765,6 +824,8 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
        arrastra la pantalla de abajo y se ve el fondo moverse.
        Se apunta en dónde iba para devolverla ahí misma al cerrar. */
     trabarFondo(true);
+    ultimoAcomodo = '';
+    vigilar(true);
     gesto('feliz', 1600);
     if (!msgs.childElementCount) {
       var VC = window.VPCerebro;
@@ -784,10 +845,11 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; }
     /* Se destraba la página y se regresa justo a donde iba.
        Si esto no se hace, Vendo Plus se queda sin poder deslizarse. */
     trabarFondo(false);
-    /* se limpia lo que puso visualViewport, para que no quede un alto viejo */
-    chat.style.height = '';
-    chat.style.top = '';
-    chat.style.bottom = '';
+    vigilar(false);
+    ultimoAcomodo = '';
+    /* se limpia lo que se puso a mano, para que no quede una medida vieja */
+    var caja = chat.querySelector('.vp-ch-caja');
+    if (caja) { caja.style.top = ''; caja.style.height = ''; }
     try { entrada.blur(); } catch (e) {}
     setTimeout(revisar, 220);
   }
