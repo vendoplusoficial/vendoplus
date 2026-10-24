@@ -16,6 +16,22 @@
   'use strict';
   if (window.VPMascota) return;
 
+  /* -----------------------------------------------------------------------
+     MEMBRESÍA: el chat con IA es una función Premium.
+     Sin suscripción el personaje NO desaparece: se queda en pantalla
+     "inactivo" (con su propio look, ver vendo-premium.js) y al tocarlo
+     abre la pantalla para desbloquear, no el chat.
+  ----------------------------------------------------------------------- */
+  function premium() {
+    try { return !(window.VPPremium) || VPPremium.activo(); } catch (e) { return true; }
+  }
+  function ofrecerPremium() {
+    try {
+      if (window.VPPremium && typeof VPPremium.abrir === 'function') { VPPremium.abrir('chat'); return true; }
+    } catch (e) {}
+    return false;
+  }
+
   var VERDE = '#25D366';        /* el verde de Vendo Plus */
   var VERDE_CLARO = '#4ADE80';  /* el de los ojos, sobre la pantalla oscura */
   var OSCURO = '#17181C';       /* la "pantalla" de la cara */
@@ -412,9 +428,11 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
     nodo.classList.add('vp-llega');
     setTimeout(function () { nodo.classList.remove('vp-llega'); }, 700);
 
-    /* La primera vez saluda; después ya no molesta. */
+    /* La primera vez saluda; después ya no molesta.
+       Sin Premium no saluda ni invita a nada: se queda quieto e inactivo,
+       y solo dice qué es si lo tocas. */
     try {
-      if (!localStorage.getItem(K_VISTO)) {
+      if (premium() && !localStorage.getItem(K_VISTO)) {
         setTimeout(function () {
           saludar();
           decir('Tócame y pregúntame cómo va tu negocio', 5200);
@@ -422,6 +440,8 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
         }, 1400);
       }
     } catch (e) {}
+
+    try { if (window.VPPremium && typeof VPPremium.pintarMascota === 'function') VPPremium.pintarMascota(); } catch (e) {}
 
     revisar();
   }
@@ -521,7 +541,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
   function parpadearLuego() {
     clearTimeout(tParpadeo);
     tParpadeo = setTimeout(function () {
-      if (nodo && !nodo.classList.contains('vp-oculta') && nodo.dataset.gesto === 'normal') {
+      if (nodo && !nodo.classList.contains('vp-oculta') && !nodo.classList.contains('vp-inactiva') && nodo.dataset.gesto === 'normal') {
         nodo.classList.add('vp-parpadea');
         setTimeout(function () { nodo.classList.remove('vp-parpadea'); }, 110);
         /* de vez en cuando, dos parpadeos seguidos: se ve vivo */
@@ -537,11 +557,14 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
   function ocioLuego() {
     clearTimeout(tOcio);
     tOcio = setTimeout(function () {
-      if (nodo && !abierto) { nodo.classList.add('vp-dormida'); gesto('dormido'); }
+      /* Inactivo por falta de membresía ya tiene su propio look: no se le
+         encima el de "dormido", que es otra cosa (ese sigue verde). */
+      if (nodo && !abierto && !nodo.classList.contains('vp-inactiva')) { nodo.classList.add('vp-dormida'); gesto('dormido'); }
     }, 75000);
   }
   function despertar() {
     if (!nodo) return;
+    if (!premium()) { ocioLuego(); return; }     /* inactivo: no hay nada que despertar */
     if (nodo.classList.contains('vp-dormida')) { nodo.classList.remove('vp-dormida'); gesto('normal'); }
     ocioLuego();
   }
@@ -862,6 +885,12 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
 
   function abrirChat() {
     if (abierto || !chat) return;
+    /* Sin Premium el chat no se abre: se ofrece desbloquearlo. */
+    if (!premium()) {
+      if (nodo) { nodo.classList.add('vp-pr-toque'); setTimeout(function () { if (nodo) nodo.classList.remove('vp-pr-toque'); }, 420); }
+      ofrecerPremium();
+      return;
+    }
     if (debeOcultarse()) return;
     abierto = true;
     abiertoEn = Date.now();
@@ -1151,6 +1180,10 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
     mostrar: function () { if (nodo) nodo.classList.remove('vp-oculta'); },
     ocultar: function () { if (nodo) nodo.classList.add('vp-oculta'); },
     revisar: revisar,
+    /** Lo llama vendo-premium.js cuando cambia la membresía. */
+    repintarEstado: function () {
+      try { if (window.VPPremium && typeof VPPremium.pintarMascota === 'function') VPPremium.pintarMascota(); } catch (e) {}
+    },
     /** Preguntar desde cualquier parte de Vendo Plus: VPMascota.preguntar('cuánto vendí hoy') */
     preguntar: function (texto) {
       abrirChat();

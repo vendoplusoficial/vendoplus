@@ -10,13 +10,18 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F4FA">
 <title>Vendo Plus · Punto de venta (POS) para tu negocio</title>
-<meta name="description" content="Vendo Plus es un punto de venta (POS) para celular y computadora: registra ventas, controla tu inventario, imprime tickets y lleva tu caja. 1 mes gratis.">
+<meta name="description" content="Vendo Plus es un punto de venta (POS) para celular y computadora: registra ventas, controla tu inventario, imprime tickets y lleva tu caja. Gratis, sin tarjeta.">
 <link rel="canonical" href="https://vendoplusoficial.com/">
+<!-- Se abre el canal con la nube ANTES de necesitarla: la app entra mas rapido -->
+<link rel="preconnect" href="https://yacmyrpluhjaphvrbqno.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="https://yacmyrpluhjaphvrbqno.supabase.co">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Vendo Plus">
 <meta property="og:title" content="Vendo Plus · Punto de venta (POS)">
-<meta property="og:description" content="Registra ventas, controla inventario e imprime tickets desde tu celular. 1 mes gratis.">
+<meta property="og:description" content="Registra ventas, controla inventario e imprime tickets desde tu celular. Gratis, sin tarjeta.">
 <meta property="og:url" content="https://vendoplusoficial.com/">
 <meta property="og:locale" content="es_MX">
 <script type="application/ld+json">
@@ -36,8 +41,13 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
       "name": "Vendo Plus",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web, iOS",
-      "description": "Punto de venta con control de inventario, caja y gastos, clientes y crédito, menú digital, reportes de ventas e impresión de tickets en impresora térmica.",
-      "offers": { "@type": "Offer", "price": "149", "priceCurrency": "MXN" },
+      "description": "Punto de venta gratis con control de inventario, caja y gastos, clientes y crédito, reportes de ventas e impresión de tickets en impresora térmica. Opcional: Premium con menú digital, asistente con IA y estadísticas detalladas.",
+      "offers": [
+        { "@type": "Offer", "name": "Gratis", "price": "0", "priceCurrency": "MXN",
+          "description": "Vender, tickets, historial, caja y corte, clientes y crédito, inventario y estadísticas simples. Sin tarjeta y sin límite de tiempo." },
+        { "@type": "Offer", "name": "Premium", "price": "149", "priceCurrency": "MXN",
+          "description": "Menú Digital, asistente con IA, escaneos de carta con IA sin límite y estadísticas detalladas." }
+      ],
       "publisher": { "@id": "https://vendoplusoficial.com/#org" }
     }
   ]
@@ -3021,6 +3031,15 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
     box-shadow:0 0 0 3px rgba(var(--brand-rgb),.14);
   }
 
+  /* ---------- Etiqueta "Gratis · sin tarjeta" de la bienvenida ---------- */
+  .vp-free-badge{
+    display:inline-flex; align-items:center; gap:6px; align-self:flex-start;
+    font-size:12px; font-weight:800; letter-spacing:.3px;
+    color:var(--success, #1F7F55); background:var(--success-bg, #E5FAEC);
+    border-radius:999px; padding:5px 11px; margin-bottom:11px;
+  }
+  .vp-free-badge svg{ width:13px; height:13px; }
+
   /* ---------- Acceso (bienvenida, registro, prueba gratis) ---------- */
   .trial-badge{ align-self:flex-start; }
   /* El dibujo puede salirse de su caja: así el mostrador llega de orilla
@@ -4751,7 +4770,7 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 <body>
 <noscript>
   <h1>Vendo Plus · Punto de venta (POS)</h1>
-  <p>Vendo Plus es un punto de venta para negocios pequeños: ventas, inventario, caja y gastos, clientes y crédito, menú digital e impresión de tickets. Primer mes gratis.</p>
+  <p>Vendo Plus es un punto de venta para negocios pequeños: ventas, inventario, caja y gastos, clientes y crédito e impresión de tickets. Gratis, sin tarjeta.</p>
 </noscript>
 
 <!-- Pantalla de bienvenida: el logo da una vuelta y desaparece -->
@@ -6412,7 +6431,7 @@ function saleCardHTML(p){
     <div class="pc-tap" onclick="${tapAction}">
       <div class="pc-top" style="background:${cat.color}"></div>
       <div class="pc-photo ${p.image ? '' : 'is-placeholder'}">
-        ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" decoding="async">` : icon('plateSet')}
+        ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async">` : icon('plateSet')}
       </div>
       <div class="pc-inner">
         <div class="pc-name">${escapeHtml(p.name)}</div>
@@ -10794,7 +10813,7 @@ function renderProdRow(p, cat){
   return `
     <div class="prod-row">
       <div class="pr-photo">
-        ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}">` : `<span style="color:${cat.color}">${icon('plate')}</span>`}
+        ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async">` : `<span style="color:${cat.color}">${icon('plate')}</span>`}
       </div>
       <div class="pr-info">
         <div class="pr-name">${escapeHtml(p.name)}</div>
@@ -12131,9 +12150,14 @@ function newUser(country, phone, email){
   };
 }
 
-/* ---------- Prueba gratis de 1 mes · después $149 MXN al mes con Stripe ----------
+/* ---------- Precio de la membresía Premium · $149 MXN al mes ----------
+   Ya NO hay mes de prueba: Vendo Plus es gratis y lo que se cobra es Premium
+   (ver vendo-premium.js). Estas constantes se quedan porque varias pantallas
+   viejas todavía las nombran, y porque aquí vive el precio que ve el cliente.
+
    OJO: este número solo es el TEXTO que ve el cliente. Lo que se cobra de verdad
-   es el precio (price_...) que creas en Stripe: tiene que ser de $149 MXN mensual. */
+   es el precio que creaste en Stripe (price_...) y la suscripción de Google Play:
+   los dos tienen que ser de $149 MXN mensuales. */
 const TRIAL_MESES = 1;
 const TRIAL_PRECIO = 149;
 function trialInfo(u){
@@ -12325,10 +12349,11 @@ function authWelcomeHTML(){
     </div>
     <div class="auth-sheet">
       <div class="auth-body">
+        <span class="vp-free-badge">${icon('check')}Gratis · sin tarjeta</span>
         <h1 class="auth-title">Administra tu negocio fácil y seguro</h1>
-        <p class="auth-sub">Lleva el control de tus ventas, deudas e inventario sin estrés, ni complicaciones.</p>
+        <p class="auth-sub">Vende, haz tus tickets, lleva tu caja, tu inventario y tus clientes. <b style="color:var(--ink)">Gratis para siempre</b>, sin pedirte tarjeta y sin que se te bloquee nada.</p>
         <div class="auth-actions">
-          <button class="btn dark xl block" onclick="authStart('signup')">Empezar</button>
+          <button class="btn dark xl block" onclick="authStart('signup')">Empezar gratis</button>
           <button class="btn outline xl block" onclick="authStart('login')">Ya tengo una cuenta</button>
         </div>
       </div>
@@ -12476,7 +12501,7 @@ function openTerms(){
     <div class="terms-doc">
       <p><b>1. Uso del servicio.</b> ${APP_NAME} es una herramienta para administrar ventas, inventario y clientes de tu negocio. Eres responsable de la información que captures y de usar la cuenta de forma legal.</p>
       <p><b>2. Tu cuenta.</b> Tu correo electrónico y tu contraseña son tu acceso. Cuida tu contraseña, no la compartas y no compartas los códigos que te lleguen por correo.</p>
-      <p><b>3. Mes gratis y pago.</b> Al crear tu cuenta tienes 1 mes gratis, sin tarjeta. Después, la membresía cuesta $${TRIAL_PRECIO} MXN al mes y se cobra con Stripe. Si el pago no se renueva, tu cuenta se pausa: tus datos se conservan y la cuenta se reactiva al pagar.</p>
+      <p><b>3. Gratis y membresía Premium.</b> Vendo Plus es gratis y sin tarjeta: vender, generar y enviar tickets, historial, caja y corte, clientes y crédito, inventario con fotos, tu perfil y las estadísticas simples no se cobran nunca. Aparte existe <b>Premium</b>, de $${TRIAL_PRECIO} MXN al mes con Stripe, que desbloquea el Menú Digital, el asistente con IA, los escaneos de carta con IA sin límite (gratis son 3 al mes) y las estadísticas detalladas. Si no pagas o cancelas, tu cuenta NO se pausa: solo se apagan esas funciones y todos tus datos y productos se quedan guardados.</p>
       <p><b>4. Disponibilidad.</b> Hacemos lo posible por que el servicio funcione siempre, pero puede haber interrupciones por mantenimiento o fallas de terceros.</p>
       <h3 class="sheet-title" style="margin-top:18px;">Tratamiento de datos personales</h3>
       <p><b>Qué guardamos.</b> Tu correo electrónico, tu nombre, los datos de tu negocio (productos, ventas, clientes) y las fotos que subas.</p>
@@ -12707,10 +12732,10 @@ function saveRegistrationName(){
   AUTH.saveUser(u);
   ensureOwnerUser();
   syncOwnerName();
+  /* Se entra DIRECTO al negocio: ya no hay pantalla de "mes gratis" ni
+     nada que firmar. Vendo Plus es gratis desde el primer día. */
   authState.pendingWelcomeMsg = '¡Tu cuenta está lista, ' + name.split(' ')[0] + '!';
-  /* Solo se ve esta pantalla la primera vez que alguien crea su cuenta.
-     Si inicia sesión de nuevo o recarga la página, nunca vuelve a aparecer. */
-  authGo('trial');
+  acceptTrialAndEnter();
 }
 
 /* ---------- Pantalla única: regalo de bienvenida (solo primer registro) ---------- */
@@ -21960,7 +21985,7 @@ function homeToolsHTML(){
 }
 
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" fetchpriority="high"></script>
 <script>
 /* =========================================================
    VENDO PLUS · CONEXIÓN A LA NUBE
@@ -22092,29 +22117,16 @@ const Cloud = {
     return this.sub;
   },
   paidNow(){ return !!(this.sub && this.sub.paid_until && new Date(this.sub.paid_until) > new Date()); },
-  hasAccess(){
-    const s = this.sub; if(!s) return true;       /* sin datos no se bloquea a nadie por error */
-    const now = new Date();
-    return new Date(s.trial_end) > now || this.paidNow();
-  },
+  /* Vendo Plus es GRATIS: vender, tickets, historial, caja, clientes,
+     inventario y tu perfil no se bloquean nunca, pague o no pague.
+     Lo que se vende es Premium (ver vendo-premium.js), y eso solo bloquea
+     las funciones de paga, no la app. */
+  hasAccess(){ return true; },
+  /* Ya no existe la pantalla de "tu cuenta está pausada": solo se limpia
+     por si quedó una de una versión anterior. */
   gate(){
-    let el = document.getElementById('paywall');
-    const bloquear = this.ready && this.uid && this.sub && !this.hasAccess() && AUTH.isLogged();
-    if(!bloquear){ if(el) el.remove(); return; }
-    if(el) return;
-    /* ¿Nunca ha pagado (se acabó el mes gratis) o ya había pagado y no renovó? */
-    const motivo = this.sub.paid_until ? 'Tu membresía venció.' : 'Tu mes gratis terminó.';
-    el = document.createElement('div');
-    el.id = 'paywall';
-    el.style.cssText = 'position:fixed;inset:0;z-index:9000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
-    el.innerHTML = `<div style="max-width:380px;width:100%;text-align:center;">
-      <span class="brand-mark" style="width:68px;height:68px;border-radius:21px;margin:0 auto 18px;">${ICONS.logo.replace('<svg ', '<svg style="width:34px;height:34px" ')}</span>
-      <h1 class="auth-title" style="font-size:24px;margin:0 0 8px;">Tu cuenta está pausada</h1>
-      <p class="auth-sub" style="margin:0 0 20px;">${motivo} Para seguir usando ${APP_NAME}, paga la membresía de <b style="color:var(--ink)">$${TRIAL_PRECIO} MXN al mes</b>. Tu cuenta se reactiva en cuanto se confirma el pago, y tus datos siguen guardados.</p>
-      <button class="btn primary xl block" id="payBtn" onclick="Cloud.checkout()">Pagar con Stripe · $${TRIAL_PRECIO}/mes</button>
-      <button class="btn ghost block" style="margin-top:10px;" onclick="doLogout()">Cerrar sesión</button>
-    </div>`;
-    document.body.appendChild(el);
+    const el = document.getElementById('paywall');
+    if(el) el.remove();
   },
   async checkout(){
     if(!this.uid) return this.fail('Inicia sesión para pagar', 'Tu pago se liga a tu cuenta');
@@ -25011,5 +25023,8 @@ function cartSanitize(){
 <!-- ===== ASISTENTE VENDO PLUS (mascota + cerebro) ===== -->
 <script src="vendo-cerebro.js"></script>
 <script src="vendo-mascota.js"></script>
+
+<!-- ===== MEMBRESIA PREMIUM (gratis vs. $149/mes) · va al final a proposito ===== -->
+<script src="vendo-premium.js"></script>
 </body>
 </html>

@@ -620,6 +620,8 @@
   /* --------------------------------------------------------------- */
   function abrir(){
     if(typeof requirePerm === 'function' && !requirePerm('gestionarProductos', 'No tienes permiso para administrar productos')) return;
+    /* Sin Premium y sin escaneos del mes: se ofrece la membresía. */
+    if(!premium() && restantes != null && restantes <= 0 && ofrecerPremium()) return;
     estilos();
     S = nuevoEstado();
     pantallaInicio();
@@ -627,18 +629,45 @@
   }
 
   var restantes = null;
+  var GRATIS_AL_MES = 3;
+
+  /** ¿Membresía Premium activa? (escaneos sin límite) */
+  function premium(){
+    try{ return !!(window.VPPremium && VPPremium.activo()); }catch(e){ return false; }
+  }
+  /** El texto de abajo de la pantalla: cuántos escaneos quedan. */
+  function notaConsumo(){
+    if(premium()) return 'Premium: escaneas todo lo que necesites, sin límite.';
+    if(restantes == null) return 'Gratis tienes ' + GRATIS_AL_MES + ' escaneos al mes. Solo cuentan las fotos que la IA alcanza a leer.';
+    if(restantes <= 0) return 'Ya usaste tus ' + GRATIS_AL_MES + ' escaneos gratis de este mes. Se renuevan el mes que entra.';
+    return 'Te queda' + (restantes === 1 ? '' : 'n') + ' ' + restantes + ' de ' + GRATIS_AL_MES +
+           ' escaneo' + (restantes === 1 ? '' : 's') + ' gratis este mes.';
+  }
+  function pintarConsumo(){
+    var el = document.getElementById('vpIaRestantes');
+    if(el) el.textContent = notaConsumo();
+  }
+  /* El conteo lo guarda el SERVIDOR (Supabase), así que no se reinicia al
+     cerrar sesión, cambiar de teléfono ni reinstalar la app. */
   function consumo(){
     try{
       if(!(window.Cloud && Cloud.sb && Cloud.uid)) return;
       Cloud.sb.rpc('vp_ia_mi_consumo').then(function(r){
         var d = r && r.data;
         if(d && d.ok){
-          restantes = d.restantes;
-          var el = document.getElementById('vpIaRestantes');
-          if(el) el.textContent = 'Te quedan ' + d.restantes + ' escaneos este mes.';
+          restantes = (d.restantes == null) ? restantes : Number(d.restantes);
+          try{ if(window.VPPremium && VPPremium.fijarRestantes) VPPremium.fijarRestantes(restantes); }catch(e){}
+          pintarConsumo();
         }
       }).catch(function(){});
     }catch(e){}
+  }
+  /** Cuando se acaban los gratis, se ofrece Premium (no un error seco). */
+  function ofrecerPremium(){
+    try{
+      if(window.VPPremium && typeof VPPremium.sinEscaneos === 'function'){ VPPremium.sinEscaneos(); return true; }
+    }catch(e){}
+    return false;
   }
 
   /* Dos campos en vez de uno, y el dueño elige con un botón cada uno:
@@ -681,9 +710,7 @@
         tip('Nada entra a tu inventario hasta que tú lo confirmes.') +
       '</div>' +
       botonesFoto('A') +
-      '<p class="vp-ia-nota" id="vpIaRestantes">' +
-        (restantes == null ? 'Cada foto nueva usa un escaneo.' : 'Te quedan ' + restantes + ' escaneos este mes.') +
-      '</p>';
+      '<p class="vp-ia-nota" id="vpIaRestantes">' + esc(notaConsumo()) + '</p>';
     openModal(html, { dismissible:true });
   }
 
@@ -780,7 +807,10 @@
       if(forzar) S.reanalisis++;
       cacheGuardar(S.hash, data);
       aplicarRespuesta(data, false);
-      restantes = (data.uso && data.uso.restantes != null) ? data.uso.restantes : restantes;
+      if(data.uso && data.uso.restantes != null){
+        restantes = Number(data.uso.restantes);
+        try{ if(window.VPPremium && VPPremium.fijarRestantes) VPPremium.fijarRestantes(restantes); }catch(e){}
+      }
     }).catch(function(err){
       enVuelo = false; S.cargando = false;
       leerError(err).then(function(info){
@@ -788,6 +818,16 @@
           pantallaError('Esa foto ya se está leyendo', info.message, true);
           return;
         }
+        /* Se acabaron los escaneos gratis del mes: en vez de un error, se
+           ofrece Premium. Con Premium activo esto no debería pasar. */
+        if(info.error === 'limite_usuario'){
+          restantes = 0;
+          try{ if(window.VPPremium && VPPremium.fijarRestantes) VPPremium.fijarRestantes(0); }catch(e){}
+          if(!premium() && ofrecerPremium()) return;
+        }
+        /* Un error técnico NO gasta escaneos: se vuelve a preguntar al
+           servidor para que el contador que se ve sea el de verdad. */
+        if(['lector','servidor','red','sin_conexion'].indexOf(info.error) >= 0) consumo();
         var reintentable = ['sin_conexion','lector','servidor','red'].indexOf(info.error) >= 0 || !info.error;
         pantallaError(
           info.error === 'limite_usuario' ? 'Llegaste a tu límite del mes'
