@@ -6306,7 +6306,7 @@ function renderSale(){
       if(!gruposIdx.some(g => g.cat.id === saleActiveCat)) saleActiveCat = gruposIdx.length ? gruposIdx[0].cat.id : null;
       return `<div class="chip-row sticky-index">
       ${gruposIdx.map(g => `
-        <button class="chip ${saleActiveCat===g.cat.id?'active':''}" style="${saleActiveCat===g.cat.id?'background:var(--sec-sale)':''}" data-cat="${escapeHtml(String(g.cat.id))}" onclick="saleJumpTo(this.dataset.cat)">${catDot(g.cat)}${escapeHtml(g.cat.name)}</button>
+        <button class="chip ${saleActiveCat===g.cat.id?'active':''}" data-cat="${escapeHtml(String(g.cat.id))}" onclick="saleJumpTo(this.dataset.cat)">${catDot(g.cat)}${escapeHtml(g.cat.name)}</button>
       `).join('')}
     </div>`;
     })();
@@ -25070,6 +25070,20 @@ function cartSanitize(){
 .chip-row.sticky-index{ -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
 .chip-row.sticky-index .chip{ flex:none; }
 
+/* Índice sin verde: ni seleccionado ni al presionar */
+#view .chip-row.sticky-index .chip, .topbar-index .chip,
+#view .chip-row.sticky-index .chip.active, .topbar-index .chip.active,
+#view .chip-row.sticky-index .chip:active, .topbar-index .chip:active,
+#view .chip-row.sticky-index .chip:focus, .topbar-index .chip:focus,
+#view .chip-row.sticky-index .chip:hover, .topbar-index .chip:hover{
+  background:var(--surface, #fff) !important; color:var(--ink-soft) !important; border:1.5px solid var(--border) !important;
+  box-shadow:none !important; outline:none; -webkit-tap-highlight-color:transparent;
+}
+/* PC (mouse): las categorías se acomodan en renglones, la barra no se corre de lado */
+@media (hover:hover) and (pointer:fine){
+  #view .chip-row.sticky-index, .topbar-index .chip-row{ flex-wrap:wrap; overflow-x:hidden !important; overflow-y:visible; row-gap:8px; }
+}
+
 /* ===== Nueva venta en PC/tablet: fotos del mismo tamaño que en el celular, sin recortar ===== */
 @media (min-width:700px){
   .product-grid{ grid-template-columns:repeat(auto-fill, 170px) !important; justify-content:start; gap:14px !important; }
@@ -25081,6 +25095,7 @@ function cartSanitize(){
    sección (sin importar dónde estés), y al deslizar se resalta la categoría actual. */
 (function(){
   var locked = false, raf = 0;
+  var isAndroid = /Android/i.test(navigator.userAgent || '');
   function topbar(){ return document.querySelector('.app > .topbar') || document.querySelector('.topbar'); }
   function viewEl(){ return document.getElementById('view'); }
   function bars(){
@@ -25109,15 +25124,21 @@ function cartSanitize(){
   function setActive(id){
     if(id === saleActiveCat) return;
     saleActiveCat = id;
+    if(!isAndroid) return;   // en PC y iPhone la barra no se mueve sola
     var b = bars();
     if(b.row){
       var cs = b.row.querySelectorAll('.chip[data-cat]');
       for(var i = 0; i < cs.length; i++){
         var on = cs[i].getAttribute('data-cat') === id;
         cs[i].classList.toggle('active', on);
-        cs[i].style.background = on ? 'var(--sec-sale)' : '';
       }
     }
+    /* el índice flotante se rehace solo al cambiar la fila; se centra después */
+    setTimeout(function(){
+      var b2 = bars();
+      centerChip(b2.clone, findChip(b2.clone, id));
+      centerChip(b2.row, findChip(b2.row, id));
+    }, 40);
   }
   function spy(){
     raf = 0;
@@ -25131,12 +25152,18 @@ function cartSanitize(){
   }
   function luego(){ if(!raf) raf = requestAnimationFrame(spy); }
   function unlock(){ locked = false; }
+  if(isAndroid){
+    window.addEventListener('scroll', luego, { passive:true });
+    window.addEventListener('resize', luego);
+    ['wheel','touchmove','keydown'].forEach(function(e){ window.addEventListener(e, unlock, { passive:true }); });
+  }
 
   window.saleJumpTo = function(id){
     var secs = sections(), sec = null;
     for(var i = 0; i < secs.length; i++) if(secs[i].getAttribute('data-cat') === id){ sec = secs[i]; break; }
     if(!sec) return;
     try{ vibrate(8); }catch(e){}
+    locked = true;
     setActive(id);
     var t = topbar(), b = bars();
     var h = Math.max(b.row ? b.row.offsetHeight : 0, 52);
