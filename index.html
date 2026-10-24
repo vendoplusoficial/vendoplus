@@ -25118,12 +25118,6 @@ function cartSanitize(){
         cs[i].style.background = on ? 'var(--sec-sale)' : '';
       }
     }
-    /* el índice flotante se rehace solo al cambiar la fila; se centra después */
-    setTimeout(function(){
-      var b2 = bars();
-      centerChip(b2.clone, findChip(b2.clone, id));
-      centerChip(b2.row, findChip(b2.row, id));
-    }, 40);
   }
   function spy(){
     raf = 0;
@@ -25137,16 +25131,12 @@ function cartSanitize(){
   }
   function luego(){ if(!raf) raf = requestAnimationFrame(spy); }
   function unlock(){ locked = false; }
-  window.addEventListener('scroll', luego, { passive:true });
-  window.addEventListener('resize', luego);
-  ['wheel','touchmove','keydown'].forEach(function(e){ window.addEventListener(e, unlock, { passive:true }); });
 
   window.saleJumpTo = function(id){
     var secs = sections(), sec = null;
     for(var i = 0; i < secs.length; i++) if(secs[i].getAttribute('data-cat') === id){ sec = secs[i]; break; }
     if(!sec) return;
     try{ vibrate(8); }catch(e){}
-    locked = true;
     setActive(id);
     var t = topbar(), b = bars();
     var h = Math.max(b.row ? b.row.offsetHeight : 0, 52);
