@@ -104,13 +104,17 @@
       texto: 'Tomas una foto de tu menú y la IA llena tu inventario sola. Gratis son {N} escaneos al mes; con Premium, los que quieras.',
       ico: 'camera'
     },
-    stats: {
+    usuarios: { titulo: 'Más usuarios', texto: 'Suma a todo tu equipo: cada quien entra con su propio NIP y ve solo lo que le toca.', ico: 'users' },
+  stats: {
       titulo: 'Estadísticas detalladas',
       texto: 'Ve tus ventas, ganancias y productos más vendidos con datos claros y fáciles de entender.',
       ico: 'chart'
     }
   };
   var ORDEN = ['menu', 'chat', 'escaner', 'stats'];
+  // Cuando se llega desde "agregar usuario" se muestra esa ventaja primero
+  // (se deja fuera la última tarjeta para que la pantalla siga sin scroll).
+  var ORDEN_USUARIOS = ['usuarios', 'menu', 'chat', 'escaner'];
 
   /* La corona de Premium. Va aquí adentro a propósito: así es UN solo
      archivo que se copia igual a la web y a la app, sin imágenes sueltas
@@ -304,6 +308,30 @@
       '  .vp-pr-nota{display:none;}',
       '}',
 
+      /* ---------- Animación de entrada (solo transform y opacity) ----------
+         Después de que entra la hoja (celular) o la ventana (PC), el contenido
+         entra en cascada: corona, título, tarjetas, precio y botón. */
+      '@keyframes vp-pr-ventana{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:none;opacity:1}}',
+      '@keyframes vp-pr-sube{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}',
+      '@keyframes vp-pr-corona{from{transform:translateY(10px) scale(.86);opacity:0}to{transform:none;opacity:1}}',
+      /* Celular: la hoja ya sube con la animación de pantalla completa de la app (vpFsIn).
+         PC/tablet: ventana con acercamiento suave. Al cerrar se respeta la salida de la app. */
+      '@media (min-width:700px){.modal-overlay:not(.is-closing):not(.is-swap) .modal-sheet:has(.vp-pr){animation:vp-pr-ventana .38s cubic-bezier(.22,1,.36,1) both;}}',
+      '.vp-pr-x{animation:vp-pr-sube .3s ease-out .14s both;}',
+      '.vp-pr-art{animation:vp-pr-corona .6s cubic-bezier(.22,1,.36,1) .12s both;}',
+      '.vp-pr-h1{animation:vp-pr-sube .45s cubic-bezier(.22,1,.36,1) .24s both;}',
+      '.vp-pr-lead{animation:vp-pr-sube .45s cubic-bezier(.22,1,.36,1) .30s both;}',
+      '.vp-pr-card2{animation:vp-pr-sube .45s cubic-bezier(.22,1,.36,1) both;}',
+      '.vp-pr-card2:nth-child(1){animation-delay:.36s}',
+      '.vp-pr-card2:nth-child(2){animation-delay:.42s}',
+      '.vp-pr-card2:nth-child(3){animation-delay:.48s}',
+      '.vp-pr-card2:nth-child(4){animation-delay:.54s}',
+      '.vp-pr-pago,.vp-pr-nota{animation:vp-pr-sube .45s cubic-bezier(.22,1,.36,1) .62s both;}',
+      '.vp-pr-link,.vp-pr-pie{animation:vp-pr-sube .45s ease-out .74s both;}',
+      '@media (prefers-reduced-motion: reduce){',
+      '  .modal-overlay .modal-sheet:has(.vp-pr),.vp-pr-x,.vp-pr-art,.vp-pr-h1,.vp-pr-lead,.vp-pr-card2,.vp-pr-pago,.vp-pr-nota,.vp-pr-link,.vp-pr-pie{animation:none !important;}',
+      '}',
+
       /* ---------- Membresía en Mi cuenta (minimalista) ---------- */
       '.vp-pr-cuenta{display:flex;align-items:center;gap:13px;border:1px solid var(--border);border-radius:var(--radius-card,18px);',
       'background:var(--surface);padding:15px 16px;box-shadow:var(--shadow-card);}',
@@ -369,13 +397,12 @@
            (window.PlayPay
              ? '<button type="button" class="vp-pr-link" id="restoreBtn" onclick="PlayPay.restore()">Ya pagué · Restaurar compra</button>'
              : '') +
-           '<p class="vp-pr-pie">' + esc(pie || 'Lo demás de Vendo Plus sigue siendo tuyo, gratis.') + '</p>' +
-           '<p class="vp-pr-legal">' + esc(legalTxt()) + '</p>';
+           '<p class="vp-pr-pie">' + esc(pie || 'Lo demás de Vendo Plus sigue siendo tuyo, gratis.') + '</p>';
   }
 
   /**
    * Abre la pantalla de Premium.
-   * @param {string} [clave]  Qué función quiso usar ('menu'|'chat'|'escaner'|'stats')
+   * @param {string} [clave]  Qué función quiso usar ('menu'|'chat'|'escaner'|'stats'|'usuarios')
    */
   function abrir(clave) {
     estilos();
@@ -390,7 +417,7 @@
         'Desbloquea más<br><b>funciones con Premium</b>',
         'Lleva tu negocio <b>más lejos</b> con herramientas que te ahorran tiempo y te ayudan a vender más.'
       ) +
-      '<div class="vp-pr-cards">' + ORDEN.map(function (k) { return tarjetaHTML(k, clave); }).join('') + '</div>' +
+      '<div class="vp-pr-cards">' + (clave === 'usuarios' ? ORDEN_USUARIOS : ORDEN).map(function (k) { return tarjetaHTML(k, clave); }).join('') + '</div>' +
       pieHTML(precio, esDueno) +
       '</div>',
       { dismissible: true, grip: false });
@@ -432,11 +459,6 @@
     if (f) f();
   }
 
-  function legalTxt() {
-    return window.PlayPay
-      ? 'Renovación automática. Se cobra a tu cuenta de Google Play y la cancelas cuando quieras en Play Store › Pagos y suscripciones.'
-      : 'Renovación automática, con Stripe. La cancelas cuando quieras desde Mi cuenta.';
-  }
   function pintarPrecio() {
     var p = precioTxt();
     var c = document.querySelector('[data-vp-price]');

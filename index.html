@@ -1510,6 +1510,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   }
   .role-chip.dueno{ background:var(--accent-soft); color:#8A6A18; }
   .role-chip.admin{ background:var(--sec-history-soft); color:var(--sec-history-ink); }
+  .ud-premium{ height:auto; min-height:50px; padding-top:12px; padding-bottom:12px; line-height:1.3; white-space:normal; text-align:center; }
   .role-chip.empleado{ background:var(--sec-home-soft); color:var(--sec-home-ink); }
   .acc-ico .ini{ font-size:14px; font-weight:800; }
   .profile-role{
@@ -14050,10 +14051,13 @@ function openUsersSheet(){
     ${intro}
     ${listaHTML}
 
-    ${soyDueno ? `
+    ${soyDueno ? (usersLimitReached() ? `
+      <button class="btn block ud-add ud-premium" style="margin-top:14px;" onclick="VPPremium.abrir('usuarios')">
+        ¿Quieres agregar más usuarios? Contrata Premium
+      </button>` : `
       <button class="btn block ud-add" style="margin-top:14px;" onclick="startAddUser()">
         ${icon('plus')} Agregar usuario
-      </button>` : ''}
+      </button>`) : ''}
 
     ${multi ? `<div class="acc-list" style="margin-top:14px;">
         <button class="acc-row" onclick="switchUser()">
@@ -14073,8 +14077,21 @@ function openUsersSheet(){
 }
 
 /* ---------- Agregar usuario ---------- */
+/* Gratis: el Dueño + 1 usuario extra. Del tercero en adelante, Premium.
+   Si ya tenías más usuarios, se quedan; solo se frena agregar nuevos. */
+const FREE_MAX_USERS = 2;
+function usersLimitReached(){
+  if(DB.getUsers().length < FREE_MAX_USERS) return false;
+  try{ if(window.VPPremium && VPPremium.activo()) return false; }catch(e){}
+  return true;
+}
+function offerMoreUsers(){
+  if(window.VPPremium) VPPremium.abrir('usuarios');
+  else toast('Para agregar más usuarios contrata Premium');
+}
 function startAddUser(){
   if(!requireOwner('Solo el Dueño puede agregar usuarios')) return;
+  if(usersLimitReached()){ offerMoreUsers(); return; }
   const owner = ownerUser();
   if(owner && !owner.pin){ openOwnerPinSheet(); return; }   // Primero su propio NIP
   openUserForm();
@@ -14127,6 +14144,7 @@ function saveOwnerPin(){
 
 function openUserForm(){
   if(!requireOwner('Solo el Dueño puede agregar usuarios')) return;
+  if(usersLimitReached()){ offerMoreUsers(); return; }
   openModal(`
     <h3 class="sheet-title">Nuevo usuario</h3>
     <p class="sheet-text">Esta persona entrará a ${APP_NAME} con su propio NIP.</p>
@@ -14210,6 +14228,7 @@ function userSnap(u){
 
 function saveNewUser(){
   if(!requireOwner('Solo el Dueño puede agregar usuarios')) return;
+  if(usersLimitReached()){ offerMoreUsers(); return; }
   const name = document.getElementById('nuName').value.trim();
   const role = document.getElementById('nuRole').value;
   const a = document.getElementById('nuPin1').value.replace(/\D/g,'');

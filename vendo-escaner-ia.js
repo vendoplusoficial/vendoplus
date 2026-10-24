@@ -777,7 +777,7 @@
             '</span>' +
             '<span class="vp-ia-premium-chev">' + ico('chevronRight') + '</span>' +
           '</button>' +
-          '<p class="vp-ia-nota">Tus ' + GRATIS_AL_MES + ' escaneos gratis se renuevan solos el mes que entra. Agregar y editar productos a mano siempre es gratis.</p>'
+          '<p class="vp-ia-nota">Ya no te quedan escaneos gratuitos por este mes.</p>'
         : '<p class="vp-ia-nota" id="vpIaRestantes">' + esc(notaConsumo()) + '</p>');
     openModal(html, { dismissible:true });
   }
