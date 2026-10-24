@@ -5813,6 +5813,7 @@ let checkout = newCheckout();
    en el carrito y en la venta, con su nombre y su precio. */
 let customItems = {};
 let saleCategoryFilter = 'todos';
+let saleActiveCat = null;   // categoría resaltada en el índice de Nueva venta
 /* El historial empieza en ESTA SEMANA y se reinicia cada lunes; nada se borra:
    lo anterior se ve con Filtros › Periodo. */
 let historyFilters = { search:'', period:'week', from:'', to:'', service:'all', payment:'all', status:'all' };
@@ -6294,18 +6295,21 @@ function renderSale(){
   const products = DB.getProducts().filter(p => p.active);
   const q = saleSearch.trim();
   const list = q ? products.filter(p => saleMatches(p, q))
-                 : (saleCategoryFilter === 'todos' ? products : products.filter(p => p.category === saleCategoryFilter));
+                 : products;
 
   const chips = q ? `
     <div class="sale-search-info">
       <span>${list.length} resultado${list.length === 1 ? '' : 's'} para “${escapeHtml(q)}”</span>
       <button onclick="clearSaleSearch()">Ver todo</button>
-    </div>` : `<div class="chip-row sticky-index">
-      <button class="chip ${saleCategoryFilter==='todos'?'active':''}" style="${saleCategoryFilter==='todos'?'background:var(--sec-sale)':''}" onclick="setSaleCategory('todos')">Todos</button>
-      ${categories.map(c => `
-        <button class="chip ${saleCategoryFilter===c.id?'active':''}" style="${saleCategoryFilter===c.id?'background:var(--sec-sale)':''}" onclick="setSaleCategory('${c.id}')">${catDot(c)}${escapeHtml(c.name)}</button>
+    </div>` : (() => {
+      const gruposIdx = saleGroups(products, categories);
+      if(!gruposIdx.some(g => g.cat.id === saleActiveCat)) saleActiveCat = gruposIdx.length ? gruposIdx[0].cat.id : null;
+      return `<div class="chip-row sticky-index">
+      ${gruposIdx.map(g => `
+        <button class="chip ${saleActiveCat===g.cat.id?'active':''}" style="${saleActiveCat===g.cat.id?'background:var(--sec-sale)':''}" data-cat="${escapeHtml(String(g.cat.id))}" onclick="saleJumpTo(this.dataset.cat)">${catDot(g.cat)}${escapeHtml(g.cat.name)}</button>
       `).join('')}
     </div>`;
+    })();
 
   const pareceCodigo = /^[0-9A-Za-z\-]{5,}$/.test(q) && /\d/.test(q);
   const grid = list.length === 0 ? (q ? `
@@ -6399,7 +6403,7 @@ function saleGroups(list, categories){
   return groups.filter(g => g.items.length);
 }
 function saleSectionHTML(cat, items){
-  return `<section class="sale-sec">
+  return `<section class="sale-sec" data-cat="${escapeHtml(String(cat.id))}">
     <div class="sale-sec-head">
       <span class="sale-sec-ico" style="--cat:${cat.color || '#8A93AC'}"></span>
       <h2 class="sale-sec-name">${escapeHtml(cat.name)}</h2>
@@ -24487,7 +24491,6 @@ printTicket = function(venta){
     box.innerHTML = '<div class="chip-row">' + row.innerHTML + '</div>';
     c = box.firstElementChild;
     c.scrollLeft = left;
-    c.addEventListener('scroll', function(){ if(row && Math.abs(row.scrollLeft - c.scrollLeft) > 1) row.scrollLeft = c.scrollLeft; }, { passive:true });
   }
   function enlazar(){
     var r = view.querySelector('.chip-row.sticky-index');
@@ -24498,9 +24501,19 @@ printTicket = function(venta){
     if(!row) return;
     mo = new MutationObserver(copia);
     mo.observe(row, { childList:true, subtree:true, attributes:true, characterData:true });
-    row.addEventListener('scroll', function(){ var c = box.firstElementChild; if(c && Math.abs(c.scrollLeft - row.scrollLeft) > 1) c.scrollLeft = row.scrollLeft; }, { passive:true });
   }
-  function poner(v){ if(v !== shown){ shown = v; box.classList.toggle('on', v); } }
+  function poner(v){
+    if(v !== shown){
+      shown = v; box.classList.toggle('on', v);
+      /* Se igualan las dos barras UNA vez al aparecer/desaparecer (antes se
+         perseguían todo el tiempo y el deslizar con el dedo se trababa). */
+      var c = box.firstElementChild;
+      try{
+        if(v && c && row) c.scrollLeft = row.scrollLeft;
+        else if(!v && c && row) row.scrollTo({ left:c.scrollLeft, behavior:'instant' });
+      }catch(e){}
+    }
+  }
   function revisar(){
     raf = 0;
     enlazar();
@@ -25036,6 +25049,111 @@ function cartSanitize(){
       return _cg.apply(self, args);
     };
   }
+})();
+</script>
+
+
+<style id="vp-fix-oct24-css">
+/* ===== Foto del producto: cuadro chico y centrado (cabe todo en pantalla) ===== */
+.photo-upload, .field label.photo-upload, .vp-pf .field label.photo-upload{
+  width:112px !important; height:112px !important; aspect-ratio:1 / 1; margin-left:auto !important; margin-right:auto !important;
+  border-radius:18px !important; gap:5px !important; padding:6px; text-align:center; box-sizing:border-box;
+}
+.photo-upload svg, .vp-pf .photo-upload svg{ width:24px !important; height:24px !important; }
+.photo-upload .photo-upload-hint, .vp-pf .photo-upload-hint{ font-size:11.5px !important; line-height:1.25; }
+.photo-upload-remove-block{ width:auto !important; display:flex !important; margin-left:auto !important; margin-right:auto !important; min-height:0 !important; padding:7px 14px !important; font-size:12.5px !important; }
+.vp-pf .field:has(.photo-upload){ margin-bottom:12px; }
+.vp-pf .field:has(.photo-upload) > label:not(.photo-upload){ margin-bottom:6px; }
+
+/* ===== Nueva venta: índice ===== */
+.topbar-index .chip-row{ scroll-behavior:auto !important; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x; }
+.chip-row.sticky-index{ -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
+.chip-row.sticky-index .chip{ flex:none; }
+
+/* ===== Nueva venta en PC/tablet: fotos del mismo tamaño que en el celular, sin recortar ===== */
+@media (min-width:700px){
+  .product-grid{ grid-template-columns:repeat(auto-fill, 170px) !important; justify-content:start; gap:14px !important; }
+  .product-card .pc-photo{ aspect-ratio:1 / 1 !important; }
+}
+</style>
+<script id="vp-index-spy">
+/* Índice de Nueva venta: al tocar una categoría te lleva directo al TÍTULO de su
+   sección (sin importar dónde estés), y al deslizar se resalta la categoría actual. */
+(function(){
+  var locked = false, raf = 0;
+  function topbar(){ return document.querySelector('.app > .topbar') || document.querySelector('.topbar'); }
+  function viewEl(){ return document.getElementById('view'); }
+  function bars(){
+    var v = viewEl(), r = v && v.querySelector('.chip-row.sticky-index');
+    var c = document.querySelector('.topbar-index .chip-row');
+    return { row:r, clone:c, box:document.querySelector('.topbar-index') };
+  }
+  function lineY(){
+    var t = topbar(), b = bars();
+    var h = Math.max(b.row ? b.row.offsetHeight : 0, (b.box && b.box.classList.contains('on')) ? b.box.offsetHeight : 0, 52);
+    return (t ? t.getBoundingClientRect().bottom : 0) + h;
+  }
+  function sections(){ var v = viewEl(); return v ? Array.prototype.slice.call(v.querySelectorAll('.sale-sec[data-cat]')) : []; }
+  function centerChip(bar, chip){
+    if(!bar || !chip) return;
+    var br = bar.getBoundingClientRect(), cr = chip.getBoundingClientRect();
+    var left = bar.scrollLeft + (cr.left - br.left) - (bar.clientWidth - cr.width) / 2;
+    try{ bar.scrollTo({ left:Math.max(0, left), behavior:'smooth' }); }catch(e){ bar.scrollLeft = left; }
+  }
+  function findChip(bar, id){
+    if(!bar) return null;
+    var cs = bar.querySelectorAll('.chip[data-cat]');
+    for(var i = 0; i < cs.length; i++) if(cs[i].getAttribute('data-cat') === id) return cs[i];
+    return null;
+  }
+  function setActive(id){
+    if(id === saleActiveCat) return;
+    saleActiveCat = id;
+    var b = bars();
+    if(b.row){
+      var cs = b.row.querySelectorAll('.chip[data-cat]');
+      for(var i = 0; i < cs.length; i++){
+        var on = cs[i].getAttribute('data-cat') === id;
+        cs[i].classList.toggle('active', on);
+        cs[i].style.background = on ? 'var(--sec-sale)' : '';
+      }
+    }
+    /* el índice flotante se rehace solo al cambiar la fila; se centra después */
+    setTimeout(function(){
+      var b2 = bars();
+      centerChip(b2.clone, findChip(b2.clone, id));
+      centerChip(b2.row, findChip(b2.row, id));
+    }, 40);
+  }
+  function spy(){
+    raf = 0;
+    if(locked || document.body.dataset.section !== 'sale') return;
+    var secs = sections(); if(!secs.length) return;
+    var y = lineY() + 14, cur = secs[0];
+    for(var i = 0; i < secs.length; i++){ if(secs[i].getBoundingClientRect().top <= y) cur = secs[i]; }
+    var de = document.documentElement;
+    if(window.innerHeight + window.pageYOffset >= de.scrollHeight - 3) cur = secs[secs.length - 1];
+    setActive(cur.getAttribute('data-cat'));
+  }
+  function luego(){ if(!raf) raf = requestAnimationFrame(spy); }
+  function unlock(){ locked = false; }
+  window.addEventListener('scroll', luego, { passive:true });
+  window.addEventListener('resize', luego);
+  ['wheel','touchmove','keydown'].forEach(function(e){ window.addEventListener(e, unlock, { passive:true }); });
+
+  window.saleJumpTo = function(id){
+    var secs = sections(), sec = null;
+    for(var i = 0; i < secs.length; i++) if(secs[i].getAttribute('data-cat') === id){ sec = secs[i]; break; }
+    if(!sec) return;
+    try{ vibrate(8); }catch(e){}
+    locked = true;
+    setActive(id);
+    var t = topbar(), b = bars();
+    var h = Math.max(b.row ? b.row.offsetHeight : 0, 52);
+    var y = sec.getBoundingClientRect().top + window.pageYOffset - ((t ? t.getBoundingClientRect().bottom : 0) + h) - 6;
+    var smooth = !(typeof prefersLessMotion === 'function' && prefersLessMotion());
+    window.scrollTo({ top:Math.max(0, y), behavior: smooth ? 'smooth' : 'auto' });
+  };
 })();
 </script>
 
