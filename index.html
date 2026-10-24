@@ -6306,7 +6306,7 @@ function renderSale(){
       if(!gruposIdx.some(g => g.cat.id === saleActiveCat)) saleActiveCat = gruposIdx.length ? gruposIdx[0].cat.id : null;
       return `<div class="chip-row sticky-index">
       ${gruposIdx.map(g => `
-        <button class="chip ${saleActiveCat===g.cat.id?'active':''}" data-cat="${escapeHtml(String(g.cat.id))}" onclick="saleJumpTo(this.dataset.cat)">${catDot(g.cat)}${escapeHtml(g.cat.name)}</button>
+        <button class="chip ${saleActiveCat===g.cat.id?'active':''}" data-cat="${escapeHtml(String(g.cat.id))}" onclick="saleJumpTo(this.dataset.cat)">${escapeHtml(g.cat.name)}</button>
       `).join('')}
     </div>`;
     })();
@@ -25070,6 +25070,7 @@ function cartSanitize(){
 .chip-row.sticky-index{ -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
 .chip-row.sticky-index .chip{ flex:none; }
 
+#view .chip-row.sticky-index .cat-dot, .topbar-index .cat-dot{ display:none !important; }
 /* Índice sin verde: ni seleccionado ni al presionar */
 #view .chip-row.sticky-index .chip, .topbar-index .chip,
 #view .chip-row.sticky-index .chip.active, .topbar-index .chip.active,
