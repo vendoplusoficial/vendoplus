@@ -955,7 +955,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
       gap:8px;
       max-width:1240px;
     }
-    .product-card .pc-photo{ aspect-ratio:4 / 3.2; }
+    .product-card .pc-photo{ aspect-ratio:1 / 1; }
     .product-card .pc-photo.is-placeholder svg{ width:20px; height:20px; }
     .product-card .pc-inner{ padding:7px 8px 2px; }
     .product-card .pc-cat{ font-size:8.5px; margin-bottom:2px; }
@@ -2982,6 +2982,16 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   /* El índice de Nueva venta y su copia fija se animan juntos desde JS (saleSlideRows);
      con smooth de CSS cada uno se iba por su lado y se peleaban. */
   .chip-row.sticky-index, .topbar-index .chip-row{ scroll-behavior:auto; }
+  .chip-row.sticky-index, .topbar-index .chip-row{ position:relative; }
+  .chip-row.sticky-index .chip, .topbar-index .chip{ position:relative; z-index:1; transition:color .3s ease, border-color .3s ease, background-color .3s ease, box-shadow .3s ease; }
+  .chip-row.sticky-index .chip.active, .topbar-index .chip.active{ background:var(--sec-sale, var(--vp-green)); }
+  .chip-row.has-ind .chip.active{ background:transparent !important; border-color:transparent !important; box-shadow:none !important; }
+  .sale-idx-ind{ position:absolute; left:0; top:0; width:0; height:0; z-index:0; pointer-events:none; border-radius:var(--radius-chip, 999px);
+    background:var(--sec-sale, var(--vp-green)); box-shadow:0 6px 14px rgba(22,193,91,.28); opacity:0;
+    transition:transform .38s cubic-bezier(.22,1,.36,1), width .38s cubic-bezier(.22,1,.36,1), opacity .2s ease; will-change:transform, width; }
+  .chip-row.has-ind > .sale-idx-ind{ opacity:1; }
+  .sale-idx-ind.no-anim{ transition:none !important; }
+  @media (prefers-reduced-motion: reduce){ .sale-idx-ind{ transition:none; } }
 
   /* Los avisos (toast) quedaban DETRÁS de las hojas abiertas: por ejemplo
      "El efectivo recibido es insuficiente" al cobrar no se alcanzaba a ver. */
@@ -3127,8 +3137,9 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
     .sale-row-meta, .sale-row-who{ font-size:11.5px; }
 
     /* Nueva venta: tarjetas legibles (antes ~8 por fila con letras de 7 px) */
-    .product-grid{ grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
-    .product-card .pc-photo{ aspect-ratio:4 / 3; }
+    .product-grid{ grid-template-columns:repeat(auto-fill, minmax(138px, 1fr)); gap:12px; }
+    /* Cuadrada, igual que en el celular: la foto se ve completa y no tan grande */
+    .product-card .pc-photo{ aspect-ratio:1 / 1; }
     .product-card .pc-photo.is-placeholder svg{ width:26px; height:26px; }
     .product-card .pc-inner{ padding:10px 11px 2px; }
     .product-card .pc-cat{ font-size:10px; margin-bottom:3px; }
@@ -6316,7 +6327,7 @@ function renderSale(){
       <button onclick="clearSaleSearch()">Ver todo</button>
     </div>` : (idxGroups.length ? `<div class="chip-row sticky-index">
       ${idxGroups.map(g => { const c = g.cat, on = c.id === saleActiveCat; return `
-        <button class="chip ${on ? 'active' : ''}" style="${on ? 'background:var(--sec-sale)' : ''}" data-cat="${escapeHtml(c.id)}" onclick="saleGoCat(this.dataset.cat)">${catDot(c)}${escapeHtml(c.name)}</button>`; }).join('')}
+        <button class="chip ${on ? 'active' : ''}" data-cat="${escapeHtml(c.id)}" onclick="saleGoCat(this.dataset.cat)">${catDot(c)}${escapeHtml(c.name)}</button>`; }).join('')}
     </div>` : '');
 
   const pareceCodigo = /^[0-9A-Za-z\-]{5,}$/.test(q) && /\d/.test(q);
@@ -6486,7 +6497,6 @@ function setSaleCategory(id){ if(id && id !== 'todos') saleGoCat(id); }
      debajo del índice, estés donde estés.
 ========================================================= */
 let saleActiveCat = null;
-let saleSpyLock = 0;
 function saleTopbar(){ return document.querySelector('.app > .topbar') || document.querySelector('.topbar'); }
 /** Cuánto tapa arriba el encabezado fijo + el índice pegado. */
 function saleIndexOffset(){
@@ -6497,45 +6507,65 @@ function saleIndexOffset(){
   const row = document.querySelector('#view .chip-row.sticky-index');
   return tb + (row ? row.offsetHeight + 4 : 0);
 }
+/* ---- Pastilla verde que se DESLIZA de una categoría a otra ----
+   En lugar de apagar una pastilla y prender otra (se veía como que
+   "brincaba"), hay un solo fondo verde que viaja y cambia de ancho. */
+function saleIdxRows(){
+  return [document.querySelector('#view .chip-row.sticky-index'), document.querySelector('.topbar-index .chip-row')].filter(Boolean);
+}
+function salePlaceInd(row, instant){
+  if(!row) return;
+  const act = row.querySelector('.chip.active[data-cat]');
+  let ind = row.querySelector(':scope > .sale-idx-ind');
+  if(!ind){ ind = document.createElement('span'); ind.className = 'sale-idx-ind'; ind.setAttribute('aria-hidden', 'true'); row.prepend(ind); instant = true; }
+  if(!act || !act.offsetWidth){ row.classList.remove('has-ind'); return; }
+  if(instant) ind.classList.add('no-anim');
+  ind.style.width = act.offsetWidth + 'px';
+  ind.style.height = act.offsetHeight + 'px';
+  ind.style.transform = 'translate3d(' + act.offsetLeft + 'px,' + act.offsetTop + 'px,0)';
+  row.classList.add('has-ind');
+  if(instant){ void ind.offsetWidth; ind.classList.remove('no-anim'); }
+}
 let saleIdxRow = null;
 function saleSetActive(id){
   const row = document.querySelector('#view .chip-row.sticky-index');
   if(!id || !row) return;
   const nuevaFila = row !== saleIdxRow;          /* se volvió a pintar la vista (p. ej. al agregar al carrito) */
-  if(!nuevaFila && id === saleActiveCat && row.querySelector('.chip.active[data-cat="' + CSS.escape(id) + '"]')) return;
+  if(!nuevaFila && id === saleActiveCat && row.classList.contains('has-ind')) return;
   saleIdxRow = row;
   saleActiveCat = id;
   let act = null;
-  row.querySelectorAll('.chip[data-cat]').forEach(b => {
-    const on = b.dataset.cat === id;
-    b.classList.toggle('active', on);
-    if(on){ b.style.background = 'var(--sec-sale)'; act = b; } else b.style.background = '';
+  saleIdxRows().forEach(r => {
+    r.querySelectorAll('.chip[data-cat]').forEach(b => {
+      const on = b.dataset.cat === id;
+      if(b.classList.contains('active') !== on) b.classList.toggle('active', on);
+      if(b.style.background) b.style.background = '';
+      if(on && r === row) act = b;
+    });
+    salePlaceInd(r, nuevaFila);
   });
   if(!act) return;
-  /* La pastilla marcada se centra, en el índice de la página y en la copia fija de arriba */
-  const left = Math.max(0, act.offsetLeft - row.clientWidth / 2 + act.offsetWidth / 2);
+  /* La pastilla marcada se centra en la barra */
+  const left = Math.max(0, Math.min(row.scrollWidth - row.clientWidth, act.offsetLeft - row.clientWidth / 2 + act.offsetWidth / 2));
   saleSlideRows(left, nuevaFila || prefersLessMotion());
 }
-/* Desliza el índice y su copia fija AL MISMO TIEMPO, cuadro por cuadro.
-   (Con scroll "smooth" cada uno por su lado se peleaban al sincronizarse
-   y la pastilla se quedaba a medio camino.) */
+/* Desliza el índice y su copia fija AL MISMO TIEMPO, cuadro por cuadro. */
 let saleSlideRaf = 0;
 function saleSlideRows(left, instant){
   cancelAnimationFrame(saleSlideRaf);
-  const filas = () => [document.querySelector('#view .chip-row.sticky-index'), document.querySelector('.topbar-index .chip-row')].filter(Boolean);
-  const r0 = filas()[0];
+  const r0 = saleIdxRows()[0];
   if(!r0) return;
   const from = r0.scrollLeft, dist = left - from;
-  if(instant || Math.abs(dist) < 2){ filas().forEach(r => r.scrollLeft = left); return; }
-  const t0 = performance.now(), dur = 260;
+  if(instant || Math.abs(dist) < 2){ saleIdxRows().forEach(r => r.scrollLeft = left); return; }
+  const t0 = performance.now(), dur = 380;
   (function paso(t){
     const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-    filas().forEach(r => r.scrollLeft = from + dist * e);
+    saleIdxRows().forEach(r => r.scrollLeft = from + dist * e);
     if(k < 1) saleSlideRaf = requestAnimationFrame(paso);
   })(t0);
 }
 function saleSpy(){
-  if(document.body.dataset.section !== 'sale' || Date.now() < saleSpyLock) return;
+  if(document.body.dataset.section !== 'sale' || saleScrolling) return;
   const secs = document.querySelectorAll('#view .sale-sec[data-cat]');
   if(!secs.length || !document.querySelector('#view .chip-row.sticky-index')) return;
   const line = saleIndexOffset() + 28;
@@ -6543,40 +6573,67 @@ function saleSpy(){
   for(const sec of secs){ if(sec.getBoundingClientRect().top <= line) cur = sec.dataset.cat; else break; }
   saleSetActive(cur);
 }
+/* ---- Ir a una sección: desplazamiento propio, igual en iPhone, Android y PC ----
+   Se recalcula el destino en cada cuadro (el índice se pega a medio camino
+   y cambia lo que tapa), así siempre termina exacto, sin brincos al final.
+   Si la persona toca la pantalla, se suelta al instante. */
+let saleScrolling = false, saleScrollRaf = 0;
+function saleStopScroll(){
+  if(!saleScrolling) return;
+  cancelAnimationFrame(saleScrollRaf);
+  saleScrolling = false;
+  requestAnimationFrame(saleSpy);
+}
 function saleGoCat(id){
   const sec = document.getElementById('salesec-' + id);
   if(!sec) return;
   vibrate(8);
   saleSetActive(id);
-  saleSpyLock = Date.now() + 2000;            /* mientras se desliza, no se mueve la pastilla */
-  const destino = () => window.scrollY + sec.getBoundingClientRect().top - saleIndexOffset() - 6;
-  const suave = !prefersLessMotion();
-  window.scrollTo({ top:Math.max(0, destino()), behavior:suave ? 'smooth' : 'auto' });
-  /* Al terminar de deslizar se corrige al pixel (el índice pudo pegarse
-     o el encabezado cambiar de alto a medio camino). */
-  let ultimo = -1, quietos = 0;
-  const t0 = Date.now();
-  (function esperar(){
-    const y = window.scrollY;
-    quietos = Math.abs(y - ultimo) < 0.5 ? quietos + 1 : 0;
-    ultimo = y;
-    if(quietos < 5 && Date.now() - t0 < 1600){ requestAnimationFrame(esperar); return; }
+  const destino = () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    return Math.max(0, Math.min(max, window.scrollY + sec.getBoundingClientRect().top - saleIndexOffset() - 6));
+  };
+  cancelAnimationFrame(saleScrollRaf);
+  const y0 = window.scrollY, d0 = destino() - y0;
+  if(prefersLessMotion() || Math.abs(d0) < 2){
+    window.scrollTo(0, destino());
+    requestAnimationFrame(() => { const d = destino(); if(Math.abs(d - window.scrollY) > 1) window.scrollTo(0, d); });
+    return;
+  }
+  saleScrolling = true;
+  const dur = Math.min(680, 320 + Math.abs(d0) * 0.12);
+  const t0 = performance.now();
+  (function paso(t){
+    if(!saleScrolling) return;
+    const k = Math.min(1, (t - t0) / dur);
+    const e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    window.scrollTo(0, y0 + (destino() - y0) * e);
+    if(k < 1){ saleScrollRaf = requestAnimationFrame(paso); return; }
     const d = destino();
-    if(Math.abs(d - window.scrollY) > 1.5) window.scrollTo({ top:Math.max(0, d), behavior:'auto' });
-    saleSpyLock = 0;
-    saleActiveCat = null;   /* para que saleSpy repinte sí o sí */
-    saleSetActive(id);
-  })();
+    if(Math.abs(d - window.scrollY) > 1) window.scrollTo(0, d);
+    saleScrolling = false;
+    saleActiveCat = id;
+  })(t0);
 }
 (function(){
   let raf = 0;
   const luego = () => { if(!raf) raf = requestAnimationFrame(() => { raf = 0; saleSpy(); }); };
   window.addEventListener('scroll', luego, { passive:true });
-  window.addEventListener('resize', luego);
+  window.addEventListener('resize', () => { saleIdxRows().forEach(r => salePlaceInd(r, true)); luego(); });
+  /* Si la persona toca o usa la rueda mientras se desliza, manda ella */
+  ['touchstart', 'wheel', 'keydown'].forEach(ev => window.addEventListener(ev, e => {
+    if(ev === 'touchstart' && e.target && e.target.closest && e.target.closest('.chip-row')) return;
+    saleStopScroll();
+  }, { passive:true }));
   const engancha = () => {
     const v = document.getElementById('view');
-    if(!v) return setTimeout(engancha, 200);
+    const box = document.querySelector('.topbar-index');
+    if(!v || !box) return setTimeout(engancha, 200);
     try{ new MutationObserver(luego).observe(v, { childList:true }); }catch(e){}
+    /* La copia fija de arriba: al aparecer o al rehacerse, su pastilla se
+       acomoda sin animación (estaba oculta y no tenía medidas). */
+    try{ new MutationObserver(() => { const c = box.querySelector('.chip-row'); if(c) salePlaceInd(c, true); })
+      .observe(box, { childList:true, attributes:true, attributeFilter:['class'] }); }catch(e){}
   };
   engancha();
 })();
@@ -24616,7 +24673,7 @@ printTicket = function(venta){
     copia();
     if(!row) return;
     mo = new MutationObserver(copia);
-    mo.observe(row, { childList:true, subtree:true, attributes:true, characterData:true });
+    mo.observe(row, { childList:true, subtree:true, characterData:true });   /* la pastilla activa se mueve aparte, sin rehacer la copia */
     row.addEventListener('scroll', function(){ var c = box.firstElementChild; if(c && Math.abs(c.scrollLeft - row.scrollLeft) > 1) c.scrollLeft = row.scrollLeft; }, { passive:true });
   }
   function poner(v){ if(v !== shown){ shown = v; box.classList.toggle('on', v); } }
