@@ -2979,6 +2979,9 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   /* Filas que se deslizan de lado: sin barra de scroll visible en ningún navegador */
   .chip-row, .mdi-tabs, .dm-chips{ scrollbar-width:none; }
   .chip-row{ scroll-behavior:smooth; }
+  /* El índice de Nueva venta y su copia fija se animan juntos desde JS (saleSlideRows);
+     con smooth de CSS cada uno se iba por su lado y se peleaban. */
+  .chip-row.sticky-index, .topbar-index .chip-row{ scroll-behavior:auto; }
 
   /* Los avisos (toast) quedaban DETRÁS de las hojas abiertas: por ejemplo
      "El efectivo recibido es insuficiente" al cobrar no se alcanzaba a ver. */
@@ -3545,6 +3548,8 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
      y debajo sus productos, con la misma cuadrícula de siempre. */
   .sale-sec{ margin-bottom:24px; }
   .sale-sec:last-of-type{ margin-bottom:8px; }
+  /* Espacio para que el título de la última sección también llegue hasta el índice */
+  .sale-sec.sale-sec-last{ min-height:calc(100dvh - 150px); }
   .sale-sec-head{ display:flex; align-items:center; gap:10px; margin:0 0 11px; }
   .sale-sec-head::after{ content:''; flex:1; height:2px; border-radius:2px; margin-left:2px;
     background:linear-gradient(90deg, var(--border), transparent); }
@@ -4116,6 +4121,12 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .vp-pf .field label.photo-upload{ height:128px; border-radius:18px; gap:8px; }
 .vp-pf .photo-upload svg{ width:28px; height:28px; }
 .vp-pf .photo-upload-hint{ font-size:14px; }
+/* Foto del producto: cuadrada y chica, centrada. Se encoge en pantallas
+   bajitas para que todo el formulario quepa en una sola pantalla. */
+.modal-sheet.vp-pf .field label.photo-upload{ width:clamp(96px, 14.5vh, 124px); height:auto; aspect-ratio:1 / 1; margin:0 auto; border-radius:18px; gap:6px; padding:10px; text-align:center; }
+.modal-sheet.vp-pf .photo-upload svg{ width:26px; height:26px; flex:none; }
+.modal-sheet.vp-pf .photo-upload-hint{ font-size:12.5px; line-height:1.3; max-width:92px; }
+.modal-sheet.vp-pf .photo-upload-remove-block{ width:auto; min-width:0; margin:8px auto 0 !important; padding:0 16px; height:38px; font-size:13px; display:flex; }
 .vp-money span{ font-size:17px; left:16px; }
 .vp-pf .vp-money input{ padding-left:40px !important; }
 .vp-select svg{ width:20px; height:20px; left:15px; }
@@ -6293,19 +6304,20 @@ function renderSale(){
   if(saleCategoryFilter !== 'todos' && !categories.some(c => c.id === saleCategoryFilter)){ saleCategoryFilter = 'todos'; }
   const products = DB.getProducts().filter(p => p.active);
   const q = saleSearch.trim();
-  const list = q ? products.filter(p => saleMatches(p, q))
-                 : (saleCategoryFilter === 'todos' ? products : products.filter(p => p.category === saleCategoryFilter));
+  /* Sin búsqueda se ven TODAS las secciones; el índice ya no filtra:
+     lleva a la sección y se va marcando solo según dónde estés. */
+  const list = q ? products.filter(p => saleMatches(p, q)) : products;
+  const idxGroups = q ? [] : saleGroups(products, categories);
+  if(!idxGroups.some(g => g.cat.id === saleActiveCat)) saleActiveCat = idxGroups.length ? idxGroups[0].cat.id : null;
 
   const chips = q ? `
     <div class="sale-search-info">
       <span>${list.length} resultado${list.length === 1 ? '' : 's'} para “${escapeHtml(q)}”</span>
       <button onclick="clearSaleSearch()">Ver todo</button>
-    </div>` : `<div class="chip-row sticky-index">
-      <button class="chip ${saleCategoryFilter==='todos'?'active':''}" style="${saleCategoryFilter==='todos'?'background:var(--sec-sale)':''}" onclick="setSaleCategory('todos')">Todos</button>
-      ${categories.map(c => `
-        <button class="chip ${saleCategoryFilter===c.id?'active':''}" style="${saleCategoryFilter===c.id?'background:var(--sec-sale)':''}" onclick="setSaleCategory('${c.id}')">${catDot(c)}${escapeHtml(c.name)}</button>
-      `).join('')}
-    </div>`;
+    </div>` : (idxGroups.length ? `<div class="chip-row sticky-index">
+      ${idxGroups.map(g => { const c = g.cat, on = c.id === saleActiveCat; return `
+        <button class="chip ${on ? 'active' : ''}" style="${on ? 'background:var(--sec-sale)' : ''}" data-cat="${escapeHtml(c.id)}" onclick="saleGoCat(this.dataset.cat)">${catDot(c)}${escapeHtml(c.name)}</button>`; }).join('')}
+    </div>` : '');
 
   const pareceCodigo = /^[0-9A-Za-z\-]{5,}$/.test(q) && /\d/.test(q);
   const grid = list.length === 0 ? (q ? `
@@ -6323,7 +6335,11 @@ function renderSale(){
         <div class="empty-title">Sin productos aquí</div>
         <div class="empty-text">No hay productos activos en esta categoría.</div>
       </div>
-    `) : saleGroups(list, categories).map(g => saleSectionHTML(g.cat, g.items)).join('');
+    `) : saleGroups(list, categories).map((g, i, all) => {
+        const h = saleSectionHTML(g.cat, g.items);
+        /* La última sección deja lugar para que su título también pueda subir hasta el índice */
+        return (!q && i === all.length - 1) ? h.replace('class="sale-sec"', 'class="sale-sec sale-sec-last"') : h;
+      }).join('');
 
   const cartCount = cartUnitsCount();
   const totals = computeTotals();
@@ -6399,7 +6415,7 @@ function saleGroups(list, categories){
   return groups.filter(g => g.items.length);
 }
 function saleSectionHTML(cat, items){
-  return `<section class="sale-sec">
+  return `<section class="sale-sec" id="salesec-${escapeHtml(cat.id)}" data-cat="${escapeHtml(cat.id)}">
     <div class="sale-sec-head">
       <span class="sale-sec-ico" style="--cat:${cat.color || '#8A93AC'}"></span>
       <h2 class="sale-sec-name">${escapeHtml(cat.name)}</h2>
@@ -6460,7 +6476,110 @@ function saleCardHTML(p){
   </div>`;
 }
 
-function setSaleCategory(id){ saleCategoryFilter = id; render(); }
+function setSaleCategory(id){ if(id && id !== 'todos') saleGoCat(id); }
+
+/* =========================================================
+   ÍNDICE DE NUEVA VENTA QUE SIGUE A LA SECCIÓN
+   · Al deslizar, la pastilla marcada es la de la sección que está
+     debajo del índice (si ves hamburguesas, se marca Hamburguesas).
+   · Al tocar una pastilla, el título de esa sección queda justo
+     debajo del índice, estés donde estés.
+========================================================= */
+let saleActiveCat = null;
+let saleSpyLock = 0;
+function saleTopbar(){ return document.querySelector('.app > .topbar') || document.querySelector('.topbar'); }
+/** Cuánto tapa arriba el encabezado fijo + el índice pegado. */
+function saleIndexOffset(){
+  const top = saleTopbar();
+  const tb = top ? Math.max(0, top.getBoundingClientRect().bottom) : 0;
+  const pinned = document.querySelector('.topbar-index.on');
+  if(pinned) return Math.max(tb, pinned.getBoundingClientRect().bottom);
+  const row = document.querySelector('#view .chip-row.sticky-index');
+  return tb + (row ? row.offsetHeight + 4 : 0);
+}
+let saleIdxRow = null;
+function saleSetActive(id){
+  const row = document.querySelector('#view .chip-row.sticky-index');
+  if(!id || !row) return;
+  const nuevaFila = row !== saleIdxRow;          /* se volvió a pintar la vista (p. ej. al agregar al carrito) */
+  if(!nuevaFila && id === saleActiveCat && row.querySelector('.chip.active[data-cat="' + CSS.escape(id) + '"]')) return;
+  saleIdxRow = row;
+  saleActiveCat = id;
+  let act = null;
+  row.querySelectorAll('.chip[data-cat]').forEach(b => {
+    const on = b.dataset.cat === id;
+    b.classList.toggle('active', on);
+    if(on){ b.style.background = 'var(--sec-sale)'; act = b; } else b.style.background = '';
+  });
+  if(!act) return;
+  /* La pastilla marcada se centra, en el índice de la página y en la copia fija de arriba */
+  const left = Math.max(0, act.offsetLeft - row.clientWidth / 2 + act.offsetWidth / 2);
+  saleSlideRows(left, nuevaFila || prefersLessMotion());
+}
+/* Desliza el índice y su copia fija AL MISMO TIEMPO, cuadro por cuadro.
+   (Con scroll "smooth" cada uno por su lado se peleaban al sincronizarse
+   y la pastilla se quedaba a medio camino.) */
+let saleSlideRaf = 0;
+function saleSlideRows(left, instant){
+  cancelAnimationFrame(saleSlideRaf);
+  const filas = () => [document.querySelector('#view .chip-row.sticky-index'), document.querySelector('.topbar-index .chip-row')].filter(Boolean);
+  const r0 = filas()[0];
+  if(!r0) return;
+  const from = r0.scrollLeft, dist = left - from;
+  if(instant || Math.abs(dist) < 2){ filas().forEach(r => r.scrollLeft = left); return; }
+  const t0 = performance.now(), dur = 260;
+  (function paso(t){
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    filas().forEach(r => r.scrollLeft = from + dist * e);
+    if(k < 1) saleSlideRaf = requestAnimationFrame(paso);
+  })(t0);
+}
+function saleSpy(){
+  if(document.body.dataset.section !== 'sale' || Date.now() < saleSpyLock) return;
+  const secs = document.querySelectorAll('#view .sale-sec[data-cat]');
+  if(!secs.length || !document.querySelector('#view .chip-row.sticky-index')) return;
+  const line = saleIndexOffset() + 28;
+  let cur = secs[0].dataset.cat;
+  for(const sec of secs){ if(sec.getBoundingClientRect().top <= line) cur = sec.dataset.cat; else break; }
+  saleSetActive(cur);
+}
+function saleGoCat(id){
+  const sec = document.getElementById('salesec-' + id);
+  if(!sec) return;
+  vibrate(8);
+  saleSetActive(id);
+  saleSpyLock = Date.now() + 2000;            /* mientras se desliza, no se mueve la pastilla */
+  const destino = () => window.scrollY + sec.getBoundingClientRect().top - saleIndexOffset() - 6;
+  const suave = !prefersLessMotion();
+  window.scrollTo({ top:Math.max(0, destino()), behavior:suave ? 'smooth' : 'auto' });
+  /* Al terminar de deslizar se corrige al pixel (el índice pudo pegarse
+     o el encabezado cambiar de alto a medio camino). */
+  let ultimo = -1, quietos = 0;
+  const t0 = Date.now();
+  (function esperar(){
+    const y = window.scrollY;
+    quietos = Math.abs(y - ultimo) < 0.5 ? quietos + 1 : 0;
+    ultimo = y;
+    if(quietos < 5 && Date.now() - t0 < 1600){ requestAnimationFrame(esperar); return; }
+    const d = destino();
+    if(Math.abs(d - window.scrollY) > 1.5) window.scrollTo({ top:Math.max(0, d), behavior:'auto' });
+    saleSpyLock = 0;
+    saleActiveCat = null;   /* para que saleSpy repinte sí o sí */
+    saleSetActive(id);
+  })();
+}
+(function(){
+  let raf = 0;
+  const luego = () => { if(!raf) raf = requestAnimationFrame(() => { raf = 0; saleSpy(); }); };
+  window.addEventListener('scroll', luego, { passive:true });
+  window.addEventListener('resize', luego);
+  const engancha = () => {
+    const v = document.getElementById('view');
+    if(!v) return setTimeout(engancha, 200);
+    try{ new MutationObserver(luego).observe(v, { childList:true }); }catch(e){}
+  };
+  engancha();
+})();
 
 /* ---------- Búsqueda y lector de código de barras ---------- */
 function onSaleSearch(v){ saleSearch = v; render(); }
