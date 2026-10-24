@@ -3414,7 +3414,11 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .cash-hero-ico{ width:48px; height:48px; border-radius:15px; background:rgba(31,107,66,.12); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .cash-hero.off .cash-hero-ico{ background:var(--surface-alt); color:var(--ink-soft); }
   .cash-hero-ico svg{ width:24px; height:24px; }
-  .cash-hero-txt{ min-width:0; }
+  .cash-hero-txt{ min-width:0; flex:1 1 auto; }
+  .cash-hero-hist{ flex:none; width:46px; height:46px; margin-left:auto; border:none; border-radius:15px; background:var(--brand-soft, #E4F6EA); color:var(--brand, #16C15B); display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .15s ease, background .15s ease; }
+  .cash-hero-hist svg{ width:24px; height:24px; }
+  .cash-hero-hist:active{ transform:scale(.93); }
+  @media (hover:hover){ .cash-hero-hist:hover{ background:#D3F0DD; } }
   .cash-hero-txt span{ display:block; font-size:12.5px; font-weight:700; opacity:.85; }
   .cash-hero-txt b{ display:block; font-size:27px; font-weight:800; letter-spacing:-.4px; line-height:1.2; }
   .cash-hero.off .cash-hero-txt b{ font-size:18px; }
@@ -14886,7 +14890,16 @@ function bootApp(){
     showAuth('welcome');
   }else if(multiUser()){
     const me = activeUser();
-    if(userSessionOpen() && me){
+    /* Respaldo: si el aparato perdió la marca de "sesión abierta" pero este
+       mismo aparato ya tenía a ese usuario activo con su turno abierto
+       (solo "Cambiar de usuario" o "Cerrar sesión" cierran el turno), la
+       sesión sigue siendo suya: no se le vuelve a pedir quién es. */
+    let sesionAbierta = userSessionOpen();
+    if(!sesionAbierta && me && localStorage.getItem('mesa_active_user') === me.id && currentShift()){
+      sesionAbierta = true;
+      openUserSession();
+    }
+    if(sesionAbierta && me){
       /* La sesión de este usuario sigue abierta: aunque se recargue la
          página, Mesa no vuelve a pedir el NIP. Solo se pide otra vez
          cuando le dan a "Cambiar de usuario". */
@@ -19514,10 +19527,10 @@ function renderCash(){
           <b>${last ? 'Último corte ' + fmtDay(last.closedAt) : 'Aún no la has abierto'}</b>
           <small>${last ? 'Quedaron ' + formatMoney(last.keep != null ? last.keep : (last.counted || 0)) + ' en caja' : 'Ábrela con el efectivo con el que empiezas el día (fondo).'}</small>
         </div>
+        <button type="button" class="cash-hero-hist" onclick="openCashCutSheet()" aria-label="Ver historial de cortes" title="Historial de cortes"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.6 12.2a8.4 8.4 0 1 0 2.5-6L3.6 8.6M3.6 4.4v4.2h4.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.6V12l3 1.9" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
       ${puede ? `<button class="btn primary block" style="margin-top:14px;" onclick="openCashOpen()">${icon('cashbox')} Abrir caja</button>`
               : `<p class="md-hint" style="text-align:center;">Pídele al Dueño o al Administrador que abra la caja.</p>`}
-      <div class="doc-note" style="margin-top:14px;">${icon('alert')}<span><b>Para vender necesitas la caja abierta</b>En la primera venta del día ${APP_NAME} te pide el fondo y la abre ahí mismo. Si solo vas a ver productos, reportes o clientes, no hace falta. Al cerrarla te dice cuánto efectivo debe haber: lo cuentas y ves si cuadra, sobra o falta.</span></div>
     `;
   }
   const sum = cashSummary(sess);

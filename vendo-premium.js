@@ -404,8 +404,12 @@
    * Abre la pantalla de Premium.
    * @param {string} [clave]  Qué función quiso usar ('menu'|'chat'|'escaner'|'stats'|'usuarios')
    */
+  /* Desde "Agregar usuario" se llega aquí; al cerrar se regresa a Usuarios. */
+  var origen = null;
+
   function abrir(clave) {
     estilos();
+    origen = (clave === 'usuarios') ? 'usuarios' : null;
     var abrirModal = fn('openModal');
     if (!abrirModal) { avisar('Activa Premium desde Mi cuenta'); return; }
 
@@ -423,6 +427,16 @@
       { dismissible: true, grip: false });
 
     traseProtegido();
+    if (origen === 'usuarios') {
+      /* Tocar afuera (computadora) también regresa a Usuarios, no a la nada */
+      var ov = document.getElementById('modalOverlay');
+      if (ov) ov.addEventListener('click', function (e) {
+        if (e.target === ov && origen === 'usuarios') {
+          origen = null;
+          setTimeout(function () { var u = fn('openUsersSheet'); if (u && !document.querySelector('#modal-layer .modal-sheet')) u(); }, 0);
+        }
+      });
+    }
     try { if (window.PlayPay && typeof PlayPay.load === 'function') PlayPay.load().then(pintarPrecio).catch(function () {}); } catch (e) {}
   }
 
@@ -455,6 +469,13 @@
   }
 
   function cerrar() {
+    var vuelve = origen === 'usuarios';
+    origen = null;
+    if (vuelve) {
+      /* La X (y Esc / atrás) regresan a la lista de Usuarios */
+      var u = fn('openUsersSheet');
+      if (u) { u(); return; }
+    }
     var f = fn('closeModal');
     if (f) f();
   }
@@ -862,9 +883,14 @@
   function arrancar() {
     estilos();
     /* La tecla Esc cierra la pantalla de Premium (computadora) */
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && document.querySelector('#modal-layer .vp-pr')) cerrar();
-    });
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && document.querySelector('#modal-layer .vp-pr')) {
+        /* En fase de captura y sin dejar pasar la tecla: si no, el cierre
+           general de la app la gana y no se alcanza a regresar a Usuarios. */
+        e.stopImmediatePropagation();
+        cerrar();
+      }
+    }, true);
     if (engancharTodo()) return;
     var n = 0;
     var t = setInterval(function () {
