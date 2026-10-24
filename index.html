@@ -3031,15 +3031,6 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
     box-shadow:0 0 0 3px rgba(var(--brand-rgb),.14);
   }
 
-  /* ---------- Etiqueta "Gratis · sin tarjeta" de la bienvenida ---------- */
-  .vp-free-badge{
-    display:inline-flex; align-items:center; gap:6px; align-self:flex-start;
-    font-size:12px; font-weight:800; letter-spacing:.3px;
-    color:var(--success, #1F7F55); background:var(--success-bg, #E5FAEC);
-    border-radius:999px; padding:5px 11px; margin-bottom:11px;
-  }
-  .vp-free-badge svg{ width:13px; height:13px; }
-
   /* ---------- Acceso (bienvenida, registro, prueba gratis) ---------- */
   .trial-badge{ align-self:flex-start; }
   /* El dibujo puede salirse de su caja: así el mostrador llega de orilla
@@ -12349,11 +12340,10 @@ function authWelcomeHTML(){
     </div>
     <div class="auth-sheet">
       <div class="auth-body">
-        <span class="vp-free-badge">${icon('check')}Gratis · sin tarjeta</span>
         <h1 class="auth-title">Administra tu negocio fácil y seguro</h1>
-        <p class="auth-sub">Vende, haz tus tickets, lleva tu caja, tu inventario y tus clientes. <b style="color:var(--ink)">Gratis para siempre</b>, sin pedirte tarjeta y sin que se te bloquee nada.</p>
+        <p class="auth-sub">Lleva el control de tus ventas, deudas e inventario sin estrés, ni complicaciones.</p>
         <div class="auth-actions">
-          <button class="btn dark xl block" onclick="authStart('signup')">Empezar gratis</button>
+          <button class="btn dark xl block" onclick="authStart('signup')">Empezar</button>
           <button class="btn outline xl block" onclick="authStart('login')">Ya tengo una cuenta</button>
         </div>
       </div>
