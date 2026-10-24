@@ -628,11 +628,13 @@
     consumo();
   }
 
-  var restantes = null;
-  var GRATIS_AL_MES = 3;
+  var restantes = null;      /* null = todavía no se pregunta al servidor */
+  var sinLimite = false;     /* true = Premium: no hay tope */
+  var GRATIS_AL_MES = 3;     /* lo manda el servidor; esto es solo el respaldo */
 
   /** ¿Membresía Premium activa? (escaneos sin límite) */
   function premium(){
+    if(sinLimite) return true;
     try{ return !!(window.VPPremium && VPPremium.activo()); }catch(e){ return false; }
   }
   /** El texto de abajo de la pantalla: cuántos escaneos quedan. */
@@ -654,11 +656,19 @@
       if(!(window.Cloud && Cloud.sb && Cloud.uid)) return;
       Cloud.sb.rpc('vp_ia_mi_consumo').then(function(r){
         var d = r && r.data;
-        if(d && d.ok){
-          restantes = (d.restantes == null) ? restantes : Number(d.restantes);
-          try{ if(window.VPPremium && VPPremium.fijarRestantes) VPPremium.fijarRestantes(restantes); }catch(e){}
-          pintarConsumo();
-        }
+        if(!d || !d.ok) return;
+        /* El servidor manda la verdad: cuántos gratis van al mes, si este
+           negocio es Premium y cuántos le quedan. "limite: null" quiere
+           decir SIN LÍMITE. */
+        if(d.gratis_mes != null) GRATIS_AL_MES = Number(d.gratis_mes) || GRATIS_AL_MES;
+        sinLimite = (d.premium === true) || (d.limite == null);
+        restantes = sinLimite ? null : Number(d.restantes || 0);
+        try{
+          if(window.VPPremium && VPPremium.fijarRestantes){
+            VPPremium.fijarRestantes(sinLimite ? Infinity : restantes);
+          }
+        }catch(e){}
+        pintarConsumo();
       }).catch(function(){});
     }catch(e){}
   }
@@ -807,9 +817,13 @@
       if(forzar) S.reanalisis++;
       cacheGuardar(S.hash, data);
       aplicarRespuesta(data, false);
-      if(data.uso && data.uso.restantes != null){
-        restantes = Number(data.uso.restantes);
-        try{ if(window.VPPremium && VPPremium.fijarRestantes) VPPremium.fijarRestantes(restantes); }catch(e){}
+      if(data.uso){
+        if(data.uso.premium === true){ sinLimite = true; restantes = null; }
+        else if(data.uso.restantes != null){
+          sinLimite = false;
+          restantes = Number(data.uso.restantes);
+          try{ if(window.VPPremium && VPPremium.fijarRestantes) VPPremium.fijarRestantes(restantes); }catch(e){}
+        }
       }
     }).catch(function(err){
       enVuelo = false; S.cargando = false;

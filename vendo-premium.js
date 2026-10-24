@@ -99,7 +99,9 @@
     },
     escaner: {
       titulo: 'Escáner de carta con IA',
-      texto: 'Tomas una foto de tu menú y la IA llena tu inventario sola. Gratis son 3 escaneos al mes; con Premium, los que quieras.',
+      /* {N} se cambia por el número real que manda Supabase, así que si
+         algún día pones 5 escaneos gratis, el texto se corrige solo. */
+      texto: 'Tomas una foto de tu menú y la IA llena tu inventario sola. Gratis son {N} escaneos al mes; con Premium, los que quieras.',
       ico: 'camera'
     },
     stats: {
@@ -132,64 +134,107 @@
       '  --vp-pr-tinta:#15181C; --vp-pr-gris:#6C7480;',
       '}',
 
-      /* ---------- pantalla completa de Premium ---------- */
-      '.vp-pr{max-width:560px;margin:0 auto;padding:0 2px 8px;}',
-      '.vp-pr-x{position:sticky;top:-2px;z-index:3;display:flex;justify-content:flex-end;padding:6px 0 10px;',
-      'margin:-6px -4px 0;background:linear-gradient(#fff 58%,rgba(255,255,255,.92) 82%,rgba(255,255,255,0));}',
-      '.vp-pr-x button{width:40px;height:40px;border:none;border-radius:50%;background:#F1F3F7;color:var(--vp-pr-gris);',
-      'display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;',
-      'transition:background .15s ease;}',
+      /* ------------------------------------------------------------------
+         UNA SOLA PANTALLA, SIN DESLIZAR.
+         La hoja de pantalla completa deja de desplazarse y se convierte en
+         una columna: lo de arriba y lo de abajo miden lo suyo, y las cuatro
+         tarjetas se reparten lo que sobra. Todos los tamaños van con
+         clamp() atado al ALTO de la pantalla (vh), así que el mismo diseño
+         cabe igual en un celular chiquito que en una tablet.
+      ------------------------------------------------------------------ */
+      '.modal-sheet:has(.vp-pr){overflow:hidden !important;display:flex;flex-direction:column;',
+      'padding:max(10px,env(safe-area-inset-top)) 16px calc(10px + env(safe-area-inset-bottom)) !important;}',
+      '.vp-pr{flex:1 1 auto;min-height:0;width:100%;max-width:520px;margin:0 auto;',
+      'display:flex;flex-direction:column;}',
+
+      /* ---- cerrar ---- */
+      '.vp-pr-x{flex:none;display:flex;justify-content:flex-end;margin-bottom:clamp(-6px,-.6vh,0px);}',
+      '.vp-pr-x button{width:clamp(32px,4.4vh,40px);height:clamp(32px,4.4vh,40px);border:none;border-radius:50%;',
+      'background:#F1F3F7;color:var(--vp-pr-gris);display:flex;align-items:center;justify-content:center;',
+      'cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s ease;}',
       '.vp-pr-x button:active{background:#E4E8EF;}',
-      '.vp-pr-x button svg{width:19px;height:19px;}',
+      '.vp-pr-x button svg{width:clamp(15px,2.1vh,19px);height:clamp(15px,2.1vh,19px);}',
 
-      '.vp-pr-art{display:block;width:min(248px,62%);height:auto;margin:2px auto 14px;}',
+      /* ---- corona ---- */
+      '.vp-pr-art{flex:none;display:block;height:clamp(68px,15.5vh,146px);width:auto;max-width:62%;',
+      'object-fit:contain;margin:clamp(0px,.4vh,6px) auto clamp(6px,1.3vh,14px);}',
 
-      '.vp-pr-h1{margin:0 0 10px;text-align:center;font-size:clamp(25px,7.4vw,32px);line-height:1.14;',
-      'font-weight:800;letter-spacing:-.6px;color:var(--vp-pr-tinta);}',
+      /* ---- títulos ---- */
+      '.vp-pr-h1{flex:none;margin:0 0 clamp(4px,.8vh,10px);text-align:center;',
+      'font-size:clamp(19px,2.55vh + 1.6vw,31px);line-height:1.16;font-weight:800;',
+      'letter-spacing:-.5px;color:var(--vp-pr-tinta);}',
       '.vp-pr-h1 b{color:var(--vp-pr-verde);font-weight:800;}',
-      '.vp-pr-lead{margin:0 auto 22px;max-width:360px;text-align:center;font-size:15.5px;line-height:1.45;',
-      'font-weight:600;color:var(--vp-pr-gris);}',
+      '.vp-pr-lead{flex:none;margin:0 auto clamp(8px,1.5vh,18px);max-width:360px;text-align:center;',
+      'font-size:clamp(12px,1.6vh,15.5px);line-height:1.4;font-weight:600;color:var(--vp-pr-gris);}',
       '.vp-pr-lead b{color:var(--vp-pr-tinta);font-weight:800;}',
 
-      /* ---------- tarjetas de funciones ---------- */
-      '.vp-pr-cards{display:grid;gap:11px;margin-bottom:20px;}',
-      '.vp-pr-card2{display:flex;gap:13px;align-items:flex-start;border:1px solid var(--vp-pr-borde);',
-      'border-radius:17px;background:#fff;padding:15px 16px;}',
+      /* ---- las cuatro tarjetas: se reparten lo que sobra ---- */
+      '.vp-pr-cards{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;',
+      'gap:clamp(5px,.95vh,11px);margin-bottom:clamp(8px,1.5vh,16px);}',
+      /* flex:1 con tope: si sobra espacio las tarjetas lo toman (y no queda
+         un hueco raro en medio), pero nunca se estiran de más. */
+      '.vp-pr-card2{flex:1 1 auto;max-height:clamp(56px,10.6vh,92px);',
+      'display:flex;gap:clamp(9px,1.4vh,13px);align-items:center;',
+      'border:1px solid var(--vp-pr-borde);border-radius:clamp(12px,1.8vh,17px);background:#fff;',
+      'padding:clamp(8px,1.35vh,15px) clamp(11px,1.6vh,16px);}',
       '.vp-pr-card2.is-focus{border-color:#BFE9D0;background:#FBFFFC;}',
-      '.vp-pr-ico{flex:none;width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;',
+      '.vp-pr-ico{flex:none;width:clamp(30px,4.3vh,42px);height:clamp(30px,4.3vh,42px);',
+      'border-radius:clamp(9px,1.4vh,13px);display:flex;align-items:center;justify-content:center;',
       'background:var(--vp-pr-suave);color:var(--vp-pr-verde);}',
-      '.vp-pr-ico svg{width:21px;height:21px;}',
+      '.vp-pr-ico svg{width:clamp(15px,2.2vh,21px);height:clamp(15px,2.2vh,21px);}',
       '.vp-pr-txt{min-width:0;}',
-      '.vp-pr-txt b{display:block;font-size:16px;font-weight:800;color:var(--vp-pr-tinta);line-height:1.3;}',
-      '.vp-pr-txt span{display:block;font-size:14px;font-weight:600;color:var(--vp-pr-gris);line-height:1.45;margin-top:3px;}',
+      '.vp-pr-txt b{display:block;font-size:clamp(13px,1.78vh,16px);font-weight:800;',
+      'color:var(--vp-pr-tinta);line-height:1.25;}',
+      '.vp-pr-txt span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;',
+      'font-size:clamp(11px,1.45vh,13.8px);font-weight:600;color:var(--vp-pr-gris);line-height:1.36;',
+      'margin-top:clamp(1px,.25vh,3px);}',
 
-      /* ---------- precio ---------- */
-      '.vp-pr-precio{background:var(--vp-pr-suave);border-radius:18px;padding:16px 18px;margin-bottom:14px;}',
-      '.vp-pr-precio small{display:block;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;',
-      'color:var(--vp-pr-verde);}',
-      '.vp-pr-precio b{display:block;font-size:clamp(30px,8.6vw,38px);font-weight:800;letter-spacing:-1px;line-height:1.05;',
-      'color:var(--vp-pr-verde);margin-top:3px;}',
-      '.vp-pr-precio span{display:block;font-size:14px;font-weight:600;color:#3F8A5E;margin-top:3px;}',
+      /* ---- precio ---- */
+      '.vp-pr-precio{flex:none;background:var(--vp-pr-suave);border-radius:clamp(13px,1.9vh,18px);',
+      'padding:clamp(9px,1.5vh,16px) clamp(13px,1.8vh,18px);margin-bottom:clamp(7px,1.2vh,14px);}',
+      '.vp-pr-precio small{display:block;font-size:clamp(10px,1.3vh,12px);font-weight:800;letter-spacing:.5px;',
+      'text-transform:uppercase;color:var(--vp-pr-verde);line-height:1.2;}',
+      '.vp-pr-precio b{display:block;font-size:clamp(24px,3.9vh,38px);font-weight:800;letter-spacing:-1px;',
+      'line-height:1.04;color:var(--vp-pr-verde);margin-top:clamp(1px,.3vh,4px);}',
+      '.vp-pr-precio span{display:block;font-size:clamp(11.5px,1.5vh,14px);font-weight:600;color:#3F8A5E;',
+      'margin-top:clamp(1px,.3vh,4px);}',
 
-      /* ---------- botón ---------- */
-      '.vp-pr-cta{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;cursor:pointer;',
-      'border-radius:16px;padding:18px 20px;font-family:inherit;font-size:17px;font-weight:800;color:#fff;',
+      /* ---- botón ---- */
+      '.vp-pr-cta{flex:none;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;',
+      'border:none;cursor:pointer;border-radius:clamp(12px,1.8vh,16px);',
+      'padding:clamp(12px,2.05vh,19px) 18px;font-family:inherit;',
+      'font-size:clamp(14.5px,1.95vh,17.5px);font-weight:800;color:#fff;',
       'background:var(--vp-pr-verde-claro);box-shadow:0 6px 18px rgba(37,211,102,.3);',
       '-webkit-tap-highlight-color:transparent;transition:transform .12s ease, background .15s ease;}',
       '.vp-pr-cta:active{transform:scale(.985);background:#1FBE5B;}',
       '.vp-pr-cta[disabled]{opacity:.6;box-shadow:none;}',
-      '.vp-pr-cta svg{width:17px;height:17px;}',
-      '.vp-pr-link{display:block;width:100%;margin-top:10px;border:none;background:none;cursor:pointer;',
-      'font-family:inherit;font-size:14.5px;font-weight:700;color:var(--vp-pr-verde);padding:11px;',
-      '-webkit-tap-highlight-color:transparent;}',
-      '.vp-pr-pie{margin:14px 2px 2px;text-align:center;font-size:13px;font-weight:600;color:var(--vp-pr-gris);}',
-      '.vp-pr-legal{margin:10px 2px 0;text-align:center;font-size:11.5px;font-weight:600;line-height:1.5;color:#98A0AC;}',
+      '.vp-pr-cta svg{width:clamp(14px,1.9vh,17px);height:clamp(14px,1.9vh,17px);}',
+      '.vp-pr-link{flex:none;display:block;width:100%;margin-top:clamp(4px,.8vh,10px);border:none;background:none;',
+      'cursor:pointer;font-family:inherit;font-size:clamp(12.5px,1.6vh,14.5px);font-weight:700;',
+      'color:var(--vp-pr-verde);padding:clamp(7px,1.1vh,11px);-webkit-tap-highlight-color:transparent;}',
+      '.vp-pr-pie{flex:none;margin:clamp(7px,1.2vh,14px) 2px 0;text-align:center;',
+      'font-size:clamp(11px,1.45vh,13px);font-weight:600;color:var(--vp-pr-gris);line-height:1.35;}',
+      '.vp-pr-legal{flex:none;margin:clamp(4px,.7vh,10px) 2px 0;text-align:center;',
+      'font-size:clamp(9.5px,1.2vh,11.5px);font-weight:600;line-height:1.4;color:#98A0AC;}',
 
-      /* ---------- aviso (solo el Dueño puede pagar) ---------- */
-      '.vp-pr-nota{display:flex;gap:10px;align-items:flex-start;background:#F6F8FB;border-radius:14px;padding:13px 14px;margin-bottom:14px;}',
-      '.vp-pr-nota svg{width:17px;height:17px;flex:none;margin-top:1px;color:var(--vp-pr-gris);}',
-      '.vp-pr-nota p{margin:0;font-size:13.5px;font-weight:600;line-height:1.5;color:var(--vp-pr-gris);}',
+      /* ---- aviso (solo el Dueño puede pagar / tus productos no se borran) ---- */
+      '.vp-pr-nota{flex:none;display:flex;gap:9px;align-items:flex-start;background:#F6F8FB;',
+      'border-radius:clamp(10px,1.5vh,14px);padding:clamp(9px,1.4vh,14px);margin-bottom:clamp(7px,1.2vh,14px);}',
+      '.vp-pr-nota svg{width:clamp(14px,1.9vh,17px);height:clamp(14px,1.9vh,17px);flex:none;margin-top:1px;',
+      'color:var(--vp-pr-gris);}',
+      '.vp-pr-nota p{margin:0;font-size:clamp(11.5px,1.5vh,13.5px);font-weight:600;line-height:1.4;',
+      'color:var(--vp-pr-gris);}',
       '.vp-pr-nota p b{color:var(--vp-pr-tinta);font-weight:800;}',
+
+      /* ---- pantallas bajitas: se va soltando lo menos importante ---- */
+      '@media (max-height:720px){ .vp-pr-legal{display:none;} }',
+      '@media (max-height:660px){ .vp-pr-lead{display:none;} .vp-pr-txt span{-webkit-line-clamp:1;} }',
+      '@media (max-height:580px){ .vp-pr-txt span{display:none;} .vp-pr-pie{display:none;}',
+      '  .vp-pr-nota{display:none;} .vp-pr-art{height:clamp(54px,12vh,96px);} }',
+      '@media (max-height:470px){ .vp-pr-art{display:none;} }',
+      /* En computadora y tablet la app convierte esta hoja en una ventana
+         centrada y angosta, así que se queda en UNA columna: igual que en
+         el celular, nada más centrada. */
 
       /* ---------- Membresía en Mi cuenta (minimalista) ---------- */
       '.vp-pr-cuenta{display:flex;align-items:center;gap:13px;border:1px solid var(--border);border-radius:var(--radius-card,18px);',
@@ -220,9 +265,10 @@
   ======================================================================= */
   function tarjetaHTML(clave, foco) {
     var f = FUNCIONES[clave];
+    var texto = String(f.texto).replace('{N}', String(GRATIS_AL_MES));
     return '<div class="vp-pr-card2' + (foco === clave ? ' is-focus' : '') + '">' +
              '<span class="vp-pr-ico">' + ico(f.ico) + '</span>' +
-             '<span class="vp-pr-txt"><b>' + esc(f.titulo) + '</b><span>' + esc(f.texto) + '</span></span>' +
+             '<span class="vp-pr-txt"><b>' + esc(f.titulo) + '</b><span>' + esc(texto) + '</span></span>' +
            '</div>';
   }
 
@@ -646,13 +692,17 @@
     consumo.pedido = Date.now();
     return c.sb.rpc('vp_ia_mi_consumo').then(function (r) {
       var d = r && r.data;
-      if (d && d.ok && d.restantes != null) consumo.restantes = Number(d.restantes);
+      if (!d || !d.ok) return consumo.restantes;
+      if (d.gratis_mes != null) GRATIS_AL_MES = Number(d.gratis_mes) || GRATIS_AL_MES;
+      /* "limite: null" o "premium: true" quieren decir SIN LÍMITE */
+      if (d.premium === true || d.limite == null) consumo.restantes = Infinity;
+      else if (d.restantes != null) consumo.restantes = Number(d.restantes);
       return consumo.restantes;
     }).catch(function () { return consumo.restantes; });
   }
 
   function restantes() { return activo() ? Infinity : consumo.restantes; }
-  function fijarRestantes(n) { if (n != null && isFinite(n)) consumo.restantes = Number(n); }
+  function fijarRestantes(n) { if (n != null) consumo.restantes = Number(n); }
 
   /** "Ya usaste tus 3 escaneos gratis de este mes". */
   function sinEscaneos() {
