@@ -76,6 +76,21 @@
       '.vp-ia-bar .btn+.btn{margin-top:8px;}',
       '.vp-ia-nota{font-size:11.5px;color:var(--ink-soft);font-weight:600;text-align:center;margin:10px 0 0;line-height:1.45;}',
 
+      /* ---- Sin escaneos gratis: los botones se ven, pero apagados ---- */
+      '.vp-ia-apagados{position:relative;opacity:.45;filter:grayscale(.55);pointer-events:none;user-select:none;}',
+      '.vp-ia-apagados .btn{cursor:default;}',
+      /* El aviso ES el botón: toda la tarjeta lleva a pagar la membresía */
+      '.vp-ia-premium{display:flex;align-items:center;gap:12px;width:100%;margin-top:14px;cursor:pointer;',
+      'border:1.5px solid #BFE9D0;border-radius:16px;background:#E8F9EF;padding:14px 15px;',
+      'font-family:inherit;text-align:left;-webkit-tap-highlight-color:transparent;',
+      'transition:transform .12s ease, background .15s ease;}',
+      '.vp-ia-premium:active{transform:scale(.99);background:#D5F3E2;}',
+      '.vp-ia-premium-txt{flex:1;min-width:0;}',
+      '.vp-ia-premium-txt b{display:block;font-size:15px;font-weight:800;color:#15181C;line-height:1.3;}',
+      '.vp-ia-premium-txt span{display:block;font-size:13.5px;font-weight:700;color:#16A34A;margin-top:3px;line-height:1.35;}',
+      '.vp-ia-premium-chev{flex:none;display:flex;color:#16A34A;}',
+      '.vp-ia-premium-chev svg{width:19px;height:19px;}',
+
       /* ---- Pantalla de inicio --------------------------------------- */
       '.vp-ia-lead{font-size:14px;line-height:1.55;color:var(--ink-soft);font-weight:500;margin:0 0 18px;}',
       '.vp-ia-tips{display:grid;gap:11px;margin:0 0 22px;}',
@@ -618,14 +633,31 @@
   /* --------------------------------------------------------------- */
   /* 2) Pantalla de inicio: tomar o elegir la foto                    */
   /* --------------------------------------------------------------- */
+  var enInicio = false;      /* true mientras se ve la pantalla de "tomar foto" */
+
   function abrir(){
     if(typeof requirePerm === 'function' && !requirePerm('gestionarProductos', 'No tienes permiso para administrar productos')) return;
-    /* Sin Premium y sin escaneos del mes: se ofrece la membresía. */
-    if(!premium() && restantes != null && restantes <= 0 && ofrecerPremium()) return;
+    /* Siempre entra, pague o no. Si ya no le quedan escaneos gratis, la
+       pantalla se pinta con los botones apagados y el aviso de Premium. */
     estilos();
     S = nuevoEstado();
     pantallaInicio();
     consumo();
+  }
+  /** ¿Se le acabaron los escaneos gratis del mes?
+      Si este archivo todavía no le ha preguntado al servidor, se usa el
+      contador que ya tenga vendo-premium.js: así los dos siempre dicen lo
+      mismo y no hay que preguntar dos veces. */
+  function agotado(){
+    if(premium()) return false;
+    var r = restantes;
+    if(r == null){
+      try{
+        var x = window.VPPremium && VPPremium.restantes();
+        if(x != null && isFinite(x)) r = x;
+      }catch(e){}
+    }
+    return r != null && r <= 0;
   }
 
   var restantes = null;      /* null = todavía no se pregunta al servidor */
@@ -646,6 +678,10 @@
            ' escaneo' + (restantes === 1 ? '' : 's') + ' gratis este mes.';
   }
   function pintarConsumo(){
+    /* Si estamos en la pantalla de inicio, se vuelve a pintar completa:
+       no solo cambia el texto, también se apagan o se encienden los
+       botones de la cámara y la galería. */
+    if(enInicio && document.getElementById('vpIaInicio')){ pantallaInicio(); return; }
     var el = document.getElementById('vpIaRestantes');
     if(el) el.textContent = notaConsumo();
   }
@@ -693,8 +729,16 @@
            (camara ? ' capture="environment"' : '') +
            ' style="display:none" onchange="vpIaFoto(this)">';
   }
-  function botonesFoto(sufijo){
+  function botonesFoto(sufijo, apagados){
     var a = 'vpIaCam' + sufijo, b = 'vpIaGal' + sufijo;
+    if(apagados){
+      /* Se ven, pero no hacen nada: así se entiende que la función existe
+         y que lo único que falta es la membresía. */
+      return '<div class="vp-ia-apagados">' +
+               '<button class="btn primary xl block" disabled>' + ico('camera') + ' Tomar foto</button>' +
+               '<button class="btn ghost block" style="margin-top:8px;" disabled>' + ico('mobile') + ' Elegir de la galería</button>' +
+             '</div>';
+    }
     return '<button class="btn primary xl block" onclick="document.getElementById(\'' + a + '\').click()">' +
              ico('camera') + ' Tomar foto' +
            '</button>' +
@@ -708,23 +752,38 @@
   }
 
   function pantallaInicio(){
+    var fin = agotado();
+    enInicio = true;
     var html =
+      '<i id="vpIaInicio" hidden></i>' +
       '<div class="sheet-header">' +
         '<h2>Escanear productos con IA</h2>' +
         '<button class="sheet-close" onclick="vpIaCerrar()">' + ico('close') + '</button>' +
       '</div>' +
       '<p class="vp-ia-lead">Toma una foto de tu menú o de tu lista de precios. La IA saca los nombres y los precios, y tú los revisas antes de guardarlos.</p>' +
-      '<div class="vp-ia-tips">' +
-        tip('Con buena luz, de frente y sin sombras.') +
-        tip('Una hoja a la vez. Si el menú es largo, fotografíalo por partes.') +
-        tip('Nada entra a tu inventario hasta que tú lo confirmes.') +
-      '</div>' +
-      botonesFoto('A') +
-      '<p class="vp-ia-nota" id="vpIaRestantes">' + esc(notaConsumo()) + '</p>';
+      (fin ? '' :
+        '<div class="vp-ia-tips">' +
+          tip('Con buena luz, de frente y sin sombras.') +
+          tip('Una hoja a la vez. Si el menú es largo, fotografíalo por partes.') +
+          tip('Nada entra a tu inventario hasta que tú lo confirmes.') +
+        '</div>') +
+      botonesFoto('A', fin) +
+      (fin
+        /* Se acabaron los gratis: el aviso ES el botón que lleva a pagar. */
+        ? '<button type="button" class="vp-ia-premium" onclick="vpIaPremium()">' +
+            '<span class="vp-ia-premium-txt">' +
+              '<b>Tienes 0 escaneos gratis este mes</b>' +
+              '<span>Contrata Premium para obtener más</span>' +
+            '</span>' +
+            '<span class="vp-ia-premium-chev">' + ico('chevronRight') + '</span>' +
+          '</button>' +
+          '<p class="vp-ia-nota">Tus ' + GRATIS_AL_MES + ' escaneos gratis se renuevan solos el mes que entra. Agregar y editar productos a mano siempre es gratis.</p>'
+        : '<p class="vp-ia-nota" id="vpIaRestantes">' + esc(notaConsumo()) + '</p>');
     openModal(html, { dismissible:true });
   }
 
   function pantallaCargando(txt){
+    enInicio = false;
     var html =
       '<div class="sheet-header">' +
         '<h2>Leyendo la foto</h2>' +
@@ -737,6 +796,7 @@
   }
 
   function pantallaError(titulo, texto, reintentar){
+    enInicio = false;
     var html =
       '<div class="sheet-header">' +
         '<h2>' + esc(titulo) + '</h2>' +
@@ -1488,6 +1548,17 @@
   /* Puente con los onclick de la pantalla                            */
   /* --------------------------------------------------------------- */
   window.vpIaAbrir      = abrir;
+  /** El aviso de "contrata Premium" abre la MISMA pantalla de pago que el
+      resto de la app (Menú Digital, chat, estadísticas). */
+  window.vpIaPremium    = function(){ ofrecerPremium(); };
+  /** Para que vendo-premium.js pueda avisar un contador nuevo sin volver
+      a preguntarle al servidor. */
+  window.vpIaFijarRestantes = function(n){
+    if(n == null) return;
+    sinLimite = !isFinite(n);
+    restantes = sinLimite ? null : Number(n);
+    if(enInicio && document.getElementById('vpIaInicio')) pantallaInicio();
+  };
   window.vpIaCerrar     = cerrar;
   window.vpIaFoto       = fotoElegida;
   window.vpIaSet        = set;
