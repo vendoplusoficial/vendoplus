@@ -419,8 +419,8 @@
           '<button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button>' +
         '</div>' +
         '<h1 class="vp-pr-h1">Todo lo que incluye <b>Premium</b></h1>' +
-        '<div class="vp-pr-cards">' + ORDEN_MAS.map(function (k) { return tarjetaHTML(k, null); }).join('') + '</div>' +
-        pieHTML(precio, esDueno, 'Siempre gratis: vender y cobrar, tickets, caja, inventario, clientes y estadísticas simples.');
+        '<div class="vp-prm-scroll"><div class="vp-prf-grid">' + tarjetasImagenHTML() + '</div></div>' +
+        (activo() ? pieActivoHTML() : pieHTML(precio, esDueno, 'Siempre gratis: vender y cobrar, tickets, caja, inventario, clientes y estadísticas simples.'));
   }
 
   /* Cambia de vista dentro de la misma pantalla (sin cerrar ni reabrir). */
@@ -469,20 +469,21 @@
   /* Desde "Agregar usuario" se llega aquí; al cerrar se regresa a Usuarios. */
   var origen = null;
 
-  function abrir(clave) {
+  function abrir(clave, vistaInicial) {
     estilos();
+    estilosFunciones();
     origen = (clave === 'usuarios') ? 'usuarios' : null;
     var abrirModal = fn('openModal');
     if (!abrirModal) { avisar('Activa Premium desde Mi cuenta'); return; }
 
     var esDueno = fn('isOwner') ? ref('isOwner')() : true;
     var precio = precioTxt();
-    vista = 'principal';
+    vista = vistaInicial === 'mas' ? 'mas' : 'principal';
     claveAbierta = clave || null;
 
     abrirModal(
       '<i class="fs-marker" hidden></i>' +
-      '<div class="vp-pr">' + cuerpoPrincipal(clave, esDueno, precio) + '</div>',
+      '<div class="vp-pr' + (vista === 'mas' ? ' vp-pr-v2' : '') + '">' + (vista === 'mas' ? cuerpoMas(esDueno, precio) : cuerpoPrincipal(clave, esDueno, precio)) + '</div>',
       { dismissible: true, grip: false });
 
     traseProtegido();
@@ -1031,6 +1032,9 @@
       '.vp-crown-ico{width:26px;height:26px;object-fit:contain;display:block;flex:none;}',
       '.vp-sheet button img.vp-crown-ico{width:26px;height:26px;margin:-2px 0 -2px 0;}',
       '.navbtn .navicon img.vp-crown-ico{width:100%;height:100%;max-width:30px;max-height:30px;margin:auto;}',
+      '.vp-pr-v2 .vp-prm-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 10px;margin-bottom:6px;}',
+      '.vp-pr-v2 .vp-prf-card{animation:none;}',
+      '@media (min-width:700px){.vp-pr-v2{max-height:calc(100vh - 120px);max-height:calc(100dvh - 120px);}.vp-pr-v2 .vp-prf-img{aspect-ratio:16/7.5;}.vp-pr-v2 .vp-prf-grid{gap:12px;}}',
       '.vp-prf{max-width:900px;margin:0 auto;}',
       '.vp-prf-banner{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);',
       'padding:12px 14px;margin:0 0 16px;box-shadow:var(--shadow-card);}',
@@ -1056,6 +1060,24 @@
     ].join('');
     document.head.appendChild(st);
   }
+
+  function tarjetasImagenHTML() {
+    return ORDEN_SECCION.map(function (k) {
+      var f = FUNCIONES[k];
+      return '<button type="button" class="vp-prf-card" onclick="VPPremium.irA(\'' + k + '\')">' +
+        '<span class="vp-prf-img">' + IMAGENES[k] + '</span>' +
+        '<span class="vp-prf-body"><b>' + esc(f.titulo) + '</b><span>' + esc(DESC_CORTA[k]) + '</span></span>' +
+      '</button>';
+    }).join('');
+  }
+  function pieActivoHTML() {
+    return '<div class="vp-pr-pago"><div class="vp-pr-precio">' +
+             '<small>Membresía Vendo Plus</small><b>Premium activo</b>' +
+             '<span>Ya tienes todas estas funciones disponibles</span>' +
+           '</div></div>';
+  }
+  /** "Funciones premium": la misma pantalla de "Todo lo que incluye Premium". */
+  function funciones() { abrir(null, 'mas'); }
 
   function funcionesVista() {
     estilosFunciones();
@@ -1087,6 +1109,13 @@
     /* Por ahora, sin Premium no pasa nada al tocar (después aquí irá el video y luego el pago). */
     if (!activo()) return;
     var ir = fn('goTo');
+    var abierta = !!document.querySelector('#modal-layer .vp-pr');
+    if (abierta) {
+      var cierra = fn('closeModal'); if (cierra) cierra();
+      vista = 'principal';
+      setTimeout(function () { irA(clave); }, 320);
+      return;
+    }
     if (clave === 'menu') { if (ir) ir('menu'); return; }
     if (clave === 'chat') {
       puerta('chat', function () { if (window.VPMascota && typeof VPMascota.abrir === 'function') VPMascota.abrir(); });
@@ -1120,7 +1149,6 @@
   /** Deja lista la sección: la pantalla, el ícono de la corona y el menú lateral. */
   function registrarFunciones() {
     estilosFunciones();
-    try { var ev = ref('EXTRA_VIEWS'); if (ev) ev.premium = funcionesVista; } catch (e) {}
     try {
       var ic = ref('ICONS');
       if (ic) {
@@ -1154,6 +1182,7 @@
     pintarMascota: pintarMascota,
     corona: CORONA,
     irA: irA,
+    funciones: funciones,
     funcionesVista: funcionesVista
   };
 

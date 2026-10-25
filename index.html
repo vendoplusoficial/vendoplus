@@ -5949,7 +5949,7 @@ const EXTRA_VIEWS = {};
 function goTo(view){
   if(view === 'home') view = 'sale';              /* Inicio ya no existe: se abre Nueva venta */
   if(view === 'reports') view = 'stats';          /* Reportes ahora vive dentro de Ventas */
-  if(view === 'premium' && !EXTRA_VIEWS.premium){ if(window.VPPremium) VPPremium.abrir(); return; }  /* respaldo si falta vendo-premium.js nuevo */
+  if(view === 'premium'){ if(window.VPPremium){ if(VPPremium.funciones) VPPremium.funciones(); else VPPremium.abrir(); } return; }  /* Funciones premium = pantalla "Todo lo que incluye Premium" */
   currentView = view;
   render.fresh = true;
   render();
@@ -25187,7 +25187,7 @@ function cartSanitize(){
 <script src="vendo-mascota.js"></script>
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $149/mes) · va al final a proposito ===== -->
-<script src="vendo-premium.js?v=20261026"></script>
+<script src="vendo-premium.js?v=20261027"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
