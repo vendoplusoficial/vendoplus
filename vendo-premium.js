@@ -1069,8 +1069,8 @@
         '<div class="vp-prf-banner-txt"><b>Premium activo</b><span>Ya tienes todas estas funciones disponibles.</span></div></div>';
     } else {
       banner = '<div class="vp-prf-banner"><img src="' + CORONA + '" alt="">' +
-        '<div class="vp-prf-banner-txt"><b>' + esc(precioTxt()) + ' al mes</b><span>Cancela cuando quieras. Lo demás sigue siendo gratis.</span></div>' +
-        '<button type="button" onclick="VPPremium.abrir()">Ver Premium</button></div>';
+        '<div class="vp-prf-banner-txt"><b>' + esc(precioTxt()) + ' al mes</b><span>Cancela cuando quieras</span></div>' +
+        '<button type="button" onclick="VPPremium.abrir()">Contratar</button></div>';
     }
     var tarjetas = ORDEN_SECCION.map(function (k) {
       var f = FUNCIONES[k];

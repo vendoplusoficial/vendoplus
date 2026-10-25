@@ -5199,6 +5199,7 @@ const ICONS = {
   boxes: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.2" y="9.5" width="7.6" height="7.6" rx="1.4" stroke="currentColor" stroke-width="1.7"/><rect x="13.2" y="9.5" width="7.6" height="7.6" rx="1.4" stroke="currentColor" stroke-width="1.7"/><rect x="8.2" y="2.6" width="7.6" height="6" rx="1.4" stroke="currentColor" stroke-width="1.7"/></svg>`,
 };
 function icon(name){ return ICONS[name] || ''; }
+ICONS.vpCrown = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg>';
 
 /* ---------- Íconos de línea en lugar de emojis ----------
    icx('cash') = ícono pequeño que acompaña a un texto (se ajusta al
@@ -5948,6 +5949,7 @@ const EXTRA_VIEWS = {};
 function goTo(view){
   if(view === 'home') view = 'sale';              /* Inicio ya no existe: se abre Nueva venta */
   if(view === 'reports') view = 'stats';          /* Reportes ahora vive dentro de Ventas */
+  if(view === 'premium' && !EXTRA_VIEWS.premium){ if(window.VPPremium) VPPremium.abrir(); return; }  /* respaldo si falta vendo-premium.js nuevo */
   currentView = view;
   render.fresh = true;
   render();
@@ -25184,7 +25186,7 @@ function cartSanitize(){
 <script src="vendo-mascota.js"></script>
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $149/mes) · va al final a proposito ===== -->
-<script src="vendo-premium.js"></script>
+<script src="vendo-premium.js?v=20261024"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
