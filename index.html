@@ -5253,11 +5253,11 @@ const ILLUSTRATIONS = {
     <ellipse cx="80" cy="140" rx="42" ry="7" fill="#EEF1F7"/>
     <path d="M46 20h68c1.7 0 3 1.3 3 3v104l-9-6-9 6-9-6-9 6-9-6-9 6-9-6-9 6V23c0-1.7 1.3-3 3-3Z" fill="#FFFFFF" stroke="#16213E" stroke-width="2.2" stroke-linejoin="round"/>
     <path d="M58 40h44M58 52h44M58 64h28" stroke="#D8DCE8" stroke-width="3.4" stroke-linecap="round"/>
-    <circle cx="112" cy="100" r="20" fill="#FFD666"/>
+    <circle cx="112" cy="100" r="20" fill="#16C15B"/>
     <path d="M103 100.5l6 6 12-13" stroke="#16213E" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M27 34l8 3-8 3M133 50l-8 3 8 3" stroke="#C9CEDD" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="30" cy="70" r="3" fill="#FFE29A"/>
-    <circle cx="132" cy="90" r="2.4" fill="#FFE29A"/>
+    <circle cx="30" cy="70" r="3" fill="#7FDBA6"/>
+    <circle cx="132" cy="90" r="2.4" fill="#7FDBA6"/>
   </svg>`,
 
   // Productos sin catálogo: bolsa / caja de compras vacía
@@ -5289,9 +5289,9 @@ const ILLUSTRATIONS = {
     <rect x="38" y="34" width="70" height="90" rx="8" fill="#F0F2F8" stroke="#D8DCE8" stroke-width="2"/>
     <rect x="52" y="22" width="70" height="90" rx="8" fill="#FFFFFF" stroke="#16213E" stroke-width="2.2"/>
     <path d="M66 42h42M66 54h42M66 66h28" stroke="#D8DCE8" stroke-width="3.4" stroke-linecap="round"/>
-    <rect x="66" y="82" width="30" height="18" rx="5" fill="#FFF0C2"/>
+    <rect x="66" y="82" width="30" height="18" rx="5" fill="#D5F3E2"/>
     <path d="M74 91l5 5 9-10" stroke="#16213E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="126" cy="46" r="3" fill="#FFE29A"/>
+    <circle cx="126" cy="46" r="3" fill="#7FDBA6"/>
     <circle cx="30" cy="60" r="2.4" fill="#D8DCE8"/>
   </svg>`,
 
@@ -5304,7 +5304,7 @@ const ILLUSTRATIONS = {
     <path d="M60 55h56" stroke="#EEF1F7" stroke-width="3" stroke-linecap="round"/>
     <circle cx="70" cy="118" r="8" fill="#FFFFFF" stroke="#16213E" stroke-width="2.2"/>
     <circle cx="104" cy="118" r="8" fill="#FFFFFF" stroke="#16213E" stroke-width="2.2"/>
-    <circle cx="118" cy="56" r="15" fill="#FFD666"/>
+    <circle cx="118" cy="56" r="15" fill="#16C15B"/>
     <path d="M112 56h12M118 50v12" stroke="#16213E" stroke-width="2.8" stroke-linecap="round"/>
   </svg>`,
 
@@ -5316,10 +5316,10 @@ const ILLUSTRATIONS = {
     <path d="M32 118h96" stroke="#D8DCE8" stroke-width="2.2" stroke-linecap="round"/>
     <rect x="46" y="96" width="16" height="22" rx="4" fill="#F0F2F8"/>
     <rect x="72" y="78" width="16" height="40" rx="4" fill="#F0F2F8"/>
-    <rect x="98" y="60" width="16" height="58" rx="4" fill="#FFF0C2"/>
-    <path d="M46 66l24-14 22 10 24-20" stroke="#FFD666" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 8"/>
+    <rect x="98" y="60" width="16" height="58" rx="4" fill="#D5F3E2"/>
+    <path d="M46 66l24-14 22 10 24-20" stroke="#16C15B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 8"/>
     <circle cx="116" cy="42" r="6" fill="#16213E"/>
-    <path d="M113.5 42l1.8 1.8 3.2-3.6" stroke="#FFD666" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M113.5 42l1.8 1.8 3.2-3.6" stroke="#16C15B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
 
   // Sin resultados de búsqueda
@@ -5329,7 +5329,7 @@ const ILLUSTRATIONS = {
     <circle cx="72" cy="70" r="34" fill="#FFFFFF" stroke="#16213E" stroke-width="2.4"/>
     <circle cx="72" cy="70" r="22" fill="#F5F6FB"/>
     <path d="M96 94l24 24" stroke="#16213E" stroke-width="4.4" stroke-linecap="round"/>
-    <circle cx="120" cy="118" r="7" fill="#FFD666"/>
+    <circle cx="120" cy="118" r="7" fill="#16C15B"/>
     <path d="M64 70h16" stroke="#C9CEDD" stroke-width="3" stroke-linecap="round"/>
   </svg>`
 };
@@ -25187,7 +25187,7 @@ function cartSanitize(){
 <script src="vendo-mascota.js"></script>
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $149/mes) · va al final a proposito ===== -->
-<script src="vendo-premium.js?v=20261028"></script>
+<script src="vendo-premium.js?v=20261029"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
@@ -25204,6 +25204,12 @@ function cartSanitize(){
 .vp-top-prem-ico{ display:flex; width:28px; height:28px; color:var(--vp-green-d,#0FA84C); }
 .vp-top-prem-ico svg,.vp-top-prem-ico img{ width:100%; height:100%; object-fit:contain; }
 @media (max-width:699px){ .vp-top-prem{ width:38px; height:38px; border-radius:10px; } .vp-top-prem-ico{ width:26px; height:26px; } .topbar-right{ gap:8px; } }
+/* Tarjetas de producto (Nueva venta): sin hueco entre nombre y precio */
+.product-card .pc-name{ height:auto !important; min-height:0 !important; }
+.product-card .pc-pricebar,.product-card .pc-qtybar{ margin-top:auto; padding-top:5px !important; }
+/* Categorías más compactas */
+.chip-row{ gap:6px; margin-bottom:12px; }
+.chip-row .chip{ padding:7px 14px !important; font-size:12.5px !important; line-height:1.2 !important; }
 /* Hoja del producto: cuadrada también en tablet y PC, sin volverse gigante */
 .dm-pd-photo{ width:100%; max-width:420px; margin-left:auto; margin-right:auto; }
 .dm-pd-photo .sheet-close{ z-index:2; }
