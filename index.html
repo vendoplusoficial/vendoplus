@@ -4004,7 +4004,7 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
     box-shadow:0 -1px 0 var(--vp-line), 0 -10px 28px rgba(22,33,62,.06);
   }
   .navbtn[data-view="home"],.navbtn[data-view="stats"],.navbtn[data-view="customers"],
-  .navbtn[data-view="cash"],.navbtn[data-view="account"]{ display:none !important; }
+  .navbtn[data-view="cash"],.navbtn[data-view="premium"],.navbtn[data-view="account"]{ display:none !important; }
   .navbtn[data-view="history"]{ order:1; } .navbtn[data-view="products"]{ order:2; }
   .navbtn[data-view="sale"]{ order:3; } .navbtn[data-view="menu"]{ order:4; } .navbtn.vp-more{ order:5; display:flex; }
   .navbtn{ background:none !important; color:var(--vp-navy) !important; gap:5px; }
@@ -4885,6 +4885,7 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
+    <button class="navbtn nav-pc nav-2l" data-view="premium" data-icon="vpCrown" onclick="goTo('premium')"><span class="navicon"></span><span>Funciones premium</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -24206,7 +24207,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
         '<button class="btn primary block" onclick="closeModal(); afterSaleNew();">'+icon('plus')+' Nueva venta</button>'+
       '</div>';
   };
-  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['account','person','Mi cuenta']];
+  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['premium','vpCrown','Funciones premium'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
     if(!bg){
@@ -25184,5 +25185,22 @@ function cartSanitize(){
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $149/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js"></script>
+
+<style id="vp-fotos-cuadradas">
+/* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
+   tablet y PC. La foto se acomoda dentro del cuadro (contain) sobre blanco. */
+.product-card .pc-photo,.dm-photo,.cg-photo,.dm-pd-photo{ aspect-ratio:1 / 1 !important; background:#fff !important; }
+.product-card .pc-photo img,.dm-photo img,.cg-photo img,.dm-pd-photo img,
+.prod-row .pr-photo img,.cart-item-photo img,.cartbar-thumb img,.dm-thumb img,
+.tp-photo img,.mdi-thumb img,.cg-cart-pics img{ object-fit:contain !important; background:#fff; }
+.prod-row .pr-photo,.cart-item-photo,.cartbar-thumb,.dm-thumb,.tp-photo,.mdi-thumb,.cg-cart-pics span{ background:#fff; }
+.cart-item-photo,.dm-thumb,.tp-photo,.mdi-thumb{ border:1px solid var(--border,#E8E9EF); }
+@media (min-width:700px){ .bottomnav .navbtn[data-view="premium"]{ order:8 !important; } }
+/* Hoja del producto: cuadrada también en tablet y PC, sin volverse gigante */
+.dm-pd-photo{ width:100%; max-width:420px; margin-left:auto; margin-right:auto; }
+.dm-pd-photo .sheet-close{ z-index:2; }
+/* Foto de la hoja del producto (carrito / agregar): completa */
+.cg-sheet-photo,.dm-sheet .dm-pd-photo{ aspect-ratio:1 / 1; }
+</style>
 </body>
 </html>

@@ -942,6 +942,7 @@
 
   function arrancar() {
     estilos();
+    registrarFunciones();
     /* La tecla Esc cierra la pantalla de Premium (computadora) */
     window.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && document.querySelector('#modal-layer .vp-pr')) {
@@ -959,6 +960,173 @@
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') pintarMascota();
     });
+  }
+
+  /* =======================================================================
+     12b. SECCIÓN "FUNCIONES PREMIUM"
+     Se abre desde el menú de las 3 rayitas (celular) o desde el menú lateral
+     (tablet / PC). Muestra todas las funciones Premium en tarjetas de
+     2 columnas: imagen arriba, nombre y una descripción corta.
+  ======================================================================= */
+  var BG = '<rect width="200" height="125" fill="#EAF9F0"/><circle cx="172" cy="18" r="30" fill="#D5F3E2"/><circle cx="20" cy="112" r="26" fill="#D5F3E2"/>';
+  var IMAGENES = {
+    menu: '<svg viewBox="0 0 200 125" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + BG +
+      '<rect x="68" y="10" width="64" height="106" rx="10" fill="#fff" stroke="#16213E" stroke-width="2.5"/>' +
+      '<rect x="76" y="20" width="48" height="10" rx="3" fill="#16C15B"/>' +
+      '<rect x="76" y="37" width="14" height="14" rx="3" fill="#BFEBD1"/><rect x="95" y="39" width="28" height="4" rx="2" fill="#16213E" opacity=".75"/><rect x="95" y="46" width="18" height="3" rx="1.5" fill="#9AA3B5"/>' +
+      '<rect x="76" y="57" width="14" height="14" rx="3" fill="#BFEBD1"/><rect x="95" y="59" width="28" height="4" rx="2" fill="#16213E" opacity=".75"/><rect x="95" y="66" width="18" height="3" rx="1.5" fill="#9AA3B5"/>' +
+      '<rect x="76" y="77" width="14" height="14" rx="3" fill="#BFEBD1"/><rect x="95" y="79" width="28" height="4" rx="2" fill="#16213E" opacity=".75"/><rect x="95" y="86" width="18" height="3" rx="1.5" fill="#9AA3B5"/>' +
+      '<rect x="76" y="98" width="48" height="11" rx="3" fill="#16C15B"/>' +
+      '<rect x="24" y="44" width="30" height="30" rx="4" fill="#fff" stroke="#16213E" stroke-width="2"/>' +
+      '<rect x="29" y="49" width="8" height="8" fill="#16213E"/><rect x="41" y="49" width="8" height="8" fill="#16213E"/><rect x="29" y="61" width="8" height="8" fill="#16213E"/><rect x="41" y="61" width="4" height="4" fill="#16C15B"/><rect x="45" y="65" width="4" height="4" fill="#16213E"/>' +
+      '</svg>',
+    chat: '<svg viewBox="0 0 200 125" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + BG +
+      '<rect x="24" y="20" width="96" height="36" rx="11" fill="#fff" stroke="#16213E" stroke-width="2.5"/>' +
+      '<rect x="36" y="31" width="64" height="4" rx="2" fill="#16213E" opacity=".75"/><rect x="36" y="40" width="42" height="4" rx="2" fill="#9AA3B5"/>' +
+      '<rect x="80" y="66" width="96" height="38" rx="11" fill="#16C15B"/>' +
+      '<rect x="92" y="77" width="68" height="4" rx="2" fill="#fff"/><rect x="92" y="86" width="46" height="4" rx="2" fill="#fff" opacity=".75"/>' +
+      '<path d="M160 10l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#16C15B"/>' +
+      '<path d="M38 100l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#0FA84C" opacity=".7"/>' +
+      '</svg>',
+    escaner: '<svg viewBox="0 0 200 125" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + BG +
+      '<rect x="64" y="14" width="72" height="97" rx="6" fill="#fff" stroke="#16213E" stroke-width="2.5"/>' +
+      '<rect x="74" y="26" width="30" height="5" rx="2.5" fill="#16C15B"/>' +
+      '<rect x="74" y="40" width="52" height="4" rx="2" fill="#16213E" opacity=".7"/><rect x="74" y="50" width="40" height="4" rx="2" fill="#9AA3B5"/>' +
+      '<rect x="74" y="64" width="52" height="4" rx="2" fill="#16213E" opacity=".7"/><rect x="74" y="74" width="36" height="4" rx="2" fill="#9AA3B5"/>' +
+      '<rect x="74" y="88" width="52" height="4" rx="2" fill="#16213E" opacity=".7"/>' +
+      '<path d="M48 32V22a8 8 0 0 1 8-8h12M152 32V22a8 8 0 0 0-8-8h-12M48 94v10a8 8 0 0 0 8 8h12M152 94v10a8 8 0 0 1-8 8h-12" fill="none" stroke="#16C15B" stroke-width="4" stroke-linecap="round"/>' +
+      '<rect x="52" y="60" width="96" height="3.5" rx="1.75" fill="#16C15B"/>' +
+      '</svg>',
+    stats: '<svg viewBox="0 0 200 125" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + BG +
+      '<rect x="36" y="74" width="20" height="36" rx="3" fill="#BFEBD1"/><rect x="64" y="56" width="20" height="54" rx="3" fill="#7FDBA6"/>' +
+      '<rect x="92" y="66" width="20" height="44" rx="3" fill="#7FDBA6"/><rect x="120" y="34" width="20" height="76" rx="3" fill="#16C15B"/>' +
+      '<path d="M30 111h124" stroke="#16213E" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<polyline points="46,62 74,44 102,52 130,22 162,14" fill="none" stroke="#0FA84C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="46" cy="62" r="4" fill="#fff" stroke="#0FA84C" stroke-width="2.5"/><circle cx="74" cy="44" r="4" fill="#fff" stroke="#0FA84C" stroke-width="2.5"/>' +
+      '<circle cx="102" cy="52" r="4" fill="#fff" stroke="#0FA84C" stroke-width="2.5"/><circle cx="130" cy="22" r="4" fill="#fff" stroke="#0FA84C" stroke-width="2.5"/>' +
+      '<circle cx="162" cy="14" r="4" fill="#fff" stroke="#0FA84C" stroke-width="2.5"/>' +
+      '</svg>',
+    usuarios: '<svg viewBox="0 0 200 125" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + BG +
+      '<circle cx="54" cy="52" r="14" fill="#BFEBD1" stroke="#16213E" stroke-width="2.5"/><path d="M28 112a26 26 0 0 1 52 0z" fill="#BFEBD1" stroke="#16213E" stroke-width="2.5" stroke-linejoin="round"/>' +
+      '<circle cx="146" cy="52" r="14" fill="#BFEBD1" stroke="#16213E" stroke-width="2.5"/><path d="M120 112a26 26 0 0 1 52 0z" fill="#BFEBD1" stroke="#16213E" stroke-width="2.5" stroke-linejoin="round"/>' +
+      '<circle cx="100" cy="42" r="18" fill="#16C15B" stroke="#16213E" stroke-width="2.5"/><path d="M68 114a32 32 0 0 1 64 0z" fill="#16C15B" stroke="#16213E" stroke-width="2.5" stroke-linejoin="round"/>' +
+      '</svg>'
+  };
+  var DESC_CORTA = {
+    menu: 'Tus clientes ven tu carta en su celular y sus pedidos te llegan solos.',
+    chat: 'Pregúntale por tus ventas y ganancias y te responde al momento.',
+    escaner: 'Una foto a tu carta y la IA llena tu inventario. Sin límite con Premium.',
+    stats: 'Ventas, ganancias y productos más vendidos con datos claros.',
+    usuarios: 'Suma a tu equipo: cada quien entra con su propio NIP.'
+  };
+  var ORDEN_SECCION = ['menu', 'chat', 'escaner', 'stats', 'usuarios'];
+
+  var cssFuncPuesto = false;
+  function estilosFunciones() {
+    if (cssFuncPuesto || document.getElementById('vp-prf-css')) { cssFuncPuesto = true; return; }
+    cssFuncPuesto = true;
+    var st = document.createElement('style');
+    st.id = 'vp-prf-css';
+    st.textContent = [
+      '.vp-crown-ico{width:26px;height:26px;object-fit:contain;display:block;flex:none;}',
+      '.vp-sheet button img.vp-crown-ico{width:26px;height:26px;margin:-2px 0 -2px 0;}',
+      '.navbtn .navicon img.vp-crown-ico{width:100%;height:100%;max-width:30px;max-height:30px;margin:auto;}',
+      '.vp-prf{max-width:900px;margin:0 auto;}',
+      '.vp-prf-banner{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);',
+      'padding:12px 14px;margin:0 0 16px;box-shadow:var(--shadow-card);}',
+      '.vp-prf-banner img{width:38px;height:38px;object-fit:contain;flex:none;}',
+      '.vp-prf-banner-txt{flex:1;min-width:0;}',
+      '.vp-prf-banner-txt b{display:block;font-size:14.5px;font-weight:800;color:var(--ink);}',
+      '.vp-prf-banner-txt span{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-top:2px;line-height:1.35;}',
+      '.vp-prf-banner button{flex:none;border:none;cursor:pointer;border-radius:10px;padding:9px 13px;font-family:inherit;font-size:13px;font-weight:800;',
+      'color:#fff;background:var(--vp-green,#16C15B);-webkit-tap-highlight-color:transparent;white-space:nowrap;}',
+      '.vp-prf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}',
+      '@media (min-width:700px){.vp-prf-grid{gap:16px;}}',
+      '.vp-prf-card{display:flex;flex-direction:column;text-align:left;width:100%;padding:0;overflow:hidden;cursor:pointer;font-family:inherit;color:inherit;',
+      'background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-card);',
+      '-webkit-tap-highlight-color:transparent;transition:transform .15s ease,box-shadow .15s ease;}',
+      '.vp-prf-card:active{transform:scale(.98);}',
+      '@media (hover:hover){.vp-prf-card:hover{box-shadow:0 8px 22px rgba(22,33,62,.12);transform:translateY(-1px);}}',
+      '.vp-prf-img{display:block;width:100%;aspect-ratio:16/10;background:#EAF9F0;line-height:0;overflow:hidden;}',
+      '.vp-prf-img svg{display:block;width:100%;height:100%;}',
+      '.vp-prf-body{display:flex;flex-direction:column;gap:4px;padding:11px 12px 14px;}',
+      '.vp-prf-body b{font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.2;}',
+      '.vp-prf-body span{font-size:12.5px;font-weight:500;color:var(--ink-soft);line-height:1.4;}',
+      '@media (prefers-reduced-motion: reduce){.vp-prf-card{transition:none;}}'
+    ].join('');
+    document.head.appendChild(st);
+  }
+
+  function funcionesVista() {
+    estilosFunciones();
+    var atras = fn('subViewBackHTML');
+    var cab = (atras ? atras() : '') +
+      '<h1 class="page-title">Funciones premium</h1>' +
+      '<p class="page-sub">Todo lo que desbloqueas con Premium. Toca una función para abrirla.</p>';
+    var banner;
+    if (activo()) {
+      banner = '<div class="vp-prf-banner"><img src="' + CORONA + '" alt="">' +
+        '<div class="vp-prf-banner-txt"><b>Premium activo</b><span>Ya tienes todas estas funciones disponibles.</span></div></div>';
+    } else {
+      banner = '<div class="vp-prf-banner"><img src="' + CORONA + '" alt="">' +
+        '<div class="vp-prf-banner-txt"><b>' + esc(precioTxt()) + ' al mes</b><span>Cancela cuando quieras. Lo demás sigue siendo gratis.</span></div>' +
+        '<button type="button" onclick="VPPremium.abrir()">Ver Premium</button></div>';
+    }
+    var tarjetas = ORDEN_SECCION.map(function (k) {
+      var f = FUNCIONES[k];
+      return '<button type="button" class="vp-prf-card" onclick="VPPremium.irA(\'' + k + '\')">' +
+        '<span class="vp-prf-img">' + IMAGENES[k] + '</span>' +
+        '<span class="vp-prf-body"><b>' + esc(f.titulo) + '</b><span>' + esc(DESC_CORTA[k]) + '</span></span>' +
+      '</button>';
+    }).join('');
+    return '<div class="vp-prf">' + cab + banner + '<div class="vp-prf-grid">' + tarjetas + '</div></div>';
+  }
+
+  /** Lleva a la función de la tarjeta. Si no es Premium, cada puerta abre la pantalla de Premium. */
+  function irA(clave) {
+    var ir = fn('goTo');
+    if (clave === 'menu') { if (ir) ir('menu'); return; }
+    if (clave === 'chat') {
+      puerta('chat', function () { if (window.VPMascota && typeof VPMascota.abrir === 'function') VPMascota.abrir(); });
+      return;
+    }
+    if (clave === 'escaner') {
+      if (typeof window.vpIaAbrir === 'function') window.vpIaAbrir(); else abrir('escaner');
+      return;
+    }
+    if (clave === 'stats') {
+      puerta('stats', function () {
+        if (ir) ir('stats');
+        setTimeout(function () {
+          try {
+            var abierto = ref('statsDetailOpen');
+            var t = fn('toggleStatsDetail');
+            if (!abierto && t) t();
+            var caja = document.getElementById('statsDetail');
+            if (caja && caja.scrollIntoView) caja.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } catch (e) {}
+        }, 60);
+      });
+      return;
+    }
+    if (clave === 'usuarios') {
+      var u = fn('openUsersSheet');
+      if (u) u(); else abrir('usuarios');
+    }
+  }
+
+  /** Deja lista la sección: la pantalla, el ícono de la corona y el menú lateral. */
+  function registrarFunciones() {
+    estilosFunciones();
+    try { var ev = ref('EXTRA_VIEWS'); if (ev) ev.premium = funcionesVista; } catch (e) {}
+    try {
+      var ic = ref('ICONS');
+      if (ic) {
+        ic.vpCrown = '<img class="vp-crown-ico" src="' + CORONA + '" alt="" decoding="async">';
+        var hs = document.querySelectorAll('.navbtn[data-view="premium"] .navicon');
+        for (var i = 0; i < hs.length; i++) hs[i].innerHTML = ic.vpCrown;
+      }
+    } catch (e) {}
   }
 
   /* =======================================================================
@@ -981,7 +1149,10 @@
     pedirConsumo: pedirConsumo,
     sinEscaneos: sinEscaneos,
     tarjetaCuentaHTML: tarjetaCuentaHTML,
-    pintarMascota: pintarMascota
+    pintarMascota: pintarMascota,
+    corona: CORONA,
+    irA: irA,
+    funcionesVista: funcionesVista
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar);
