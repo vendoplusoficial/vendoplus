@@ -179,7 +179,7 @@
 
       /* ---- las cuatro tarjetas: se reparten lo que sobra ---- */
       '.vp-pr-cards{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;',
-      'gap:clamp(5px,.95vh,11px);margin-bottom:clamp(8px,1.5vh,16px);}',
+      'gap:clamp(5px,.95vh,11px);margin-bottom:clamp(2px,.5vh,6px);}',
       /* flex:1 con tope: si sobra espacio las tarjetas lo toman (y no queda
          un hueco raro en medio), pero nunca se estiran de más. */
       '.vp-pr-card2{flex:1 1 auto;max-height:clamp(56px,10.6vh,92px);',
@@ -197,6 +197,22 @@
       '.vp-pr-txt span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;',
       'font-size:clamp(11px,1.45vh,13.8px);font-weight:600;color:var(--vp-pr-gris);line-height:1.36;',
       'margin-top:clamp(1px,.25vh,3px);}',
+
+      /* ---- "Ver más beneficios ›" (debajo de la última tarjeta) ---- */
+      '.vp-pr-mas{flex:none;display:flex;align-items:center;justify-content:center;gap:2px;width:100%;border:none;',
+      'background:none;cursor:pointer;font-family:inherit;font-size:clamp(13px,1.8vh,15.5px);font-weight:800;line-height:1.2;',
+      'color:var(--vp-pr-verde);padding:clamp(6px,1.1vh,11px) 8px;margin:0 0 clamp(2px,.7vh,8px);',
+      '-webkit-tap-highlight-color:transparent;transition:opacity .15s ease;}',
+      '.vp-pr-mas:active{opacity:.55;}',
+      '.vp-pr-mas svg{width:clamp(14px,1.9vh,17px);height:clamp(14px,1.9vh,17px);flex:none;}',
+
+      /* ---- vista "Todo lo que incluye Premium" (se abre con Ver más beneficios) ---- */
+      '.vp-pr-x.dos{justify-content:space-between;}',
+      '@media (max-width:699px){',
+      '  .vp-pr-v2 .vp-pr-h1{font-size:clamp(18px,2.2vh + 1.3vw,28px);margin:clamp(2px,.6vh,8px) 0 clamp(8px,1.5vh,16px);}',
+      '  .vp-pr-v2 .vp-pr-cards{margin-bottom:clamp(8px,1.5vh,16px);}',
+      '  .vp-pr-v2 .vp-pr-card2{max-height:clamp(54px,11.4vh,96px);}',
+      '}',
 
       /* ---- precio ---- */
       '.vp-pr-precio{flex:none;background:var(--vp-pr-suave);border-radius:clamp(13px,1.9vh,18px);',
@@ -262,6 +278,7 @@
       '  .vp-pr-lead{display:block;font-size:15px;max-width:460px;margin-bottom:20px;}',
       '  .vp-pr-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}',
       '  .vp-pr-card2{flex:0 0 auto;max-height:none;align-items:flex-start;padding:15px 16px;}',
+      '  .vp-pr-v2 .vp-pr-card2:last-child{grid-column:1 / -1;}',
       '  .vp-pr-ico{width:40px;height:40px;border-radius:13px;}',
       '  .vp-pr-ico svg{width:20px;height:20px;}',
       '  .vp-pr-txt b{font-size:15.5px;}',
@@ -326,10 +343,12 @@
       '.vp-pr-card2:nth-child(2){animation-delay:.42s}',
       '.vp-pr-card2:nth-child(3){animation-delay:.48s}',
       '.vp-pr-card2:nth-child(4){animation-delay:.54s}',
+      '.vp-pr-card2:nth-child(5){animation-delay:.60s}',
       '.vp-pr-pago,.vp-pr-nota{animation:vp-pr-sube .45s cubic-bezier(.22,1,.36,1) .62s both;}',
+      '.vp-pr-mas{animation:vp-pr-sube .45s ease-out .58s both;}',
       '.vp-pr-link,.vp-pr-pie{animation:vp-pr-sube .45s ease-out .74s both;}',
       '@media (prefers-reduced-motion: reduce){',
-      '  .modal-overlay .modal-sheet:has(.vp-pr),.vp-pr-x,.vp-pr-art,.vp-pr-h1,.vp-pr-lead,.vp-pr-card2,.vp-pr-pago,.vp-pr-nota,.vp-pr-link,.vp-pr-pie{animation:none !important;}',
+      '  .modal-overlay .modal-sheet:has(.vp-pr),.vp-pr-x,.vp-pr-art,.vp-pr-h1,.vp-pr-lead,.vp-pr-card2,.vp-pr-mas,.vp-pr-pago,.vp-pr-nota,.vp-pr-link,.vp-pr-pie{animation:none !important;}',
       '}',
 
       /* ---------- Membresía en Mi cuenta (minimalista) ---------- */
@@ -369,13 +388,56 @@
   }
 
   function cabeceraHTML(titulo, lead) {
-    return '<i class="fs-marker" hidden></i>' +
-      '<div class="vp-pr">' +
-        '<div class="vp-pr-x"><button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
+    return '<div class="vp-pr-x"><button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
         '<img class="vp-pr-art" src="' + CORONA + '" alt="" decoding="async">' +
         '<h1 class="vp-pr-h1">' + titulo + '</h1>' +
         '<p class="vp-pr-lead">' + lead + '</p>';
   }
+
+  /* Qué vista está abierta: 'principal' (las 4 tarjetas) o 'mas'
+     ("Todo lo que incluye Premium", se abre con Ver más beneficios). */
+  var vista = 'principal';
+  var claveAbierta = null;
+  var ORDEN_MAS = ['menu', 'chat', 'escaner', 'stats', 'usuarios'];
+
+  /* Pantalla principal: corona, título, las 4 tarjetas, "Ver más beneficios",
+     precio y botón. */
+  function cuerpoPrincipal(clave, esDueno, precio) {
+    return cabeceraHTML(
+        'Desbloquea más<br><b>funciones con Premium</b>',
+        'Lleva tu negocio <b>más lejos</b> con herramientas que te ahorran tiempo y te ayudan a vender más.'
+      ) +
+      '<div class="vp-pr-cards">' + (clave === 'usuarios' ? ORDEN_USUARIOS : ORDEN).map(function (k) { return tarjetaHTML(k, clave); }).join('') + '</div>' +
+      '<button type="button" class="vp-pr-mas" onclick="VPPremium.masBeneficios()">Ver más beneficios' + ico('chevronRight') + '</button>' +
+      pieHTML(precio, esDueno);
+  }
+
+  /* Vista de detalle: todo lo que incluye Premium (con flecha para regresar). */
+  function cuerpoMas(esDueno, precio) {
+    return '<div class="vp-pr-x dos">' +
+          '<button type="button" class="sheet-close" onclick="VPPremium.volver()" aria-label="Regresar">' + ico('chevronLeft') + '</button>' +
+          '<button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button>' +
+        '</div>' +
+        '<h1 class="vp-pr-h1">Todo lo que incluye <b>Premium</b></h1>' +
+        '<div class="vp-pr-cards">' + ORDEN_MAS.map(function (k) { return tarjetaHTML(k, null); }).join('') + '</div>' +
+        pieHTML(precio, esDueno, 'Siempre gratis: vender y cobrar, tickets, caja, inventario, clientes y estadísticas simples.');
+  }
+
+  /* Cambia de vista dentro de la misma pantalla (sin cerrar ni reabrir). */
+  function pintarVista(v) {
+    var r = document.querySelector('#modal-layer .vp-pr');
+    if (!r) return;
+    vista = v;
+    var esDueno = fn('isOwner') ? ref('isOwner')() : true;
+    var precio = precioTxt();
+    r.className = 'vp-pr' + (v === 'mas' ? ' vp-pr-v2' : '');
+    r.innerHTML = v === 'mas' ? cuerpoMas(esDueno, precio) : cuerpoPrincipal(claveAbierta, esDueno, precio);
+    vibra(6);
+  }
+  function masBeneficios() { pintarVista('mas'); }
+  function volver() { pintarVista('principal'); }
+  /* Atrás / Esc: en la vista de detalle regresa a la principal; en la principal cierra. */
+  function atras() { if (vista === 'mas') volver(); else cerrar(); }
 
   function pieHTML(precio, esDueno, pie) {
     if (!esDueno) {
@@ -415,15 +477,12 @@
 
     var esDueno = fn('isOwner') ? ref('isOwner')() : true;
     var precio = precioTxt();
+    vista = 'principal';
+    claveAbierta = clave || null;
 
     abrirModal(
-      cabeceraHTML(
-        'Desbloquea más<br><b>funciones con Premium</b>',
-        'Lleva tu negocio <b>más lejos</b> con herramientas que te ahorran tiempo y te ayudan a vender más.'
-      ) +
-      '<div class="vp-pr-cards">' + (clave === 'usuarios' ? ORDEN_USUARIOS : ORDEN).map(function (k) { return tarjetaHTML(k, clave); }).join('') + '</div>' +
-      pieHTML(precio, esDueno) +
-      '</div>',
+      '<i class="fs-marker" hidden></i>' +
+      '<div class="vp-pr">' + cuerpoPrincipal(clave, esDueno, precio) + '</div>',
       { dismissible: true, grip: false });
 
     traseProtegido();
@@ -471,6 +530,7 @@
   function cerrar() {
     var vuelve = origen === 'usuarios';
     origen = null;
+    vista = 'principal';
     if (vuelve) {
       /* La X (y Esc / atrás) regresan a la lista de Usuarios */
       var u = fn('openUsersSheet');
@@ -857,7 +917,7 @@
     var b = window.__vendoBack;
     if (typeof b !== 'function' || b.__vpPr) return;
     var envuelto = function () {
-      if (document.querySelector('#modal-layer .vp-pr')) { cerrar(); return 'handled'; }
+      if (document.querySelector('#modal-layer .vp-pr')) { atras(); return 'handled'; }
       return b.apply(this, arguments);
     };
     envuelto.__vpPr = true;
@@ -888,7 +948,7 @@
         /* En fase de captura y sin dejar pasar la tecla: si no, el cierre
            general de la app la gana y no se alcanza a regresar a Usuarios. */
         e.stopImmediatePropagation();
-        cerrar();
+        atras();
       }
     }, true);
     if (engancharTodo()) return;
@@ -908,6 +968,8 @@
     activo: activo,
     abrir: abrir,
     cerrar: cerrar,
+    masBeneficios: masBeneficios,
+    volver: volver,
     pagar: pagar,
     puerta: puerta,
     precio: PRECIO,
