@@ -1084,6 +1084,8 @@
 
   /** Lleva a la función de la tarjeta. Si no es Premium, cada puerta abre la pantalla de Premium. */
   function irA(clave) {
+    /* Por ahora, sin Premium no pasa nada al tocar (después aquí irá el video y luego el pago). */
+    if (!activo()) return;
     var ir = fn('goTo');
     if (clave === 'menu') { if (ir) ir('menu'); return; }
     if (clave === 'chat') {
@@ -1123,7 +1125,7 @@
       var ic = ref('ICONS');
       if (ic) {
         ic.vpCrown = '<img class="vp-crown-ico" src="' + CORONA + '" alt="" decoding="async">';
-        var hs = document.querySelectorAll('.navbtn[data-view="premium"] .navicon');
+        var hs = document.querySelectorAll('.navbtn[data-view="premium"] .navicon, .vp-top-prem-ico');
         for (var i = 0; i < hs.length; i++) hs[i].innerHTML = ic.vpCrown;
       }
     } catch (e) {}

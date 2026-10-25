@@ -4867,6 +4867,7 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
       </span>
     </div>
     <div class="topbar-right">
+      <button type="button" class="vp-top-prem" id="topPremium" data-view="premium" onclick="goTo('premium')" aria-label="Funciones premium" title="Funciones premium"><span class="vp-top-prem-ico"></span></button>
       <div class="topbar-clock" id="clock"></div>
       <button class="user-chip" id="userChip" onclick="goTo('account')" aria-label="Mi cuenta">
         <span class="avatar-btn" id="avatarBtn"></span>
@@ -4885,7 +4886,6 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
-    <button class="navbtn nav-pc nav-2l" data-view="premium" data-icon="vpCrown" onclick="goTo('premium')"><span class="navicon"></span><span>Funciones premium</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -5969,6 +5969,7 @@ function goTo(view){
 function render(){
   document.body.dataset.section = currentView;
   document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
+  { const tp = document.getElementById('topPremium'); if(tp){ tp.classList.toggle('active', currentView === 'premium'); const h = tp.querySelector('.vp-top-prem-ico'); if(h && !h.firstChild) h.innerHTML = icon('vpCrown'); } }
   const el = document.getElementById('view');
   /* Si es la misma sección, solo se cambia lo que cambió (morphHTML):
      las fotos no parpadean, la barra del carrito no "rebota" en cada
@@ -24209,7 +24210,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
         '<button class="btn primary block" onclick="closeModal(); afterSaleNew();">'+icon('plus')+' Nueva venta</button>'+
       '</div>';
   };
-  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['premium','vpCrown','Funciones premium'],['account','person','Mi cuenta']];
+  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['account','person','Mi cuenta'],['premium','vpCrown','Funciones premium']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
     if(!bg){
@@ -25186,7 +25187,7 @@ function cartSanitize(){
 <script src="vendo-mascota.js"></script>
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $149/mes) · va al final a proposito ===== -->
-<script src="vendo-premium.js?v=20261024"></script>
+<script src="vendo-premium.js?v=20261025"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
@@ -25198,6 +25199,11 @@ function cartSanitize(){
 .prod-row .pr-photo,.cart-item-photo,.cartbar-thumb,.dm-thumb,.tp-photo,.mdi-thumb,.cg-cart-pics span{ background:#fff; }
 .cart-item-photo,.dm-thumb,.tp-photo,.mdi-thumb{ border:1px solid var(--border,#E8E9EF); }
 @media (min-width:700px){ .bottomnav .navbtn[data-view="premium"]{ order:8 !important; } }
+.vp-top-prem{ display:none; align-items:center; justify-content:center; width:42px; height:42px; padding:0; border:1px solid var(--border,#E8E9EF); border-radius:12px; background:#fff; cursor:pointer; -webkit-tap-highlight-color:transparent; box-shadow:0 4px 14px rgba(22,33,62,.07); flex:none; }
+.vp-top-prem.active{ background:var(--vp-soft,#EAF9F0); border-color:var(--vp-green,#16C15B); }
+.vp-top-prem-ico{ display:flex; width:28px; height:28px; color:var(--vp-green-d,#0FA84C); }
+.vp-top-prem-ico svg,.vp-top-prem-ico img{ width:100%; height:100%; object-fit:contain; }
+@media (min-width:700px){ .vp-top-prem{ display:inline-flex; } }
 /* Hoja del producto: cuadrada también en tablet y PC, sin volverse gigante */
 .dm-pd-photo{ width:100%; max-width:420px; margin-left:auto; margin-right:auto; }
 .dm-pd-photo .sheet-close{ z-index:2; }
