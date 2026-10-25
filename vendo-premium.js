@@ -413,10 +413,12 @@
   }
 
   /* Vista de detalle: todo lo que incluye Premium (con flecha para regresar). */
+  /* true si se entró directo a "Todo lo que incluye Premium" (botón Funciones premium): ahí no hay botón de regresar */
+  var entroDirecto = false;
   function cuerpoMas(esDueno, precio) {
     return '<div class="vp-pr-x dos">' +
-          '<button type="button" class="sheet-close" onclick="VPPremium.volver()" aria-label="Regresar">' + ico('chevronLeft') + '</button>' +
-          '<button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button>' +
+          (entroDirecto ? '' : '<button type="button" class="sheet-close" onclick="VPPremium.volver()" aria-label="Regresar">' + ico('chevronLeft') + '</button>') +
+          '<button type="button" class="sheet-close"' + (entroDirecto ? ' style="margin-left:auto"' : '') + ' onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button>' +
         '</div>' +
         '<h1 class="vp-pr-h1">Todo lo que incluye <b>Premium</b></h1>' +
         '<div class="vp-prm-scroll"><div class="vp-prf-grid">' + tarjetasImagenHTML() + '</div></div>' +
@@ -437,7 +439,7 @@
   function masBeneficios() { pintarVista('mas'); }
   function volver() { pintarVista('principal'); }
   /* Atrás / Esc: en la vista de detalle regresa a la principal; en la principal cierra. */
-  function atras() { if (vista === 'mas') volver(); else cerrar(); }
+  function atras() { if (vista === 'mas' && !entroDirecto) volver(); else cerrar(); }
 
   function pieHTML(precio, esDueno, pie) {
     if (!esDueno) {
@@ -479,6 +481,7 @@
     var esDueno = fn('isOwner') ? ref('isOwner')() : true;
     var precio = precioTxt();
     vista = vistaInicial === 'mas' ? 'mas' : 'principal';
+    entroDirecto = vistaInicial === 'mas';
     claveAbierta = clave || null;
 
     abrirModal(
@@ -1077,10 +1080,7 @@
     }).join('');
   }
   function pieActivoHTML() {
-    return '<div class="vp-pr-pago"><div class="vp-pr-precio">' +
-             '<small>Membresía Vendo Plus</small><b>Premium activo</b>' +
-             '<span>Ya tienes todas estas funciones disponibles</span>' +
-           '</div></div>';
+    return '';
   }
   /** "Funciones premium": la misma pantalla de "Todo lo que incluye Premium". */
   function funciones() { abrir(null, 'mas'); }
