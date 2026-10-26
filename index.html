@@ -15084,7 +15084,7 @@ const MD_DESIGNS = [
 ];
 function mdValidDesign(d){ return MD_DESIGNS.some(x => x.id === d) ? d : 'clasico'; }
 function mdDefaultCfg(){
-  return { active:false, id:null, activatedAt:null, paused:false, whatsapp:{ country:'', number:'' }, color:MD_DEFAULT_COLOR, design:'clasico', hours:{ mode:'business', days:null }, delivery:{ on:null, lat:null, lng:null } };
+  return { active:false, id:null, activatedAt:null, paused:false, whatsapp:{ country:'', number:'' }, color:MD_DEFAULT_COLOR, design:'clasico', hours:{ mode:'business', days:null }, delivery:{ on:null, lat:null, lng:null }, payments:{ card:null, transfer:null, clabe:'', holder:'' } };
 }
 /* ---------- Servicio a domicilio ----------
    on = true  -> el cliente elige "Ir a buscar" o "Servicio a domicilio"
@@ -15211,6 +15211,121 @@ function mdGeoErr(e){
   return 'No pudimos ver tu ubicación. Marca el lugar en el mapa';
 }
 
+/* ---------- Formas de pago del menú: tarjeta y transferencia ----------
+   card / transfer = null -> el negocio aún no responde (se pide antes de activar el menú)
+   El efectivo siempre está disponible. Con transferencia se guarda la CLABE
+   para que el cliente sepa a dónde pagar. */
+const MD_BANKS = { '002':'Banamex', '012':'BBVA', '014':'Santander', '021':'HSBC', '030':'BanBajío', '036':'Inbursa', '042':'Mifel', '044':'Scotiabank', '058':'Banregio', '059':'Invex', '062':'Afirme', '072':'Banorte', '127':'Banco Azteca', '137':'BanCoppel', '638':'Nu México', '646':'STP', '722':'Mercado Pago' };
+function mdClabeOk(c){
+  c = String(c || '').replace(/\D/g, '');
+  if(c.length !== 18) return false;
+  const w = [3, 7, 1]; let sum = 0;
+  for(let i = 0; i < 17; i++) sum += (Number(c[i]) * w[i % 3]) % 10;
+  return (10 - (sum % 10)) % 10 === Number(c[17]);
+}
+function mdClabeFmt(c){ c = String(c || '').replace(/\D/g, '').slice(0, 18); return c.replace(/(\d{4})(?=\d)/g, '$1 '); }
+function mdBankOf(clabe){ return MD_BANKS[String(clabe || '').replace(/\D/g, '').slice(0, 3)] || ''; }
+function mdCleanPayments(p){
+  p = p || {};
+  const clabe = String(p.clabe || '').replace(/\D/g, '').slice(0, 18);
+  const transfer = p.transfer === true ? true : (p.transfer === false ? false : null);
+  return {
+    card: p.card === true ? true : (p.card === false ? false : null),
+    transfer: transfer,
+    clabe: clabe,
+    holder: String(p.holder || '').replace(/\s+/g, ' ').trim().slice(0, 60)
+  };
+}
+let mdPayDraft = null, mdPayKind = 'card';
+function mdOpenCardForm(){
+  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
+  mdPayKind = 'card'; mdPayDraft = { on:mdCfg().payments.card };
+  mdRenderPayForm();
+}
+function mdOpenTransferForm(){
+  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
+  const pm = mdCfg().payments;
+  mdPayKind = 'transfer'; mdPayDraft = { on:pm.transfer, clabe:pm.clabe, holder:pm.holder };
+  mdRenderPayForm();
+}
+function mdPayGrab(){
+  if(!mdPayDraft || mdPayKind !== 'transfer') return;
+  const c = document.getElementById('mdPayClabe'), h = document.getElementById('mdPayHolder');
+  if(c) mdPayDraft.clabe = c.value.replace(/\D/g, '').slice(0, 18);
+  if(h) mdPayDraft.holder = h.value;
+}
+function mdPaySet(on){ if(!mdPayDraft) return; mdPayGrab(); mdPayDraft.on = on; vibrate(8); mdRenderPayForm(); }
+function mdPayClabeInput(el){
+  const raw = el.value.replace(/\D/g, '').slice(0, 18);
+  el.value = mdClabeFmt(raw);
+  if(mdPayDraft) mdPayDraft.clabe = raw;
+  const b = document.getElementById('mdPayBank'); if(b){ const n = mdBankOf(raw); b.textContent = n; b.hidden = !n; }
+  clearFieldError('mdPayClabeField');
+}
+function mdRenderPayForm(){
+  const d = mdPayDraft; if(!d) return;
+  const card = mdPayKind === 'card';
+  const opt = (on, ico, title, sub) => `
+    <button type="button" class="md-yn-opt ${d.on === on ? 'active' : ''}" onclick="mdPaySet(${on})" aria-pressed="${d.on === on}">
+      <span class="md-yn-ico">${icon(ico)}</span>
+      <span class="md-yn-txt"><b>${title}</b><small>${sub}</small></span>
+      <span class="md-yn-radio"></span>
+    </button>`;
+  openModal(`
+    <div class="sheet-header">
+      <h2>${card ? 'Pago con tarjeta' : 'Pago por transferencia'}</h2>
+      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+    </div>
+    <p class="md-yn-q">${card ? '¿Tu negocio cobra con tarjeta?' : '¿Tu negocio acepta transferencias?'}</p>
+    <div class="md-yn">
+      ${card
+        ? opt(true, 'card', 'Sí, cobro con terminal', 'El cliente verá «Tarjeta» y se le cobra al recibir su pedido')
+          + opt(false, 'cash', 'No, tarjeta no', 'La opción Tarjeta no le aparece al cliente')
+        : opt(true, 'transfer', 'Sí, acepto transferencias', 'El cliente verá tu CLABE y el número de su pedido como concepto')
+          + opt(false, 'cash', 'No, transferencia no', 'La opción Transferencia no le aparece al cliente')}
+    </div>
+    ${!card && d.on === true ? `
+      <div class="md-pay-fields">
+        <div class="field" id="mdPayClabeField">
+          <label for="mdPayClabe">CLABE interbancaria <span class="md-pay-bank" id="mdPayBank" ${mdBankOf(d.clabe) ? '' : 'hidden'}>${escapeHtml(mdBankOf(d.clabe))}</span></label>
+          <input id="mdPayClabe" type="text" inputmode="numeric" autocomplete="off" maxlength="22" placeholder="18 dígitos" value="${escapeHtml(mdClabeFmt(d.clabe))}" oninput="mdPayClabeInput(this)">
+        </div>
+        <div class="field" id="mdPayHolderField">
+          <label for="mdPayHolder">Nombre del titular</label>
+          <input id="mdPayHolder" type="text" maxlength="60" autocomplete="off" placeholder="Como aparece en tu cuenta" value="${escapeHtml(d.holder || '')}">
+        </div>
+      </div>` : ''}
+    <div class="sheet-actions">
+      <button class="btn ghost block" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary block" onclick="mdSavePay()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
+    </div>
+  `, { dismissible:true });
+}
+function mdSavePay(){
+  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
+  const d = mdPayDraft; if(!d) return;
+  if(d.on === null){ toast('Elige Sí o No'); return; }
+  const cfg = mdCfg();
+  if(mdPayKind === 'card'){
+    cfg.payments.card = d.on;
+  }else{
+    mdPayGrab();
+    if(d.on === true){
+      clearFieldError('mdPayClabeField'); clearFieldError('mdPayHolderField');
+      if(!mdClabeOk(d.clabe)){ setFieldError('mdPayClabeField', 'Revisa tu CLABE: son 18 dígitos'); return; }
+      if(!(d.holder || '').trim()){ setFieldError('mdPayHolderField', 'Escribe el nombre del titular'); return; }
+    }
+    cfg.payments.transfer = d.on;
+    if(d.on === true){ cfg.payments.clabe = d.clabe; cfg.payments.holder = d.holder; }
+  }
+  mdSaveCfg(cfg);
+  mdPayDraft = null;
+  closeModal();
+  const card = mdPayKind === 'card';
+  toast(d.on ? (card ? 'Pago con tarjeta activado' : 'Transferencias activadas') : (card ? 'Sin pago con tarjeta' : 'Sin transferencias'), { icon:icon('check'), variant:'toast-success' });
+  mdRerenderIfMenu();
+}
+
 /* ---------- ¿Tu negocio tiene servicio a domicilio? ---------- */
 let mdDelDraft = null;
 function mdOpenDeliveryForm(){
@@ -15298,10 +15413,11 @@ function mdCfg(){
   out.whatsapp = Object.assign(mdDefaultCfg().whatsapp, c.whatsapp || {});
   out.hours = mdCleanHours(c.hours);
   out.delivery = mdCleanDelivery(c.delivery);
+  out.payments = mdCleanPayments(c.payments);
   return out;
 }
 function mdSaveCfg(c){
-  const limpio = { active:!!c.active, id:c.id || null, activatedAt:c.activatedAt || null, paused:!!c.paused, whatsapp:c.whatsapp || { country:'', number:'' }, color:mdValidColor(c.color) || MD_DEFAULT_COLOR, design:mdValidDesign(c.design), hours:mdCleanHours(c.hours), delivery:mdCleanDelivery(c.delivery) };
+  const limpio = { active:!!c.active, id:c.id || null, activatedAt:c.activatedAt || null, paused:!!c.paused, whatsapp:c.whatsapp || { country:'', number:'' }, color:mdValidColor(c.color) || MD_DEFAULT_COLOR, design:mdValidDesign(c.design), hours:mdCleanHours(c.hours), delivery:mdCleanDelivery(c.delivery), payments:mdCleanPayments(c.payments) };
   try{ localStorage.setItem(MD_CFG_KEY, JSON.stringify(limpio)); }catch(e){}
 }
 /* ---------- Horario del Menú Digital ----------
@@ -15469,6 +15585,23 @@ function mdChecklist(){
            : d.on === false ? 'No · tus clientes solo pueden ir a buscar su pedido'
            : '¿Tu negocio tiene servicio a domicilio? Toca para responder',
         action:'mdOpenDeliveryForm()' };
+    })(),
+    (function(){
+      const pm = mdCfg().payments;
+      return { label:'Pago con tarjeta', ok:pm.card !== null,
+        sub: pm.card === true ? 'Sí · se cobra con tu terminal al recibir el pedido'
+           : pm.card === false ? 'No · la opción Tarjeta no se muestra'
+           : '¿Cobras con tarjeta? Toca para responder',
+        action:'mdOpenCardForm()' };
+    })(),
+    (function(){
+      const pm = mdCfg().payments;
+      const ok = pm.transfer === false || (pm.transfer === true && mdClabeOk(pm.clabe));
+      return { label:'Transferencia', ok:ok,
+        sub: pm.transfer === true ? (ok ? 'Sí · ' + (mdBankOf(pm.clabe) ? mdBankOf(pm.clabe) + ' · ' : '') + 'CLABE ···' + pm.clabe.slice(-4) : 'Falta tu CLABE · toca para completarla')
+           : pm.transfer === false ? 'No · la opción Transferencia no se muestra'
+           : '¿Aceptas transferencias? Toca para responder',
+        action:'mdOpenTransferForm()' };
     })(),
     { label:'WhatsApp del negocio', ok:!!wa,
       sub:wa ? escapeHtml(mdWhatsappLabel()) + (wa.fromAccount ? ' · el de tu cuenta de ' + APP_NAME : ' · aquí llegan los pedidos') : 'Aquí te llegarán los pedidos', action:'mdOpenWhatsappForm()' },
@@ -16105,7 +16238,8 @@ function dmRefreshCards(){
     const card = document.getElementById('dmc-' + p.id);
     if(!card) return;
     card.classList.toggle('in-cart', dmQtyOf(p.id) > 0);
-    card.querySelector('.dm-slot').innerHTML = dmCardBar(p);
+    const slot = card.querySelector('.dm-slot'), h = dmCardBar(p);
+    if(slot && slot.__h !== h){ slot.__h = h; slot.innerHTML = h; }
   });
   dmRenderCartbar();
 }
@@ -16369,7 +16503,9 @@ function bootMenu(route){
   document.body.append(root, bar, layer, t);
   dmRender();
   dm.sig = dmSig();
-  window.addEventListener('scroll', dmSpy, { passive:true });
+  setTimeout(() => { const r = document.getElementById('dmRoot'); if(r) r.classList.add('dm-booted'); }, 2200);
+  let dmSpyRaf = 0;
+  window.addEventListener('scroll', () => { if(dmSpyRaf) return; dmSpyRaf = requestAnimationFrame(() => { dmSpyRaf = 0; dmSpy(); }); }, { passive:true });
   window.addEventListener('resize', dmMeasure);
   document.addEventListener('keydown', e => { if(e.key === 'Escape' && dm.sheet) dmCloseSheet(); });
   window.addEventListener('hashchange', () => { const r = dmRoute(); if(r && r.id !== dm.id) location.reload(); });
@@ -16740,6 +16876,7 @@ function mdiCleanCustomer(c){
   const out = { name: mdiStr(c.name, 60) };
   if(c.service === 'llevar' || c.service === 'domicilio') out.service = c.service;
   if(MD_PAY_IDS.indexOf(c.payment) >= 0) out.payment = c.payment;
+  { const cw = Number(c.cashWith); if(out.payment === 'efectivo' && isFinite(cw) && cw > 0 && cw < 10000000) out.cashWith = Math.round(cw * 100) / 100; }
   if(out.service === 'domicilio' && c.loc){
     const p = mdValidLatLng(c.loc.lat, c.loc.lng);
     if(p) out.loc = { lat:p.lat, lng:p.lng, ref: mdiStr(c.loc.ref, 200) };
@@ -17083,7 +17220,7 @@ function mdiServiceHTML(o){
       </div>
       <div class="mdi-fact">
         <span class="mdi-fact-ico">${icon(pm ? pm.ico : 'cash')}</span>
-        <span class="mdi-fact-txt"><small>Método de pago</small><b>${pm ? pm.name : 'No lo eligió'}</b></span>
+        <span class="mdi-fact-txt"><small>Método de pago</small><b>${pm ? pm.name : 'No lo eligió'}</b>${c.cashWith ? '<small class="mdi-fact-sub">Paga con ' + formatMoney(c.cashWith) + '</small>' : ''}</span>
       </div>
     </div>`;
 }
@@ -18002,6 +18139,10 @@ dmConfirmHTML = function(){
   const n = dm.cart.length;
   const step = co.step === 2 ? 2 : 1;
   const check = `<span class="dm-opt-check">${icon('check')}</span>`;
+  const pcfg = mdCfg().payments;
+  const payList = basicPayMethods().filter(pm => pm.id === 'efectivo' || (pm.id === 'tarjeta' && pcfg.card) || (pm.id === 'transferencia' && pcfg.transfer && mdClabeOk(pcfg.clabe)));
+  if(co.pay && !payList.some(pm => pm.id === co.pay)) co.pay = null;
+  if(payList.length === 1) co.pay = payList[0].id;
   const svcBtn = id => { const sv = MD_SERVICES[id]; return `
     <button type="button" class="dm-opt ${co.svc === id ? 'active' : ''}" data-svc="${id}" onclick="dmCoSvc('${id}')" aria-pressed="${co.svc === id}">
       <span class="dm-opt-ico">${icon(sv.ico)}</span>
@@ -18060,7 +18201,8 @@ dmConfirmHTML = function(){
     ` : `
     <div class="dm-co-sec" id="dmCoPay">
       <div class="dm-co-label">Método de pago</div>
-      <div class="dm-opts three">${basicPayMethods().map(payBtn).join('')}</div>
+      <div class="dm-opts ${payList.length === 1 ? 'one' : (payList.length === 2 ? 'two' : 'three')}">${payList.map(payBtn).join('')}</div>
+      <div class="dm-pi-box" id="dmPayInfo">${dmPayInfoHTML()}</div>
     </div>
 
     <div class="dm-banner wa" style="margin:16px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
@@ -18111,10 +18253,48 @@ function dmCoSvc(id){
   }
 }
 function dmCoPay(id){
-  dmCoState().pay = id;
+  const co = dmCoState(); const changed = co.pay !== id;
+  co.pay = id;
   dmVib(8);
   document.querySelectorAll('#dmCoPay .dm-opt[data-pay]').forEach(b => { const on = b.dataset.pay === id; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
   const box = document.getElementById('dmCoPay'); if(box) box.classList.remove('need');
+  const info = document.getElementById('dmPayInfo');
+  if(info && changed){ info.innerHTML = dmPayInfoHTML(); }
+}
+/* Lo que ve el cliente según cómo va a pagar */
+function dmCoCash(v){ const co = dmCoState(); const n = Number(v); co.cashWith = n > 0 ? n : null; }
+function dmCopy(text, msg){ mdCopy(text, msg || 'Copiado', dmToast); }
+function dmPayInfoHTML(){
+  const co = dmCoState(); const pm = mdCfg().payments;
+  const dom = co.svc === 'domicilio';
+  const head = (ico, t, sub) => `<div class="dm-pi-head"><span class="dm-pi-ico">${icon(ico)}</span><span class="dm-pi-t"><b>${t}</b><small>${sub}</small></span></div>`;
+  if(co.pay === 'efectivo'){
+    return `<div class="dm-pi">
+      ${head('cash', 'Pago en efectivo', dom ? 'Pagas cuando te entreguen tu pedido.' : 'Pagas cuando pases por tu pedido.')}
+      <label class="dm-pi-lab" for="dmCash">¿Con cuánto vas a pagar? <span>(opcional)</span></label>
+      <div class="dm-pi-money"><span>$</span><input id="dmCash" type="number" inputmode="decimal" min="0" step="1" placeholder="Ej. 200" value="${co.cashWith || ''}" oninput="dmCoCash(this.value)"></div>
+      <small class="dm-pi-note">Así llevamos tu cambio listo. Déjalo vacío si pagas exacto.</small>
+    </div>`;
+  }
+  if(co.pay === 'tarjeta'){
+    return `<div class="dm-pi">${head('card', 'Pago con tarjeta', dom ? 'Te cobramos con terminal cuando te entreguen tu pedido.' : 'Te cobramos con terminal cuando pases por tu pedido.')}</div>`;
+  }
+  if(co.pay === 'transferencia'){
+    if(!co.code) co.code = mdiNewCode();
+    const bank = mdBankOf(pm.clabe);
+    const row = (lab, val, copy) => `<div class="dm-pi-row"><span><small>${lab}</small><b>${escapeHtml(val)}</b></span>${copy ? `<button type="button" class="dm-pi-copy" onclick="dmCopy('${copy}', '${lab} copiado')">${icon('copy')} Copiar</button>` : ''}</div>`;
+    return `<div class="dm-pi">
+      ${head('transfer', 'Datos para tu transferencia', 'Haz el pago cuando el negocio te confirme el total.')}
+      <div class="dm-pi-rows">
+        ${pm.holder ? row('Titular', pm.holder) : ''}
+        ${bank ? row('Banco', bank) : ''}
+        ${row('CLABE', mdClabeFmt(pm.clabe), pm.clabe)}
+        ${row('Concepto', co.code, co.code)}
+      </div>
+      <small class="dm-pi-note">En el concepto pon tu número de pedido y mándanos tu comprobante por WhatsApp.</small>
+    </div>`;
+  }
+  return '';
 }
 function dmCoLocPaint(){
   const co = dmCoState();
@@ -18171,9 +18351,10 @@ dmSendWhatsApp = async function(){
   const name = (co.name || '').trim().slice(0, 60);
   try{ if(name) localStorage.setItem('mesa_dm_name', name); }catch(e){}
   const order = mdiBuildFromCart(dm.cart, name, {
-    service: co.svc, payment: co.pay,
+    service: co.svc, payment: co.pay, cashWith: co.pay === 'efectivo' ? co.cashWith : null,
     loc: co.svc === 'domicilio' && co.loc ? { lat:co.loc.lat, lng:co.loc.lng, ref:(co.ref || '').trim() } : null
   });
+  if(co.code && co.pay === 'transferencia') order.code = co.code;   /* el mismo que vio como concepto */
   order.waText = mdiMessage(order);          /* solo el número de pedido */
   const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
   /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
@@ -22786,7 +22967,9 @@ function mdPublicSnapshot(){
     v:1,
     cfg:{ paused:!!cfg.paused, color:cfg.color, design:mdValidDesign(cfg.design), hours:cfg.hours,
          /* Servicio a domicilio: si lo hay y dónde empieza el mapa del cliente */
-         delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null } },
+         delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null },
+         /* Formas de pago: la CLABE solo se publica si aceptas transferencias */
+         payments:{ card: cfg.payments.card === true, transfer: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe), clabe: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe) ? cfg.payments.clabe : '', holder: cfg.payments.transfer === true ? cfg.payments.holder : '' } },
     wa: mdWhatsappDigits(),
     biz:{ name:b.name || '', logo:b.logo || u.photo || null, giro:b.giro || '', type:b.type || '', hours:hrsClean(b.hours) },
     tax:{ taxMode:pc.taxMode, taxRate:pc.taxRate },
@@ -22969,7 +23152,7 @@ function dmrInstall(sameBiz){
     if(DMR_KEYS.has(key)){ const v = DMR.over[key]; return v === undefined ? fb : v; }
     return peek.call(this, key, fb);
   };
-  mdCfg = function(){ const c = Object.assign(mdDefaultCfg(), DMR.cfg || {}); c.hours = mdCleanHours(c.hours); c.delivery = mdCleanDelivery(c.delivery); return c; };
+  mdCfg = function(){ const c = Object.assign(mdDefaultCfg(), DMR.cfg || {}); c.hours = mdCleanHours(c.hours); c.delivery = mdCleanDelivery(c.delivery); c.payments = mdCleanPayments(c.payments); return c; };
   currentUser = function(){
     const se = DMR.season || {};
     return { business:Object.assign({}, DMR.biz || {}), photo:null, country: se.country || 'MX',
@@ -23872,6 +24055,7 @@ function cgFill(){
   grid.innerHTML = list.map(cgCardHTML).join('');
   const none = document.getElementById('cgNone'); if(none) none.hidden = list.length > 0;
 }
+function cgAnimGrid(){ const g = document.getElementById('cgGrid'); if(!g) return; g.classList.remove('cg-swap'); void g.offsetWidth; g.classList.add('cg-swap'); }
 function cgSetCat(id, btn){
   cg.cat = id;
   const rail = document.getElementById('cgRail');
@@ -23879,7 +24063,7 @@ function cgSetCat(id, btn){
     rail.querySelectorAll('.cg-chip').forEach(b => b.classList.toggle('active', b.dataset.cat === id));
     if(btn) rail.scrollTo({ left:btn.offsetLeft - rail.offsetWidth / 2 + btn.offsetWidth / 2, behavior:'smooth' });
   }
-  cgFill();
+  cgFill(); cgAnimGrid();
   const hero = document.querySelector('.cg-hero');
   if(hero && window.scrollY > hero.offsetTop) window.scrollTo({ top:0, behavior:'smooth' });
 }
@@ -23896,7 +24080,7 @@ function cgToggleSearch(open){
 }
 function cgSearchInput(v){
   clearTimeout(cgSearchInput._t);
-  cgSearchInput._t = setTimeout(() => { dm.q = v; cgFill(); }, 150);
+  cgSearchInput._t = setTimeout(() => { dm.q = v; cgFill(); cgAnimGrid(); }, 150);
 }
 function cgRender(d){
   const root = document.getElementById('dmRoot');
@@ -25260,6 +25444,76 @@ function cartSanitize(){
 @media (max-width:899px){
   .auth-screen[key="login"] > .auth-body{ padding-top:40px; }
 }
+/* ===== Fluidez: menos trabajo al deslizar (menú digital, los 2 diseños, y la app) ===== */
+.cg-top{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; background:#fff !important; }
+.dm-card, .cg-card, .product-card{ contain:layout style; }
+.dm-card, .cg-card{ transition:border-color .2s, box-shadow .2s; }
+.cg-card{ box-shadow:0 4px 14px rgba(20,23,38,.06); }
+.cg-card.in-cart{ box-shadow:0 6px 16px rgba(var(--dm-rgb,232,180,140), .18); }
+button, [onclick], .chip, .dm-chip, .cg-chip, .dm-tap, .cg-tap{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.dm-chips, .cg-rail, .chip-row{ -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
+html{ -webkit-text-size-adjust:100%; }
+@media (hover:none){ .dm-card:hover, .cg-card:hover, .product-card:hover{ transform:none; } }
+/* ===== Formas de pago (menú digital) ===== */
+.md-pay-fields{ margin-bottom:6px; animation:dmIn .35s cubic-bezier(.22,1,.36,1) both; }
+.md-pay-bank{ margin-left:6px; font-size:11.5px; font-weight:800; color:var(--accent-ink,#0E7A3D); background:var(--accent-soft); padding:2px 8px; border-radius:999px; }
+.md-pay-bank[hidden]{ display:none; }
+.mdi-fact-txt small.mdi-fact-sub{ margin-top:1px; color:var(--ink); }
+.dm-opts.one{ grid-template-columns:1fr; }
+.dm-opts.one .dm-opt.col{ flex-direction:row; justify-content:center; padding:13px 10px; }
+.dm-pi-box:empty{ display:none; }
+.dm-pi-box{ margin-top:12px; }
+.dm-pi{ background:var(--surface); border:1.5px solid var(--border); border-radius:16px; padding:14px; animation:dmIn .42s cubic-bezier(.22,1,.36,1) both; }
+.dm-pi-head{ display:flex; gap:11px; align-items:center; }
+.dm-pi-ico{ width:36px; height:36px; border-radius:11px; background:var(--dm-soft); color:var(--dm-ink, var(--dm-main)); display:flex; align-items:center; justify-content:center; flex:none; }
+.dm-pi-ico svg{ width:19px; height:19px; }
+.dm-pi-t b{ display:block; font-size:14px; font-weight:800; line-height:1.25; }
+.dm-pi-t small{ display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); line-height:1.4; margin-top:2px; }
+.dm-pi-lab{ display:block; margin:14px 0 7px; font-size:12.5px; font-weight:700; color:var(--ink-soft); }
+.dm-pi-lab span{ font-weight:600; color:var(--ink-faint); }
+.dm-pi-money{ display:flex; align-items:center; border:1.5px solid var(--border); border-radius:12px; background:var(--surface); padding:0 12px; transition:border-color .15s; }
+.dm-pi-money:focus-within{ border-color:var(--dm-main); }
+.dm-pi-money span{ font-weight:800; color:var(--ink-soft); font-size:16px; }
+.dm-pi-money input{ width:100%; min-width:0; border:none; outline:none; background:transparent; font-family:inherit; font-size:16px; font-weight:800; color:var(--ink); padding:12px 6px; -moz-appearance:textfield; }
+.dm-pi-money input::-webkit-outer-spin-button, .dm-pi-money input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.dm-pi-note{ display:block; margin-top:9px; font-size:12px; font-weight:600; color:var(--ink-soft); line-height:1.4; }
+.dm-pi-rows{ margin-top:12px; border-top:1px dashed var(--border); }
+.dm-pi-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px dashed var(--border); }
+.dm-pi-row:last-child{ border-bottom:0; }
+.dm-pi-row > span{ min-width:0; }
+.dm-pi-row small{ display:block; font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+.dm-pi-row b{ display:block; font-size:14.5px; font-weight:800; letter-spacing:.2px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.dm-pi-copy{ flex:none; display:inline-flex; align-items:center; gap:5px; border:0; background:var(--dm-soft); color:var(--dm-ink, var(--dm-main)); font:inherit; font-size:12px; font-weight:800; padding:7px 11px; border-radius:999px; cursor:pointer; transition:transform .15s; }
+.dm-pi-copy:active{ transform:scale(.94); }
+.dm-pi-copy svg{ width:13px; height:13px; }
+
+/* ===== Animaciones de entrada del menú digital (los 2 diseños) ===== */
+@keyframes dmIn{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+@keyframes dmDown{ from{ opacity:0; transform:translateY(-12px); } to{ opacity:1; transform:none; } }
+@keyframes dmPop{ from{ opacity:0; transform:scale(.94); } to{ opacity:1; transform:none; } }
+@media (prefers-reduced-motion:no-preference){
+  #dmRoot:not(.dm-booted) .dm-top, #dmRoot:not(.dm-booted) .cg-top{ animation:dmDown .55s cubic-bezier(.22,1,.36,1) both; }
+  #dmRoot:not(.dm-booted) .dm-title, #dmRoot:not(.dm-booted) .cg-hero{ animation:dmIn .6s cubic-bezier(.22,1,.36,1) .08s both; }
+  #dmRoot:not(.dm-booted) .dm-lead, #dmRoot:not(.dm-booted) .dm-hours, #dmRoot:not(.dm-booted) .dm-banner{ animation:dmIn .6s cubic-bezier(.22,1,.36,1) .16s both; }
+  #dmRoot:not(.dm-booted) .dm-chips{ animation:dmIn .6s cubic-bezier(.22,1,.36,1) .22s both; }
+  #dmRoot:not(.dm-booted) .dm-sec-head{ animation:dmIn .55s cubic-bezier(.22,1,.36,1) .28s both; }
+  #dmRoot:not(.dm-booted) .dm-card{ animation:dmIn .6s cubic-bezier(.22,1,.36,1) .55s both; }
+  #dmRoot:not(.dm-booted) .dm-card:nth-child(1){ animation-delay:.30s; } #dmRoot:not(.dm-booted) .dm-card:nth-child(2){ animation-delay:.36s; }
+  #dmRoot:not(.dm-booted) .dm-card:nth-child(3){ animation-delay:.42s; } #dmRoot:not(.dm-booted) .dm-card:nth-child(4){ animation-delay:.48s; }
+  #dmRoot:not(.dm-booted) .dm-card:nth-child(5){ animation-delay:.54s; } #dmRoot:not(.dm-booted) .dm-card:nth-child(6){ animation-delay:.60s; }
+  #dmRoot:not(.dm-booted) .dm-card:nth-child(7){ animation-delay:.66s; } #dmRoot:not(.dm-booted) .dm-card:nth-child(8){ animation-delay:.72s; }
+  .cg-grid.cg-swap .cg-card{ animation:dmPop .5s cubic-bezier(.22,1,.36,1) .5s both; }
+  .cg-grid.cg-swap .cg-card:nth-child(1){ animation-delay:.12s; } .cg-grid.cg-swap .cg-card:nth-child(2){ animation-delay:.17s; }
+  .cg-grid.cg-swap .cg-card:nth-child(3){ animation-delay:.22s; } .cg-grid.cg-swap .cg-card:nth-child(4){ animation-delay:.27s; }
+  .cg-grid.cg-swap .cg-card:nth-child(5){ animation-delay:.32s; } .cg-grid.cg-swap .cg-card:nth-child(6){ animation-delay:.37s; }
+  .cg-grid.cg-swap .cg-card:nth-child(7){ animation-delay:.42s; } .cg-grid.cg-swap .cg-card:nth-child(8){ animation-delay:.47s; }
+  #dmRoot:not(.dm-booted) .cg-blob{ animation:dmPop .9s cubic-bezier(.22,1,.36,1) both; }
+  .dm-overlay:not(.is-swap) .dm-sheet > *:not(.sheet-grip){ animation:dmIn .45s cubic-bezier(.22,1,.36,1) both; }
+  .dm-overlay:not(.is-swap) .dm-sheet > *:nth-child(2){ animation-delay:.04s; } .dm-overlay:not(.is-swap) .dm-sheet > *:nth-child(3){ animation-delay:.08s; }
+  .dm-overlay:not(.is-swap) .dm-sheet > *:nth-child(4){ animation-delay:.12s; } .dm-overlay:not(.is-swap) .dm-sheet > *:nth-child(5){ animation-delay:.16s; }
+  .dm-overlay:not(.is-swap) .dm-sheet > *:nth-child(n+6){ animation-delay:.2s; }
+}
+.dm-overlay .dm-sheet > .dm-co-sec.need{ animation:dmNeed .5s ease !important; }
 </style>
 </body>
 </html>
