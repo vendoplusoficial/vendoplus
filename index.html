@@ -3688,7 +3688,7 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
 .fdx .fd-biz .fd-logo img{ width:100%; height:100%; object-fit:cover; }
 .fdx .fd-biz .fd-bn{ min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fdx .fd-menu{ font-family:var(--display); font-weight:400; margin:8px 0 0; line-height:1.05; font-size:clamp(46px,9.5vh,84px);
-  letter-spacing:.03em; text-transform:uppercase; color:var(--ink); text-shadow:2px 2px 0 var(--accent-2); }
+  letter-spacing:.03em; text-transform:uppercase; color:var(--ink); text-shadow:none; }
 .fdx .fd-menu.fd-long{ font-size:clamp(34px,7vh,60px); }
 
 .fdx .fd-stage{ flex:1; min-height:0; width:100%; display:flex; align-items:center; justify-content:center; container-type:size;
@@ -16433,6 +16433,7 @@ function dmCartHTML(){
   return `
     <div class="sheet-header">
       <div class="sheet-header-left"><h2>Tu pedido</h2></div>
+      ${dm.cart.length ? `<button type="button" class="dm-clear" id="dmClearBtn" onclick="dmClearCart(this)">${icon('trash')}<span>Vaciar carrito</span></button>` : ''}
       <button class="sheet-close" onclick="dmCloseSheet()" aria-label="Cerrar">${icon('close')}</button>
     </div>
     ${dmLinesHTML(true)}
@@ -16441,6 +16442,17 @@ function dmCartHTML(){
     <div class="dm-actions">
       <button class="btn dm-green block" onclick="dmContinue()" ${paused ? 'disabled' : ''}>Continuar ${icon('arrowRight')}</button>
     </div>`;
+}
+/* "Vaciar carrito": primer toque pide confirmar (sin ventanas del navegador), el segundo lo vacía */
+function dmClearCart(btn){
+  if(!btn.classList.contains('ask')){
+    btn.classList.add('ask'); btn.querySelector('span').textContent = '¿Vaciar todo?';
+    clearTimeout(btn._t); btn._t = setTimeout(() => { if(btn.isConnected){ btn.classList.remove('ask'); btn.querySelector('span').textContent = 'Vaciar carrito'; } }, 3000);
+    return;
+  }
+  dm.cart = []; dm.co = null;
+  dmCloseSheet(); dmRefreshCards();
+  dmToast('Carrito vacío');
 }
 function dmConfirmHTML(){
   const nombre = ((((currentUser() || {}).business) || {}).name || '').trim();
@@ -25514,6 +25526,18 @@ html{ -webkit-text-size-adjust:100%; }
   .dm-overlay:not(.is-swap) .dm-sheet > *:nth-child(n+6){ animation-delay:.2s; }
 }
 .dm-overlay .dm-sheet > .dm-co-sec.need{ animation:dmNeed .5s ease !important; }
+/* ===== Opciones Sí / No de configuración del menú: verdes ===== */
+.md-yn-opt.active{ border-color:#16C15B; background:#EAF9F0; }
+.md-yn-opt.active .md-yn-ico{ background:#16C15B; color:#fff; }
+.md-yn-opt.active .md-yn-radio{ border-color:#16C15B; background:radial-gradient(circle, #16C15B 0 5px, #fff 6px); }
+.md-pay-fields .field input:focus, .md-pay-fields .field select:focus{ border-color:#16C15B; box-shadow:none; outline:none; }
+.md-pay-bank{ color:#0E7A3D; background:#EAF9F0; }
+.modal-sheet:has(.md-yn) .btn.primary:not(:disabled){ background:#16C15B; color:#fff; }
+.modal-sheet:has(.md-yn) .btn.primary:disabled{ background:#BFEBD0; color:#fff; opacity:1; }
+.dm-clear{ display:inline-flex; align-items:center; gap:6px; margin-left:auto; margin-right:8px; border:0; background:transparent; color:var(--ink-soft); font:inherit; font-size:12.5px; font-weight:700; padding:8px 10px; border-radius:999px; cursor:pointer; transition:background .15s, color .15s, transform .15s; }
+.dm-clear svg{ width:15px; height:15px; }
+.dm-clear:active{ transform:scale(.95); }
+.dm-clear.ask{ background:#FDECEA; color:#D64533; }
 </style>
 </body>
 </html>
