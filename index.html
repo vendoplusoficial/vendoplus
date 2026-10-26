@@ -25471,8 +25471,6 @@ html{ -webkit-text-size-adjust:100%; }
 .md-pay-bank{ margin-left:6px; font-size:11.5px; font-weight:800; color:var(--accent-ink,#0E7A3D); background:var(--accent-soft); padding:2px 8px; border-radius:999px; }
 .md-pay-bank[hidden]{ display:none; }
 .mdi-fact-txt small.mdi-fact-sub{ margin-top:1px; color:var(--ink); }
-.dm-opts.one{ grid-template-columns:1fr; }
-.dm-opts.one .dm-opt.col{ flex-direction:row; justify-content:center; padding:13px 10px; }
 .dm-pi-box:empty{ display:none; }
 .dm-pi-box{ margin-top:12px; }
 .dm-pi{ background:var(--surface); border:1.5px solid var(--border); border-radius:16px; padding:14px; animation:dmIn .42s cubic-bezier(.22,1,.36,1) both; }
@@ -25538,6 +25536,12 @@ html{ -webkit-text-size-adjust:100%; }
 .dm-clear svg{ width:15px; height:15px; }
 .dm-clear:active{ transform:scale(.95); }
 .dm-clear.ask{ background:#FDECEA; color:#D64533; }
+/* Métodos de pago: cada opción mide igual que si fueran 3, centradas */
+#dmCoPay .dm-opts.one, #dmCoPay .dm-opts.two{ display:flex; justify-content:center; }
+#dmCoPay .dm-opts.one .dm-opt, #dmCoPay .dm-opts.two .dm-opt{ flex:0 0 calc((100% - 16px) / 3); min-width:0; }
+/* Logo del negocio en el menú visual: sin aro café arriba y abajo de la foto */
+.fdx .fd-biz .fd-logo:has(img){ background:#fff; box-shadow:none; border:0; }
+.fdx .fd-biz .fd-logo img{ display:block; width:100%; height:100%; object-fit:cover; border:0; outline:0; }
 </style>
 </body>
 </html>
