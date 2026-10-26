@@ -17095,6 +17095,7 @@ function mdiDeliveryHTML(o){
   const fee = mdiHasFee(o) ? mdiDeliveryFee(o) : null;
   return `
     <div class="mdi-deliv">
+      <div class="mdi-deliv-alert">${icon('truck')}<span><b>Este servicio es a domicilio</b>${editable ? 'Revisa la ubicación del cliente y escribe cuánto cobras por llevarlo.' : 'Llévalo a la ubicación que marcó el cliente.'}</span></div>
       ${loc ? `
         <div class="md-map mdi-map" id="mdiMap">${mdMapPH()}</div>
         ${loc.ref ? `<div class="mdi-ref">${icon('pin')}<span><small>Dirección o referencias</small>${escapeHtml(loc.ref)}</span></div>` : ''}
@@ -17102,7 +17103,7 @@ function mdiDeliveryHTML(o){
         <div class="mdi-noloc">${icon('alert')}<span>El cliente no mandó su ubicación. Pídesela por WhatsApp.</span></div>`}
       ${editable ? `
         <div class="mdi-fee" id="mdiFeeBox">
-          <label for="mdiFee"><b>Costo de envío</b><small>Se suma al total y le llega al cliente al confirmar</small></label>
+          <label for="mdiFee"><b>Costo de envío</b><small>Cargo adicional por llevar el pedido al domicilio del cliente.</small></label>
           <div class="mdi-fee-input"><span>$</span><input id="mdiFee" type="number" inputmode="decimal" min="0" step="1" placeholder="0.00" value="${fee == null ? '' : fee}" oninput="mdiSetFee('${o.id}', this.value)"></div>
         </div>` : `
         <div class="mdi-fee ro"><span><b>Costo de envío</b></span><b>${fee == null ? '—' : (fee ? formatMoney(fee) : 'Gratis')}</b></div>`}
