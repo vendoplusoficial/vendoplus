@@ -12328,7 +12328,7 @@ const AUTH_SIDE = {
   otp:     { illu:'authCodigo', t:'Tu cuenta, protegida',          s:'Confirmamos que el correo es tuyo para cuidar tu información.' },
   name:    { illu:'shopOwner',  t:'Ya casi está listo',            s:'Ponle nombre a tu negocio y entra a administrarlo.' },
   users:   { illu:'usersPos',      t:'Cada quien con su cuenta',      s:'Elige tu nombre para ver tus ventas y tu turno.' },
-  userpin: { illu:'authClave', t:'Escribe tu NIP',                s:'Así solo tú puedes entrar con tu usuario.' },
+  userpin: { illu:'lockShield', t:'Escribe tu NIP',                s:'Así solo tú puedes entrar con tu usuario.' },
 };
 function authSideHTML(screen){
   const d = AUTH_SIDE[screen] || AUTH_SIDE.signup;
@@ -25246,6 +25246,19 @@ function cartSanitize(){
 .auth-screen svg [fill="#FFF0C2"]{ fill:#E5FAEC; }
 .auth-screen svg [stroke="#FFD666"], .auth-screen svg [stroke="#F5BF3C"]{ stroke:#25D366; }
 .auth-mail-tip b, .otp-help button{ color:#0E7A3D; }
+
+/* ===== Cambiar de usuario (elegir usuario + NIP): conserva sus colores de antes ===== */
+.auth-screen[key="users"], .auth-screen[key="userpin"]{ --accent:#FFD666; --accent-strong:#F5BF3C; --accent-soft:#FFF0C2; --accent-ink:#16213E; }
+.auth-screen[key="userpin"] .pin-dot.on{ background:#F5BF3C; border-color:#F5BF3C; }
+.auth-screen[key="userpin"] svg [fill="#FFD666"]{ fill:#FFD666; }
+.auth-screen[key="userpin"] svg [fill="#F5BF3C"]{ fill:#F5BF3C; }
+.auth-screen[key="userpin"] svg [fill="#FFF0C2"]{ fill:#FFF0C2; }
+.auth-screen[key="userpin"] svg [stroke="#FFD666"]{ stroke:#FFD666; }
+.auth-screen[key="userpin"] svg [stroke="#F5BF3C"]{ stroke:#F5BF3C; }
+/* ===== Entra a tu cuenta: contenido un poco más abajo (celular) ===== */
+@media (max-width:899px){
+  .auth-screen[key="login"] > .auth-body{ padding-top:40px; }
+}
 </style>
 </body>
 </html>
