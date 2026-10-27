@@ -16,7 +16,8 @@
      · Si la venta se cancela o se devuelve completa, los puntos se
        regresan solos. Nada se duplica aunque el cobro se procese dos veces.
      · Los pedidos del Menú Digital acumulan al MISMO saldo.
-     · Tarjeta para Google Wallet y tarjeta web para quien no la tenga.
+     · Tarjeta digital con QR, en una página que abre en cualquier
+       teléfono (Android, iPhone y computadora) sin instalar nada.
 
    DÓNDE VIVEN LOS DATOS
      Todo en Supabase (tablas vp_lealtad_*, ver supabase/vp_lealtad.sql).
@@ -369,14 +370,22 @@
     var st = document.createElement('style');
     st.id = 'vl-css';
     st.textContent = [
+      /* IMPORTANTE: los iconos de Vendo Plus son SVG sin medida (la toman
+         del lugar donde se ponen). Si no se les dice qué tan grandes van,
+         se estiran y empujan todo hacia abajo. Esta primera regla les pone
+         tamaño de icono a TODOS los que van dentro de la lealtad; abajo
+         se afinan los casos especiales, y el QR se queda grande aparte. */
+      '.vl-wrap svg,.vl-co svg,.vl-tar svg,.vl-card svg,.vl-mini svg,.vl-acts svg,',
+      '.vl-rec svg,.vl-row svg,.vl-mov svg,.vl-prem svg,.vl-pill svg,.vl-off svg{width:17px;height:17px;flex:none;}',
       '.vl-wrap{max-width:900px;margin:0 auto;}',
       '.vl-off{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:13px 14px;margin:0 0 14px;}',
-      '.vl-off svg{width:22px;height:22px;flex:none;color:var(--ink-soft);}',
+      '.vl-off > svg{width:19px;height:19px;flex:none;color:var(--ink-soft);}',
+      '.vl-off .btn svg{width:15px;height:15px;}',
       '.vl-off-t{flex:1;min-width:0;}',
       '.vl-off-t b{display:block;font-size:14.5px;font-weight:800;color:var(--ink);}',
       '.vl-off-t span{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-top:2px;line-height:1.35;}',
       '.vl-off.on{border-color:var(--vp-green,#16C15B);background:var(--vp-soft,#EAF9F0);}',
-      '.vl-off.on svg{color:var(--vp-green-d,#0F9B49);}',
+      '.vl-off.on > svg{color:var(--vp-green-d,#0F9B49);}',
       '.vl-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}',
       '.vl-card{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:14px;margin:0 0 12px;}',
       '.vl-card h3{margin:0 0 4px;font-size:14.5px;font-weight:800;color:var(--ink);}',
@@ -400,8 +409,9 @@
       '.vl-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;font-family:inherit;',
       'border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:12px 13px;margin-bottom:8px;transition:transform .12s;}',
       '.vl-row:active{transform:scale(.99);}',
-      '.vl-av{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:14px;font-weight:800;',
-      'background:var(--vp-soft,#EAF9F0);color:var(--vp-green-d,#0F9B49);}',
+      '.vl-av{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:13.5px;font-weight:800;',
+      'background:var(--vp-soft,#EAF9F0);color:var(--vp-green-d,#0F9B49);overflow:hidden;}',
+      '.vl-av svg{width:16px;height:16px;}',
       '.vl-row-m{flex:1;min-width:0;}',
       '.vl-row-m b{display:block;font-size:14px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       '.vl-row-m span{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-top:2px;}',
@@ -420,21 +430,25 @@
       '.vl-mov-t span{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin-top:1px;}',
       '.vl-mov-n{flex:none;font-size:13.5px;font-weight:800;color:var(--vp-green-d,#0F9B49);}',
       '.vl-mov-n.neg{color:#C0392B;}',
-      /* la tarjeta del cliente */
-      '.vl-tar{border-radius:18px;padding:16px;color:#fff;background:var(--vp-green,#16C15B);margin:0 0 14px;}',
-      '.vl-tar-h{display:flex;align-items:center;gap:10px;}',
-      '.vl-tar-h b{font-size:14.5px;font-weight:800;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
-      '.vl-tar-n{font-size:21px;font-weight:800;margin:12px 0 2px;line-height:1.15;}',
-      '.vl-tar-s{font-size:12.5px;font-weight:600;opacity:.92;}',
-      '.vl-tar-q{background:#fff;border-radius:14px;padding:10px;display:grid;place-items:center;margin:13px 0 0;}',
-      '.vl-tar-q svg{display:block;width:100%;height:auto;max-width:190px;}',
-      '.vl-tar-c{font-size:11px;font-weight:700;letter-spacing:.4px;opacity:.9;margin-top:9px;text-align:center;word-break:break-all;}',
-      '.vl-acts{display:grid;gap:8px;grid-template-columns:1fr 1fr;margin:0 0 12px;}',
-      '@media (max-width:420px){.vl-acts{grid-template-columns:1fr;}}',
-      '.vl-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px;}',
-      '.vl-mini div{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:10px;text-align:center;}',
-      '.vl-mini span{display:block;font-size:11px;font-weight:700;color:var(--ink-soft);}',
-      '.vl-mini b{display:block;font-size:17px;font-weight:800;color:var(--ink);margin-top:2px;}',
+      /* La tarjeta del cliente. Va compacta a propósito: el QR, los puntos,
+         los números y los botones tienen que caber en una sola pantalla,
+         sin tener que bajar para ver lo importante. */
+      '.vl-tar{border-radius:16px;padding:13px 14px;color:#fff;background:var(--vp-green,#16C15B);margin:0 0 10px;}',
+      '.vl-tar-h{display:flex;align-items:center;gap:8px;}',
+      '.vl-tar-h > svg{width:16px;height:16px;flex:none;opacity:.95;}',
+      '.vl-tar-h b{font-size:13.5px;font-weight:800;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '.vl-tar-n{font-size:26px;font-weight:800;margin:8px 0 1px;line-height:1.1;letter-spacing:-.5px;}',
+      '.vl-tar-s{font-size:12px;font-weight:600;opacity:.92;}',
+      '.vl-tar-q{background:#fff;border-radius:12px;padding:8px;display:grid;place-items:center;margin:10px 0 0;}',
+      '.vl-tar-q svg{display:block;width:100%;height:auto;max-width:148px;}',
+      '.vl-tar-c{font-size:10px;font-weight:700;letter-spacing:.3px;opacity:.88;margin-top:6px;text-align:center;word-break:break-all;}',
+      '.vl-acts{display:grid;gap:7px;grid-template-columns:1fr 1fr;margin:0 0 10px;}',
+      '.vl-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 10px;}',
+      '.vl-mini div{border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:8px 6px;text-align:center;}',
+      '.vl-mini span{display:block;font-size:10.5px;font-weight:700;color:var(--ink-soft);}',
+      '.vl-mini b{display:block;font-size:15px;font-weight:800;color:var(--ink);margin-top:1px;}',
+      '.vl-mas{display:block;width:100%;border:1px solid var(--border);border-radius:12px;background:var(--surface);',
+      'padding:11px;font-family:inherit;font-size:13px;font-weight:800;color:var(--ink);cursor:pointer;margin:0 0 10px;}',
       '.vl-scan{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;margin:0 0 12px;}',
       '.vl-scan video{width:100%;height:100%;object-fit:cover;display:block;}',
       '.vl-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:800;}',
@@ -445,7 +459,8 @@
       '.vl-co-h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--ink);margin-bottom:10px;}',
       '.vl-co-h svg{width:17px;height:17px;color:var(--vp-green-d,#0F9B49);}',
       '.vl-co-g{display:grid;grid-template-columns:1fr auto;gap:8px;}',
-      '.vl-co-on{display:flex;align-items:center;gap:10px;border-radius:12px;background:var(--vp-soft,#EAF9F0);padding:10px 12px;}',
+      '.vl-co-on{display:flex;align-items:center;gap:9px;border-radius:12px;background:var(--vp-soft,#EAF9F0);padding:10px 12px;}',
+      '.vl-co-on > svg{width:17px;height:17px;flex:none;color:var(--vp-green-d,#0F9B49);}',
       '.vl-co-on b{flex:1;min-width:0;font-size:13.5px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       '.vl-co-on i{flex:none;cursor:pointer;color:var(--ink-soft);display:grid;place-items:center;}',
       '.vl-co-on i svg{width:16px;height:16px;}',
@@ -470,7 +485,6 @@
     if (!I.vlCard) I.vlCard = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="5" width="19" height="14" rx="3" stroke="currentColor" stroke-width="1.9"/><path d="M2.5 9.5h19" stroke="currentColor" stroke-width="1.9"/><path d="M6 14h4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="16.5" cy="14.2" r="1.6" fill="currentColor"/></svg>';
     if (!I.vlQr) I.vlQr = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6" stroke="currentColor" stroke-width="1.9"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6" stroke="currentColor" stroke-width="1.9"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6" stroke="currentColor" stroke-width="1.9"/><path d="M14 14h2.5M19 14h1.5M14 17h1.5M17.5 17h3M14 20h6.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>';
     if (!I.vlStar) I.vlStar = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8L12 3.8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
-    if (!I.vlWallet) I.vlWallet = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h12a2.5 2.5 0 0 1 2.5 2.5v9A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5v-9z" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 10.5h5a2 2 0 0 0 0 4h-5" stroke="currentColor" stroke-width="1.9"/></svg>';
     if (!I.vlUndo) I.vlUndo = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4.5h4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
 
@@ -902,14 +916,21 @@
      8.  LA FICHA DEL CLIENTE  (su tarjeta, su QR, su historial)
   ======================================================================= */
   function ficha(id) {
-    L.abierto = { id: id, cargando: true, cliente: null, movimientos: [], premios: [] };
+    var verMovs = !!(L.abierto && L.abierto.id === id && L.abierto.verMovs);
+    L.abierto = { id: id, cargando: true, cliente: null, movimientos: [], premios: [], verMovs: verMovs };
     pintaFicha();
     rpc('vp_lealtad_cliente', { p_cliente_id: id }).then(function (r) {
       if (!L.abierto || L.abierto.id !== id) return;
       if (!r || !r.ok) { cerrar(); return queja(r); }
-      L.abierto = { id: id, cargando: false, cliente: r.cliente, movimientos: r.movimientos || [], premios: r.premios || [] };
+      L.abierto = { id: id, cargando: false, cliente: r.cliente,
+                    movimientos: r.movimientos || [], premios: r.premios || [], verMovs: verMovs };
       pintaFicha();
     });
+  }
+  function verMovs() {
+    if (!L.abierto) return;
+    L.abierto.verMovs = !L.abierto.verMovs;
+    pintaFicha();
   }
 
   function enlaceTarjeta(codigo) {
@@ -967,21 +988,27 @@
 
       '<div class="vl-acts">' +
         '<button class="btn whatsapp" onclick="VPLealtad.mandarTarjeta(\'' + c.id + '\')">' + ico('whatsapp') + ' Mandar su tarjeta</button>' +
-        '<button class="btn ghost" onclick="VPLealtad.wallet(\'' + c.id + '\')">' + ico('vlWallet') + ' Google Wallet</button>' +
         '<button class="btn ghost" onclick="VPLealtad.copiarTarjeta(\'' + c.id + '\')">' + ico('copy') + ' Copiar el enlace</button>' +
-        '<button class="btn ghost" onclick="VPLealtad.ajustar(\'' + c.id + '\')">' + ico('sliders') + ' Ajustar puntos</button>' +
       '</div>' +
 
       premios +
 
-      '<div class="vl-card"><h3>Movimientos</h3>' +
-        (a.movimientos.length ? a.movimientos.map(function (m) { return movHTML(m, false); }).join('')
-                              : '<p>Todavía no hay movimientos.</p>') +
-      '</div>' +
+      /* Los movimientos van guardados: así la tarjeta, el QR, los números
+         y los botones caben juntos sin tener que bajar la pantalla. */
+      '<button type="button" class="vl-mas" onclick="VPLealtad.verMovs()">' +
+        (a.verMovs ? 'Ocultar movimientos' : 'Ver movimientos' + (a.movimientos.length ? ' (' + a.movimientos.length + ')' : '')) +
+      '</button>' +
+      (a.verMovs
+        ? '<div class="vl-card">' +
+            (a.movimientos.length ? a.movimientos.map(function (m) { return movHTML(m, false); }).join('')
+                                  : '<p>Todavía no hay movimientos.</p>') +
+          '</div>'
+        : '') +
 
       '<div class="sheet-actions">' +
+        '<button class="btn ghost" onclick="VPLealtad.ajustar(\'' + c.id + '\')">' + ico('sliders') + ' Ajustar puntos</button>' +
         '<button class="btn ghost" onclick="VPLealtad.nuevoCodigo(\'' + c.id + '\')">' + ico('refresh') + ' Nueva tarjeta</button>' +
-        '<button class="btn ghost danger" onclick="VPLealtad.baja(\'' + c.id + '\')">' + ico('trash') + ' Quitar del programa</button>' +
+        '<button class="btn ghost danger" onclick="VPLealtad.baja(\'' + c.id + '\')">' + ico('trash') + ' Quitar</button>' +
       '</div>', { dismissible: true });
   }
   function cerrarFicha() { L.abierto = null; cerrar(); }
@@ -1002,30 +1029,6 @@
     var f = fn('mdCopy');
     if (f) f(enlaceTarjeta(c.codigo), 'Enlace copiado');
     else avisar('Enlace: ' + enlaceTarjeta(c.codigo));
-  }
-
-  /** Google Wallet: la tarjeta la firma el SERVIDOR (Edge Function). */
-  function wallet(id) {
-    var c = (L.abierto && L.abierto.cliente) || L.clientes.find(function (x) { return x.id === id; });
-    var nb = nube();
-    if (!c || !nb) return;
-    avisar('Preparando su tarjeta…', { icon: ico('vlWallet') });
-    nb.sb.functions.invoke('vp-lealtad-wallet', { body: { codigo: c.codigo } }).then(function (r) {
-      var d = r && r.data;
-      if (r && r.error || !d || !d.ok || !d.url) {
-        var m = (d && d.message) || (r && r.error && r.error.message) || '';
-        avisar('Google Wallet todavía no está listo', {
-          icon: ico('alert'), variant: 'toast-danger toast-wrap',
-          subtitle: m || 'Mientras tanto, manda su tarjeta web por WhatsApp: funciona en cualquier teléfono.',
-          duration: 5200
-        });
-        return;
-      }
-      var w = window.open(d.url, '_blank');
-      if (!w) location.href = d.url;
-    }, function () {
-      avisar('No se pudo abrir Google Wallet', { icon: ico('alert'), variant: 'toast-danger', subtitle: 'Manda su tarjeta web por WhatsApp' });
-    });
   }
 
   function nuevoCodigo(id) {
@@ -1699,8 +1702,8 @@
     config: config, guardar: guardar, cerrarConfig: cerrarConfig,
     _cfg: _cfg, _recEdit: _recEdit, _recSet: _recSet, _recOk: _recOk, _recQuita: _recQuita, _recVolver: _recVolver,
     alta: alta, _alta: _alta, _altaOk: _altaOk, _altaVolver: _altaVolver,
-    ficha: ficha, cerrarFicha: cerrarFicha,
-    mandarTarjeta: mandarTarjeta, copiarTarjeta: copiarTarjeta, wallet: wallet,
+    ficha: ficha, cerrarFicha: cerrarFicha, verMovs: verMovs,
+    mandarTarjeta: mandarTarjeta, copiarTarjeta: copiarTarjeta,
     nuevoCodigo: nuevoCodigo, baja: baja,
     ajustar: ajustar, _aj: _aj, _ajOk: _ajOk,
     buscarCliente: buscarCliente, _busca: _busca, _buscaOk: _buscaOk, _buscaVolver: _buscaVolver,
