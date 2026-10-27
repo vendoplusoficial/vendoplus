@@ -109,6 +109,11 @@
       titulo: 'Estadísticas detalladas',
       texto: 'Ve tus ventas, ganancias y productos más vendidos con datos claros y fáciles de entender.',
       ico: 'chart'
+    },
+    lealtad: {
+      titulo: 'Programa de lealtad',
+      texto: 'Premia a quien te compra seguido: junta puntos o visitas y llévale su tarjeta digital al celular.',
+      ico: 'vlCard'
     }
   };
   var ORDEN = ['menu', 'chat', 'escaner', 'stats'];
@@ -944,9 +949,26 @@
     return a && b;
   }
 
+  /* El Programa de lealtad vive en su propio archivo (vendo-lealtad.js) y
+     se carga desde aquí: así index.html no se toca ni en la web ni en la
+     app, y el archivo es el mismo para las dos. Si no está subido, Vendo
+     Plus sigue funcionando igual y la tarjeta simplemente no aparece. */
+  function cargarLealtad() {
+    if (window.VPLealtad || document.getElementById('vp-lealtad-js')) return;
+    try {
+      var s = document.createElement('script');
+      s.id = 'vp-lealtad-js';
+      s.src = 'vendo-lealtad.js?v=20261030';
+      s.async = true;
+      s.onerror = function () { console.warn('Vendo plus · no se encontró vendo-lealtad.js'); };
+      document.head.appendChild(s);
+    } catch (e) {}
+  }
+
   function arrancar() {
     estilos();
     registrarFunciones();
+    cargarLealtad();
     /* La tecla Esc cierra la pantalla de Premium (computadora) */
     window.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && document.querySelector('#modal-layer .vp-pr')) {
@@ -1015,6 +1037,24 @@
       '<circle cx="54" cy="52" r="14" fill="#BFEBD1" stroke="#16213E" stroke-width="2.5"/><path d="M28 112a26 26 0 0 1 52 0z" fill="#BFEBD1" stroke="#16213E" stroke-width="2.5" stroke-linejoin="round"/>' +
       '<circle cx="146" cy="52" r="14" fill="#BFEBD1" stroke="#16213E" stroke-width="2.5"/><path d="M120 112a26 26 0 0 1 52 0z" fill="#BFEBD1" stroke="#16213E" stroke-width="2.5" stroke-linejoin="round"/>' +
       '<circle cx="100" cy="42" r="18" fill="#16C15B" stroke="#16213E" stroke-width="2.5"/><path d="M68 114a32 32 0 0 1 64 0z" fill="#16C15B" stroke="#16213E" stroke-width="2.5" stroke-linejoin="round"/>' +
+      '</svg>',
+    lealtad: '<svg viewBox="0 0 200 125" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + BG +
+      /* la tarjeta */
+      '<rect x="34" y="26" width="112" height="72" rx="9" fill="#fff" stroke="#16213E" stroke-width="2.5"/>' +
+      '<path d="M34 35a9 9 0 0 1 9-9h94a9 9 0 0 1 9 9v9H34z" fill="#16C15B"/>' +
+      '<rect x="42" y="52" width="38" height="5" rx="2.5" fill="#16213E" opacity=".75"/>' +
+      '<rect x="42" y="62" width="24" height="4" rx="2" fill="#9AA3B5"/>' +
+      /* los sellos: 3 llenos, 2 por juntar */
+      '<circle cx="47" cy="83" r="7" fill="#16C15B"/><circle cx="65" cy="83" r="7" fill="#16C15B"/><circle cx="83" cy="83" r="7" fill="#16C15B"/>' +
+      '<circle cx="101" cy="83" r="7" fill="#fff" stroke="#BFEBD1" stroke-width="2.5"/>' +
+      '<circle cx="119" cy="83" r="7" fill="#fff" stroke="#BFEBD1" stroke-width="2.5"/>' +
+      /* el QR de la tarjeta */
+      '<rect x="112" y="48" width="28" height="28" rx="4" fill="#fff" stroke="#16213E" stroke-width="2"/>' +
+      '<rect x="117" y="53" width="7" height="7" fill="#16213E"/><rect x="128" y="53" width="7" height="7" fill="#16213E"/>' +
+      '<rect x="117" y="64" width="7" height="7" fill="#16213E"/><rect x="128" y="64" width="4" height="4" fill="#16C15B"/>' +
+      '<rect x="132" y="68" width="3" height="3" fill="#16213E"/>' +
+      /* la estrella del premio */
+      '<path d="M163 20l3.6 7.4 8.1 1.2-5.9 5.7 1.4 8-7.2-3.8-7.2 3.8 1.4-8-5.9-5.7 8.1-1.2L163 20z" fill="#16C15B" stroke="#16213E" stroke-width="2.3" stroke-linejoin="round"/>' +
       '</svg>'
   };
   var DESC_CORTA = {
@@ -1022,9 +1062,12 @@
     chat: 'Pregúntale por tus ventas y ganancias y te responde al momento.',
     escaner: 'Una foto a tu carta y la IA llena tu inventario. Sin límite con Premium.',
     stats: 'Ventas, ganancias y productos más vendidos con datos claros.',
-    usuarios: 'Suma a tu equipo: cada quien entra con su propio NIP.'
+    usuarios: 'Suma a tu equipo: cada quien entra con su propio NIP.',
+    lealtad: 'Puntos, premios y tarjeta digital para tus clientes de siempre.'
   };
-  var ORDEN_SECCION = ['menu', 'chat', 'escaner', 'stats', 'usuarios'];
+  /* Esta lista es la de la pantalla "Funciones premium". El Programa de
+     lealtad vive SOLO aquí: no se mete al menú de abajo ni a las 3 rayitas. */
+  var ORDEN_SECCION = ['menu', 'chat', 'escaner', 'stats', 'usuarios', 'lealtad'];
 
   var cssFuncPuesto = false;
   function estilosFunciones() {
@@ -1149,6 +1192,13 @@
     if (clave === 'usuarios') {
       var u = fn('openUsersSheet');
       if (u) u(); else abrir('usuarios');
+      return;
+    }
+    if (clave === 'lealtad') {
+      puerta('lealtad', function () {
+        if (window.VPLealtad) VPLealtad.irA();
+        else if (ir) ir('lealtad');
+      });
     }
   }
 

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16C15B">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Mi tarjeta de lealtad</title>
+<!--
+=========================================================================
+  Vendo Plus · TARJETA DE LEALTAD DEL CLIENTE
+  -----------------------------------------------------------------------
+  Esta página la abre EL CLIENTE del negocio, con el enlace que le manda
+  el negocio por WhatsApp:        .../tarjeta.html#vl????????????????????
+
+  · Funciona en Android, iPhone y computadora. No hay que instalar nada.
+  · Es de SOLO LECTURA: los puntos los mueve el servidor y nada más.
+    Desde aquí no se puede sumar, quitar ni canjear.
+  · El código del enlace es opaco: no lleva adentro el nombre ni el
+    teléfono del cliente. Si se pierde el teléfono, el negocio genera una
+    tarjeta nueva y esta deja de abrir.
+  · Va junto a index.html. Usa la MISMA clave pública (anon) que ya usa
+    el Menú Digital, que es pública a propósito y no da acceso a nada
+    más: la función del servidor solo devuelve lo que se ve en pantalla.
+=========================================================================
+-->
+<style>
+  :root{
+    --vp-green:#16C15B; --vp-green-d:#0F9B49; --vp-soft:#EAF9F0; --vp-soft2:#D5F3E2;
+    --ink:#16213E; --ink-soft:#6B7487; --muted:#9AA3B5;
+    --surface:#FFFFFF; --bg:#F4F6FA; --border:#E4E8F0;
+    --radius:18px; --shadow:0 10px 30px -12px rgba(16,22,42,.18);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--ink);
+    min-height:100dvh;
+    padding:max(16px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+    display:flex; align-items:flex-start; justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{width:100%;max-width:420px;}
+
+  /* ---------- la tarjeta ---------- */
+  .card{
+    border-radius:var(--radius); padding:20px; color:#fff;
+    background:var(--vp-green); box-shadow:var(--shadow);
+    position:relative; overflow:hidden;
+  }
+  .card::after{
+    content:""; position:absolute; width:190px; height:190px; border-radius:50%;
+    background:rgba(255,255,255,.1); right:-70px; top:-80px; pointer-events:none;
+  }
+  .biz{display:flex;align-items:center;gap:11px;position:relative;}
+  .biz img{width:38px;height:38px;border-radius:10px;object-fit:cover;background:rgba(255,255,255,.22);flex:none;}
+  .biz-ini{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.22);display:grid;place-items:center;
+           font-size:15px;font-weight:800;flex:none;}
+  .biz b{font-size:15.5px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .biz span{display:block;font-size:12px;font-weight:600;opacity:.88;margin-top:1px;}
+
+  .big{font-size:42px;font-weight:800;line-height:1;margin:20px 0 2px;letter-spacing:-1px;}
+  .big small{font-size:15px;font-weight:700;opacity:.9;letter-spacing:0;margin-left:5px;}
+  .who{font-size:13.5px;font-weight:600;opacity:.92;}
+
+  .bar{height:9px;border-radius:999px;background:rgba(255,255,255,.3);overflow:hidden;margin:16px 0 8px;}
+  .bar i{display:block;height:100%;border-radius:999px;background:#fff;width:0;transition:width .7s cubic-bezier(.22,1,.36,1);}
+  .falta{font-size:12.5px;font-weight:700;opacity:.95;}
+
+  /* ---------- el QR ---------- */
+  .qr{background:#fff;border-radius:14px;padding:12px;margin:18px 0 0;display:grid;place-items:center;}
+  .qr svg{display:block;width:100%;height:auto;max-width:210px;}
+  .cod{font-size:10.5px;font-weight:700;letter-spacing:.5px;opacity:.88;text-align:center;margin-top:10px;word-break:break-all;}
+  .show{
+    display:block;width:100%;margin:14px 0 0;border:0;cursor:pointer;font-family:inherit;
+    background:rgba(255,255,255,.2);color:#fff;border-radius:12px;padding:12px;
+    font-size:13.5px;font-weight:800;
+  }
+
+  /* ---------- bloques de abajo ---------- */
+  .box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px;margin:12px 0 0;}
+  .box h2{margin:0 0 10px;font-size:14px;font-weight:800;color:var(--ink);}
+  .rec{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);}
+  .rec:last-child{border-bottom:0;padding-bottom:0;}
+  .rec:first-of-type{padding-top:0;}
+  .rec-i{flex:none;width:34px;height:34px;border-radius:10px;background:var(--vp-soft);color:var(--vp-green-d);display:grid;place-items:center;}
+  .rec-i svg{width:17px;height:17px;}
+  .rec-t{flex:1;min-width:0;}
+  .rec-t b{display:block;font-size:13.5px;font-weight:800;color:var(--ink);}
+  .rec-t span{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-top:1px;}
+  .tag{flex:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800;background:var(--vp-soft);color:var(--vp-green-d);}
+  .tag.gris{background:#F0F2F7;color:var(--ink-soft);}
+
+  .wallet{
+    display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+    margin:12px 0 0;border:1px solid var(--border);border-radius:14px;background:var(--surface);
+    padding:14px;font-family:inherit;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;
+  }
+  .wallet:active{transform:scale(.99);}
+  .wallet svg{width:20px;height:20px;color:var(--vp-green-d);}
+  .wallet[disabled]{opacity:.6;cursor:default;}
+
+  .nota{font-size:12px;font-weight:600;color:var(--ink-soft);line-height:1.5;text-align:center;margin:16px 4px 0;}
+  .pie{text-align:center;font-size:11.5px;font-weight:700;color:var(--muted);margin:18px 0 0;}
+
+  /* ---------- carga y errores ---------- */
+  .mid{text-align:center;padding:56px 18px;}
+  .spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--vp-green);
+        animation:giro .8s linear infinite;margin:0 auto 16px;}
+  @keyframes giro{to{transform:rotate(360deg)}}
+  .mid h1{font-size:18px;font-weight:800;margin:0 0 8px;}
+  .mid p{font-size:13.5px;font-weight:600;color:var(--ink-soft);line-height:1.5;margin:0 0 18px;}
+  .mid button{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:11px 18px;
+              font-family:inherit;font-size:13.5px;font-weight:800;color:var(--ink);cursor:pointer;}
+  .ico-big{width:42px;height:42px;color:var(--muted);margin:0 auto 14px;display:block;}
+
+  .toast{
+    position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:calc(18px + env(safe-area-inset-bottom));
+    background:var(--ink);color:#fff;border-radius:12px;padding:11px 16px;font-size:13px;font-weight:700;
+    opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;max-width:92vw;text-align:center;z-index:9;
+  }
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (min-width:700px){
+    body{align-items:center;}
+    .big{font-size:48px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .bar i,.toast{transition:none;} .spin{animation-duration:2.4s;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="root">
+  <div class="mid"><div class="spin"></div><p>Abriendo tu tarjeta…</p></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   LA MISMA CUENTA DE SUPABASE QUE USA VENDO PLUS
+   La clave "anon" es pública a propósito (igual que en el Menú Digital).
+   No da acceso a nada: la función del servidor solo devuelve lo que se ve.
+   Si cambias de proyecto de Supabase, cambia estas dos líneas y las de
+   index.html al mismo tiempo.
+========================================================================= */
+var VL_CONFIG = {
+  SUPABASE_URL:      'https://yacmyrpluhjaphvrbqno.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_uxy6ZYubuYn6Q2LPwuElpg_qYwwWinX'
+};
+
+(function () {
+  'use strict';
+
+  var ICO = {
+    gift:  '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="8.5" width="18" height="12" rx="2.2" stroke="currentColor" stroke-width="1.9"/><path d="M3 12.5h18M12 8.5v12" stroke="currentColor" stroke-width="1.9"/><path d="M12 8.5S10.6 4 8.2 4a2.2 2.2 0 0 0 0 4.5H12zm0 0s1.4-4.5 3.8-4.5a2.2 2.2 0 0 1 0 4.5H12z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
+    star:  '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4.1-4 5.7-.8L12 3.8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    wallet:'<svg viewBox="0 0 24 24" fill="none"><path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h12a2.5 2.5 0 0 1 2.5 2.5v9A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5v-9z" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 10.5h5a2 2 0 0 0 0 4h-5" stroke="currentColor" stroke-width="1.9"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.9"/><path d="M12 7.5v5.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.3" r="1.1" fill="currentColor"/></svg>',
+    tag:   '<svg viewBox="0 0 24 24" fill="none"><path d="M13.2 3.6 20.4 10.8a2 2 0 0 1 0 2.8l-6.8 6.8a2 2 0 0 1-2.8 0L3.6 13.2V5.6a2 2 0 0 1 2-2h7.6z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><circle cx="8.4" cy="8.4" r="1.5" fill="currentColor"/></svg>'
+  };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+  function toast(m) {
+    var t = document.getElementById('toast');
+    t.textContent = m; t.classList.add('on');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.classList.remove('on'); }, 2400);
+  }
+  function inicial(n) {
+    var s = String(n || '').trim();
+    return s ? s.split(/\s+/).slice(0, 2).map(function (w) { return w[0].toUpperCase(); }).join('') : '?';
+  }
+  function dinero(n) {
+    try { return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(Number(n) || 0); }
+    catch (e) { return '$' + (Number(n) || 0).toFixed(2); }
+  }
+
+  /* =======================================================================
+     EL QR  ·  modo byte, corrección M, versiones 1 a 6
+     Se dibuja aquí mismo: la tarjeta abre aunque el cliente tenga mala
+     señal, y no se carga ninguna librería de fuera.
+  ======================================================================= */
+  function qrMatriz(texto) {
+    var datos = [], s = String(texto);
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i);
+      if (c < 0x80) datos.push(c);
+      else if (c < 0x800) datos.push(0xC0 | (c >> 6), 0x80 | (c & 63));
+      else datos.push(0xE0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    }
+    var VER = { 1: [16, 10, 1, 16, 0, 0], 2: [28, 16, 1, 28, 0, 0], 3: [44, 26, 1, 44, 0, 0],
+                4: [64, 18, 2, 32, 0, 0], 5: [86, 24, 2, 43, 0, 0], 6: [108, 16, 4, 27, 0, 0] };
+    var ALIN = { 1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26], 5: [6, 30], 6: [6, 34] };
+    var v = 0;
+    for (var k = 1; k <= 6; k++) { if (datos.length + 2 <= VER[k][0]) { v = k; break; } }
+    if (!v) return null;
+    var cfg = VER[v], nDatos = cfg[0], nEc = cfg[1];
+
+    var bits = [];
+    function pon(val, largo) { for (var b = largo - 1; b >= 0; b--) bits.push((val >> b) & 1); }
+    pon(4, 4); pon(datos.length, 8);
+    for (var d = 0; d < datos.length; d++) pon(datos[d], 8);
+    var cap = nDatos * 8;
+    for (var t = 0; t < 4 && bits.length < cap; t++) bits.push(0);
+    while (bits.length % 8) bits.push(0);
+    var rell = [0xEC, 0x11], r = 0;
+    while (bits.length < cap) { pon(rell[r % 2], 8); r++; }
+    var cw = [];
+    for (var p = 0; p < bits.length; p += 8) {
+      var by = 0;
+      for (var j = 0; j < 8; j++) by = (by << 1) | bits[p + j];
+      cw.push(by);
+    }
+
+    var EXP = new Array(512), LOG = new Array(256);
+    for (var x = 0, e = 1; x < 255; x++) { EXP[x] = e; LOG[e] = x; e <<= 1; if (e & 256) e ^= 0x11D; }
+    for (var x2 = 255; x2 < 512; x2++) EXP[x2] = EXP[x2 - 255];
+    function mul(a, b2) { return (a === 0 || b2 === 0) ? 0 : EXP[LOG[a] + LOG[b2]]; }
+    function gener(grado) {
+      var g = [1];
+      for (var i2 = 0; i2 < grado; i2++) {
+        var ng = new Array(g.length + 1);
+        for (var z = 0; z < ng.length; z++) ng[z] = 0;
+        for (var j2 = 0; j2 < g.length; j2++) { ng[j2] ^= mul(g[j2], EXP[i2]); ng[j2 + 1] ^= g[j2]; }
+        g = ng;
+      }
+      return g.reverse();
+    }
+    function ecDe(bl, n2) {
+      var g = gener(n2), res = bl.slice();
+      for (var z2 = 0; z2 < n2; z2++) res.push(0);
+      for (var i3 = 0; i3 < bl.length; i3++) {
+        var f = res[i3]; if (!f) continue;
+        for (var j3 = 0; j3 < g.length; j3++) res[i3 + j3] ^= mul(g[j3], f);
+      }
+      return res.slice(bl.length);
+    }
+    var bloques = [], ecs = [], pos = 0, g1 = cfg[2], d1 = cfg[3], g2 = cfg[4], d2 = cfg[5];
+    for (var i4 = 0; i4 < g1; i4++) { bloques.push(cw.slice(pos, pos + d1)); pos += d1; }
+    for (var i5 = 0; i5 < g2; i5++) { bloques.push(cw.slice(pos, pos + d2)); pos += d2; }
+    for (var i6 = 0; i6 < bloques.length; i6++) ecs.push(ecDe(bloques[i6], nEc));
+    var fin = [], maxD = Math.max(d1, d2);
+    for (var c2 = 0; c2 < maxD; c2++) for (var b3 = 0; b3 < bloques.length; b3++) if (c2 < bloques[b3].length) fin.push(bloques[b3][c2]);
+    for (var c3 = 0; c3 < nEc; c3++) for (var b4 = 0; b4 < ecs.length; b4++) fin.push(ecs[b4][c3]);
+
+    var n = v * 4 + 17, m = [], usa = [];
+    for (var y = 0; y < n; y++) {
+      m.push(new Array(n)); usa.push(new Array(n));
+      for (var x3 = 0; x3 < n; x3++) { m[y][x3] = 0; usa[y][x3] = 0; }
+    }
+    function cuadro(cx, cy) {
+      for (var dy = -4; dy <= 4; dy++) for (var dx = -4; dx <= 4; dx++) {
+        var yy = cy + dy, xx = cx + dx;
+        if (yy < 0 || xx < 0 || yy >= n || xx >= n) continue;
+        var a = Math.max(Math.abs(dx), Math.abs(dy));
+        m[yy][xx] = (a <= 1 || a === 3) ? 1 : 0;
+        usa[yy][xx] = 1;
+      }
+    }
+    cuadro(3, 3); cuadro(n - 4, 3); cuadro(3, n - 4);
+    for (var i7 = 8; i7 < n - 8; i7++) {
+      m[6][i7] = (i7 % 2 === 0) ? 1 : 0; usa[6][i7] = 1;
+      m[i7][6] = (i7 % 2 === 0) ? 1 : 0; usa[i7][6] = 1;
+    }
+    var al = ALIN[v];
+    for (var a1 = 0; a1 < al.length; a1++) for (var a2 = 0; a2 < al.length; a2++) {
+      var cx2 = al[a2], cy2 = al[a1];
+      if ((cx2 === 6 && cy2 === 6) || (cx2 === 6 && cy2 === n - 7) || (cx2 === n - 7 && cy2 === 6)) continue;
+      for (var dy2 = -2; dy2 <= 2; dy2++) for (var dx2 = -2; dx2 <= 2; dx2++) {
+        var a3 = Math.max(Math.abs(dx2), Math.abs(dy2));
+        m[cy2 + dy2][cx2 + dx2] = (a3 === 0 || a3 === 2) ? 1 : 0;
+        usa[cy2 + dy2][cx2 + dx2] = 1;
+      }
+    }
+    m[n - 8][8] = 1; usa[n - 8][8] = 1;
+    for (var i8 = 0; i8 <= 8; i8++) { usa[8][i8] = 1; usa[i8][8] = 1; }
+    for (var i9 = n - 8; i9 < n; i9++) { usa[8][i9] = 1; usa[i9][8] = 1; }
+
+    var bi = 0, tot = fin.length * 8;
+    function bitEn(i) { return i < tot ? (fin[i >> 3] >> (7 - (i & 7))) & 1 : 0; }
+    var arriba = true;
+    for (var col = n - 1; col > 0; col -= 2) {
+      if (col === 6) col--;
+      for (var py = 0; py < n; py++) {
+        var yy2 = arriba ? n - 1 - py : py;
+        for (var dc = 0; dc < 2; dc++) {
+          var xx2 = col - dc;
+          if (usa[yy2][xx2]) continue;
+          m[yy2][xx2] = bitEn(bi++);
+          usa[yy2][xx2] = 2;
+        }
+      }
+      arriba = !arriba;
+    }
+    function masc(p2, x4, y2) {
+      switch (p2) {
+        case 0: return (x4 + y2) % 2 === 0;
+        case 1: return y2 % 2 === 0;
+        case 2: return x4 % 3 === 0;
+        case 3: return (x4 + y2) % 3 === 0;
+        case 4: return (Math.floor(y2 / 2) + Math.floor(x4 / 3)) % 2 === 0;
+        case 5: return ((x4 * y2) % 2) + ((x4 * y2) % 3) === 0;
+        case 6: return (((x4 * y2) % 2) + ((x4 * y2) % 3)) % 2 === 0;
+        default: return (((x4 + y2) % 2) + ((x4 * y2) % 3)) % 2 === 0;
+      }
+    }
+    function fmt(p3) {
+      var d15 = p3, dd = d15 << 10, g = 0x537;
+      for (var i10 = 14; i10 >= 10; i10--) if ((dd >> i10) & 1) dd ^= g << (i10 - 10);
+      return ((d15 << 10) | dd) ^ 0x5412;
+    }
+    function ponFmt(mat, p4) {
+      var f = fmt(p4), bit = function (i) { return (f >> i) & 1; };
+      for (var i11 = 0; i11 <= 5; i11++) mat[i11][8] = bit(i11);
+      mat[7][8] = bit(6); mat[8][8] = bit(7); mat[8][7] = bit(8);
+      for (var j4 = 0; j4 <= 5; j4++) mat[8][5 - j4] = bit(9 + j4);
+      for (var k2 = 0; k2 <= 7; k2++) mat[8][n - 1 - k2] = bit(k2);
+      for (var q = 0; q <= 6; q++) mat[n - 7 + q][8] = bit(8 + q);
+      mat[n - 8][8] = 1;
+    }
+    function pena(mat) {
+      var p1 = 0, p2b = 0, p3b = 0, osc = 0;
+      function corre(l) {
+        var tt = 0, cc = 1;
+        for (var i12 = 1; i12 < l.length; i12++) {
+          if (l[i12] === l[i12 - 1]) cc++;
+          else { if (cc >= 5) tt += 3 + (cc - 5); cc = 1; }
+        }
+        if (cc >= 5) tt += 3 + (cc - 5);
+        return tt;
+      }
+      for (var y3 = 0; y3 < n; y3++) p1 += corre(mat[y3]);
+      for (var x5 = 0; x5 < n; x5++) { var cl = []; for (var y4 = 0; y4 < n; y4++) cl.push(mat[y4][x5]); p1 += corre(cl); }
+      for (var y5 = 0; y5 < n - 1; y5++) for (var x6 = 0; x6 < n - 1; x6++) {
+        var sm = mat[y5][x6] + mat[y5][x6 + 1] + mat[y5 + 1][x6] + mat[y5 + 1][x6 + 1];
+        if (sm === 0 || sm === 4) p2b += 3;
+      }
+      var pat = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0];
+      function busca(l) {
+        var tt = 0;
+        for (var i13 = 0; i13 + 11 <= l.length; i13++) {
+          var ok = true, ok2 = true;
+          for (var j5 = 0; j5 < 11; j5++) {
+            if (l[i13 + j5] !== pat[j5]) ok = false;
+            if (l[i13 + j5] !== pat[10 - j5]) ok2 = false;
+          }
+          if (ok) tt += 40;
+          if (ok2) tt += 40;
+        }
+        return tt;
+      }
+      for (var y6 = 0; y6 < n; y6++) p3b += busca(mat[y6]);
+      for (var x7 = 0; x7 < n; x7++) { var cl2 = []; for (var y7 = 0; y7 < n; y7++) cl2.push(mat[y7][x7]); p3b += busca(cl2); }
+      for (var y8 = 0; y8 < n; y8++) for (var x8 = 0; x8 < n; x8++) osc += mat[y8][x8];
+      return p1 + p2b + p3b + Math.floor(Math.abs((osc * 100) / (n * n) - 50) / 5) * 10;
+    }
+    var mejor = null, mejorPts = Infinity;
+    for (var p5 = 0; p5 < 8; p5++) {
+      var mm = [];
+      for (var y9 = 0; y9 < n; y9++) mm.push(m[y9].slice());
+      for (var y10 = 0; y10 < n; y10++) for (var x9 = 0; x9 < n; x9++)
+        if (usa[y10][x9] === 2 && masc(p5, x9, y10)) mm[y10][x9] ^= 1;
+      ponFmt(mm, p5);
+      var pts = pena(mm);
+      if (pts < mejorPts) { mejorPts = pts; mejor = mm; }
+    }
+    return mejor;
+  }
+
+  function qrSVG(texto) {
+    var m = qrMatriz(texto);
+    if (!m) return '';
+    var n = m.length, q = 2, total = n + q * 2, d = '';
+    for (var y = 0; y < n; y++) for (var x = 0; x < n; x++)
+      if (m[y][x]) d += 'M' + (x + q) + ' ' + (y + q) + 'h1v1h-1z';
+    return '<svg viewBox="0 0 ' + total + ' ' + total + '" shape-rendering="crispEdges" role="img" ' +
+           'aria-label="Código QR de tu tarjeta"><rect width="' + total + '" height="' + total + '" fill="#fff"/>' +
+           '<path d="' + d + '" fill="#16213E"/></svg>';
+  }
+
+  /* =======================================================================
+     TRAER LA TARJETA DEL SERVIDOR  (solo lectura)
+  ======================================================================= */
+  function codigo() {
+    var h = String(location.hash || '').replace(/^#/, '');
+    var m = h.match(/vl[a-f0-9]{24}/);
+    if (m) return m[0];
+    var q = new URLSearchParams(location.search).get('t') || '';
+    m = String(q).match(/vl[a-f0-9]{24}/);
+    return m ? m[0] : '';
+  }
+
+  function traer(cod) {
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var tmr = setTimeout(function () { if (ctrl) ctrl.abort(); }, 14000);
+    var key = VL_CONFIG.SUPABASE_ANON_KEY;
+    return fetch(VL_CONFIG.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/rpc/vp_lealtad_tarjeta', {
+      method: 'POST',
+      headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ p_codigo: cod }),
+      cache: 'no-store',
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function (r) {
+      if (!r.ok) return { ok: false, error: r.status >= 500 ? 'servidor' : 'config' };
+      return r.json();
+    }).catch(function () {
+      return { ok: false, error: 'red' };
+    }).then(function (d) { clearTimeout(tmr); return d; });
+  }
+
+  /* =======================================================================
+     PINTAR
+  ======================================================================= */
+  var estado = { cod: '', d: null, qrVisible: true };
+
+  function pantallaCarga() {
+    document.getElementById('root').innerHTML =
+      '<div class="mid"><div class="spin"></div><p>Abriendo tu tarjeta…</p></div>';
+  }
+
+  function pantallaError(titulo, texto, reintentar) {
+    document.getElementById('root').innerHTML =
+      '<div class="mid"><span class="ico-big">' + ICO.alert + '</span>' +
+      '<h1>' + esc(titulo) + '</h1><p>' + esc(texto) + '</p>' +
+      (reintentar ? '<button id="vlRe">Intentar otra vez</button>' : '') + '</div>';
+    var b = document.getElementById('vlRe');
+    if (b) b.onclick = function () { pantallaCarga(); cargar(); };
+  }
+
+  function premioTexto(r) {
+    if (r.tipo === 'descuento_pct') return Number(r.valor || 0) + '% de descuento';
+    if (r.tipo === 'descuento_monto') return dinero(r.valor || 0) + ' de descuento';
+    return (r.producto_nombre || 'Un producto') + ' gratis';
+  }
+  /* Si el negocio ya puso todo en el nombre ("Café gratis"), no se repite
+     abajo la misma frase: se ve más limpio. */
+  function detalle(r) {
+    var d = premioTexto(r), n = String(r.nombre || '');
+    var lim = function (s) { return s.toLowerCase().replace(/[^a-z0-9áéíóúñ ]/gi, '').trim(); };
+    return (lim(d) === lim(n) || lim(n).indexOf(lim(d)) >= 0) ? '' : d;
+  }
+
+  function pinta(d) {
+    estado.d = d;
+    var neg = d.negocio || {}, cl = d.cliente || {};
+    var color = /^#[0-9a-fA-F]{3,8}$/.test(String(neg.color || '')) ? neg.color : '#16C15B';
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', color);
+    document.title = 'Mi tarjeta · ' + (neg.nombre || 'Lealtad');
+
+    var meta = Number(cl.meta || 0), av = Number(cl.avance || 0);
+    var pct = meta > 0 ? Math.min(100, Math.round((av / meta) * 100)) : 0;
+
+    var gordo, unidad, sub;
+    if (d.modo === 'visitas') { gordo = Number(cl.visitas || 0); unidad = gordo === 1 ? 'visita' : 'visitas'; }
+    else if (d.modo === 'compras') { gordo = Number(cl.compras || 0); unidad = gordo === 1 ? 'pieza' : 'piezas'; }
+    else { gordo = Number(cl.puntos || 0); unidad = gordo === 1 ? 'punto' : 'puntos'; }
+
+    if (meta > 0) {
+      sub = Number(cl.falta) > 0
+        ? (Number(cl.falta) === 1 ? 'Te falta 1 para tu premio' : 'Te faltan ' + cl.falta + ' para tu premio')
+        : '¡Ya puedes pedir tu premio!';
+    } else sub = 'Sigue juntando';
+
+    var enlace = location.href.split('#')[0] + '#' + estado.cod;
+
+    /* Los premios que ya se ganó y no ha usado */
+    var ganados = (d.premios || []).length
+      ? '<div class="box"><h2>Tus premios listos</h2>' +
+        d.premios.map(function (p) {
+          var dt = detalle(p);
+          return '<div class="rec"><span class="rec-i">' + ICO.gift + '</span>' +
+            '<span class="rec-t"><b>' + esc(p.nombre) + '</b>' + (dt ? '<span>' + esc(dt) + '</span>' : '') + '</span>' +
+            '<span class="tag">Te lo puedes llevar</span></div>';
+        }).join('') +
+        '<p class="nota" style="margin-top:12px;text-align:left;">Muestra tu tarjeta en el negocio y te lo entregan.</p></div>'
+      : '';
+
+    /* El catálogo de recompensas. En visitas y compras acumuladas el
+       premio es uno solo: si ya se lo ganó, no se repite abajo. */
+    var mostrarCat = d.modo === 'puntos' || !(d.premios || []).length;
+    var cat = (mostrarCat && (d.recompensas || []).length)
+      ? '<div class="box"><h2>' + (d.modo === 'puntos' ? 'Qué puedes canjear' : 'Tu premio') + '</h2>' +
+        d.recompensas.map(function (rc) {
+          var alcanza = d.modo !== 'puntos' || Number(cl.puntos || 0) >= Number(rc.costo_puntos || 0);
+          var dt2 = detalle(rc);
+          return '<div class="rec"><span class="rec-i">' + (rc.tipo === 'producto' ? ICO.gift : ICO.tag) + '</span>' +
+            '<span class="rec-t"><b>' + esc(rc.nombre) + '</b>' + (dt2 ? '<span>' + esc(dt2) + '</span>' : '') + '</span>' +
+            (d.modo === 'puntos'
+              ? '<span class="tag ' + (alcanza ? '' : 'gris') + '">' + rc.costo_puntos + ' pts</span>'
+              : '') + '</div>';
+        }).join('') + '</div>'
+      : '';
+
+    document.getElementById('root').innerHTML =
+      '<div class="card" style="background:' + esc(color) + ';">' +
+        '<div class="biz">' +
+          (neg.logo ? '<img src="' + esc(neg.logo) + '" alt="" onerror="this.outerHTML=\'<span class=&quot;biz-ini&quot;>' + esc(inicial(neg.nombre)) + '</span>\'">'
+                    : '<span class="biz-ini">' + esc(inicial(neg.nombre)) + '</span>') +
+          '<div style="min-width:0;flex:1;"><b>' + esc(neg.nombre || 'Mi negocio') + '</b>' +
+          '<span>' + esc(neg.mensaje || 'Tarjeta de lealtad') + '</span></div>' +
+        '</div>' +
+        '<div class="big">' + gordo + '<small>' + esc(unidad) + '</small></div>' +
+        '<div class="who">' + esc(cl.nombre || '') + '</div>' +
+        (meta > 0 ? '<div class="bar"><i id="vlBar"></i></div><div class="falta">' + esc(sub) + '</div>' : '') +
+        '<div class="qr" id="vlQrBox">' + qrSVG(enlace) + '</div>' +
+        '<div class="cod">' + esc(estado.cod) + '</div>' +
+      '</div>' +
+      ganados + cat +
+      '<button class="wallet" id="vlWallet">' + ICO.wallet + ' Guardar en Google Wallet</button>' +
+      '<p class="nota">Enséñale este código al negocio cuando compres y ' +
+        (d.modo === 'puntos' ? 'tus puntos se suman solos'
+                             : (d.modo === 'visitas' ? 'tus visitas se suman solas' : 'tus compras se cuentan solas')) +
+        '. Guarda este enlace o agrégalo a tu pantalla de inicio.</p>' +
+      '<p class="pie">Vendo Plus</p>';
+
+    /* La barra se llena después de pintar, para que se vea el avance */
+    requestAnimationFrame(function () {
+      var b = document.getElementById('vlBar');
+      if (b) b.style.width = pct + '%';
+    });
+
+    var w = document.getElementById('vlWallet');
+    if (w) w.onclick = pedirWallet;
+  }
+
+  /* ---------- Google Wallet: la tarjeta la firma el servidor ---------- */
+  function pedirWallet() {
+    var b = document.getElementById('vlWallet');
+    if (!b || b.disabled) return;
+    b.disabled = true;
+    var txt = b.innerHTML;
+    b.innerHTML = ICO.wallet + ' Preparando…';
+    fetch(VL_CONFIG.SUPABASE_URL.replace(/\/+$/, '') + '/functions/v1/vp-lealtad-wallet', {
+      method: 'POST',
+      headers: {
+        apikey: VL_CONFIG.SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + VL_CONFIG.SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ codigo: estado.cod })
+    }).then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (d) {
+        b.disabled = false; b.innerHTML = txt;
+        if (d && d.ok && d.url) { location.href = d.url; return; }
+        toast('Google Wallet todavía no está disponible aquí');
+      })
+      .catch(function () {
+        b.disabled = false; b.innerHTML = txt;
+        toast('No se pudo abrir Google Wallet');
+      });
+  }
+
+  /* =======================================================================
+     ARRANQUE  +  se mantiene al día
+  ======================================================================= */
+  function cargar() {
+    return traer(estado.cod).then(function (d) {
+      if (d && d.ok) { pinta(d); return true; }
+      var e = (d && d.error) || 'red';
+      if (e === 'codigo_invalido' || e === 'sin_tarjeta') {
+        pantallaError('Esta tarjeta ya no está disponible',
+          'El enlace puede estar incompleto o el negocio generó una tarjeta nueva. Pídele que te mande la tarjeta otra vez.', false);
+      } else if (e === 'programa_apagado') {
+        pantallaError('El programa no está activo',
+          'Este negocio tiene su programa de lealtad apagado por ahora. Tus puntos no se pierden: se quedan guardados.', true);
+      } else if (e === 'config') {
+        pantallaError('Esta tarjeta no está lista todavía',
+          'Al negocio le falta terminar de preparar su programa de lealtad.', true);
+      } else {
+        pantallaError('No pudimos abrir tu tarjeta',
+          'Revisa tu conexión a internet e inténtalo otra vez.', true);
+      }
+      return false;
+    });
+  }
+
+  var cod = codigo();
+  if (!cod) {
+    pantallaError('Falta el código de la tarjeta',
+      'Abre el enlace completo que te mandó el negocio por WhatsApp.', false);
+    return;
+  }
+  estado.cod = cod;
+  cargar();
+
+  /* Si el cliente deja la pestaña abierta y luego compra, al volver ve sus
+     puntos al día. Sin pedir nada: solo se vuelve a leer. */
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && estado.d) {
+      traer(estado.cod).then(function (d) { if (d && d.ok) pinta(d); });
+    }
+  });
+  window.addEventListener('online', function () { if (!estado.d) cargar(); });
+  window.addEventListener('hashchange', function () {
+    var c2 = codigo();
+    if (c2 && c2 !== estado.cod) location.reload();
+  });
+})();
+</script>
+</body>
+</html>
