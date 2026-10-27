@@ -378,6 +378,19 @@
       '.vl-wrap svg,.vl-co svg,.vl-tar svg,.vl-card svg,.vl-mini svg,.vl-acts svg,',
       '.vl-rec svg,.vl-row svg,.vl-mov svg,.vl-prem svg,.vl-pill svg,.vl-off svg{width:17px;height:17px;flex:none;}',
       '.vl-wrap{max-width:900px;margin:0 auto;}',
+      /* El encabezado con la tuerca, igual que el Menú Digital: a la
+         izquierda el título, a la derecha "Encendido" y la tuerca. */
+      '.vl-head{display:flex;align-items:flex-start;gap:8px;}',
+      '.vl-head-txt{flex:1;min-width:0;}',
+      '.vl-head-txt .page-title{margin-bottom:2px;}',
+      '.vl-head-txt .page-sub{margin:0;}',
+      /* La pastilla y la tuerca se alinean con la PRIMERA línea del título
+         (que en celular se parte en dos), no con el centro del bloque. */
+      '.vl-head .md-pill{flex:none;font-size:10.5px;padding:4px 9px;margin-top:6px;}',
+      '.vl-head .mdx-gear{margin-top:0;width:42px;height:42px;border-radius:13px;}',
+      '.vl-head .mdx-gear svg{width:19px;height:19px;}',
+      '.vl-off-zona{border-top:1px solid var(--border);margin-top:22px;padding-top:16px;}',
+      '.vl-off-zona .vl-hint{text-align:center;margin-top:9px;}',
       '.vl-off{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:13px 14px;margin:0 0 14px;}',
       '.vl-off > svg{width:19px;height:19px;flex:none;color:var(--ink-soft);}',
       '.vl-off .btn svg{width:15px;height:15px;}',
@@ -390,6 +403,13 @@
       '.vl-card{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:14px;margin:0 0 12px;}',
       '.vl-card h3{margin:0 0 4px;font-size:14.5px;font-weight:800;color:var(--ink);}',
       '.vl-card p{margin:0;font-size:12.5px;font-weight:500;color:var(--ink-soft);line-height:1.45;}',
+      '.vl-card .field-hint{color:var(--ink-soft);font-weight:600;}',
+      /* El $ (o el %) va DENTRO del campo. Lo de la app solo funciona en la
+         pantalla de cobro, así que aquí va su propia versión. */
+      '.vl-money{position:relative;}',
+      '.vl-money i{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-style:normal;',
+      'font-weight:700;color:var(--ink-soft);pointer-events:none;z-index:1;}',
+      '.vl-money input{width:100%;padding-left:28px;}',
       '.vl-modos{display:grid;gap:10px;margin:0 0 4px;}',
       '.vl-modo{display:flex;align-items:flex-start;gap:11px;text-align:left;width:100%;cursor:pointer;font-family:inherit;',
       'border:1.5px solid var(--border);border-radius:14px;background:var(--surface);padding:13px 14px;transition:border-color .16s,background .16s;}',
@@ -530,12 +550,23 @@
         '<span>Con Premium puedes encenderlo, registrar clientes y darles sus puntos.</span></div>' +
         '<button class="btn primary" onclick="VPPremium.abrir()">Ver Premium</button></div>';
 
-    var estado = '<div class="vl-off ' + (encendido() ? 'on' : '') + '">' + ico(encendido() ? 'check' : 'ban') +
-      '<div class="vl-off-t"><b>' + (encendido() ? 'Programa activo' : 'Programa apagado') + '</b>' +
-      '<span>' + (encendido()
-        ? esc(MODOS[modo()].t) + ' · ' + reglaTexto()
-        : 'Enciéndelo para empezar a dar puntos en cada cobro.') + '</span></div>' +
-      '<button class="btn ghost" onclick="VPLealtad.config()">' + ico('sliders') + ' Configurar</button></div>';
+    /* ---------- APAGADO: una sola tarjeta, igual que el Menú Digital ----------
+       Se toca y se abre la configuración a pantalla completa. Nada más. */
+    if (!encendido()) {
+      return '<div class="vl-wrap">' + cabeza() + aviso +
+        '<div class="section-title">Configuración del Programa de lealtad</div>' +
+        '<button type="button" class="md-status-card mdx-off" onclick="VPLealtad.config()">' +
+          '<span class="md-status-top">' +
+            '<span class="md-status-ico">' + ico('vlCard') + '</span>' +
+            '<span class="md-status-txt">' +
+              '<span class="md-status-title">Programa de lealtad desactivado</span>' +
+              '<span class="md-status-sub">Elige cómo quieres premiar a tus clientes y enciéndelo</span>' +
+            '</span>' +
+            '<span class="md-pill off">Inactivo</span>' +
+            '<span class="acc-chev">' + ico('chevronRight') + '</span>' +
+          '</span>' +
+        '</button></div>';
+    }
 
     var nums = '<div class="mdi-today">' +
       '<div><span>Clientes</span><b>' + (res.clientes || 0) + '</b><small>' + ((res.clientes === 1) ? 'registrado' : 'registrados') + '</small></div>' +
@@ -571,8 +602,20 @@
     var buscador = cl.length ? '<div class="search-box"><span>' + ico('search') + '</span>' +
       '<input type="text" id="vlBusca" placeholder="Buscar por nombre o teléfono" value="' + esc(L.busca) + '" oninput="VPLealtad.filtrar(this.value)"></div>' : '';
 
-    return '<div class="vl-wrap">' + cabeza() + aviso + estado + nums + botones +
-           pestanas + (L.pestana === 'clientes' ? buscador : '') + cuerpo + '</div>';
+    /* ---------- ENCENDIDO: la tuerca arriba a la derecha ----------
+       Ya no hay tarjeta de "programa encendido" ni botón de Configurar:
+       queda la tuerca, y a su izquierda el estado. Igual que el Menú
+       Digital, para que la pantalla sea de los clientes. */
+    return '<div class="vl-wrap">' + aviso + volverHTML() +
+      '<div class="vl-head">' +
+        '<div class="vl-head-txt">' +
+          '<h1 class="page-title">Programa de lealtad</h1>' +
+          '<p class="page-sub">' + esc(MODOS[modo()].t) + ' · ' + esc(reglaTexto()) + '</p>' +
+        '</div>' +
+        '<span class="md-pill on">Encendido</span>' +
+        '<button class="mdx-gear" onclick="VPLealtad.config()" aria-label="Configurar el programa">' + ico('gear') + '</button>' +
+      '</div>' +
+      nums + botones + pestanas + (L.pestana === 'clientes' ? buscador : '') + cuerpo + '</div>';
   }
 
   function reglaTexto() {
@@ -648,6 +691,7 @@
      6.  CONFIGURAR EL PROGRAMA
   ======================================================================= */
   var borrador = null;      /* lo que se está editando sin guardar todavía */
+  var CFG_TITULO = 'Configurar el programa';
 
   function config() {
     if (!premium()) { if (window.VPPremium) VPPremium.abrir('lealtad'); return; }
@@ -675,13 +719,13 @@
     var reglas;
     if (b.modo === 'puntos') {
       reglas = '<div class="field"><label for="vlPesos">¿Cuántos pesos son 1 punto?</label>' +
-        '<div class="p2-money"><i>$</i><input id="vlPesos" type="number" inputmode="decimal" min="1" step="1" value="' + b.pesos_por_punto + '" oninput="VPLealtad._cfg(\'pesos_por_punto\', this.value)"></div>' +
+        '<div class="vl-money"><i>$</i><input id="vlPesos" type="number" inputmode="decimal" min="1" step="1" value="' + b.pesos_por_punto + '" oninput="VPLealtad._cfg(\'pesos_por_punto\', this.value)"></div>' +
         '<div class="field-hint">Con ' + dinero(b.pesos_por_punto) + ', una compra de ' + dinero(b.pesos_por_punto * 25) + ' le deja 25 puntos.</div></div>';
     } else if (b.modo === 'visitas') {
       reglas = '<div class="field"><label for="vlVis">¿Cuántas visitas para el premio?</label>' +
         '<input id="vlVis" type="number" inputmode="numeric" min="1" max="999" step="1" value="' + b.visitas_meta + '" oninput="VPLealtad._cfg(\'visitas_meta\', this.value)"></div>' +
         '<div class="field"><label for="vlMin">Compra mínima para que cuente la visita</label>' +
-        '<div class="p2-money"><i>$</i><input id="vlMin" type="number" inputmode="decimal" min="0" step="1" value="' + b.visita_minima + '" oninput="VPLealtad._cfg(\'visita_minima\', this.value)"></div>' +
+        '<div class="vl-money"><i>$</i><input id="vlMin" type="number" inputmode="decimal" min="0" step="1" value="' + b.visita_minima + '" oninput="VPLealtad._cfg(\'visita_minima\', this.value)"></div>' +
         '<div class="field-hint">Déjalo en 0 si cualquier compra cuenta.</div></div>';
     } else {
       reglas = '<div class="field"><label for="vlCom">¿Cuántas piezas para el premio?</label>' +
@@ -702,17 +746,17 @@
       : '<p class="vl-hint">Todavía no hay premios. Agrega al menos uno para que tus clientes tengan qué canjear.</p>';
 
     abrirHoja(
+      /* fs-marker: así la hoja se abre a pantalla completa, igual que la
+         configuración del Menú Digital. */
+      '<i class="fs-marker" hidden></i>' +
       '<div class="sheet-header"><div class="sheet-header-left">' +
         '<button class="sheet-back" onclick="VPLealtad.cerrarConfig()" aria-label="Volver">' + ico('chevronLeft') + '</button>' +
-        '<h2>Configurar el programa</h2></div>' +
+        '<h2>' + CFG_TITULO + '</h2></div>' +
         '<button class="sheet-close" onclick="VPLealtad.cerrarConfig()">' + ico('close') + '</button></div>' +
 
-      '<div class="toggle-row conf-toggle" style="margin-bottom:14px;">' +
-        '<span class="acc-ico green">' + ico('vlCard') + '</span>' +
-        '<span class="acc-txt"><span class="acc-label">Programa encendido</span>' +
-        '<span class="acc-sub">Apagado, nadie acumula ni canjea, pero no se pierde nada.</span></span>' +
-        '<label class="switch"><input type="checkbox" ' + (b.activo ? 'checked' : '') + ' onchange="VPLealtad._cfg(\'activo\', this.checked)"><span class="track"></span></label>' +
-      '</div>' +
+      (b.activo ? '' :
+        '<p class="vl-hint" style="margin:0 0 16px;">Elige cómo quieres premiar, pon al menos un premio y enciéndelo. ' +
+        'Después, en cada cobro vas a poder identificar a tu cliente y sus puntos suben solos.</p>') +
 
       '<div class="p2-h">¿Cómo quieres premiar?</div>' +
       '<div class="vl-modos">' + Object.keys(MODOS).map(function (k) {
@@ -737,10 +781,18 @@
         '<input id="vlMsg" type="text" maxlength="120" placeholder="¡Gracias por volver!" value="' + esc(b.tarjeta_mensaje) + '" oninput="VPLealtad._cfg(\'tarjeta_mensaje\', this.value, true)"></div>' +
       '</div>' +
 
-      '<div class="sheet-actions">' +
-        '<button class="btn ghost" onclick="VPLealtad.cerrarConfig()">Cancelar</button>' +
-        '<button class="btn primary block" id="vlGuardar" onclick="VPLealtad.guardar()">' + ico('check') + ' Guardar</button>' +
-      '</div>',
+      '<button class="btn primary block" style="margin-top:18px;" id="vlGuardar" onclick="VPLealtad.guardar()">' +
+        ico('check') + (b.activo ? ' Guardar cambios' : ' Encender el programa') + '</button>' +
+
+      /* Para apagarlo hay que entrar aquí: así no se apaga sin querer
+         desde la pantalla principal. Va hasta abajo, aparte de todo. */
+      (b.activo
+        ? '<div class="vl-off-zona">' +
+            '<button class="btn danger block" onclick="VPLealtad.apagar()">Desactivar el programa</button>' +
+            '<p class="vl-hint">Nadie acumula ni canjea mientras esté apagado. Tus clientes y sus puntos ' +
+            'se quedan guardados: al encenderlo otra vez siguen justo donde iban.</p>' +
+          '</div>'
+        : ''),
       { dismissible: true });
   }
 
@@ -776,6 +828,7 @@
   function pintaRec() {
     var d = recEdit.d;
     abrirHoja(
+      '<i class="fs-marker" hidden></i>' +
       '<div class="sheet-header"><div class="sheet-header-left">' +
         '<button class="sheet-back" onclick="VPLealtad._recVolver()" aria-label="Volver">' + ico('chevronLeft') + '</button>' +
         '<h2>' + (recEdit.i >= 0 ? 'Editar premio' : 'Nuevo premio') + '</h2></div>' +
@@ -791,7 +844,7 @@
         ? '<div class="field"><label for="vlRecP">¿Qué producto?</label>' +
           '<input id="vlRecP" type="text" maxlength="60" placeholder="Ej. Café americano chico" value="' + esc(d.producto_nombre) + '" oninput="VPLealtad._recSet(\'producto_nombre\', this.value, true)"></div>'
         : '<div class="field"><label for="vlRecV">' + (d.tipo === 'descuento_pct' ? 'Porcentaje de descuento' : 'Pesos de descuento') + '</label>' +
-          '<div class="p2-money"><i>' + (d.tipo === 'descuento_pct' ? '%' : '$') + '</i>' +
+          '<div class="vl-money"><i>' + (d.tipo === 'descuento_pct' ? '%' : '$') + '</i>' +
           '<input id="vlRecV" type="number" inputmode="decimal" min="1" step="1" value="' + d.valor + '" oninput="VPLealtad._recSet(\'valor\', this.value, true)"></div></div>') +
       (borrador.modo === 'puntos'
         ? '<div class="field"><label for="vlRecC">¿Cuántos puntos cuesta?</label>' +
@@ -824,12 +877,15 @@
   }
   function _recVolver() { pintaConfig(); }
 
-  function guardar() {
+  /** Guardar. Si el programa estaba apagado, este mismo botón lo enciende. */
+  function guardar(apagando) {
     if (!borrador) return;
-    if (borrador.activo && !borrador.recompensas.length) {
+    var prender = !apagando && !borrador.activo;
+    if (!apagando && !borrador.recompensas.length) {
       avisar('Agrega al menos un premio', { icon: ico('alert'), subtitle: 'Si no, tus clientes no tendrían qué canjear' });
       return;
     }
+    borrador.activo = apagando ? false : true;
     var b = document.getElementById('vlGuardar');
     if (b) { b.disabled = true; b.textContent = 'Guardando…'; }
     var cfg = {
@@ -842,16 +898,38 @@
     };
     var recs = borrador.recompensas.map(function (r, i) { return Object.assign({}, r, { orden: i }); });
     rpc('vp_lealtad_guardar', { p_config: cfg, p_recompensas: recs }).then(function (r) {
-      if (b) { b.disabled = false; b.innerHTML = ico('check') + ' Guardar'; }
+      if (b) { b.disabled = false; b.innerHTML = ico('check') + ' Guardar cambios'; }
       if (!r || !r.ok) return queja(r);
       L.cfg = r.config || L.cfg;
       L.recompensas = r.recompensas || [];
       L.resumen = r.resumen || L.resumen;
       borrador = null;
       cerrar(); repintar();
-      avisar('Programa guardado', { icon: ico('check'), variant: 'toast-success', subtitle: cfg.activo ? 'Ya puedes dar puntos en cada cobro' : 'Quedó apagado' });
+      if (apagando) {
+        avisar('Programa desactivado', { icon: ico('check'),
+          subtitle: 'Tus clientes y sus puntos se quedan guardados' });
+      } else if (prender) {
+        avisar('¡Programa encendido!', { icon: ico('check'), variant: 'toast-success',
+          subtitle: 'Ya puedes registrar clientes y darles puntos en cada cobro', duration: 4200 });
+      } else {
+        avisar('Programa guardado', { icon: ico('check'), variant: 'toast-success' });
+      }
     });
   }
+
+  /** Apagarlo: solo desde adentro de la tuerca, y preguntando antes. */
+  function apagar() {
+    var f = fn('askConfirm');
+    var hazlo = function () { guardar(true); };
+    if (!f) return hazlo();
+    f({ title: '¿Desactivar el programa de lealtad?',
+        text: 'Mientras esté apagado nadie acumula ni canjea. Tus clientes y sus puntos NO se borran: al encenderlo otra vez siguen justo donde iban.',
+        ok: 'Desactivar', cancel: 'Volver', danger: true, icon: ico('alert') },
+       hazlo,
+       /* Si se arrepiente, regresa a la configuración donde estaba. */
+       function () { if (borrador) pintaConfig(); });
+  }
+
   function cerrarConfig() { borrador = null; cerrar(); }
 
   /* =======================================================================
@@ -944,7 +1022,9 @@
     var a = L.abierto;
     if (!a) return;
     if (a.cargando || !a.cliente) {
-      abrirHoja('<div class="sheet-header"><h2>Cliente</h2><button class="sheet-close" onclick="VPLealtad.cerrarFicha()">' + ico('close') + '</button></div><div class="vl-spin"></div>', { dismissible: true });
+      abrirHoja('<i class="fs-marker" hidden></i>' +
+        '<div class="sheet-header"><h2>Cliente</h2><button class="sheet-close" onclick="VPLealtad.cerrarFicha()">' + ico('close') + '</button></div>' +
+        '<div class="vl-spin"></div>', { dismissible: true });
       return;
     }
     var c = a.cliente;
@@ -965,6 +1045,9 @@
       : '';
 
     abrirHoja(
+      /* Pantalla completa: la tarjeta, el QR, los números y los botones
+         caben juntos sin tener que bajar. */
+      '<i class="fs-marker" hidden></i>' +
       '<div class="sheet-header"><div class="sheet-header-left">' +
         '<button class="sheet-back" onclick="VPLealtad.cerrarFicha()" aria-label="Volver">' + ico('chevronLeft') + '</button>' +
         '<h2>' + esc(c.nombre) + '</h2></div>' +
@@ -1699,7 +1782,7 @@
         if (e2) { e2.focus(); if (pos != null) try { e2.setSelectionRange(pos, pos); } catch (e) {} }
       }, 0);
     },
-    config: config, guardar: guardar, cerrarConfig: cerrarConfig,
+    config: config, guardar: guardar, apagar: apagar, cerrarConfig: cerrarConfig,
     _cfg: _cfg, _recEdit: _recEdit, _recSet: _recSet, _recOk: _recOk, _recQuita: _recQuita, _recVolver: _recVolver,
     alta: alta, _alta: _alta, _altaOk: _altaOk, _altaVolver: _altaVolver,
     ficha: ficha, cerrarFicha: cerrarFicha, verMovs: verMovs,
