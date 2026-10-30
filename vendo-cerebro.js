@@ -1218,6 +1218,28 @@ if (hace) {
       return Promise.resolve({ texto: 'Dame un segundo, todavía estoy cargando tus datos.', fuente: 'ninguna' });
     }
     var norm = normalizar(texto);
+    var ayuda = [
+      [/que es.*(ganancia|utilidad) neta/, 'La ganancia neta es la ganancia de tus ventas menos los gastos registrados. Captura el costo de tus productos para calcularla mejor.'],
+      [/que es.*ticket promedio/, 'El ticket promedio es el total de ventas netas dividido entre los pedidos cobrados del periodo.'],
+      [/como.*(subir|aumentar|mejorar).*(ventas|vender)/, 'Revisa tus productos más vendidos, ofrece complementos y comparte tu Menú Digital. Compara periodos para comprobar si tus cambios funcionan.'],
+      [/como.*(subir|aumentar|mejorar).*ganancia/, 'Registra tus costos y gastos, revisa tus márgenes y controla los descuentos. Vender más no siempre significa ganar más.'],
+      [/como.*(lealtad|puntos|recompensas)/, 'En Programa de lealtad configura tu recompensa, registra al cliente y asígnalo al cobrar. Con Premium puedes activar el programa.'],
+      [/pedido.*(sin pagar|no pagado|por cobrar).*(venta|ganancia)|por que.*pedido.*no.*(cuenta|aparece)/, 'Un pedido del Menú Digital pendiente de pago todavía no es una venta. Confirma el cobro para que se incluya en las ventas y ganancias.'],
+      [/que.*incluye.*premium/, 'Premium incluye todas las estadísticas, el Menú Digital, el asistente con IA, escaneos sin límite y el programa de lealtad.'],
+      [/cuantas.*(pruebas|escaneos).*gratis/, 'El plan gratuito incluye 3 pruebas de escaneo con IA en total por cuenta. Para seguir escaneando, contrata Premium.']
+    ];
+    for(var ai = 0; ai < ayuda.length; ai++) if(ayuda[ai][0].test(norm)) return Promise.resolve({ texto: ayuda[ai][1], fuente: 'reglas' });
+    if(/ticket promedio|margen de ganancia|porcentaje de ganancia|cuanto.*descuento|cuanto.*devolucion/.test(norm)) {
+      var cq = interpretar(texto) || {}; var cd = datosDe(cq.periodo || 'today', cq.desde, cq.hasta);
+      if(cd){
+        var valor, etiqueta;
+        if(/ticket promedio/.test(norm)){ valor = dinero(cd.orders.length ? cd.net / cd.orders.length : 0); etiqueta = 'Ticket promedio'; }
+        else if(/descuento/.test(norm)){ valor = dinero(cd.discounts || 0); etiqueta = 'Descuentos del periodo'; }
+        else if(/devolucion/.test(norm)){ valor = dinero(cd.returnsTotal || 0); etiqueta = 'Devoluciones del periodo'; }
+        else { if(!puede('verGanancias')) return Promise.resolve({ texto: 'No tienes permiso para ver ganancias.', fuente:'reglas' }); valor = (cd.net > 0 ? cd.prof.profit / Math.max(.01, cd.net - (cd.iva || 0)) * 100 : 0).toFixed(1) + '%'; etiqueta = 'Margen sobre ventas sin IVA'; }
+        return Promise.resolve({ texto: etiqueta + ' (' + (cq.etiqueta || 'hoy') + '): ' + valor + '.', fuente:'reglas' });
+      }
+    }
 
     /* -- paso 1: reglas (gratis) -- */
     var q = interpretar(texto);

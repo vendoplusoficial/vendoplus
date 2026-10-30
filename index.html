@@ -4762,6 +4762,9 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 @media (max-width:699px){ .tool-btn.md-quick{ width:52px; padding:0; } .md-quick .mdq-txt{ display:none; } }
 
 </style>
+<style id="vp-lealtad-identidad">
+.vl-program-card{width:100%;text-align:left;padding:24px 18px;border:1px solid var(--border);border-left:5px solid #16865d;border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:0 5px 18px #12251b08}.vl-program-card .md-status-top{display:flex;align-items:center;gap:14px}.vl-program-card .md-status-ico{background:#e6f3ed;border-radius:10px;padding:12px;color:#16865d}.vl-program-card .md-status-txt{flex:1}.vl-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.vl-metrics>div{border:1px solid var(--border);border-top:3px solid #16865d;border-radius:10px;padding:16px 12px;background:var(--surface)}.vl-metrics span,.vl-metrics small{display:block;color:var(--ink-soft);font-size:12px}.vl-metrics b{display:block;font-size:25px;margin:8px 0}.vl-tabs{display:flex;border-bottom:1px solid var(--border);gap:20px;margin:20px 0 14px}.vl-tabs button{border:0;border-bottom:3px solid transparent;background:none;padding:12px 0;font:inherit;color:var(--ink-soft);cursor:pointer}.vl-tabs button.active{border-color:#16865d;color:#16865d;font-weight:800}.vl-tabs span{margin-left:6px}.vl-wrap .vl-head{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;border-left:5px solid #16865d}@media(max-width:480px){.vl-metrics{gap:6px}.vl-metrics>div{padding:12px 8px}.vl-metrics b{font-size:21px}}
+</style>
 </head>
 <body>
 <noscript>
@@ -10513,6 +10516,13 @@ function renderStats(){
     </button>
     <div id="statsDetail" class="stats-detail" ${statsDetailOpen ? '' : 'hidden'}>
 
+    <div class="section-title">Indicadores del periodo</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Ticket promedio</div><div class="stat-value">${formatMoney(ticket)}</div></div>
+      ${ver ? `<div class="stat-card"><div class="stat-label">Margen de ganancia</div><div class="stat-value">${d.net > 0 ? (d.prof.profit / Math.max(.01, d.net - d.iva) * 100).toFixed(1) : '0'}%</div><div class="stat-label">sobre ventas sin IVA</div></div>
+      <div class="stat-card"><div class="stat-label">Ganancia después de gastos</div><div class="stat-value">${formatMoney(d.prof.profit - d.gastos)}</div></div>` : ''}
+      <div class="stat-card"><div class="stat-label">Días con ventas</div><div class="stat-value">${days.filter(k => d.byDay[k] > 0).length}</div></div>
+    </div>
     <div class="section-title">Resumen</div>
     <div class="card kv-card">
       <div class="kv-row"><span>Importe de lo vendido</span><b>${formatMoney(d.listTotal)}</b></div>
@@ -12510,7 +12520,7 @@ function openTerms(){
     <div class="terms-doc">
       <p><b>1. Uso del servicio.</b> ${APP_NAME} es una herramienta para administrar ventas, inventario y clientes de tu negocio. Eres responsable de la información que captures y de usar la cuenta de forma legal.</p>
       <p><b>2. Tu cuenta.</b> Tu correo electrónico y tu contraseña son tu acceso. Cuida tu contraseña, no la compartas y no compartas los códigos que te lleguen por correo.</p>
-      <p><b>3. Gratis y membresía Premium.</b> Vendo Plus es gratis y sin tarjeta: vender, generar y enviar tickets, historial, caja y corte, clientes y crédito, inventario con fotos, tu perfil y las estadísticas simples no se cobran nunca. Aparte existe <b>Premium</b>, de $${TRIAL_PRECIO} MXN al mes con Stripe, que desbloquea el Menú Digital, el asistente con IA, los escaneos de carta con IA sin límite (gratis son 3 al mes) y las estadísticas detalladas. Si no pagas o cancelas, tu cuenta NO se pausa: solo se apagan esas funciones y todos tus datos y productos se quedan guardados.</p>
+      <p><b>3. Gratis y membresía Premium.</b> Vendo Plus es gratis y sin tarjeta: vender, generar y enviar tickets, historial, caja y corte, clientes y crédito, inventario con fotos, tu perfil no se cobran nunca. Aparte existe <b>Premium</b>, de $${TRIAL_PRECIO} MXN al mes con Stripe, que desbloquea el Menú Digital, el asistente con IA, los escaneos de carta con IA sin límite (gratis son 3 pruebas en total) y todas las estadísticas. Si no pagas o cancelas, tu cuenta NO se pausa: solo se apagan esas funciones y todos tus datos y productos se quedan guardados.</p>
       <p><b>4. Disponibilidad.</b> Hacemos lo posible por que el servicio funcione siempre, pero puede haber interrupciones por mantenimiento o fallas de terceros.</p>
       <h3 class="sheet-title" style="margin-top:18px;">Tratamiento de datos personales</h3>
       <p><b>Qué guardamos.</b> Tu correo electrónico, tu nombre, los datos de tu negocio (productos, ventas, clientes) y las fotos que subas.</p>
@@ -18477,7 +18487,7 @@ renderStats = function(){
   }
   let html = withSalesOrigin(_muRenderStats);
   html = html.replace(/(<p class="page-sub">[\s\S]*?<\/p>)/, '$1' + statsOriginSegHTML());
-  if(statsOrigin === 'all') html = html.replace('<div class="stat-grid stats-row">', mdiUnpaidAlertHTML() + '<div class="stat-grid stats-row">');
+  if(statsOrigin === 'all') html = html.replace('<div class="stat-grid stats-extra">', mdiUnpaidAlertHTML() + '<div class="stat-grid stats-extra">');
   if(statsOrigin === 'all'){
     const rr = reportRange();
     const act = visibleSales().filter(s => !s.cancelled && new Date(s.date) >= rr[0] && new Date(s.date) < rr[1]);
@@ -25542,14 +25552,14 @@ html{ -webkit-text-size-adjust:100%; }
 /* Logo del negocio en el menú visual: sin aro café arriba y abajo de la foto */
 .fdx .fd-biz .fd-logo:has(img){ background:#fff; box-shadow:none; border:0; }
 .fdx .fd-biz .fd-logo img{ display:block; width:100%; height:100%; object-fit:cover; border:0; outline:0; }
-/* Pasos del pedido (datos y pago): grises, no del color del negocio */
-.dm-sheet:has(.dm-steps) .dm-steps i.on{ background:#9AA1B2; }
-.dm-sheet:has(.dm-steps) .dm-co-sum-ico, .dm-sheet:has(.dm-steps) .dm-pi-ico{ background:#F0F1F5; color:#6B7185; }
-.dm-sheet:has(.dm-steps) .dm-opt.active{ border-color:#9AA1B2; background:#F3F4F8; }
-.dm-sheet:has(.dm-steps) .dm-opt.active .dm-opt-ico{ background:#6B7185; color:#fff; }
-.dm-sheet:has(.dm-steps) .dm-opt-check{ background:#6B7185; color:#fff; }
-.dm-sheet:has(.dm-steps) .dm-pi-copy{ background:#F0F1F5; color:#4A5063; }
-.dm-sheet:has(.dm-steps) .dm-pi-money:focus-within, .dm-sheet:has(.dm-steps) .field input:focus{ border-color:#9AA1B2; box-shadow:none; }
+/* Pasos del pedido (datos y pago): verdes, no del color del negocio */
+.dm-sheet:has(.dm-steps) .dm-steps i.on{ background:#16C15B; }
+.dm-sheet:has(.dm-steps) .dm-co-sum-ico, .dm-sheet:has(.dm-steps) .dm-pi-ico{ background:#EAF9F0; color:#0E7A3D; }
+.dm-sheet:has(.dm-steps) .dm-opt.active{ border-color:#16C15B; background:#EAF9F0; }
+.dm-sheet:has(.dm-steps) .dm-opt.active .dm-opt-ico{ background:#16C15B; color:#fff; }
+.dm-sheet:has(.dm-steps) .dm-opt-check{ background:#16C15B; color:#fff; }
+.dm-sheet:has(.dm-steps) .dm-pi-copy{ background:#EAF9F0; color:#0E7A3D; }
+.dm-sheet:has(.dm-steps) .dm-pi-money:focus-within, .dm-sheet:has(.dm-steps) .field input:focus{ border-color:#16C15B; box-shadow:none; }
 </style>
 </body>
 </html>

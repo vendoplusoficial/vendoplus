@@ -672,10 +672,10 @@
   /** El texto de abajo de la pantalla: cuántos escaneos quedan. */
   function notaConsumo(){
     if(premium()) return 'Premium: escaneas todo lo que necesites, sin límite.';
-    if(restantes == null) return 'Gratis tienes ' + GRATIS_AL_MES + ' escaneos al mes. Solo cuentan las fotos que la IA alcanza a leer.';
-    if(restantes <= 0) return 'Ya usaste tus ' + GRATIS_AL_MES + ' escaneos gratis de este mes. Se renuevan el mes que entra.';
+    if(restantes == null) return 'Gratis tienes ' + GRATIS_AL_MES + ' pruebas en total. Solo cuentan las fotos que la IA alcanza a leer.';
+    if(restantes <= 0) return 'Ya usaste tus ' + GRATIS_AL_MES + ' pruebas gratis. Contrata Premium para seguir escaneando.';
     return 'Te queda' + (restantes === 1 ? '' : 'n') + ' ' + restantes + ' de ' + GRATIS_AL_MES +
-           ' escaneo' + (restantes === 1 ? '' : 's') + ' gratis este mes.';
+           ' escaneo' + (restantes === 1 ? '' : 's') + ' gratis en total.';
   }
   function pintarConsumo(){
     /* Si estamos en la pantalla de inicio, se vuelve a pintar completa:
@@ -772,12 +772,12 @@
         /* Se acabaron los gratis: el aviso ES el botón que lleva a pagar. */
         ? '<button type="button" class="vp-ia-premium" onclick="vpIaPremium()">' +
             '<span class="vp-ia-premium-txt">' +
-              '<b>Tienes 0 escaneos gratis este mes</b>' +
+              '<b>Ya usaste tus 3 pruebas gratis</b>' +
               '<span>Contrata Premium para obtener más</span>' +
             '</span>' +
             '<span class="vp-ia-premium-chev">' + ico('chevronRight') + '</span>' +
           '</button>' +
-          '<p class="vp-ia-nota">Ya no te quedan escaneos gratuitos por este mes.</p>'
+          '<p class="vp-ia-nota">Contrata Premium para seguir escaneando sin límite.</p>'
         : '<p class="vp-ia-nota" id="vpIaRestantes">' + esc(notaConsumo()) + '</p>');
     openModal(html, { dismissible:true });
   }

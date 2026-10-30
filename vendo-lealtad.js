@@ -555,7 +555,7 @@
     if (!encendido()) {
       return '<div class="vl-wrap">' + cabeza() + aviso +
         '<div class="section-title">Configuración del Programa de lealtad</div>' +
-        '<button type="button" class="md-status-card mdx-off" onclick="VPLealtad.config()">' +
+        '<button type="button" class="vl-program-card" onclick="VPLealtad.config()">' +
           '<span class="md-status-top">' +
             '<span class="md-status-ico">' + ico('vlCard') + '</span>' +
             '<span class="md-status-txt">' +
@@ -568,7 +568,7 @@
         '</button></div>';
     }
 
-    var nums = '<div class="mdi-today">' +
+    var nums = '<div class="vl-metrics">' +
       '<div><span>Clientes</span><b>' + (res.clientes || 0) + '</b><small>' + ((res.clientes === 1) ? 'registrado' : 'registrados') + '</small></div>' +
       '<div><span>' + (modo() === 'puntos' ? 'Puntos repartidos' : 'Premios por entregar') + '</span><b>' +
         (modo() === 'puntos' ? (res.puntos || 0) : (res.premios_disponibles || 0)) + '</b><small>' +
@@ -581,7 +581,7 @@
       '<button class="btn ghost" onclick="VPLealtad.buscarCliente()">' + ico('vlQr') + ' Buscar o escanear</button>' +
       '</div>';
 
-    var pestanas = '<div class="mdi-tabs" role="tablist">' +
+    var pestanas = '<div class="vl-tabs" role="tablist">' +
       '<button role="tab" class="' + (L.pestana === 'clientes' ? 'active' : '') + '" onclick="VPLealtad.tab(\'clientes\')">Clientes' + (cl.length ? '<span>' + cl.length + '</span>' : '') + '</button>' +
       '<button role="tab" class="' + (L.pestana === 'movs' ? 'active' : '') + '" onclick="VPLealtad.tab(\'movs\')">Movimientos</button>' +
       '</div>';

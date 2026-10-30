@@ -897,6 +897,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
     despertar();
     acomodarChat();                 /* el alto correcto ANTES de que entre */
     chat.classList.add('vp-abierto');
+    pintarChips([]);
     nodo.classList.add('vp-oculta');
     /* Se traba la página de atrás: sin esto, el jalón dentro del chat
        arrastra la pantalla de abajo y se ve el fondo moverse.
@@ -917,6 +918,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
   }
 
   function cerrarChat() {
+    clearInterval(rotacionChips);
     if (!abierto || !chat) return;
     abierto = false;
     chat.classList.remove('vp-abierto');
@@ -970,16 +972,21 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
     if (sub) sub.textContent = r.fuente === 'ninguna' ? 'No entendí esa' : 'Respuesta con tus datos';
   }
 
+  var sugerencias = ['¿Cuánto vendí hoy?', '¿Cuál fue mi ganancia del mes?', '¿Qué está por agotarse?', '¿Cuánto vendí ayer?', '¿Qué vendo más?', '¿Cuánto me deben?', '¿Cuánto gasté este mes?', '¿Cuál fue mi mejor día?', '¿Cuánto vendí en efectivo?', '¿Cómo voy esta semana?', '¿Cuántos pedidos tuve hoy?', '¿Cuál es mi ganancia neta?', '¿Cuánto vendí con tarjeta?', '¿Cuál es mi ticket promedio?', '¿Cuál es mi margen de ganancia?', '¿Cuánto di en descuentos hoy?', '¿Cómo funciona el programa de lealtad?', '¿Cómo aumentar mis ventas?'];
+  var rotacionChips = null;
   function pintarChips(lista) {
-    chipsBox.innerHTML = '';
-    (lista || []).slice(0, 4).forEach(function (t) {
-      var b = document.createElement('button');
-      b.className = 'vp-chip';
-      b.type = 'button';
-      b.textContent = t;
-      b.onclick = function () { entrada.value = t; enviar(); };
-      chipsBox.appendChild(b);
-    });
+    clearInterval(rotacionChips);
+    function rotar() {
+      var opciones = Array.from(new Set((lista || []).concat(sugerencias)));
+      for(var i = opciones.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = opciones[i]; opciones[i] = opciones[j]; opciones[j] = t; }
+      chipsBox.innerHTML = '';
+      opciones.slice(0, 3).forEach(function(t){
+        var b = document.createElement('button'); b.className = 'vp-chip'; b.type = 'button'; b.textContent = t;
+        b.onclick = function(){ entrada.value = t; enviar(); }; chipsBox.appendChild(b);
+      });
+    }
+    rotar();
+    rotacionChips = setInterval(function(){ if(abierto && !enviando && !document.hidden && !chipsBox.contains(document.activeElement)) rotar(); }, 20000);
   }
 
   var enviando = false;
@@ -987,6 +994,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
     if (enviando) return;
     var t = (entrada.value || '').trim();
     if (!t) return;
+    clearInterval(rotacionChips);
     entrada.value = '';
     chipsBox.innerHTML = '';
     burbujaMsg('vp-yo', esc(t));
