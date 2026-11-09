@@ -15269,6 +15269,28 @@ function mdPayClabeInput(el){
   const b = document.getElementById('mdPayBank'); if(b){ const n = mdBankOf(raw); b.textContent = n; b.hidden = !n; }
   clearFieldError('mdPayClabeField');
 }
+/* ---------- Tarjeta: el estado real de Mercado Pago ----------
+   Se quitó el texto antiguo que decía que la tarjeta se cobraba cuando
+   llegara el repartidor. Ahora el cobro es en línea, con Mercado Pago, y
+   mientras la cuenta no esté enlazada la opción no se le ofrece al
+   cliente: no se finge que algo funciona cuando no está listo. */
+function mdMpEstadoHTML(){
+  const listo = !!(window.VPPedidos && VPPedidos.tarjetaDisponible());
+  if(listo){
+    return `<div class="md-del-info" style="margin-top:14px">
+      <div>${icon('check')}<span><b>Mercado Pago está enlazado.</b> El dinero de cada pedido entra directo a tu cuenta; VendoPlus no se queda con nada.</span></div>
+      <div>${icon('alert')}<span>El cobro con tarjeta <b>todavía no está probado de punta a punta</b>. Haz una compra de prueba antes de ofrecérselo a tus clientes.</span></div>
+      <div>${icon('gear')}<span>Puedes administrarlo en <b>Pedidos y entregas → Cómo cobro</b>.</span></div>
+    </div>
+    <button type="button" class="btn ghost block md-del-gps" onclick="closeModal(); if(window.VPPedidos) VPPedidos.cobros();">${icon('card')} Administrar Mercado Pago</button>`;
+  }
+  return `<div class="md-del-info" style="margin-top:14px">
+      <div>${icon('card')}<span>Para cobrar con tarjeta necesitas <b>enlazar tu cuenta de Mercado Pago</b>. El cobro llega directo a tu cuenta.</span></div>
+      <div>${icon('alert')}<span>Mientras no esté enlazada, <b>la opción «Tarjeta» no le aparece a tus clientes</b>, aunque guardes «Sí» aquí.</span></div>
+    </div>
+    <button type="button" class="btn ghost block md-del-gps" onclick="closeModal(); if(window.VPPedidos) VPPedidos.cobros();">${icon('card')} Enlazar Mercado Pago</button>`;
+}
+
 function mdRenderPayForm(){
   const d = mdPayDraft; if(!d) return;
   const card = mdPayKind === 'card';
@@ -15286,11 +15308,13 @@ function mdRenderPayForm(){
     <p class="md-yn-q">${card ? '¿Tu negocio cobra con tarjeta?' : '¿Tu negocio acepta transferencias?'}</p>
     <div class="md-yn">
       ${card
-        ? opt(true, 'card', 'Sí, cobro con terminal', 'El cliente verá «Tarjeta» y se le cobra al recibir su pedido')
+        ? opt(true, 'card', 'Sí, quiero cobrar con tarjeta', 'El cliente paga en línea y el dinero entra directo a tu cuenta de Mercado Pago')
           + opt(false, 'cash', 'No, tarjeta no', 'La opción Tarjeta no le aparece al cliente')
         : opt(true, 'transfer', 'Sí, acepto transferencias', 'El cliente verá tu CLABE y el número de su pedido como concepto')
           + opt(false, 'cash', 'No, transferencia no', 'La opción Transferencia no le aparece al cliente')}
     </div>
+    ${card && d.on === true ? `
+      <div id="mdPayMp">${mdMpEstadoHTML()}</div>` : ''}
     ${!card && d.on === true ? `
       <div class="md-pay-fields">
         <div class="field" id="mdPayClabeField">
@@ -15363,9 +15387,13 @@ function mdRenderDeliveryForm(){
     ${d.on === true ? `
       <div class="md-del-info">
         <div>${icon('monito')}<span>El cliente marca en un mapa dónde está.</span></div>
-        <div>${icon('whatsapp')}<span>El costo del envío lo pones tú al confirmar el pedido y le llega por WhatsApp.</span></div>
+        <div>${icon('truck')}<span>El costo del envío lo pones tú al aceptar el pedido, y el cliente lo ve en la pantalla de su pedido.</span></div>
       </div>
-      <div class="md-del-map-head">
+
+      <div class="section-title" style="margin-top:20px">Tus repartidores</div>
+      <div id="vpRepEnDomicilio"><p class="todo-empty">Cargando…</p></div>
+
+      <div class="md-del-map-head" style="margin-top:20px">
         <span><b>¿Dónde está tu negocio?</b><small>Opcional · así el mapa de tus clientes empieza cerca de ti</small></span>
         <button type="button" class="md-del-clear" id="mdDelClear" onclick="mdDelClear()" ${pin ? '' : 'hidden'}>Quitar</button>
       </div>
@@ -15380,7 +15408,24 @@ function mdRenderDeliveryForm(){
   if(d.on === true){
     mdMapMount('biz', document.getElementById('mdDelMap'), { editable:true, pin, center:pin, tip:'Toca el mapa donde está tu negocio',
       errText:'Puedes guardar sin marcarlo.', onPick:p => { mdDelDraft.lat = p.lat; mdDelDraft.lng = p.lng; const b = document.getElementById('mdDelClear'); if(b) b.hidden = false; } });
+    /* Los repartidores se administran aquí mismo: generar el código, ver
+       las solicitudes y aceptarlas, sin irse a otra pantalla. La lista se
+       repinta sola cuando llega una solicitud nueva (Realtime). */
+    mdDelRepartidores();
   }
+}
+/* Pinta y mantiene al día la sección de repartidores de este formulario.
+   Si vendo-pedidos.js no está cargado, se dice qué falta en vez de
+   dejar un hueco. */
+function mdDelRepartidores(){
+  const caja = document.getElementById('vpRepEnDomicilio');
+  if(!caja) return;
+  if(!window.VPPedidos){
+    caja.innerHTML = '<p class="todo-empty">Los repartidores se administran desde <b>Premium → Pedidos y entregas</b>.</p>';
+    return;
+  }
+  caja.innerHTML = VPPedidos.repartidoresHTML(true);
+  VPPedidos.refrescarRepartidores();
 }
 function mdDelSet(on){ if(!mdDelDraft) return; mdDelDraft.on = on; vibrate(8); mdRenderDeliveryForm(); }
 function mdDelClear(){
@@ -15409,8 +15454,18 @@ function mdSaveDelivery(){
   mdSaveCfg(cfg);
   mdDelDraft = null;
   closeModal();
-  toast(d.on ? 'Servicio a domicilio activado' : 'Solo para ir a buscar', { icon:icon('check'), variant:'toast-success',
-    subtitle: d.on ? 'Tus clientes podrán elegir ir a buscar o a domicilio' : 'Tus clientes pasarán por su pedido al negocio' });
+  /* Se guarda SIEMPRE, aunque todavía no tenga repartidor: si no, se
+     quedaría en un círculo (no puede guardar sin repartidor y no quiere
+     vincular sin guardar). Lo que sí se le dice claro es que mientras no
+     haya ninguno, sus clientes no verán la opción a domicilio. */
+  const hayRep = !!(window.VPPedidos && VPPedidos.hayRepartidores());
+  if(d.on && !hayRep){
+    toast('Guardado · falta vincular un repartidor', { icon:icon('alert'), duration:5000,
+      subtitle:'Hasta que aceptes a uno, tus clientes solo podrán ir a buscar su pedido' });
+  }else{
+    toast(d.on ? 'Servicio a domicilio activado' : 'Solo para ir a buscar', { icon:icon('check'), variant:'toast-success',
+      subtitle: d.on ? 'Tus clientes podrán elegir ir a buscar o a domicilio' : 'Tus clientes pasarán por su pedido al negocio' });
+  }
   mdRerenderIfMenu();
 }
 function mdCfg(){
@@ -15587,18 +15642,25 @@ function mdChecklist(){
       sub:escapeHtml(mdHoursSub()), action:'mdOpenHoursForm()' },
     (function(){
       const d = mdCfg().delivery;
-      return { label:'Servicio a domicilio', ok:d.on !== null,
-        sub: d.on === true ? 'Sí · tus clientes eligen ir a buscar o a domicilio'
+      /* Con el domicilio encendido pero sin ningún repartidor aceptado,
+         el servicio NO se ofrece al cliente. Se dice aquí mismo, con el
+         enlace para completarlo, en vez de dejarlo en silencio. */
+      const hayRep = !!(window.VPPedidos && VPPedidos.hayRepartidores());
+      return { label:'Servicio a domicilio', ok:d.on !== null && (d.on !== true || hayRep),
+        sub: d.on === true ? (hayRep ? 'Sí · tus clientes eligen ir a buscar o a domicilio'
+                                     : 'Falta vincular un repartidor · por ahora solo pueden ir a buscar')
            : d.on === false ? 'No · tus clientes solo pueden ir a buscar su pedido'
            : '¿Tu negocio tiene servicio a domicilio? Toca para responder',
         action:'mdOpenDeliveryForm()' };
     })(),
     (function(){
       const pm = mdCfg().payments;
+      const mp = !!(window.VPPedidos && VPPedidos.tarjetaDisponible());
       return { label:'Pago con tarjeta', ok:pm.card !== null,
-        sub: pm.card === true ? 'Sí · se cobra con tu terminal al recibir el pedido'
+        sub: pm.card === true ? (mp ? 'Sí · con Mercado Pago, el dinero va directo a tu cuenta'
+                                    : 'Falta enlazar Mercado Pago · la opción Tarjeta no se muestra')
            : pm.card === false ? 'No · la opción Tarjeta no se muestra'
-           : '¿Cobras con tarjeta? Toca para responder',
+           : '¿Quieres cobrar con tarjeta? Toca para responder',
         action:'mdOpenCardForm()' };
     })(),
     (function(){
@@ -15610,8 +15672,12 @@ function mdChecklist(){
            : '¿Aceptas transferencias? Toca para responder',
         action:'mdOpenTransferForm()' };
     })(),
-    { label:'WhatsApp del negocio', ok:!!wa,
-      sub:wa ? escapeHtml(mdWhatsappLabel()) + (wa.fromAccount ? ' · el de tu cuenta de ' + APP_NAME : ' · aquí llegan los pedidos') : 'Aquí te llegarán los pedidos', action:'mdOpenWhatsappForm()' },
+    /* Los pedidos ya NO pasan por WhatsApp: llegan solos a esta caja y
+       el cliente ve su estado en su propia pantalla. El número sigue
+       sirviendo para que un cliente te pueda escribir, pero ya no es
+       obligatorio para activar el menú. */
+    { label:'WhatsApp del negocio', ok:!!wa, optional:true,
+      sub:wa ? escapeHtml(mdWhatsappLabel()) + (wa.fromAccount ? ' · el de tu cuenta de ' + APP_NAME : ' · por si un cliente quiere escribirte') : 'Opcional · por si un cliente quiere escribirte', action:'mdOpenWhatsappForm()' },
     { label:'Productos del menú', ok:prods.length > 0, free:true,
       sub:prods.length ? prods.length + ' activo' + (prods.length === 1 ? '' : 's') + (sinDesc ? ' · ' + sinDesc + ' sin descripción' : ' · todos con descripción') : 'Activa al menos un producto', action:"goTo('products')" },
   ];
@@ -16470,10 +16536,10 @@ function dmConfirmHTML(){
     </div>
     ${dmLinesHTML(false)}
     ${dmTotalsHTML()}
-    <div class="dm-banner wa" style="margin:14px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
+    <div class="dm-banner fee" style="margin:14px 0 0;">${icon('bell')}<span><b>Verás tu pedido en esta pantalla</b>${nombre ? escapeHtml(nombre) : 'El negocio'} lo recibe al instante y tú sigues su estado aquí mismo.</span></div>
     <div class="dm-actions">
       <button class="btn" onclick="dmOpenSheet('cart')">Volver</button>
-      <button class="btn dm-green" onclick="dmSendWhatsApp()">${icon('check')} Confirmar</button>
+      <button class="btn dm-green" onclick="dmEnviarPedido()">${icon('check')} Confirmar</button>
     </div>`;
 }
 /* Arma el mensaje y abre el WhatsApp del negocio. */
@@ -16494,20 +16560,14 @@ function dmWhatsappMessage(){
   msg += '\n*Total: ' + formatMoney(t.total) + ' MXN*';
   return msg;
 }
+/* El pedido YA NO se manda por WhatsApp. Esta función se conserva solo
+   porque hay botones viejos que la llaman por su nombre, y lo único que
+   hace es mandar el pedido por el camino nuevo. Más abajo se vuelve a
+   definir junto con dmEnviarPedido(); esta versión es la red de
+   seguridad por si ese bloque no llegara a ejecutarse. */
 function dmSendWhatsApp(){
-  const cfg = mdCfg();
-  if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
-  if(mdClosedNow(cfg)){ dmToast('Estamos cerrados en este momento'); dmRender(); dmCloseSheet(); return; }
-  const tel = mdWhatsappDigits();
-  if(!tel){ dmToast('El negocio aún no configura su WhatsApp'); return; }
-  if(!dm.cart.length) return;
-  const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(dmWhatsappMessage());
-  const win = window.open(url, '_blank');
-  if(!win) location.href = url;
-  dm.cart = [];
-  dmCloseSheet();
-  dmRefreshCards();
-  dmToast('Pedido listo en WhatsApp');
+  if(typeof window.dmEnviarPedido === 'function') return window.dmEnviarPedido();
+  dmToast('No pudimos enviar tu pedido. Vuelve a cargar la página', 'warn');
 }
 
 /* ---------- Arranque del menú del cliente ---------- */
@@ -18205,7 +18265,7 @@ dmConfirmHTML = function(){
       <div class="field" style="margin:10px 0 0;">
         <input id="dmRef" type="text" maxlength="200" autocomplete="street-address" placeholder="Dirección o referencias (opcional)" value="${escapeHtml(co.ref)}" oninput="dmCoState().ref=this.value">
       </div>
-      <div class="dm-banner fee">${icon('truck')}<span><b>El costo de envío te lo damos en el chat</b>Al confirmar tu pedido, el negocio te dirá por WhatsApp cuánto cuesta llevarlo.</span></div>
+      <div class="dm-banner fee">${icon('truck')}<span><b>El costo de envío te lo dice el negocio</b>Al aceptar tu pedido, el negocio pone el costo del envío y lo verás en la pantalla de tu pedido.</span></div>
     </div>` : ''}
 
     <div class="field dm-co-sec" style="margin-bottom:0;">
@@ -18224,12 +18284,11 @@ dmConfirmHTML = function(){
       <div class="dm-pi-box" id="dmPayInfo">${dmPayInfoHTML()}</div>
     </div>
 
-    <div class="dm-banner wa" style="margin:16px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
-    <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Enviar pedido» otra vez.</span></div>
-    <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Enviar pedido» otra vez.</span></div>
+    <div class="dm-banner fee" style="margin:16px 0 0;">${icon('bell')}<span><b>Verás tu pedido en esta misma pantalla</b>Al confirmarlo entras directo a la pantalla de tu pedido${nombre ? ', y ' + escapeHtml(nombre) : ' y el negocio'} lo recibe al instante. No necesitas cuenta ni abrir ninguna otra app.</span></div>
+    <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Confirmar pedido» otra vez. No se duplica: solo se manda una vez.</span></div>
     <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmCoBack()">Volver</button>
-      <button class="btn dm-green" id="dmSendBtn" onclick="dmSendWhatsApp()">${icon('whatsapp')} Enviar pedido</button>
+      <button class="btn dm-green" id="dmSendBtn" onclick="dmEnviarPedido()">${icon('check')} Confirmar pedido</button>
     </div>
     `}`;
 };
@@ -18296,7 +18355,9 @@ function dmPayInfoHTML(){
     </div>`;
   }
   if(co.pay === 'tarjeta'){
-    return `<div class="dm-pi">${head('card', 'Pago con tarjeta', dom ? 'Te cobramos con terminal cuando te entreguen tu pedido.' : 'Te cobramos con terminal cuando pases por tu pedido.')}</div>`;
+    return `<div class="dm-pi">${head('card', 'Pago con tarjeta', 'Pagas en línea, de forma segura, desde la pantalla de tu pedido.')}
+      <small class="dm-pi-note">El negocio cobra con Mercado Pago. VendoPlus no guarda los datos de tu tarjeta.</small>
+    </div>`;
   }
   if(co.pay === 'transferencia'){
     if(!co.code) co.code = mdiNewCode();
@@ -18310,7 +18371,7 @@ function dmPayInfoHTML(){
         ${row('CLABE', mdClabeFmt(pm.clabe), pm.clabe)}
         ${row('Concepto', co.code, co.code)}
       </div>
-      <small class="dm-pi-note">En el concepto pon tu número de pedido y mándanos tu comprobante por WhatsApp.</small>
+      <small class="dm-pi-note">En el concepto pon tu número de pedido. El negocio confirma tu pago cuando vea el dinero en su cuenta, y lo verás en la pantalla de tu pedido.</small>
     </div>`;
   }
   return '';
@@ -18352,13 +18413,24 @@ function dmCoNeed(id, msg){
   el.classList.remove('need'); void el.offsetWidth; el.classList.add('need');
   try{ el.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'center' }); }catch(e){}
 }
-dmSendWhatsApp = async function(){
+/* ---------- Confirmar el pedido ----------
+   Ya NO interviene WhatsApp. El pedido:
+     1. se guarda en Supabase (submit_menu_order, la de siempre),
+     2. aparece solo en el POS del negocio,
+     3. y el cliente entra directo a la pantalla privada de su pedido.
+
+   Compartir el enlace sigue existiendo, pero como algo VOLUNTARIO que
+   el cliente decide desde su pantalla de seguimiento: no hace falta
+   para que el pedido se registre ni para que el negocio lo vea.
+
+   Si el registro falla, se dice claro y se puede volver a intentar sin
+   duplicar el pedido: el id y el código ya están hechos antes de
+   mandarlo, y submit_menu_order no duplica un id que ya existe. */
+window.dmEnviarPedido = async function(){
   if(dm.sending) return;
   const cfg = mdCfg();
   if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
   if(mdClosedNow(cfg)){ dmToast('Estamos cerrados en este momento'); dmRender(); dmCloseSheet(); return; }
-  const tel = mdWhatsappDigits();
-  if(!tel){ dmToast('El negocio aún no configura su WhatsApp'); return; }
   if(!dm.cart.length) return;
   const co = dmCoState();
   const nameEl = document.getElementById('dmName'); if(nameEl) co.name = nameEl.value;
@@ -18377,39 +18449,28 @@ dmSendWhatsApp = async function(){
   /* Token de seguimiento: lo crea este celular, no el servidor. Es la
      credencial con la que el cliente verá su pedido sin ninguna cuenta. */
   try{ order.t = (window.VPSeguimiento ? VPSeguimiento.tokenNuevo() : ''); }catch(e){ order.t = ''; }
-  order.waText = mdiMessage(order);          /* solo el número de pedido */
-  const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
-  /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
+
+  /* En la caja del propio negocio (misma pestaña) el pedido entra solo a
+     "Pedidos entrantes". Desde el celular de un cliente esto no hace
+     nada: no tiene la caja. */
   mdiReceive(order, 'menu');
   const enEsteAparato = !!MDI.get(order.id);
   const conNube = !!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY);
-  const listo = msg => {
+  const limpia = () => {
     dm.cart = [];
     dm.co = null;                 /* el nombre queda guardado en este celular */
     dmCloseSheet();
     dmRefreshCards();
-    dmToast(msg);
   };
 
-  if(!conNube || enEsteAparato){
-    /* El pedido ya quedó en la caja de este aparato: WhatsApp se abre de inmediato. */
-    if(conNube && typeof mdiCloudSend === 'function'){
-      mdiCloudSend(order);   /* y llega a las demás cajas */
-      /* y se deja listo su seguimiento, por si lo quiere compartir */
-      if(order.t && window.VPSeguimiento){
-        setTimeout(() => { VPSeguimiento.registrar(dm.id, order.code, order.t); }, 800);
-      }
-    }
-    dmVib([60, 40, 60]);
-    const win = window.open(url, '_blank');
-    if(!win) location.href = url;
-    listo('Pedido ' + order.code + ' listo en WhatsApp');
+  if(!conNube){
+    /* Sin Supabase configurado no hay a dónde mandarlo ni pantalla de
+       seguimiento que mostrar. Se dice tal cual, sin inventar. */
+    if(enEsteAparato){ limpia(); dmToast('Pedido ' + order.code + ' registrado en esta caja'); return; }
+    dmToast('Este menú todavía no puede recibir pedidos en línea', 'warn');
     return;
   }
 
-  /* Desde el celular del cliente: el pedido viaja por internet a la caja.
-     Cuando llega, YA NO se abre WhatsApp a la fuerza: se le muestran sus
-     dos acciones —Seguir pedido y Compartir pedido— y él decide. */
   const btn = document.getElementById('dmSendBtn');
   const errBox = document.getElementById('dmSendErr');
   const btnHTML = btn ? btn.innerHTML : '';
@@ -18424,33 +18485,41 @@ dmSendWhatsApp = async function(){
     ]);
   }catch(e){ ok = false; }
   dm.sending = false;
-  if(!ok){
+
+  /* Si ya quedó en la caja de este aparato (el negocio probando su
+     propio menú), se cuenta como recibido aunque la nube tarde. */
+  if(!ok && !enEsteAparato){
     if(btn && btn.isConnected){ btn.disabled = false; btn.innerHTML = btnHTML; }
     if(errBox && errBox.isConnected) errBox.style.display = '';
     dmVib([20, 40, 20]);
     dmToast('No pudimos enviar tu pedido. Revisa tu internet e inténtalo otra vez', 'warn');
-    return;
+    return;    /* el carrito NO se borra: puede reintentar sin rearmarlo */
   }
   dmVib([60, 40, 60]);
-  listo('El negocio ya recibió tu pedido ' + order.code);
+  limpia();
 
-  /* Se registra el seguimiento y se muestra la pantalla de "enviado".
-     Si el registro falla (internet malo justo en ese segundo), el pedido
-     YA llegó al negocio: lo único que se pierde es el enlace, y la caja
-     lo rescata después con "Buscar seguimiento". */
+  /* Se registra el seguimiento y se entra DIRECTO a la pantalla del
+     pedido. Si el registro falla (internet malo justo en ese segundo),
+     el pedido YA llegó al negocio: lo único que se pierde es el enlace,
+     y la caja lo rescata sola. */
   if(order.t && window.VPSeguimiento){
     const reg = await VPSeguimiento.registrar(dm.id, order.code, order.t);
+    if(reg){
+      VPSeguimiento.abrir(order.t, { nuevo:true, negocio:(dm.cfg && dm.cfg.name) || '' });
+      return;
+    }
     VPSeguimiento.panelEnviado({
       code: order.code,
-      token: reg ? order.t : '',
-      negocio: (dm.cfg && dm.cfg.name) || '',
-      waUrl: url
+      token: '',
+      negocio: (dm.cfg && dm.cfg.name) || ''
     });
-  }else{
-    const w2 = window.open(url, '_blank');
-    if(!w2) location.href = url;
+    return;
   }
+  dmToast('El negocio ya recibió tu pedido ' + order.code);
 };
+/* El nombre viejo sigue existiendo por si algo lo llama: hace lo mismo
+   que el nuevo, y ya no abre WhatsApp. */
+dmSendWhatsApp = function(){ return dmEnviarPedido(); };
 dmWhatsappMessage = function(){ return mdiMessage(mdiBuildFromCart(dm.cart, '')); };
 
 /* =========================================================

@@ -153,6 +153,24 @@
       '.vp-seg-folio{display:inline-block;margin-top:10px;padding:5px 10px;border-radius:999px;',
       'background:#EAF9F0;color:#0FA84C;font-size:12.5px;font-weight:800;letter-spacing:.3px;}',
 
+      /* ---- "Pedido confirmado" ----
+         Lo primero que ve el cliente al confirmar, ya dentro de la
+         pantalla de su pedido. Se va solo después de unos segundos. */
+      '.vp-seg-nuevo{text-align:center;background:#F3FCF7;border-color:#9ADFBB;}',
+      '.vp-seg-nuevo-ico{width:46px;height:46px;margin:0 auto 10px;border-radius:50%;',
+      'background:#16C15B;color:#fff;font-size:24px;line-height:46px;font-weight:800;}',
+      '@media (prefers-reduced-motion:no-preference){',
+      '.vp-seg-nuevo{animation:vp-seg-entra .42s cubic-bezier(.22,1,.36,1) both;}',
+      '@keyframes vp-seg-entra{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}}',
+
+      /* ---- Pastilla del estado del pago ---- */
+      '.vp-pago-cab{display:flex;align-items:center;gap:10px;margin-bottom:8px;}',
+      '.vp-pago-cab h2{flex:1;min-width:0;}',
+      '.vp-pago-pill{flex:none;padding:3px 9px;border-radius:999px;',
+      'font-size:11.5px;font-weight:800;background:#FFF6E6;color:#8A6412;}',
+      '.vp-pago-pill.ok{background:#EAF9F0;color:#0B7A38;}',
+      '.vp-pago-pill.bad{background:#FDECEC;color:#A03030;}',
+
       /* ---- LA BARRA DE ETAPAS ----
          No es una barra de progreso de 0 a 100. Cada etapa es un carril
          independiente: las ya pasadas quedan llenas en verde, la etapa
@@ -266,8 +284,13 @@
       return d.tipo_entrega === 'recoger' ? '¡Tu pedido fue entregado!' : '¡Tu pedido ha sido entregado!';
     }
     if (d.estado === 'en_camino') return '¡Tu repartidor ya tiene tu pedido!';
-    if (d.estado === 'preparando' || d.estado === 'listo') return 'El restaurante está preparando tu pedido';
-    return 'Tu pedido fue enviado al restaurante';
+    if (d.estado === 'listo') {
+      return d.tipo_entrega === 'recoger'
+        ? '¡Tu pedido ya está listo!'
+        : 'Tu pedido ya está preparado';
+    }
+    if (d.estado === 'preparando') return 'El restaurante está preparando tu pedido';
+    return 'Pedido enviado, esperando confirmación';
   }
 
   function subtitulo(d) {
@@ -277,11 +300,13 @@
     if (d.estado === 'en_camino') return 'Ya va en camino a tu domicilio.';
     if (d.estado === 'listo') {
       return d.tipo_entrega === 'recoger'
-        ? 'Tu pedido está listo. Ya puedes pasar por él.'
-        : 'Tu pedido está listo, esperando al repartidor.';
+        ? 'Ya puedes pasar por él al establecimiento.'
+        : (d.repartidor
+            ? 'Tu repartidor es ' + d.repartidor + '. Está por salir con tu pedido.'
+            : 'Esperando a que el repartidor salga con tu pedido.');
     }
     if (d.estado === 'preparando') return 'El establecimiento aceptó tu pedido y ya lo está preparando.';
-    return 'Estamos esperando que el establecimiento lo acepte.';
+    return 'El negocio ya tiene tu pedido. Estamos esperando que lo acepte.';
   }
 
   /* =======================================================================
@@ -290,6 +315,8 @@
   var S = {
     abierta: false,
     token: '',
+    nuevo: false,          /* acaba de confirmar: se muestra el aviso */
+    negocioPrevio: '',     /* nombre del negocio antes del primer dato */
     datos: null,
     pago: null,
     firma: '',
@@ -316,6 +343,17 @@
   /* =======================================================================
      5. PINTAR
   ======================================================================= */
+  /* Lo primero que ve el cliente al confirmar: que su pedido llegó.
+     Ya no hay una pantalla intermedia con un botón "Seguir pedido":
+     entra directo aquí, y compartir el enlace es opcional. */
+  function avisoNuevoHTML() {
+    return '<div class="vp-seg-card vp-seg-nuevo" id="vpSegNuevo">' +
+           '<div class="vp-seg-nuevo-ico">&#10004;</div>' +
+           '<h2>¡Pedido confirmado!</h2>' +
+           '<p class="sub">El negocio ya lo recibió. Aquí vas a ver todo lo que pase con él, ' +
+           'sin recargar nada y sin ninguna cuenta.</p></div>';
+  }
+
   function pintar() {
     var caja = document.getElementById('vpSegIn');
     if (!caja) return;
@@ -324,17 +362,21 @@
       caja.innerHTML = cabeceraHTML('Seguimiento') +
         '<div class="vp-seg-card"><h2>No encontramos este pedido</h2>' +
         '<p class="sub">El enlace puede estar incompleto o el pedido ya es muy antiguo. ' +
-        'Si lo recibiste por WhatsApp, vuelve a abrirlo desde ahí completo.</p></div>';
+        'Si te lo compartieron, vuelve a abrirlo desde el mensaje completo.</p></div>';
       return;
     }
     if (!S.datos) {
-      caja.innerHTML = cabeceraHTML('Seguimiento') +
+      caja.innerHTML = cabeceraHTML(S.negocioPrevio || 'Seguimiento') +
+        (S.nuevo ? avisoNuevoHTML() : '') +
         '<div class="vp-seg-cargando">Abriendo tu pedido…</div>';
       return;
     }
 
     var d = S.datos;
-    var h = cabeceraHTML(d.negocio || 'Tu pedido');
+    var h = cabeceraHTML(d.negocio || S.negocioPrevio || 'Tu pedido');
+
+    /* ---- Pedido recién confirmado ---- */
+    if (S.nuevo) h += avisoNuevoHTML();
 
     /* ---- Tarjeta principal: estado + etapas ---- */
     h += '<div class="vp-seg-card">';
@@ -343,7 +385,8 @@
     if (d.code) h += '<div class="vp-seg-folio">Pedido ' + esc(d.code) + '</div>';
     h += etapasHTML(d);
     if (d.estado === 'listo' && d.tipo_entrega === 'domicilio') {
-      h += '<div class="vp-seg-nota">Tu pedido está listo, esperando al repartidor.</div>';
+      h += '<div class="vp-seg-nota">Verás el mapa y podrás escribirle al repartidor ' +
+           'en cuanto salga con tu pedido.</div>';
     }
     if (d.estado === 'rechazado' || d.estado === 'cancelado') {
       h += '<div class="vp-seg-nota bad">Este pedido ya no continuará.</div>';
@@ -476,12 +519,19 @@
     if (!p || !p.ok || !p.metodo) return '';
     var pagado = p.estado === 'pagado';
     var h = '<div class="vp-seg-card">';
-    h += '<h2 style="font-size:15px;margin-bottom:8px">Tu pago</h2>';
+    /* La pastilla va FUERA del título, no dentro: así el encabezado
+       sigue diciendo solo "Tu pago". */
+    h += '<div class="vp-pago-cab"><h2 style="font-size:15px;margin:0">Tu pago</h2>' +
+         '<span class="vp-pago-pill' + (pagado ? ' ok' : (p.estado === 'rechazado' ? ' bad' : '')) + '">' +
+         (pagado ? 'Pagado' : p.estado === 'rechazado' ? 'Rechazado' : 'Pendiente') +
+         '</span></div>';
 
     if (p.metodo === 'efectivo') {
       h += '<p class="sub">' + (pagado
         ? 'El negocio ya registró tu pago en efectivo.'
-        : 'Pagas en efectivo cuando recibas tu pedido.') + '</p>';
+        : 'Pagas <b>' + dinero(p.monto) + '</b> en efectivo cuando ' +
+          (S.datos && S.datos.tipo_entrega === 'recoger'
+            ? 'pases por tu pedido.' : 'te entreguen tu pedido.')) + '</p>';
 
     } else if (p.metodo === 'transferencia') {
       if (pagado) {
@@ -861,10 +911,16 @@
   /* =======================================================================
      8. ABRIR Y CERRAR
   ======================================================================= */
-  function abrir(token) {
+  /* op.nuevo  → el cliente acaba de confirmar: se le enseña el aviso de
+                 "pedido confirmado" arriba, en esta misma pantalla.
+     op.negocio → nombre del negocio mientras llega el primer dato. */
+  function abrir(token, op) {
     if (!token) return;
+    op = op || {};
     estilos();
     S.token = token;
+    S.nuevo = !!op.nuevo;
+    S.negocioPrevio = op.negocio || '';
     S.abierta = true;
     S.datos = null; S.pago = null; S.firma = ''; S.estadoPrevio = null; S.error = ''; S.ubic = null;
     S.mensajes = []; S.pendientes = []; S.ultimoMsg = 0;
@@ -884,6 +940,17 @@
     pintar();
     traer().then(function () { traerUbic(); traerMsgs(); traerPago(); });
     arrancarTimers();
+    if (S.nuevo) {
+      vibra([60, 40, 60]);
+      /* El aviso de "confirmado" se queda un rato y luego se quita solo:
+         a partir de ahí lo que importa es el estado del pedido. */
+      setTimeout(function () {
+        if (!S.abierta) return;
+        S.nuevo = false;
+        var b = document.getElementById('vpSegNuevo');
+        if (b && b.parentNode) b.parentNode.removeChild(b);
+      }, 12000);
+    }
 
     /* Al volver a la pestaña se revisa enseguida, sin esperar al ciclo. */
     if (!S._visListo) {
@@ -1010,12 +1077,12 @@
   }
 
   /* =======================================================================
-     10b. PANTALLA DE "PEDIDO ENVIADO"
-     Es lo que ve el cliente justo después de confirmar. Las dos acciones
-     principales son las que pediste: Seguir pedido y Compartir pedido.
-     Avisar por WhatsApp se queda como una tercera opción voluntaria,
-     porque es lo que muchos negocios ya esperan, pero ya no es
-     obligatorio ni se abre solo.
+     10b. PANTALLA DE RESPALDO
+     Normalmente el cliente ya NO pasa por aquí: al confirmar entra
+     directo a la pantalla de su pedido. Esta pantalla solo aparece
+     cuando el pedido sí llegó al negocio pero no se pudo crear su
+     enlace de seguimiento (internet malo en ese segundo exacto).
+     WhatsApp ya no interviene en nada de esto.
   ======================================================================= */
   function panelEnviado(op) {
     op = op || {};
@@ -1042,24 +1109,23 @@
     if (code) h += '<div class="vp-seg-folio">Pedido ' + esc(code) + '</div>';
     h += '</div>';
 
-    h += '<div class="vp-seg-card"><div class="vp-seg-btns">';
+    h += '<div class="vp-seg-card">';
     if (token) {
+      h += '<div class="vp-seg-btns">';
       h += '<button type="button" class="vp-seg-btn verde" ' +
-           'onclick="VPSeguimiento._verDesdeEnviado()">Seguir pedido</button>';
+           'onclick="VPSeguimiento._verDesdeEnviado()">Ver mi pedido</button>';
       h += '<button type="button" class="vp-seg-btn" ' +
-           'onclick="VPSeguimiento.compartir()">Compartir pedido</button>';
-      h += '</div><div class="vp-seg-btns" style="margin-top:9px">';
-      h += '<button type="button" class="vp-seg-btn" ' +
-           'onclick="VPSeguimiento.copiar()">Copiar enlace</button>';
-    }
-    if (op.waUrl) {
-      h += '<button type="button" class="vp-seg-btn" ' +
-           'onclick="VPSeguimiento._wa()">Avisar por WhatsApp</button>';
-    }
-    h += '</div>';
-    if (token) {
+           'onclick="VPSeguimiento.compartir()">Compartir</button>';
+      h += '</div>';
       h += '<p class="sub" style="margin-top:12px;font-size:12.5px">Guarda este enlace: con él puedes ' +
            'ver tu pedido más tarde, desde este o desde cualquier otro teléfono. No necesitas ninguna cuenta.</p>';
+    } else {
+      /* El pedido SÍ está con el negocio. Lo que falló fue el enlace.
+         Se dice tal cual, sin prometer lo que no hay. */
+      h += '<p class="sub">Tu pedido ya está con el negocio, pero no pudimos crear tu enlace ' +
+           'de seguimiento por un problema de conexi\u00f3n. Apunta tu n\u00famero de pedido' +
+           (code ? ' (' + esc(code) + ')' : '') + ': con \u00e9l el negocio te puede decir ' +
+           'c\u00f3mo va tu pedido.</p>';
     }
     h += '</div>';
 
@@ -1069,7 +1135,6 @@
 
     cap.innerHTML = h;
     S.token = token;
-    S._waUrl = op.waUrl || '';
     if (token) guardarMio(token, code, op.negocio);
     vibra([60, 40, 60]);
   }
@@ -1125,11 +1190,6 @@
     panelEnviado: panelEnviado,
     _cerrarEnviado: cerrarEnviado,
     _verDesdeEnviado: function () { cerrarEnviado(); abrir(S.token); },
-    _wa: function () {
-      if (!S._waUrl) return;
-      var w = window.open(S._waUrl, '_blank');
-      if (!w) location.href = S._waUrl;
-    },
     /* Registra el seguimiento en el servidor justo después de mandar el
        pedido. Lo llama index.html. */
     registrar: function (menuId, code, token) {

@@ -3,19 +3,23 @@
    -------------------------------------------------------------------------
    Lo que hace este archivo, del lado del COMERCIANTE:
 
-     · Agrega un bloque de "Entrega" cuando se abre la ficha de un pedido:
-       estado del seguimiento, repartidor, y los botones para avanzarlo.
+     · Agrega un bloque de "Entrega" cuando se abre la ficha de un pedido,
+       organizado en TRES PROCESOS visibles:
+         1. Confirmar y preparar
+         2. Pedido preparado y repartidor
+         3. En camino, entrega y cobro
      · El panel de Repartidores: código de vinculación, solicitudes
-       pendientes, aceptar, rechazar y desvincular.
+       pendientes, aceptar, rechazar y desvincular — todo al vuelo, sin
+       recargar, escuchando vp_vinculos en tiempo real.
      · Mantiene el estado del pedido sincronizado con lo que ve el
        cliente en su pantalla de seguimiento.
 
    REGLA QUE SE RESPETA AL PIE DE LA LETRA:
      NO se rediseña la pantalla principal del Menú Digital ni las fichas
      de "Pedidos entrantes". Este archivo solo ENVUELVE funciones que ya
-     existen (como hacía vendo-lealtad.js): guarda la original, la llama
-     igual que siempre, y le agrega lo nuevo. Si este archivo no se
-     carga, VendoPlus sigue funcionando exactamente como antes.
+     existen: guarda la original, la llama igual que siempre, y le agrega
+     lo nuevo. Si este archivo no se carga, VendoPlus sigue funcionando
+     exactamente como antes.
 
    Es el mismo archivo para la página web y para la app de Play Store.
 ========================================================================= */
@@ -29,11 +33,9 @@
   function ref(n) { try { return eval(n); } catch (e) { return undefined; } }
   function fn(n) { var f = ref(n); return typeof f === 'function' ? f : null; }
   function esc(s) {
-    var f = fn('escapeHtml');
-    if (f) return f(String(s == null ? '' : s));
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function ico(n) { var f = fn('icon'); return f ? f(n) : ''; }
   function avisar(m, o) { var f = fn('toast'); if (f) f(m, o || {}); else console.log(m); }
@@ -43,6 +45,7 @@
   function vibra(ms) { var f = fn('vibrate'); if (f) f(ms); }
   function abrirHoja(html, op) { var f = fn('openModal'); if (f) f(html, op || { dismissible: true }); }
   function cerrarHoja() { var f = fn('closeModal'); if (f) f(); }
+  function dinero(n) { var f = fn('formatMoney'); return f ? f(Number(n) || 0) : '$' + (Number(n) || 0).toFixed(2); }
 
   function rpc(nombre, args) {
     var c = nube();
@@ -53,6 +56,20 @@
     });
   }
 
+  /* Hace cuánto, en palabras. */
+  function hace(iso) {
+    if (!iso) return '';
+    var ms = Date.now() - new Date(iso).getTime();
+    if (isNaN(ms) || ms < 0) return 'ahora';
+    var s = Math.round(ms / 1000);
+    if (s < 50) return 'hace ' + s + ' s';
+    var m = Math.round(s / 60);
+    if (m < 60) return 'hace ' + m + ' min';
+    var h = Math.round(m / 60);
+    if (h < 36) return 'hace ' + h + ' h';
+    return 'hace ' + Math.round(h / 24) + ' días';
+  }
+
   /* =======================================================================
      1. ESTADO EN MEMORIA
   ======================================================================= */
@@ -60,10 +77,35 @@
     porOrden: {},       /* id local del pedido -> fila de vp_pedidos */
     repartidores: [],
     codigo: null,
+    codigoExpira: null,
+    aceptados: 0,
+    pendientes: 0,
+    domicilioListo: false,
     cargando: false,
     ultimaCarga: 0,
-    canal: null
+    cargandoReps: false,
+    ultimaCargaReps: 0,
+    rescatados: {},     /* order_id -> ya se intentó rescatar su seguimiento */
+    canal: null,
+    canalUid: null,
+    canalVin: null,
+    canalVinUid: null,
+    reintento: 0,
+    respaldo: 0,
+    ocultoEn: 0,
+    arrancado: false
   };
+
+  /* Para que el Menú Digital sepa, sin preguntar al servidor, si ya hay
+     repartidores. Se guarda aquí porque mdPublicSnapshot() es síncrono. */
+  var LLAVE_REPS = 'vp_reps_aceptados';
+  function repsAceptados() {
+    try { return Math.max(0, parseInt(localStorage.getItem(LLAVE_REPS) || '0', 10) || 0); }
+    catch (e) { return 0; }
+  }
+  function guardaReps(n) {
+    try { localStorage.setItem(LLAVE_REPS, String(Math.max(0, n | 0))); } catch (e) {}
+  }
 
   var NOMBRE_PAGO = {
     efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta'
@@ -72,7 +114,7 @@
   var NOMBRE_ESTADO = {
     enviado:    'Esperando que lo aceptes',
     preparando: 'En preparación',
-    listo:      'Listo, esperando al repartidor',
+    listo:      'Preparado',
     en_camino:  'El repartidor va en camino',
     entregado:  'Entregado',
     rechazado:  'Rechazado',
@@ -84,7 +126,7 @@
   ======================================================================= */
   var COLS = 'id,order_id,code,estado,tipo_entrega,repartidor_id,asignado_en,' +
              'aceptado_rep_en,eta_min,entregado_en,actualizado_en,destino_texto,' +
-             'metodo_pago,pago_estado';
+             'total,metodo_pago,pago_estado';
 
   function cargar(forzar) {
     var c = nube();
@@ -109,29 +151,163 @@
 
   function dePedido(o) { return o ? P.porOrden[o.id] : null; }
 
-  /* Mantiene el POS al día cuando el repartidor avanza el pedido. */
+  /* ---------------------------------------------------------------------
+     Red de seguridad, ahora AUTOMÁTICA.
+
+     Antes había un botón "Buscar seguimiento" en la ficha. Aparecía
+     justo en la etapa de confirmar y preparar, que es donde pediste que
+     NO estuviera. El botón existía porque el rescate era manual; ahora
+     se hace solo, en silencio, la primera vez que se abre un pedido del
+     Menú Digital que todavía no tiene seguimiento. Un intento por
+     pedido: si no se puede, no se insiste ni se molesta al comerciante.
+  --------------------------------------------------------------------- */
+  function rescatar(o) {
+    if (!o || !nube()) return;
+    if (P.rescatados[o.id]) return;
+    P.rescatados[o.id] = true;
+    rpc('vp_pedidos_sincronizar')
+      .then(function () { return cargar(true); })
+      .then(function () { repintarBloque(); })
+      .catch(function () {});
+  }
+
+  /* =======================================================================
+     2b. EN VIVO: pedidos y vinculación de repartidores
+
+     Dos canales, cada uno con su guardia para no abrirse dos veces:
+       · vp_pedidos  → el repartidor avanzó el pedido
+       · vp_vinculos → un repartidor pidió vincularse (o se resolvió)
+
+     Además: un respaldo que revisa cada 20 s solo con la app a la vista,
+     y un "despertar" al volver del segundo plano. Es el mismo patrón que
+     ya usa VendoPlus para los pedidos entrantes, que funciona bien en
+     celulares económicos.
+  ======================================================================= */
   function escuchar() {
     var c = nube();
-    if (!c || P.canal) return;
-    try {
-      P.canal = c.sb.channel('vp-entregas-' + c.uid)
-        .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'vp_pedidos', filter: 'user_id=eq.' + c.uid },
-            function (pl) {
-              var row = pl && (pl.new || pl.old);
-              if (!row || !row.order_id) return;
-              if (pl.eventType === 'DELETE') delete P.porOrden[row.order_id];
-              else P.porOrden[row.order_id] = row;
-              repintarBloque();
-            })
-        .subscribe();
-    } catch (e) { P.canal = null; }
+    if (!c || !c.sb.channel) return;
+    var uid = c.uid;
+
+    if (!P.canal || P.canalUid !== uid) {
+      cerrarCanal('canal');
+      try {
+        P.canalUid = uid;
+        P.canal = c.sb.channel('vp-entregas-' + uid)
+          .on('postgres_changes',
+              { event: '*', schema: 'public', table: 'vp_pedidos', filter: 'user_id=eq.' + uid },
+              function (pl) {
+                var row = pl && (pl.new || pl.old);
+                if (!row || !row.order_id) return;
+                if (pl.eventType === 'DELETE') delete P.porOrden[row.order_id];
+                else P.porOrden[row.order_id] = row;
+                repintarBloque();
+              })
+          .subscribe(function (st) { vigilar(st, uid, 'canal'); });
+      } catch (e) { P.canal = null; P.canalUid = null; }
+    }
+
+    if (!P.canalVin || P.canalVinUid !== uid) {
+      cerrarCanal('canalVin');
+      try {
+        P.canalVinUid = uid;
+        P.canalVin = c.sb.channel('vp-vinculos-' + uid)
+          .on('postgres_changes',
+              { event: '*', schema: 'public', table: 'vp_vinculos', filter: 'user_id=eq.' + uid },
+              function (pl) { vinculoCambio(pl); })
+          .subscribe(function (st) { vigilar(st, uid, 'canalVin'); });
+      } catch (e) { P.canalVin = null; P.canalVinUid = null; }
+    }
+
+    arrancarRespaldo();
+  }
+
+  function cerrarCanal(cual) {
+    var c = window.Cloud;
+    if (P[cual] && c && c.sb) { try { c.sb.removeChannel(P[cual]); } catch (e) {} }
+    P[cual] = null;
+    P[cual === 'canal' ? 'canalUid' : 'canalVinUid'] = null;
+  }
+
+  function cerrarCanales() { cerrarCanal('canal'); cerrarCanal('canalVin'); }
+
+  /* Si la conexión en vivo se cae, se vuelve a abrir sola y se revisa lo
+     que pasó mientras. Sin esto, el POS se queda mudo tras un túnel. */
+  function vigilar(estado, uid, cual) {
+    var c = nube();
+    if (!c || c.uid !== uid) return;
+    if (estado === 'SUBSCRIBED') {
+      P.reintento = 0;
+      setTimeout(function () {
+        if (cual === 'canalVin') cargarRepartidores(true).then(repintarPanel);
+        else cargar(true).then(function (h) { if (h) repintarBloque(); });
+      }, 400);
+      return;
+    }
+    if (estado === 'CHANNEL_ERROR' || estado === 'TIMED_OUT' || estado === 'CLOSED') {
+      cerrarCanal(cual);
+      /* Se espera un poco más en cada intento, para no castigar la
+         batería ni el servidor si el internet está mal de verdad. */
+      P.reintento = Math.min(P.reintento + 1, 5);
+      setTimeout(function () { if (nube()) escuchar(); }, 2000 * P.reintento);
+    }
+  }
+
+  function vinculoCambio(pl) {
+    var nueva = pl && pl.new;
+    var vieja = pl && pl.old;
+    /* Un repartidor nuevo pidiendo entrar: se avisa aunque el panel esté
+       cerrado, porque es algo que el comerciante tiene que atender. */
+    var esNueva = nueva && nueva.estado === 'pendiente' &&
+                  (!vieja || vieja.estado !== 'pendiente');
+    cargarRepartidores(true).then(function () {
+      repintarPanel();
+      repintarBloque();
+      if (esNueva) {
+        vibra([30, 60, 30]);
+        avisar('Un repartidor quiere vincularse', {
+          icon: ico('users'),
+          variant: 'toast-success toast-top',
+          subtitle: 'Ábrelo en Pedidos y entregas para aceptarlo',
+          duration: 4200
+        });
+      }
+    });
+  }
+
+  function arrancarRespaldo() {
+    if (P.respaldo) return;
+    /* Respaldo por si el canal en vivo se cayó sin avisar. Solo con la
+       app a la vista: con la pantalla apagada el celular la detiene. */
+    P.respaldo = setInterval(function () {
+      if (document.hidden || !nube()) return;
+      if (document.getElementById('vpRepPanel')) cargarRepartidores(true).then(repintarPanel);
+      if (document.querySelector('.vp-ent[data-orden]')) cargar().then(function (h) { if (h) repintarBloque(); });
+    }, 20000);
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) { P.ocultoEn = Date.now(); return; }
+      despertar(P.ocultoEn && Date.now() - P.ocultoEn > 8000);
+    });
+    window.addEventListener('online', function () { despertar(true); });
+    window.addEventListener('focus', function () { despertar(false); });
+  }
+
+  /* Al volver a la app: si estuvo mucho rato fuera, el celular pudo
+     cortar la conexión en vivo. Se rehace y se baja lo que cambió. */
+  function despertar(forzar) {
+    if (!nube()) return;
+    P.ocultoEn = 0;
+    if (forzar) cerrarCanales();
+    escuchar();
+    cargar(true).then(function (h) { if (h) repintarBloque(); });
+    if (document.getElementById('vpRepPanel')) cargarRepartidores(true).then(repintarPanel);
   }
 
   /* =======================================================================
      3. EL BLOQUE DE ENTREGA DENTRO DE LA FICHA DEL PEDIDO
-     Se inserta justo antes del pie de la ficha, sin tocar nada de lo que
-     ya estaba.
+        Se inserta justo antes del pie de la ficha, sin tocar nada de lo
+        que ya estaba. Los tres procesos van uno debajo de otro, y solo
+        se muestran los botones del proceso en el que está el pedido.
   ======================================================================= */
   function bloqueHTML(o) {
     if (!o) return '';
@@ -149,72 +325,221 @@
     h += '</div>';
 
     if (!s) {
-      h += '<p class="vp-ent-sub">Este pedido todavía no tiene seguimiento en línea. ' +
-           'Se crea solo cuando el cliente lo manda desde el Menú Digital.</p>';
-      if (nube()) {
-        h += '<div class="vp-ent-btns"><button type="button" class="btn ghost" ' +
-             'onclick="VPPedidos.sincronizar()">' + ico('refresh') + ' Buscar seguimiento</button></div>';
-      }
+      /* Sin seguimiento todavía. Se rescata solo, en silencio. NO hay
+         botón de seguimiento aquí: eso es lo que pediste. */
+      h += '<p class="vp-ent-sub">Estamos conectando este pedido con el seguimiento del cliente. ' +
+           'Puedes aceptarlo y prepararlo con normalidad mientras tanto.</p>';
       return h + '</div>';
     }
 
-    /* ---- Estado del pago ---- */
-    if (s.metodo_pago) {
-      var pagado = s.pago_estado === 'pagado';
-      h += '<div class="vp-ent-fila"><span>Pago</span><b>' +
-           esc(NOMBRE_PAGO[s.metodo_pago] || s.metodo_pago) + ' · ' +
-           (pagado ? 'recibido' : s.pago_estado === 'rechazado' ? 'rechazado' : 'pendiente') +
-           '</b></div>';
-      /* La tarjeta la confirma Mercado Pago, no una persona. */
-      if (!pagado && s.metodo_pago !== 'tarjeta') {
-        h += '<div class="vp-ent-btns"><button type="button" class="btn ghost" ' +
-             'onclick="VPPedidos.confirmarPago(\'' + esc(o.id) + '\')">' +
-             ico('check') + ' Ya recibí el pago</button></div>';
-      }
-    }
+    var recoger = !esDom || s.tipo_entrega === 'recoger';
+    var paso = etapaDe(s, recoger);
 
-    if (!esDom || s.tipo_entrega === 'recoger') {
-      /* Para recoger: sin repartidor y sin GPS, tal como pediste. */
-      h += '<p class="vp-ent-sub">El cliente pasa por su pedido al establecimiento. ' +
-           'Este pedido no lleva repartidor ni mapa.</p>';
-      h += '<div class="vp-ent-btns">';
-      if (s.estado === 'preparando') {
-        h += btn(o.id, 'listo', 'Marcar como listo', 'check', true);
-      } else if (s.estado === 'listo') {
-        h += btn(o.id, 'entregado', 'Marcar como entregado', 'check', true);
-      }
-      h += '</div>';
+    h += pasos(paso, recoger);
+
+    /* ---- Cerrados: nada que hacer, pero el cobro sí se sigue viendo ---- */
+    if (s.estado === 'rechazado' || s.estado === 'cancelado') {
+      h += '<p class="vp-ent-sub">Este pedido está cerrado. El cliente ya lo vio en su pantalla.</p>';
+      h += cobroHTML(o, s, true);
       return h + '</div>';
     }
 
-    /* ---- Pedido a domicilio ---- */
+    /* =================== PROCESO 1 · CONFIRMAR Y PREPARAR ==============
+       Aquí NO se ponen botones de aceptar ni de rechazar: los de siempre
+       ya están justo debajo, en el pie de la ficha, y además comprueban
+       cosas que este bloque no debe duplicar (el costo de envío y el
+       tiempo de preparación). Se respeta el diseño que ya funcionaba:
+       este bloque solo explica qué está viendo el cliente. */
+    if (s.estado === 'enviado') {
+      h += '<p class="vp-ent-sub"><b>Proceso 1 · Confirmar y preparar.</b><br>' +
+           'El cliente está viendo «Pedido enviado, esperando confirmación». ' +
+           'Usa <b>Aceptar pedido</b> o <b>Rechazar</b>, aquí abajo: en cuanto lo aceptes, ' +
+           'su pantalla cambia sola a «preparando».</p>';
+      return h + '</div>';
+    }
+
+    if (s.estado === 'preparando') {
+      h += '<p class="vp-ent-sub"><b>Proceso 1 · Confirmar y preparar.</b><br>' +
+           'El cliente ve que su pedido está en preparación. Cuando termines, ' +
+           'márcalo como preparado.</p>';
+      h += '<div class="vp-ent-btns">' + btn(o.id, 'listo', 'Pedido preparado', 'check', true) + '</div>';
+      return h + '</div>';
+    }
+
+    /* =================== PARA RECOGER ================================= */
+    if (recoger) {
+      if (s.estado === 'listo') {
+        h += '<p class="vp-ent-sub"><b>Listo para recoger.</b><br>' +
+             'El cliente ya ve que puede pasar por su pedido. Este pedido no lleva ' +
+             'repartidor, ni mapa, ni código de entrega.</p>';
+        h += cobroHTML(o, s, false);
+        h += '<div class="vp-ent-btns">' +
+             btn(o.id, 'entregado', 'Ya se lo entregué', 'check', true) + '</div>';
+        return h + '</div>';
+      }
+      /* entregado */
+      h += '<p class="vp-ent-sub">Entregado en el establecimiento. El cliente ya lo vio.</p>';
+      h += cobroHTML(o, s, false);
+      return h + '</div>';
+    }
+
+    /* =================== PROCESO 2 · PREPARADO Y REPARTIDOR ============ */
     var rep = s.repartidor_id
       ? P.repartidores.filter(function (r) { return r.repartidor_id === s.repartidor_id; })[0]
       : null;
+    var nombreRep = rep ? (rep.nombre || 'Sin nombre') : (s.repartidor_id ? 'Asignado' : '');
 
+    if (s.estado === 'listo') {
+      h += '<div class="vp-ent-fila"><span>Repartidor</span><b>' +
+           (nombreRep ? esc(nombreRep) + (s.aceptado_rep_en ? ' · aceptó' : ' · sin aceptar aún') : 'Sin asignar') +
+           '</b></div>';
+      h += '<p class="vp-ent-sub"><b>Proceso 2 · Pedido preparado y repartidor.</b><br>' +
+           (s.repartidor_id
+             ? 'Ya tiene repartidor asignado. <b>Asignarlo no significa que ya salió</b>: ' +
+               'el pedido pasa a «en camino» cuando él confirme en su app que lo recogió.'
+             : 'Elige a cuál de tus repartidores vinculados le toca este pedido. ' +
+               'Le aparecerá solo en su app, sin que tenga que recargar.') +
+           '</p>';
+      h += '<div class="vp-ent-btns">' +
+           '<button type="button" class="btn ' + (s.repartidor_id ? 'ghost' : 'primary') + '" ' +
+           'onclick="VPPedidos.elegirRepartidor(\'' + esc(o.id) + '\')">' +
+           ico('users') + ' ' + (s.repartidor_id ? 'Cambiar repartidor' : 'Seleccionar repartidor') +
+           '</button>';
+      if (dueno()) {
+        h += '<button type="button" class="btn ghost" onclick="VPPedidos.excepcional(\'' + esc(o.id) + '\')">' +
+             ico('alert') + ' Entrega sin código</button>';
+      }
+      h += '</div>';
+      /* Nada de seguimiento aquí: el repartidor todavía no salió. */
+      return h + '</div>';
+    }
+
+    /* =================== PROCESO 3 · EN CAMINO, ENTREGA Y COBRO ======== */
     h += '<div class="vp-ent-fila"><span>Repartidor</span><b>' +
-         (rep ? esc(rep.nombre || 'Sin nombre') : (s.repartidor_id ? 'Asignado' : 'Sin asignar')) +
-         (rep && s.aceptado_rep_en ? ' · aceptó' : '') + '</b></div>';
+         (nombreRep ? esc(nombreRep) : 'Asignado') + '</b></div>';
     if (s.estado === 'en_camino' && s.eta_min) {
-      h += '<div class="vp-ent-fila"><span>Llegada estimada</span><b>' + esc(String(s.eta_min)) + ' min</b></div>';
+      h += '<div class="vp-ent-fila"><span>Llegada estimada</span><b>' +
+           esc(String(s.eta_min)) + ' min</b></div>';
     }
-
-    h += '<div class="vp-ent-btns">';
-    if (s.estado === 'preparando') h += btn(o.id, 'listo', 'Marcar como listo', 'check', true);
-    if (s.estado === 'listo' || s.estado === 'preparando') {
-      h += '<button type="button" class="btn ghost" onclick="VPPedidos.elegirRepartidor(\'' + esc(o.id) + '\')">' +
-           ico('users') + ' ' + (s.repartidor_id ? 'Cambiar repartidor' : 'Asignar repartidor') + '</button>';
+    if (s.estado === 'entregado' && s.entregado_en) {
+      h += '<div class="vp-ent-fila"><span>Entregado</span><b>' + esc(hace(s.entregado_en)) + '</b></div>';
     }
-    if (s.estado === 'en_camino' || s.estado === 'listo') {
-      h += '<button type="button" class="btn ghost" onclick="VPPedidos.excepcional(\'' + esc(o.id) + '\')">' +
-           ico('alert') + ' Entrega sin código</button>';
-    }
-    h += '</div>';
 
     if (s.estado === 'en_camino') {
-      h += '<p class="vp-ent-sub">El cliente ya ve el mapa, el tiempo estimado y puede mandarle ' +
-           'mensajes al repartidor. La entrega se cierra cuando el repartidor captura el código de ' +
+      h += '<p class="vp-ent-sub"><b>Proceso 3 · En camino, entrega y cobro.</b><br>' +
+           'El repartidor ya salió. El cliente ve el mapa, el tiempo estimado y puede ' +
+           'escribirle. La entrega se cierra cuando el repartidor capture el código de ' +
            '4 dígitos que le dé el cliente.</p>';
+      h += '<div class="vp-ent-btns">' +
+           '<button type="button" class="btn primary" onclick="VPPedidos.verSeguimiento(\'' + esc(o.id) + '\')">' +
+           ico('locate') + ' Ver seguimiento</button>';
+      if (dueno()) {
+        h += '<button type="button" class="btn ghost" onclick="VPPedidos.excepcional(\'' + esc(o.id) + '\')">' +
+             ico('alert') + ' Entrega sin código</button>';
+      }
+      h += '</div>';
+    } else {
+      h += '<p class="vp-ent-sub"><b>Proceso 3 · Entrega y cobro.</b><br>' +
+           'La entrega quedó cerrada con el código del cliente.</p>';
+    }
+
+    h += cobroHTML(o, s, false);
+    return h + '</div>';
+  }
+
+  /* La barrita de los tres procesos. Es información, no un botón:
+     muestra en cuál va el pedido sin cambiar el diseño de la ficha. */
+  function etapaDe(s, recoger) {
+    if (s.estado === 'enviado' || s.estado === 'preparando') return 1;
+    if (!recoger && s.estado === 'listo') return 2;
+    if (s.estado === 'rechazado' || s.estado === 'cancelado') return 0;
+    return 3;
+  }
+
+  function pasos(paso, recoger) {
+    if (!paso) return '';
+    var n = recoger ? ['Preparar', 'Listo', 'Entrega y cobro'] : ['Confirmar', 'Repartidor', 'En camino'];
+    if (recoger && paso === 2) paso = 3;
+    var h = '<div class="vp-pasos" aria-label="Proceso ' + paso + ' de 3">';
+    for (var i = 1; i <= 3; i++) {
+      h += '<span class="vp-paso' + (i < paso ? ' ok' : (i === paso ? ' on' : '')) + '">' +
+           '<i>' + i + '</i>' + esc(n[i - 1]) + '</span>';
+    }
+    return h + '</div>';
+  }
+
+  /* ---------------------------------------------------------------------
+     EL COBRO · solo en la etapa final, y bien diferenciado.
+
+     Reglas que se cumplen aquí:
+       · No se mezcla con la preparación ni con la asignación.
+       · Efectivo → se muestra el importe por cobrar.
+       · Tarjeta pagada → "Pagado", y no se puede volver a cobrar.
+       · Transferencia → se distingue pendiente de confirmada.
+       · Un pago NO se marca hecho porque el pedido se entregó.
+       · Un saldo pendiente NO se oculta al cerrar la entrega.
+  --------------------------------------------------------------------- */
+  function cobroHTML(o, s, cerrado) {
+    if (!s || !s.metodo_pago) return '';
+    var pagado = s.pago_estado === 'pagado';
+    var rechazado = s.pago_estado === 'rechazado';
+    var total = Number(s.total) || 0;
+    var tarjeta = s.metodo_pago === 'tarjeta';
+    var recoge = s.tipo_entrega === 'recoger';
+
+    var h = '<div class="vp-cobro' + (pagado ? ' ok' : (rechazado ? ' mal' : '')) + '">';
+    h += '<div class="vp-cobro-cab">' + ico('card') +
+         '<b>Cobro · ' + esc(NOMBRE_PAGO[s.metodo_pago] || s.metodo_pago) + '</b>' +
+         '<span class="vp-cobro-pill">' +
+         (pagado ? 'Pagado' : rechazado ? 'Rechazado' : 'Pendiente') + '</span></div>';
+
+    if (pagado) {
+      h += '<p class="vp-ent-sub">' +
+           (tarjeta ? 'Pagado con tarjeta por Mercado Pago. <b>No lo vuelvas a cobrar.</b>'
+                    : 'Ya registraste que recibiste ' + dinero(total) + '.') + '</p>';
+      return h + '</div>';
+    }
+
+    if (tarjeta) {
+      h += '<div class="vp-cobro-monto">' + dinero(total) +
+           '<small>pendiente de Mercado Pago</small></div>';
+      h += '<p class="vp-ent-sub">' +
+           (rechazado
+             ? 'Mercado Pago rechazó el pago. Cóbralo de otra forma antes de entregar.'
+             : 'Esperando el aviso de Mercado Pago. <b>Este pago no lo marcas tú</b>: ' +
+               'lo confirma Mercado Pago cuando el dinero entra a tu cuenta. El servidor ' +
+               'no deja marcarlo a mano por error.') + '</p>';
+      /* Puerta de escape auditada: si el cliente acabó pagando de otra
+         forma (tu terminal, efectivo), se registra a mano CON MOTIVO y
+         queda en el historial. Solo el dueño. */
+      if (dueno()) {
+        h += '<div class="vp-ent-btns"><button type="button" class="btn ghost" ' +
+             'onclick="VPPedidos.cobroManual(\'' + esc(o.id) + '\')">' +
+             ico('alert') + ' Registrar cobro a mano</button></div>';
+      }
+      return h + '</div>';
+    }
+
+    h += '<div class="vp-cobro-monto">' + dinero(total) +
+         '<small>' + (s.metodo_pago === 'efectivo'
+                        ? (recoge ? 'por cobrar al entregarlo en el negocio' : 'por cobrar al entregar')
+                        : 'pendiente de confirmar') +
+         '</small></div>';
+    h += '<p class="vp-ent-sub">' +
+         (s.metodo_pago === 'efectivo'
+           ? (recoge
+                ? 'El cliente paga cuando pase por su pedido. Toca el botón cuando tengas el dinero en la mano.'
+                : 'El cliente paga al recibir. Toca el botón cuando tengas el dinero en la mano.')
+           : 'El cliente te transfiere. Revisa tu cuenta y confírmalo solo cuando veas el dinero.') +
+         '</p>';
+    h += '<div class="vp-ent-btns"><button type="button" class="btn primary" ' +
+         'onclick="VPPedidos.confirmarPago(\'' + esc(o.id) + '\')">' + ico('check') + ' ' +
+         (s.metodo_pago === 'efectivo' ? 'Ya recibí el pago' : 'Ya recibí la transferencia') +
+         '</button></div>';
+
+    if (cerrado || s.estado === 'entregado') {
+      h += '<p class="vp-ent-sub" style="color:#A03030"><b>Ojo:</b> este pedido ya se cerró y ' +
+           'el cobro sigue pendiente.</p>';
     }
     return h + '</div>';
   }
@@ -251,13 +576,18 @@
     var o = null;
     try { o = MDI.get(ordenId); } catch (e) {}
     var s = o ? dePedido(o) : null;
-    if (!s) { avisar('Este pedido no tiene seguimiento en línea'); return; }
+    if (!s) { avisar('Este pedido todavía no tiene seguimiento en línea'); return; }
     vibra(10);
+    var textos = {
+      preparando: 'Pedido aceptado · el cliente ya lo ve',
+      listo: 'Marcado como preparado',
+      entregado: 'Entrega registrada',
+      rechazado: 'Pedido rechazado'
+    };
     rpc('vp_pedido_estado', { p_pedido_id: s.id, p_estado: estado }).then(function (r) {
       if (r && r.ok) {
         s.estado = r.estado || estado;
-        avisar(estado === 'listo' ? 'Pedido marcado como listo' : 'Pedido actualizado',
-               { icon: ico('check') });
+        avisar(textos[estado] || 'Pedido actualizado', { icon: ico('check') });
         repintarBloque();
       } else {
         avisar(mensajeError(r), { icon: ico('alert') });
@@ -274,46 +604,73 @@
       pedido_para_recoger: 'Este pedido es para recoger: no lleva repartidor',
       pedido_cerrado: 'Este pedido ya está cerrado',
       motivo_requerido: 'Escribe el motivo (al menos 5 letras)',
+      metodo_no_manual: 'Los pagos con tarjeta los confirma Mercado Pago',
       no_encontrado: 'No encontramos ese pedido',
       sin_sesion: 'Inicia sesión para hacer esto'
     };
     return m[e] || 'No se pudo completar la acción';
   }
 
-  /* ---- Elegir repartidor ---- */
+  /* ---- Seleccionar repartidor ----
+     "Buscar repartidor" es elegir entre LOS TUYOS, los que ya aceptaste.
+     No es ningún servicio público de reparto. */
   function elegirRepartidor(ordenId) {
     var o = null; try { o = MDI.get(ordenId); } catch (e) {}
     var s = o ? dePedido(o) : null;
     if (!s) return;
-    cargarRepartidores(true).then(function () {
-      var libres = P.repartidores.filter(function (r) { return r.estado === 'aceptado'; });
-      var h = '<div class="sheet-header"><h2>Asignar repartidor</h2>' +
-              '<button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">' + ico('close') + '</button></div>';
-      if (!libres.length) {
-        h += '<p class="todo-empty">Todavía no tienes repartidores vinculados.<br>' +
-             'Genera un código en <b>Repartidores</b> y compártelo con ellos.</p>' +
-             '<div class="sheet-actions"><button class="btn primary block" ' +
-             'onclick="VPPedidos.panel()">Abrir Repartidores</button></div>';
-      } else {
-        h += '<div class="vp-rep-lista">';
-        libres.forEach(function (r) {
-          var yo = r.repartidor_id === s.repartidor_id;
-          h += '<button type="button" class="vp-rep-item' + (yo ? ' sel' : '') + '" ' +
-               'onclick="VPPedidos.asignar(\'' + esc(ordenId) + '\',\'' + esc(r.repartidor_id) + '\')">' +
-               '<div class="vp-rep-ini">' + esc((r.nombre || '?').charAt(0).toUpperCase()) + '</div>' +
-               '<div class="vp-rep-main"><b>' + esc(r.nombre || 'Sin nombre') + '</b>' +
-               '<span>' + (r.ocupado ? 'Con una entrega en curso' : 'Disponible') + '</span></div>' +
-               (yo ? '<span class="vp-rep-ok">' + ico('check') + '</span>' : '') +
-               '</button>';
-        });
-        h += '</div>';
-        if (s.repartidor_id) {
-          h += '<div class="sheet-actions"><button class="btn danger block" ' +
-               'onclick="VPPedidos.asignar(\'' + esc(ordenId) + '\', null)">Quitar asignación</button></div>';
-        }
+    abrirHoja('<div class="sheet-header"><h2>Seleccionar repartidor</h2>' +
+      '<button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
+      '<div id="vpElegirRep"><p class="todo-empty">Cargando…</p></div>');
+    P._eligiendo = ordenId;
+    cargarRepartidores(true).then(function () { pintarElegir(ordenId); });
+  }
+
+  function pintarElegir(ordenId) {
+    var caja = document.getElementById('vpElegirRep');
+    if (!caja) return;
+    var o = null; try { o = MDI.get(ordenId); } catch (e) {}
+    var s = o ? dePedido(o) : null;
+    if (!s) return;
+
+    var libres = P.repartidores.filter(function (r) { return r.estado === 'aceptado'; });
+    var pend = P.repartidores.filter(function (r) { return r.estado === 'pendiente'; });
+    var h = '';
+
+    if (!libres.length) {
+      h += '<p class="todo-empty">Todavía no tienes ningún repartidor vinculado.<br>' +
+           'Genera un código en <b>Pedidos y entregas</b> y dáselo a tu repartidor: ' +
+           'él lo escribe en la app <b>VendoPlus Repartidor</b> y te llega su solicitud aquí.</p>';
+      if (pend.length) {
+        h += '<p class="vp-ent-sub" style="text-align:center">' +
+             'Tienes ' + pend.length + ' solicitud' + (pend.length === 1 ? '' : 'es') +
+             ' esperando que la aceptes.</p>';
       }
-      abrirHoja(h);
+      h += '<div class="sheet-actions"><button class="btn primary block" ' +
+           'onclick="VPPedidos.panel()">Abrir Pedidos y entregas</button></div>';
+      caja.innerHTML = h;
+      return;
+    }
+
+    h += '<p class="vp-ent-sub" style="margin:0 0 12px">Elige quién lleva este pedido. ' +
+         'Le va a aparecer solo en su app. <b>Asignarlo no significa que ya salió</b>: ' +
+         'él confirma cuando lo recoja.</p>';
+    h += '<div class="vp-rep-lista">';
+    libres.forEach(function (r) {
+      var yo = r.repartidor_id === s.repartidor_id;
+      h += '<button type="button" class="vp-rep-item' + (yo ? ' sel' : '') + '" ' +
+           'onclick="VPPedidos.asignar(\'' + esc(ordenId) + '\',\'' + esc(r.repartidor_id) + '\')">' +
+           '<div class="vp-rep-ini">' + esc((r.nombre || '?').charAt(0).toUpperCase()) + '</div>' +
+           '<div class="vp-rep-main"><b>' + esc(r.nombre || 'Sin nombre') + '</b>' +
+           '<span>' + (r.ocupado ? 'Con una entrega en curso' : 'Disponible') + '</span></div>' +
+           (yo ? '<span class="vp-rep-ok">' + ico('check') + '</span>' : '') +
+           '</button>';
     });
+    h += '</div>';
+    if (s.repartidor_id) {
+      h += '<div class="sheet-actions"><button class="btn danger block" ' +
+           'onclick="VPPedidos.asignar(\'' + esc(ordenId) + '\', null)">Quitar asignación</button></div>';
+    }
+    caja.innerHTML = h;
   }
 
   function asignar(ordenId, repId) {
@@ -324,13 +681,80 @@
       if (r && r.ok) {
         s.repartidor_id = repId || null;
         s.aceptado_rep_en = null;
+        P._eligiendo = null;
         cerrarHoja();
-        avisar(repId ? 'Repartidor asignado' : 'Asignación quitada', { icon: ico('check') });
+        avisar(repId ? 'Repartidor asignado' : 'Asignación quitada', {
+          icon: ico('check'),
+          subtitle: repId ? 'Le aparece en su app en unos segundos' : ''
+        });
         var f = fn('mdiOpen'); if (f && o) f(o.id, true);
       } else {
         avisar(mensajeError(r), { icon: ico('alert') });
       }
     }).catch(function () { avisar('No se pudo asignar'); });
+  }
+
+  /* ---- Ver seguimiento · SOLO cuando el repartidor ya salió ---- */
+  function verSeguimiento(ordenId) {
+    var o = null; try { o = MDI.get(ordenId); } catch (e) {}
+    var s = o ? dePedido(o) : null;
+    if (!s) return;
+    if (s.estado !== 'en_camino') {
+      avisar('El seguimiento se abre cuando el repartidor sale con el pedido');
+      return;
+    }
+    abrirHoja('<div class="sheet-header"><h2>Seguimiento de la entrega</h2>' +
+      '<button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
+      '<div id="vpSegPos"><p class="todo-empty">Buscando al repartidor…</p></div>');
+    traerUbicacion(s.id, ordenId);
+  }
+
+  function traerUbicacion(pedidoId, ordenId) {
+    var c = nube();
+    if (!c) return;
+    c.sb.from('vp_ubicaciones').select('lat,lng,actualizado_en,precision_m')
+      .eq('pedido_id', pedidoId).maybeSingle()
+      .then(function (r) { pintarSeg((r && r.data) || null, ordenId); })
+      .catch(function () { pintarSeg(null, ordenId); });
+  }
+
+  function pintarSeg(u, ordenId) {
+    var caja = document.getElementById('vpSegPos');
+    if (!caja) return;
+    var o = null; try { o = MDI.get(ordenId); } catch (e) {}
+    var s = o ? dePedido(o) : null;
+    if (!s) return;
+    var rep = s.repartidor_id
+      ? P.repartidores.filter(function (r) { return r.repartidor_id === s.repartidor_id; })[0]
+      : null;
+
+    var h = '<div class="vp-ent-fila"><span>Estado</span><b>El repartidor va en camino</b></div>';
+    h += '<div class="vp-ent-fila"><span>Repartidor</span><b>' +
+         esc(rep ? (rep.nombre || 'Sin nombre') : 'Asignado') + '</b></div>';
+    h += '<div class="vp-ent-fila"><span>Llegada estimada</span><b>' +
+         (s.eta_min ? esc(String(s.eta_min)) + ' min' : 'Calculándose') + '</b></div>';
+    h += '<div class="vp-ent-fila"><span>Entregar en</span><b>' +
+         esc(s.destino_texto || 'Sin referencia') + '</b></div>';
+
+    if (u && u.lat != null && u.lng != null) {
+      h += '<div class="vp-ent-fila"><span>Última ubicación</span><b>' + esc(hace(u.actualizado_en)) + '</b></div>';
+      var url = 'https://www.openstreetmap.org/?mlat=' + encodeURIComponent(u.lat) +
+                '&mlon=' + encodeURIComponent(u.lng) + '#map=17/' + u.lat + '/' + u.lng;
+      h += '<div class="vp-ent-btns">' +
+           '<a class="btn ghost" href="' + esc(url) + '" target="_blank" rel="noopener">' +
+           ico('locate') + ' Abrir en el mapa</a>' +
+           '<button type="button" class="btn ghost" onclick="VPPedidos.verSeguimiento(\'' + esc(ordenId) + '\')">' +
+           ico('refresh') + ' Actualizar</button></div>';
+      h += '<p class="vp-ent-sub">El cliente ve esta misma posición moviéndose en su mapa.</p>';
+    } else {
+      h += '<p class="vp-ent-sub">Todavía no llega la ubicación del repartidor. Pasa cuando ' +
+           'trae el GPS apagado o sin señal. <b>No se inventa una posición</b>: ni aquí ni en ' +
+           'la pantalla del cliente.</p>';
+      h += '<div class="vp-ent-btns"><button type="button" class="btn ghost block" ' +
+           'onclick="VPPedidos.verSeguimiento(\'' + esc(ordenId) + '\')">' +
+           ico('refresh') + ' Actualizar</button></div>';
+    }
+    caja.innerHTML = h;
   }
 
   /* ---- Entrega excepcional ---- */
@@ -345,7 +769,9 @@
       '<button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
       '<p class="vp-ent-sub" style="padding:0 2px 10px">Úsalo solo cuando el cliente no pueda darte su ' +
       'código: perdió el teléfono, no lo encuentra o hubo una incidencia real.<br><br>' +
-      'Queda registrado quién lo autorizó, con fecha, hora y motivo.</p>' +
+      'Queda registrado quién lo autorizó, con fecha, hora y motivo.<br><br>' +
+      '<b>Esto cierra la entrega, no el cobro.</b> Si el pedido era en efectivo o por ' +
+      'transferencia, el saldo sigue apareciendo como pendiente hasta que lo confirmes.</p>' +
       '<label class="field"><span>Motivo</span>' +
       '<input id="vpExcMotivo" type="text" maxlength="160" autocomplete="off" ' +
       'placeholder="Ej. El cliente perdió su celular y confirmó por teléfono"></label>' +
@@ -379,15 +805,53 @@
   }
 
   /* =======================================================================
-     5. PANEL DE REPARTIDORES
+     5. PANEL DE PEDIDOS Y ENTREGAS (repartidores)
+
+     Una sola llamada (vp_negocio_entregas) trae el código activo, las
+     solicitudes y los vinculados. Se repinta solo cuando algo cambia en
+     vp_vinculos, sin volver a abrir la pantalla.
   ======================================================================= */
   function cargarRepartidores(forzar) {
     if (!nube()) return Promise.resolve(false);
-    if (!forzar && P.repartidores.length) return Promise.resolve(true);
-    return rpc('vp_repartidores_lista').then(function (r) {
-      if (r && r.ok) P.repartidores = r.repartidores || [];
+    if (P.cargandoReps) return Promise.resolve(false);
+    if (!forzar && P.repartidores.length && Date.now() - P.ultimaCargaReps < 4000) {
+      return Promise.resolve(true);
+    }
+    P.cargandoReps = true;
+    var antes = repsAceptados();
+    return rpc('vp_negocio_entregas').then(function (r) {
+      P.cargandoReps = false;
+      P.ultimaCargaReps = Date.now();
+      if (r && r.ok) {
+        P.repartidores = r.repartidores || [];
+        P.codigo = r.codigo || null;
+        P.codigoExpira = r.codigo_expira || null;
+        P.aceptados = r.aceptados || 0;
+        P.pendientes = r.pendientes || 0;
+        P.domicilioListo = !!r.domicilio_listo;
+        guardaReps(P.aceptados);
+        /* Si acaba de tener su primer repartidor (o se quedó sin
+           ninguno), el menú publicado tiene que cambiar: es lo que
+           decide si el cliente ve la opción "a domicilio". */
+        if ((antes < 1) !== (P.aceptados < 1)) republicarMenu();
+      }
       return true;
-    }).catch(function () { return false; });
+    }).catch(function () {
+      P.cargandoReps = false;
+      /* Si la función nueva todavía no está en Supabase (falta correr la
+         migración 08), se usa la de antes para no dejar el panel vacío. */
+      return rpc('vp_repartidores_lista').then(function (r) {
+        if (r && r.ok) {
+          P.repartidores = r.repartidores || [];
+          P.aceptados = P.repartidores.filter(function (x) { return x.estado === 'aceptado'; }).length;
+          P.pendientes = P.repartidores.filter(function (x) { return x.estado === 'pendiente'; }).length;
+          P.domicilioListo = P.aceptados > 0;
+          guardaReps(P.aceptados);
+          if ((antes < 1) !== (P.aceptados < 1)) republicarMenu();
+        }
+        return true;
+      }).catch(function () { return false; });
+    });
   }
 
   function panel() {
@@ -400,6 +864,7 @@
     setTimeout(function () {
       abrirHoja(panelHTML(), { dismissible: true });
       cargarRepartidores(true).then(repintarPanel);
+      escuchar();
     }, 60);
   }
 
@@ -413,20 +878,36 @@
     return h;
   }
 
-  function repintarPanel() {
-    var caja = document.getElementById('vpRepPanel');
-    if (!caja) return;
+  /* El mismo contenido se usa en dos lugares: en este panel y dentro de
+     la configuración de "Servicio a domicilio" del Menú Digital. Así el
+     comerciante no tiene que ir a buscarlo a otra pantalla. */
+  function repartidoresHTML(compacto) {
     var pend = P.repartidores.filter(function (r) { return r.estado === 'pendiente'; });
     var act = P.repartidores.filter(function (r) { return r.estado === 'aceptado'; });
-
     var h = '';
+
+    /* ---- ¿Puede ofrecer domicilio? ---- */
+    if (!act.length) {
+      h += '<div class="vp-aviso falta">' + ico('alert') +
+           '<span><b>Falta vincular un repartidor</b>' +
+           'Mientras no tengas al menos uno aceptado, tus clientes <b>no verán la opción ' +
+           '«a domicilio»</b> en tu Menú Digital: solo podrán ir a buscar su pedido. ' +
+           'Puedes guardar la configuración ahora y vincularlo después.</span></div>';
+    } else {
+      h += '<div class="vp-aviso ok">' + ico('check') +
+           '<span><b>Tu servicio a domicilio está listo</b>' +
+           'Tienes ' + act.length + ' repartidor' + (act.length === 1 ? '' : 'es') +
+           ' vinculado' + (act.length === 1 ? '' : 's') + '. Ya puedes recibir pedidos a domicilio.</span></div>';
+    }
+
     /* ---- Código de vinculación ---- */
     h += '<div class="vp-cod-box">';
     if (P.codigo) {
       h += '<div class="vp-cod-n">' + esc(P.codigo) + '</div>' +
            '<p class="vp-ent-sub">Dale este código a tu repartidor. Lo escribe en la app ' +
-           '<b>VendoPlus Repartidor</b>, en "Vincular negocio", y tú recibes su solicitud aquí.<br>' +
-           'Vence en 7 días.</p>' +
+           '<b>VendoPlus Repartidor</b>, en «Vincular negocio», y su solicitud te aparece aquí ' +
+           'sola, sin recargar.' + (P.codigoExpira ? '<br>Vence el ' + esc(fecha(P.codigoExpira)) + '.' : '') +
+           '</p>' +
            '<div class="vp-ent-btns">' +
            '<button type="button" class="btn ghost" onclick="VPPedidos.copiarCodigo()">' + ico('copy') + ' Copiar</button>' +
            '<button type="button" class="btn ghost" onclick="VPPedidos.nuevoCodigo()">' + ico('refresh') + ' Generar otro</button>' +
@@ -434,7 +915,7 @@
            '</div>';
     } else {
       h += '<p class="vp-ent-sub">Para que un repartidor pueda recibir tus pedidos, genera un ' +
-           'código y compártelo con él.</p>' +
+           'código y compártelo con él. Dura 7 días y lo puedes desactivar cuando quieras.</p>' +
            '<div class="vp-ent-btns"><button type="button" class="btn primary block" ' +
            'onclick="VPPedidos.nuevoCodigo()">' + ico('plus') + ' Generar código</button></div>';
     }
@@ -442,7 +923,8 @@
 
     /* ---- Solicitudes pendientes ---- */
     if (pend.length) {
-      h += '<div class="section-title">Solicitudes</div><div class="vp-rep-lista">';
+      h += '<div class="section-title">Solicitudes' +
+           ' <span class="vp-num">' + pend.length + '</span></div><div class="vp-rep-lista">';
       pend.forEach(function (r) {
         h += '<div class="vp-rep-item plain">' +
              '<div class="vp-rep-ini">' + esc((r.nombre || '?').charAt(0).toUpperCase()) + '</div>' +
@@ -473,17 +955,59 @@
       });
       h += '</div>';
     }
-    caja.innerHTML = h;
+
+    if (!compacto) {
+      h += '<p class="vp-ent-sub" style="margin-top:14px">No hace falta que tu repartidor ' +
+           'tenga la app abierta ni esté conectado para que lo vincules o para que guardes ' +
+           'tu configuración.</p>';
+    }
+    return h;
+  }
+
+  function fecha(iso) {
+    try {
+      return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' });
+    } catch (e) { return ''; }
+  }
+
+  /* Vuelve a subir el menú público usando el publicador que ya existe en
+     VendoPlus (MenuPub). Hace falta cuando cambia algo que el cliente
+     tiene que ver de inmediato: si ya hay repartidor, o si la tarjeta
+     quedó disponible. Si no está (versión vieja), no pasa nada. */
+  function republicarMenu() {
+    try {
+      var mp = ref('MenuPub');
+      if (mp && typeof mp.run === 'function') mp.run(true);
+    } catch (e) {}
+  }
+
+  /* Repinta los dos lugares donde puede estar la lista, si están
+     abiertos. Si no, no hace nada: no cuesta nada llamarlo siempre. */
+  function repintarPanel() {
+    var caja = document.getElementById('vpRepPanel');
+    if (caja) caja.innerHTML = repartidoresHTML(false);
+    var mini = document.getElementById('vpRepEnDomicilio');
+    if (mini) mini.innerHTML = repartidoresHTML(true);
+    if (P._eligiendo && document.getElementById('vpElegirRep')) pintarElegir(P._eligiendo);
+    /* La pantalla de configuración del menú muestra si falta repartidor */
+    var f = fn('mdRerenderIfMenu');
+    if (f && !document.querySelector('#modal-layer .modal-sheet')) { try { f(); } catch (e) {} }
   }
 
   function nuevoCodigo() {
     rpc('vp_codigo_generar', { p_max_usos: 5 }).then(function (r) {
-      if (r && r.ok) { P.codigo = r.codigo; repintarPanel(); vibra(12); }
-      else avisar(mensajeError(r));
+      if (r && r.ok) {
+        P.codigo = r.codigo;
+        P.codigoExpira = r.expira_en || null;
+        repintarPanel(); vibra(12);
+      } else avisar(mensajeError(r));
     }).catch(function () { avisar('No se pudo generar el código'); });
   }
   function revocarCodigo() {
-    rpc('vp_codigo_revocar').then(function () { P.codigo = null; repintarPanel(); });
+    rpc('vp_codigo_revocar').then(function () {
+      P.codigo = null; P.codigoExpira = null; repintarPanel();
+      avisar('Código desactivado');
+    }).catch(function () { avisar('No se pudo desactivar'); });
   }
   function copiarCodigo() {
     if (!P.codigo) return;
@@ -493,7 +1017,10 @@
   function resolver(vinculoId, aceptar) {
     rpc('vp_vinculo_resolver', { p_vinculo_id: vinculoId, p_aceptar: !!aceptar }).then(function (r) {
       if (r && r.ok) {
-        avisar(aceptar ? 'Repartidor aceptado' : 'Solicitud rechazada', { icon: ico('check') });
+        avisar(aceptar ? 'Repartidor aceptado' : 'Solicitud rechazada', {
+          icon: ico('check'),
+          subtitle: 'Lo ve en su app en unos segundos'
+        });
         cargarRepartidores(true).then(repintarPanel);
       } else avisar(mensajeError(r));
     }).catch(function () { avisar('No se pudo responder la solicitud'); });
@@ -504,21 +1031,23 @@
       rpc('vp_vinculo_revocar', { p_repartidor_id: repId }).then(function () {
         avisar('Repartidor desvinculado');
         cargarRepartidores(true).then(repintarPanel);
-      });
+      }).catch(function () { avisar('No se pudo desvincular'); });
     };
     if (ask) ask({ title: '¿Quitar a este repartidor?',
-                   text: 'Dejará de recibir tus pedidos. Los que todavía no recoge se le quitan.',
+                   text: 'Dejará de recibir tus pedidos y lo verá en su app. Los que todavía no recoge se le quitan.',
                    ok: 'Quitar', icon: ico('alert') }, hazlo);
     else if (confirm('¿Quitar a este repartidor?')) hazlo();
   }
 
+  /* Sigue disponible por si alguna vez hace falta a mano, pero ya no hay
+     ningún botón que lo llame: el rescate es automático. */
   function sincronizar() {
-    rpc('vp_pedidos_sincronizar').then(function (r) {
+    return rpc('vp_pedidos_sincronizar').then(function (r) {
       return cargar(true).then(function () {
-        avisar((r && r.creados) ? 'Se encontraron ' + r.creados + ' pedido(s)' : 'Todo está al día');
         repintarBloque();
+        return r;
       });
-    }).catch(function () { avisar('No se pudo revisar'); });
+    });
   }
 
 
@@ -542,6 +1071,8 @@
     }, 60);
   }
 
+  var LLAVE_COB = 'vp_cobros_cache';
+
   function cargarCobros() {
     var c = nube();
     if (!c) return Promise.resolve(false);
@@ -551,8 +1082,23 @@
         transf_banco: '', transf_titular: '', transf_clabe: '', transf_nota: '',
         mp_conectado: false, mp_apodo: ''
       };
+      guardaCobros();
       return true;
     }).catch(function () { return false; });
+  }
+
+  /* Se guarda una copia local porque mdPublicSnapshot() es síncrono y
+     necesita saber si la tarjeta de verdad está disponible. */
+  function guardaCobros() {
+    try {
+      localStorage.setItem(LLAVE_COB, JSON.stringify({
+        tarjeta: !!(COB && COB.tarjeta), mp: !!(COB && COB.mp_conectado)
+      }));
+    } catch (e) {}
+  }
+  function cobrosCache() {
+    try { return JSON.parse(localStorage.getItem(LLAVE_COB) || '{}') || {}; }
+    catch (e) { return {}; }
   }
 
   function pintarCobros() {
@@ -565,12 +1111,13 @@
 
     /* --- Efectivo --- */
     h += bloqueCobro('efectivo', 'Efectivo', COB.efectivo,
-      'El cliente paga al recibir su pedido. Tú registras el cobro desde la ficha del pedido.');
+      'El cliente paga al recibir su pedido. Tú registras el cobro en la ficha del pedido, ' +
+      'en la etapa de entrega.');
 
     /* --- Transferencia --- */
     h += bloqueCobro('transferencia', 'Transferencia bancaria', COB.transferencia,
-      'El cliente ve tus datos y te transfiere. El pedido se marca como pagado solo cuando ' +
-      'tú confirmas que recibiste el dinero.');
+      'El cliente ve tus datos y te transfiere. El pedido se marca como pagado <b>solo cuando ' +
+      'tú confirmas</b> que viste el dinero en tu cuenta.');
     if (COB.transferencia) {
       h += '<div class="vp-cob-campos">' +
         campo('vpCobBanco', 'Banco', COB.transf_banco, 'Ej. BBVA') +
@@ -584,20 +1131,26 @@
     h += '<div class="vp-cob-item">';
     h += '<div class="vp-cob-cab"><b>Tarjeta de crédito o débito</b></div>';
     if (COB.mp_conectado) {
-      h += '<p class="vp-ent-sub">Conectado a Mercado Pago' +
+      h += '<p class="vp-ent-sub">Enlazado a Mercado Pago' +
            (COB.mp_apodo ? ' como <b>' + esc(COB.mp_apodo) + '</b>' : '') + '.<br>' +
            'El dinero entra <b>directo a tu cuenta</b>. VendoPlus no se queda con nada; ' +
            'solo aplica la comisión de Mercado Pago.</p>';
       h += '<label class="vp-cob-check"><input type="checkbox" id="vpCobTarjeta"' +
            (COB.tarjeta ? ' checked' : '') + ' onchange="VPPedidos.cobroCambio()"> ' +
            'Aceptar pagos con tarjeta</label>';
+      h += '<div class="vp-aviso falta" style="margin-top:10px">' + ico('alert') +
+           '<span><b>El cobro con tarjeta todavía no está probado</b>' +
+           'La conexión con Mercado Pago tiene un pendiente conocido. Aunque enciendas ' +
+           'esta casilla, no des por hecho que los cobros con tarjeta ya funcionan: ' +
+           'haz una prueba real antes de ofrecerla a tus clientes.</span></div>';
       h += '<div class="vp-ent-btns"><button type="button" class="btn danger" ' +
-           'onclick="VPPedidos.mpDesconectar()">Desconectar Mercado Pago</button></div>';
+           'onclick="VPPedidos.mpDesconectar()">Desenlazar Mercado Pago</button></div>';
     } else {
-      h += '<p class="vp-ent-sub">Conecta tu cuenta de Mercado Pago para aceptar tarjetas. ' +
-           'El cobro llega <b>directo a tu cuenta</b>, no a VendoPlus.</p>';
+      h += '<p class="vp-ent-sub">Enlaza tu cuenta de Mercado Pago para aceptar tarjetas. ' +
+           'El cobro llega <b>directo a tu cuenta</b>, no a VendoPlus.<br>' +
+           'Mientras no esté enlazada, <b>la opción «Tarjeta» no le aparece a tus clientes</b>.</p>';
       h += '<div class="vp-ent-btns"><button type="button" class="btn primary block" ' +
-           'onclick="VPPedidos.mpConectar()">Conectar Mercado Pago</button></div>';
+           'onclick="VPPedidos.mpConectar()">Enlazar Mercado Pago</button></div>';
     }
     h += '</div>';
 
@@ -628,7 +1181,7 @@
     if (!COB) return;
     COB.efectivo = leeCheck('vpCob_efectivo');
     COB.transferencia = leeCheck('vpCob_transferencia');
-    COB.tarjeta = leeCheck('vpCobTarjeta');
+    if (document.getElementById('vpCobTarjeta')) COB.tarjeta = leeCheck('vpCobTarjeta');
     if (document.getElementById('vpCobBanco')) {
       COB.transf_banco = leeTxt('vpCobBanco');
       COB.transf_titular = leeTxt('vpCobTitular');
@@ -652,8 +1205,16 @@
       banco: COB.transf_banco, titular: COB.transf_titular,
       clabe: COB.transf_clabe, nota: COB.transf_nota
     } }).then(function (r) {
-      if (r && r.ok) { cerrarHoja(); avisar('Formas de pago guardadas', { icon: ico('check') }); }
-      else avisar(mensajeError(r));
+      if (r && r.ok) {
+        /* El servidor manda la verdad: si la tarjeta no se pudo
+           encender porque falta Mercado Pago, se refleja aquí. */
+        return cargarCobros().then(function () {
+          cerrarHoja();
+          avisar('Formas de pago guardadas', { icon: ico('check') });
+          republicarMenu();
+        });
+      }
+      avisar(mensajeError(r));
     }).catch(function () { avisar('No se pudo guardar'); });
   }
 
@@ -667,22 +1228,24 @@
       if (d && d.ok && d.url) { location.href = d.url; return; }
       avisar(d && d.error === 'sin_configurar'
         ? 'Falta configurar Mercado Pago en el servidor (ver la guía de pagos)'
-        : 'No se pudo abrir Mercado Pago');
-    }).catch(function () { avisar('No se pudo abrir Mercado Pago'); });
+        : 'No se pudo abrir Mercado Pago. Es un pendiente conocido: revisa la guía de pagos');
+    }).catch(function () {
+      avisar('No se pudo abrir Mercado Pago. Es un pendiente conocido: revisa la guía de pagos');
+    });
   }
 
   function mpDesconectar() {
     var ask = fn('askConfirm');
     var hazlo = function () {
       rpc('vp_mp_desconectar').then(function () {
-        avisar('Mercado Pago desconectado');
+        avisar('Mercado Pago desenlazado');
         cargarCobros().then(pintarCobros);
-      });
+      }).catch(function () { avisar('No se pudo desenlazar'); });
     };
-    if (ask) ask({ title: '¿Desconectar Mercado Pago?',
-                   text: 'Dejarás de aceptar tarjetas en tu Menú Digital. Puedes volver a conectarlo cuando quieras.',
-                   ok: 'Desconectar', icon: ico('alert') }, hazlo);
-    else if (confirm('¿Desconectar Mercado Pago?')) hazlo();
+    if (ask) ask({ title: '¿Desenlazar Mercado Pago?',
+                   text: 'Dejarás de aceptar tarjetas en tu Menú Digital. Puedes volver a enlazarlo cuando quieras.',
+                   ok: 'Desenlazar', icon: ico('alert') }, hazlo);
+    else if (confirm('¿Desenlazar Mercado Pago?')) hazlo();
   }
 
   /** Registrar que llegó el dinero (efectivo o transferencia). */
@@ -690,11 +1253,78 @@
     var o = null; try { o = MDI.get(ordenId); } catch (e) {}
     var s = o ? dePedido(o) : null;
     if (!s) return;
-    rpc('vp_pago_confirmar', { p_pedido_id: s.id, p_nota: '' }).then(function (r) {
+    if (s.metodo_pago === 'tarjeta') {
+      avisar('Los pagos con tarjeta los confirma Mercado Pago, no tú');
+      return;
+    }
+    if (s.pago_estado === 'pagado') { avisar('Este pedido ya está pagado'); return; }
+    var ask = fn('askConfirm');
+    var hazlo = function () {
+      rpc('vp_pago_confirmar', { p_pedido_id: s.id, p_nota: '' }).then(function (r) {
+        if (r && r.ok) {
+          avisar('Pago registrado', { icon: ico('check'), subtitle: 'El cliente lo ve como pagado' });
+          cargar(true).then(repintarBloque);
+        } else avisar(mensajeError(r));
+      }).catch(function () { avisar('No se pudo registrar'); });
+    };
+    if (ask) ask({
+      title: '¿Ya tienes el dinero?',
+      text: s.metodo_pago === 'efectivo'
+        ? 'Confirma solo si ya recibiste ' + dinero(s.total) + ' en efectivo.'
+        : 'Confirma solo si ya viste la transferencia de ' + dinero(s.total) + ' en tu cuenta.',
+      ok: 'Sí, ya lo recibí', icon: ico('check')
+    }, hazlo);
+    else hazlo();
+  }
+
+  /**
+   * Registrar a mano un cobro con tarjeta que Mercado Pago no confirmó.
+   *
+   * Existe porque si no, un pedido con tarjeta se quedaría "pendiente"
+   * para siempre cuando el cliente acabó pagando de otra forma. Pero no
+   * es un botón suelto: exige motivo, lo puede usar solo el dueño, y
+   * queda registrado en el historial del pedido con fecha y hora.
+   */
+  function cobroManual(ordenId) {
+    var o = null; try { o = MDI.get(ordenId); } catch (e) {}
+    var s = o ? dePedido(o) : null;
+    if (!s) return;
+    if (!dueno()) { avisar('Solo el Dueño puede registrar un cobro a mano'); return; }
+    if (s.pago_estado === 'pagado') { avisar('Este pedido ya está pagado'); return; }
+
+    abrirHoja(
+      '<div class="sheet-header"><h2>Registrar cobro a mano</h2>' +
+      '<button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
+      '<p class="vp-ent-sub" style="padding:0 2px 10px">Este pedido era con tarjeta por Mercado ' +
+      'Pago. Usa esto <b>solo si el cliente te pagó de otra forma</b>: con tu terminal física, ' +
+      'en efectivo o por transferencia.<br><br>Queda registrado quién lo marcó, cuándo y por qué. ' +
+      'Importe: <b>' + dinero(s.total) + '</b>.</p>' +
+      '<label class="field"><span>Motivo</span>' +
+      '<input id="vpCobMotivo" type="text" maxlength="160" autocomplete="off" ' +
+      'placeholder="Ej. Pagó con mi terminal al recibir"></label>' +
+      '<div class="sheet-actions">' +
+      '<button class="btn ghost" onclick="closeModal()">Cancelar</button>' +
+      '<button class="btn danger" onclick="VPPedidos.cobroManualOk(\'' + esc(ordenId) + '\')">' +
+      'Registrar cobro</button></div>'
+    );
+    setTimeout(function () {
+      var e = document.getElementById('vpCobMotivo'); if (e) e.focus();
+    }, 90);
+  }
+
+  function cobroManualOk(ordenId) {
+    var e = document.getElementById('vpCobMotivo');
+    var motivo = e ? (e.value || '').trim() : '';
+    if (motivo.length < 5) { avisar('Escribe el motivo'); if (e) e.focus(); return; }
+    var o = null; try { o = MDI.get(ordenId); } catch (ex) {}
+    var s = o ? dePedido(o) : null;
+    if (!s) return;
+    rpc('vp_pago_manual', { p_pedido_id: s.id, p_motivo: motivo }).then(function (r) {
       if (r && r.ok) {
-        avisar('Pago registrado', { icon: ico('check') });
+        cerrarHoja();
+        avisar('Cobro registrado', { icon: ico('check'), subtitle: 'Quedó en el historial' });
         cargar(true).then(repintarBloque);
-      } else avisar(mensajeError(r));
+      } else avisar(mensajeError(r), { icon: ico('alert') });
     }).catch(function () { avisar('No se pudo registrar'); });
   }
 
@@ -726,6 +1356,44 @@
       '.vp-ent-fila b{font-weight:800;color:var(--ink,#16213E);text-align:right;}',
       '.vp-ent-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}',
       '.vp-ent-btns .btn{flex:1 1 150px;}',
+      '.vp-ent-btns a.btn{display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;}',
+
+      /* Los tres procesos */
+      '.vp-pasos{display:flex;gap:6px;margin:2px 0 10px;}',
+      '.vp-paso{flex:1;display:flex;align-items:center;gap:6px;padding:6px 7px;border-radius:9px;',
+      'background:#F4F5F8;font-size:11px;font-weight:700;color:#8A91A0;line-height:1.2;min-width:0;}',
+      '.vp-paso i{flex:none;width:17px;height:17px;border-radius:50%;background:#D8DBE3;color:#fff;',
+      'font-style:normal;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;}',
+      '.vp-paso.on{background:#EAF9F0;color:#0B7A38;}',
+      '.vp-paso.on i{background:#16C15B;}',
+      '.vp-paso.ok{background:#F4F5F8;color:#5A6376;}',
+      '.vp-paso.ok i{background:#9ADFBB;}',
+
+      /* El cobro de la etapa final */
+      '.vp-cobro{margin-top:12px;padding:12px 13px;border:1px solid #FFE1A8;border-radius:12px;background:#FFFBF2;}',
+      '.vp-cobro.ok{border-color:#9ADFBB;background:#F3FCF7;}',
+      '.vp-cobro.mal{border-color:#F3B9B9;background:#FDF3F3;}',
+      '.vp-cobro-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}',
+      '.vp-cobro-cab b{font-size:13.5px;font-weight:800;color:var(--ink,#16213E);}',
+      '.vp-cobro-cab svg{width:17px;height:17px;}',
+      '.vp-cobro-pill{margin-left:auto;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;',
+      'background:#fff;border:1px solid currentColor;color:#8A6412;}',
+      '.vp-cobro.ok .vp-cobro-pill{color:#0B7A38;}',
+      '.vp-cobro.mal .vp-cobro-pill{color:#A03030;}',
+      '.vp-cobro-monto{margin-top:7px;font-size:24px;font-weight:800;color:var(--ink,#16213E);',
+      'font-variant-numeric:tabular-nums;}',
+      '.vp-cobro-monto small{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft,#6B7487);',
+      'margin-top:1px;letter-spacing:.1px;}',
+
+      /* Avisos */
+      '.vp-aviso{display:flex;gap:9px;padding:11px 12px;border-radius:11px;margin-bottom:12px;',
+      'font-size:12.5px;font-weight:600;line-height:1.45;}',
+      '.vp-aviso svg{flex:none;width:18px;height:18px;margin-top:1px;}',
+      '.vp-aviso b{display:block;font-weight:800;margin-bottom:2px;}',
+      '.vp-aviso.falta{background:#FFFBF2;border:1px solid #FFE1A8;color:#7A5A10;}',
+      '.vp-aviso.ok{background:#F3FCF7;border:1px solid #9ADFBB;color:#0B6030;}',
+      '.vp-num{display:inline-flex;min-width:19px;height:19px;padding:0 5px;border-radius:999px;',
+      'background:#16C15B;color:#fff;font-size:11.5px;font-weight:800;align-items:center;justify-content:center;}',
 
       '.vp-cod-box{padding:14px;border:1px dashed #9ADFBB;border-radius:13px;background:#EAF9F0;margin-bottom:14px;}',
       '.vp-cod-n{font-size:30px;font-weight:800;letter-spacing:6px;color:#0B7A38;text-align:center;',
@@ -791,8 +1459,15 @@
       var r = _open.apply(this, arguments);
       try {
         if (premium() && nube()) {
-          cargar().then(function (hubo) { if (hubo) repintarBloque(); });
+          cargar().then(function (hubo) {
+            if (hubo) repintarBloque();
+            /* Si este pedido del Menú Digital no tiene seguimiento, se
+               rescata solo. Antes esto era el botón "Buscar seguimiento". */
+            var o = null; try { o = MDI.get(id); } catch (e) {}
+            if (o && (!o.source || o.source === 'menu') && !dePedido(o)) rescatar(o);
+          });
           cargarRepartidores();
+          escuchar();
         }
       } catch (e) {}
       return r;
@@ -826,6 +1501,37 @@
       };
     }
 
+    /* ---- El menú publicado: la verdad manda ----
+       Dos reglas que se aplican aquí, en el último momento antes de
+       publicar, para que no se le pueda ofrecer al cliente algo que
+       todavía no funciona:
+
+         · Servicio a domicilio: solo si hay al menos un repartidor
+           aceptado y vinculado.
+         · Tarjeta: solo si Mercado Pago está enlazado Y el negocio la
+           activó. Si no, la opción no se publica.
+
+       Se hace envolviendo la función original, sin tocarla. */
+    if (typeof window.mdPublicSnapshot === 'function') {
+      var _snap = window.mdPublicSnapshot;
+      window.mdPublicSnapshot = function () {
+        var s = _snap.apply(this, arguments);
+        try {
+          if (s && s.cfg) {
+            if (s.cfg.delivery && s.cfg.delivery.on === true && repsAceptados() < 1) {
+              s.cfg.delivery = { on: false, lat: null, lng: null };
+              s.cfg.domicilio_sin_repartidor = true;
+            }
+            var cc = cobrosCache();
+            if (s.cfg.payments) {
+              s.cfg.payments.card = !!(cc.tarjeta && cc.mp);
+            }
+          }
+        } catch (e) {}
+        return s;
+      };
+    }
+
     escuchar();
     return true;
   }
@@ -842,7 +1548,7 @@
           var s = o ? dePedido(o) : null;
           if (!s || s.estado === estado) return;
           rpc('vp_pedido_estado', { p_pedido_id: s.id, p_estado: estado })
-            .then(function (r) { if (r && r.ok) s.estado = r.estado || estado; })
+            .then(function (r) { if (r && r.ok) { s.estado = r.estado || estado; repintarBloque(); } })
             .catch(function () {});
           /* De paso se le manda el nombre del negocio, para que el
              cliente lo vea en su pantalla de seguimiento. */
@@ -855,10 +1561,20 @@
   }
 
   function arrancar() {
+    if (P.arrancado) return;
+    P.arrancado = true;
     estilos();
-    if (engancha()) return;
-    var n = 0;
-    var t = setInterval(function () { if (engancha() || ++n > 240) clearInterval(t); }, 500);
+    if (!engancha()) {
+      var n = 0;
+      var t = setInterval(function () { if (engancha() || ++n > 240) clearInterval(t); }, 500);
+    }
+    /* El primer dato de repartidores: lo necesita el Menú Digital para
+       saber si ya puede ofrecer domicilio. */
+    var k = 0;
+    var t2 = setInterval(function () {
+      if (nube()) { clearInterval(t2); cargarRepartidores(true); return; }
+      if (++k > 120) clearInterval(t2);
+    }, 1000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar);
@@ -875,9 +1591,12 @@
     mpConectar: mpConectar,
     mpDesconectar: mpDesconectar,
     confirmarPago: confirmarPago,
+    cobroManual: cobroManual,
+    cobroManualOk: cobroManualOk,
     estado: cambiarEstado,
     elegirRepartidor: elegirRepartidor,
     asignar: asignar,
+    verSeguimiento: verSeguimiento,
     excepcional: excepcional,
     excepcionalOk: excepcionalOk,
     nuevoCodigo: nuevoCodigo,
@@ -887,6 +1606,14 @@
     desvincular: desvincular,
     sincronizar: sincronizar,
     recargar: function () { return cargar(true); },
+
+    /* Lo que usa la configuración de "Servicio a domicilio" del menú */
+    repartidoresHTML: repartidoresHTML,
+    refrescarRepartidores: function () { return cargarRepartidores(true).then(repintarPanel); },
+    hayRepartidores: function () { return repsAceptados() > 0; },
+    cuantosRepartidores: repsAceptados,
+    tarjetaDisponible: function () { var c = cobrosCache(); return !!(c.tarjeta && c.mp); },
+
     _estado: P
   };
 })();
