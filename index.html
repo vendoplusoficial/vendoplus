@@ -45,7 +45,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
       "offers": [
         { "@type": "Offer", "name": "Gratis", "price": "0", "priceCurrency": "MXN",
           "description": "Vender, tickets, historial, caja y corte, clientes y crédito, inventario y estadísticas simples. Sin tarjeta y sin límite de tiempo." },
-        { "@type": "Offer", "name": "Premium", "price": "149", "priceCurrency": "MXN",
+        { "@type": "Offer", "name": "Premium", "price": "199", "priceCurrency": "MXN",
           "description": "Menú Digital, asistente con IA, escaneos de carta con IA sin límite y estadísticas detalladas." }
       ],
       "publisher": { "@id": "https://vendoplusoficial.com/#org" }
@@ -4761,9 +4761,6 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 .md-quick .mdq-n{ position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:var(--accent-strong,#F5BF3C); color:#4A3300; font-style:normal; font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
 @media (max-width:699px){ .tool-btn.md-quick{ width:52px; padding:0; } .md-quick .mdq-txt{ display:none; } }
 
-</style>
-<style id="vp-lealtad-identidad">
-.vl-program-card{width:100%;text-align:left;padding:24px 18px;border:1px solid var(--border);border-left:5px solid #16865d;border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:0 5px 18px #12251b08}.vl-program-card .md-status-top{display:flex;align-items:center;gap:14px}.vl-program-card .md-status-ico{background:#e6f3ed;border-radius:10px;padding:12px;color:#16865d}.vl-program-card .md-status-txt{flex:1}.vl-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.vl-metrics>div{border:1px solid var(--border);border-top:3px solid #16865d;border-radius:10px;padding:16px 12px;background:var(--surface)}.vl-metrics span,.vl-metrics small{display:block;color:var(--ink-soft);font-size:12px}.vl-metrics b{display:block;font-size:25px;margin:8px 0}.vl-tabs{display:flex;border-bottom:1px solid var(--border);gap:20px;margin:20px 0 14px}.vl-tabs button{border:0;border-bottom:3px solid transparent;background:none;padding:12px 0;font:inherit;color:var(--ink-soft);cursor:pointer}.vl-tabs button.active{border-color:#16865d;color:#16865d;font-weight:800}.vl-tabs span{margin-left:6px}.vl-wrap .vl-head{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;border-left:5px solid #16865d}@media(max-width:480px){.vl-metrics{gap:6px}.vl-metrics>div{padding:12px 8px}.vl-metrics b{font-size:21px}}
 </style>
 </head>
 <body>
@@ -12170,16 +12167,16 @@ function newUser(country, phone, email){
   };
 }
 
-/* ---------- Precio de la membresía Premium · $149 MXN al mes ----------
+/* ---------- Precio de la membresía Premium · $199 MXN al mes ----------
    Ya NO hay mes de prueba: Vendo Plus es gratis y lo que se cobra es Premium
    (ver vendo-premium.js). Estas constantes se quedan porque varias pantallas
    viejas todavía las nombran, y porque aquí vive el precio que ve el cliente.
 
    OJO: este número solo es el TEXTO que ve el cliente. Lo que se cobra de verdad
    es el precio que creaste en Stripe (price_...) y la suscripción de Google Play:
-   los dos tienen que ser de $149 MXN mensuales. */
+   los dos tienen que ser de $199 MXN mensuales, IVA incluido. */
 const TRIAL_MESES = 1;
-const TRIAL_PRECIO = 149;
+const TRIAL_PRECIO = 199;
 function trialInfo(u){
   u = u || currentUser();
   if(!u) return null;
@@ -18377,6 +18374,9 @@ dmSendWhatsApp = async function(){
     loc: co.svc === 'domicilio' && co.loc ? { lat:co.loc.lat, lng:co.loc.lng, ref:(co.ref || '').trim() } : null
   });
   if(co.code && co.pay === 'transferencia') order.code = co.code;   /* el mismo que vio como concepto */
+  /* Token de seguimiento: lo crea este celular, no el servidor. Es la
+     credencial con la que el cliente verá su pedido sin ninguna cuenta. */
+  try{ order.t = (window.VPSeguimiento ? VPSeguimiento.tokenNuevo() : ''); }catch(e){ order.t = ''; }
   order.waText = mdiMessage(order);          /* solo el número de pedido */
   const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
   /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
@@ -18393,7 +18393,13 @@ dmSendWhatsApp = async function(){
 
   if(!conNube || enEsteAparato){
     /* El pedido ya quedó en la caja de este aparato: WhatsApp se abre de inmediato. */
-    if(conNube && typeof mdiCloudSend === 'function') mdiCloudSend(order);   /* y llega a las demás cajas */
+    if(conNube && typeof mdiCloudSend === 'function'){
+      mdiCloudSend(order);   /* y llega a las demás cajas */
+      /* y se deja listo su seguimiento, por si lo quiere compartir */
+      if(order.t && window.VPSeguimiento){
+        setTimeout(() => { VPSeguimiento.registrar(dm.id, order.code, order.t); }, 800);
+      }
+    }
     dmVib([60, 40, 60]);
     const win = window.open(url, '_blank');
     if(!win) location.href = url;
@@ -18401,11 +18407,9 @@ dmSendWhatsApp = async function(){
     return;
   }
 
-  /* Desde el celular del cliente: por WhatsApp solo va el número de pedido,
-     así que primero el pedido tiene que llegar por internet a la caja.
-     La pestaña de WhatsApp se abre ya (con el toque del cliente, para que
-     el navegador no la bloquee) y se llena cuando el pedido llegó. */
-  const win = window.open('', '_blank');
+  /* Desde el celular del cliente: el pedido viaja por internet a la caja.
+     Cuando llega, YA NO se abre WhatsApp a la fuerza: se le muestran sus
+     dos acciones —Seguir pedido y Compartir pedido— y él decide. */
   const btn = document.getElementById('dmSendBtn');
   const errBox = document.getElementById('dmSendErr');
   const btnHTML = btn ? btn.innerHTML : '';
@@ -18421,7 +18425,6 @@ dmSendWhatsApp = async function(){
   }catch(e){ ok = false; }
   dm.sending = false;
   if(!ok){
-    try{ if(win && !win.closed) win.close(); }catch(e){}
     if(btn && btn.isConnected){ btn.disabled = false; btn.innerHTML = btnHTML; }
     if(errBox && errBox.isConnected) errBox.style.display = '';
     dmVib([20, 40, 20]);
@@ -18429,10 +18432,24 @@ dmSendWhatsApp = async function(){
     return;
   }
   dmVib([60, 40, 60]);
-  let abierto = false;
-  try{ if(win && !win.closed){ win.location.href = url; abierto = true; } }catch(e){}
   listo('El negocio ya recibió tu pedido ' + order.code);
-  if(!abierto) location.href = url;
+
+  /* Se registra el seguimiento y se muestra la pantalla de "enviado".
+     Si el registro falla (internet malo justo en ese segundo), el pedido
+     YA llegó al negocio: lo único que se pierde es el enlace, y la caja
+     lo rescata después con "Buscar seguimiento". */
+  if(order.t && window.VPSeguimiento){
+    const reg = await VPSeguimiento.registrar(dm.id, order.code, order.t);
+    VPSeguimiento.panelEnviado({
+      code: order.code,
+      token: reg ? order.t : '',
+      negocio: (dm.cfg && dm.cfg.name) || '',
+      waUrl: url
+    });
+  }else{
+    const w2 = window.open(url, '_blank');
+    if(!w2) location.href = url;
+  }
 };
 dmWhatsappMessage = function(){ return mdiMessage(mdiBuildFromCart(dm.cart, '')); };
 
@@ -23315,6 +23332,12 @@ function mdiCloudSend(order){
     p_menu_id: dm.id,
     p_order: {
       v:1, id:order.id, code:order.code, createdAt:order.createdAt,
+      /* El token privado con el que el cliente sigue su pedido, sin tener
+         cuenta. Lo generó SU propio celular con crypto.getRandomValues().
+         Viaja aquí dentro para que el servidor pueda comprobar después
+         que quien pide el seguimiento es de verdad quien hizo el pedido. */
+      t: order.t || '',
+      total: mdiOrderTotal(order),
       customer: mdiCleanCustomer(order.customer),   /* nombre, tipo de servicio, pago y ubicación */
       original:(order.original || []).slice(0, 150)
     }
@@ -25400,8 +25423,15 @@ function cartSanitize(){
 <script src="vendo-cerebro.js"></script>
 <script src="vendo-mascota.js"></script>
 
-<!-- ===== MEMBRESIA PREMIUM (gratis vs. $149/mes) · va al final a proposito ===== -->
+<!-- ===== MEMBRESIA PREMIUM (gratis vs. $199/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261030"></script>
+
+<!-- ===== PEDIDOS Y ENTREGAS =====
+     vendo-seguimiento.js  · la pantalla del CLIENTE (sin cuenta)
+     vendo-pedidos.js      · lo que ve el COMERCIANTE en su caja
+     Los dos solo agregan cosas: si no se cargan, VendoPlus funciona igual. -->
+<script src="vendo-seguimiento.js?v=20261108"></script>
+<script src="vendo-pedidos.js?v=20261108"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
