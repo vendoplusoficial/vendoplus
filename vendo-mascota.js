@@ -972,7 +972,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
     if (sub) sub.textContent = r.fuente === 'ninguna' ? 'No entendí esa' : 'Respuesta con tus datos';
   }
 
-  var sugerencias = ['¿Cuánto vendí hoy?', '¿Cuál fue mi ganancia del mes?', '¿Qué está por agotarse?', '¿Cuánto vendí ayer?', '¿Qué vendo más?', '¿Cuánto me deben?', '¿Cuánto gasté este mes?', '¿Cuál fue mi mejor día?', '¿Cuánto vendí en efectivo?', '¿Cómo voy esta semana?', '¿Cuántos pedidos tuve hoy?', '¿Cuál es mi ganancia neta?', '¿Cuánto vendí con tarjeta?', '¿Cuál es mi ticket promedio?', '¿Cuál es mi margen de ganancia?', '¿Cuánto di en descuentos hoy?', '¿Cómo aumentar mis ventas?'];
+  var sugerencias = ['¿Cuánto vendí hoy?', '¿Cuál fue mi ganancia del mes?', '¿Qué está por agotarse?', '¿Cuánto vendí ayer?', '¿Qué vendo más?', '¿Cuánto me deben?', '¿Cuánto gasté este mes?', '¿Cuál fue mi mejor día?', '¿Cuánto vendí en efectivo?', '¿Cómo voy esta semana?', '¿Cuántos pedidos tuve hoy?', '¿Cuál es mi ganancia neta?', '¿Cuánto vendí con tarjeta?', '¿Cuál es mi ticket promedio?', '¿Cuál es mi margen de ganancia?', '¿Cuánto di en descuentos hoy?', '¿Cómo funciona el programa de lealtad?', '¿Cómo aumentar mis ventas?'];
   var rotacionChips = null;
   function pintarChips(lista) {
     clearInterval(rotacionChips);

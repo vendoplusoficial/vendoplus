@@ -1223,8 +1223,9 @@ if (hace) {
       [/que es.*ticket promedio/, 'El ticket promedio es el total de ventas netas dividido entre los pedidos cobrados del periodo.'],
       [/como.*(subir|aumentar|mejorar).*(ventas|vender)/, 'Revisa tus productos más vendidos, ofrece complementos y comparte tu Menú Digital. Compara periodos para comprobar si tus cambios funcionan.'],
       [/como.*(subir|aumentar|mejorar).*ganancia/, 'Registra tus costos y gastos, revisa tus márgenes y controla los descuentos. Vender más no siempre significa ganar más.'],
+      [/como.*(lealtad|puntos|recompensas)/, 'En Programa de lealtad configura tu recompensa, registra al cliente y asígnalo al cobrar. Con Premium puedes activar el programa.'],
       [/pedido.*(sin pagar|no pagado|por cobrar).*(venta|ganancia)|por que.*pedido.*no.*(cuenta|aparece)/, 'Un pedido del Menú Digital pendiente de pago todavía no es una venta. Confirma el cobro para que se incluya en las ventas y ganancias.'],
-      [/que.*incluye.*premium/, 'Premium incluye el Menú Digital con pedidos y entregas, todas las estadísticas, el chat con IA, el escáner con IA sin límite y más usuarios para tu equipo.'],
+      [/que.*incluye.*premium/, 'Premium incluye todas las estadísticas, el Menú Digital, el asistente con IA, escaneos sin límite y el programa de lealtad.'],
       [/cuantas.*(pruebas|escaneos).*gratis/, 'El plan gratuito incluye 3 pruebas de escaneo con IA en total por cuenta. Para seguir escaneando, contrata Premium.']
     ];
     for(var ai = 0; ai < ayuda.length; ai++) if(ayuda[ai][0].test(norm)) return Promise.resolve({ texto: ayuda[ai][1], fuente: 'reglas' });
