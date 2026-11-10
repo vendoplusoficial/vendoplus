@@ -166,9 +166,80 @@
     if (P.rescatados[o.id]) return;
     P.rescatados[o.id] = true;
     rpc('vp_pedidos_sincronizar')
-      .then(function () { return cargar(true); })
-      .then(function () { repintarBloque(); })
-      .catch(function () {});
+      .then(function (r) { P.ultimoRescate = r; return cargar(true); })
+      .then(function () {
+        /* Si después del rescate SIGUE sin fila, hay un problema de
+           verdad y hay que decirlo, no dejar el mensaje de "conectando"
+           puesto para siempre. */
+        P.rescateFallo = !dePedido(o);
+        repintarBloque();
+      })
+      .catch(function (e) {
+        P.rescateFallo = true;
+        P.ultimoError = (e && e.message) || 'sin_respuesta';
+        try { console.warn('[VendoPlus] No se pudo rescatar el seguimiento: ' + P.ultimoError); } catch (x) {}
+        repintarBloque();
+      });
+  }
+
+  /** Repara el seguimiento a mano, desde la ficha del pedido. */
+  function reparar() {
+    avisar('Reparando…');
+    return rpc('vp_pedidos_sincronizar').then(function (r) {
+      return cargar(true).then(function () {
+        P.rescateFallo = false;
+        var n = (r && r.creados) || 0;
+        avisar(n ? 'Listo: ' + n + ' pedido(s) recuperado(s)' : 'No había nada que recuperar',
+               { icon: ico('check') });
+        repintarBloque();
+        repintarLista();
+        return r;
+      });
+    }).catch(function (e) {
+      var m = (e && e.message) || '';
+      if (/404/.test(m)) {
+        avisar('Falta correr la migración en Supabase', {
+          icon: ico('alert'),
+          subtitle: 'El servidor no tiene la función vp_pedidos_sincronizar'
+        });
+      } else {
+        avisar('No se pudo reparar', { icon: ico('alert'), subtitle: m });
+      }
+    });
+  }
+
+  /** Le dice al comerciante qué está pasando de verdad. */
+  function diagnostico() {
+    abrirHoja('<div class="sheet-header"><h2>Estado del seguimiento</h2>' +
+      '<button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
+      '<div id="vpDiag"><p class="todo-empty">Revisando…</p></div>');
+    rpc('vp_diagnostico_seguimiento').then(function (filas) {
+      var caja = document.getElementById('vpDiag');
+      if (!caja) return;
+      if (!Array.isArray(filas) || !filas.length) {
+        caja.innerHTML = '<p class="todo-empty">El servidor no devolvió nada.</p>';
+        return;
+      }
+      var h = '<p class="vp-ent-sub" style="margin:0 0 12px">Esto se lee de tu propia base de ' +
+              'datos. No sale ningún dato de tus clientes.</p>';
+      filas.forEach(function (f) {
+        h += '<div class="vp-diag"><b>' + esc(f.cosa) + '</b>' +
+             '<span class="vp-diag-v">' + esc(f.valor) + '</span>' +
+             '<small>' + esc(f.que_significa) + '</small></div>';
+      });
+      h += '<div class="sheet-actions"><button class="btn primary block" ' +
+           'onclick="VPPedidos.reparar()">Reparar seguimiento</button></div>';
+      caja.innerHTML = h;
+    }).catch(function (e) {
+      var caja = document.getElementById('vpDiag');
+      if (!caja) return;
+      var m = (e && e.message) || '';
+      caja.innerHTML = '<div class="vp-aviso falta">' + ico('alert') +
+        '<span><b>No se pudo revisar</b>' +
+        (/404/.test(m)
+          ? 'Tu Supabase todavía no tiene la migración 09. Córrela y vuelve a intentarlo.'
+          : esc(m || 'El servidor no respondió')) + '</span></div>';
+    });
   }
 
   /* =======================================================================
@@ -201,6 +272,8 @@
                 if (pl.eventType === 'DELETE') delete P.porOrden[row.order_id];
                 else P.porOrden[row.order_id] = row;
                 repintarBloque();
+                /* Un pedido que avanza puede cambiar de sección. */
+                repintarLista();
               })
           .subscribe(function (st) { vigilar(st, uid, 'canal'); });
       } catch (e) { P.canal = null; P.canalUid = null; }
@@ -325,10 +398,23 @@
     h += '</div>';
 
     if (!s) {
-      /* Sin seguimiento todavía. Se rescata solo, en silencio. NO hay
-         botón de seguimiento aquí: eso es lo que pediste. */
-      h += '<p class="vp-ent-sub">Estamos conectando este pedido con el seguimiento del cliente. ' +
-           'Puedes aceptarlo y prepararlo con normalidad mientras tanto.</p>';
+      /* Sin seguimiento. Se intenta rescatar solo, pero si el intento ya
+         se hizo y sigue sin aparecer, NO se deja el mismo mensaje puesto
+         para siempre: se dice que algo falló y se ofrece repararlo.
+         Esto era justo lo que pasaba antes. */
+      if (P.rescatados[o.id] && P.rescateFallo) {
+        h += '<div class="vp-aviso falta">' + ico('alert') +
+             '<span><b>Este pedido no tiene seguimiento</b>' +
+             'El cliente no puede ver su pantalla de estado. El pedido está bien: ' +
+             'puedes aceptarlo, prepararlo y cobrarlo con normalidad.</span></div>';
+        h += '<div class="vp-ent-btns">' +
+             '<button type="button" class="btn primary" onclick="VPPedidos.reparar()">' +
+             ico('refresh') + ' Reparar seguimiento</button>' +
+             '<button type="button" class="btn ghost" onclick="VPPedidos.diagnostico()">' +
+             ico('alert') + ' ¿Qué pasó?</button></div>';
+      } else {
+        h += '<p class="vp-ent-sub">Conectando este pedido con el seguimiento del cliente…</p>';
+      }
       return h + '</div>';
     }
 
@@ -398,18 +484,20 @@
              ? 'Ya tiene repartidor asignado. <b>Asignarlo no significa que ya salió</b>: ' +
                'el pedido pasa a «en camino» cuando él confirme en su app que lo recogió.'
              : 'Elige a cuál de tus repartidores vinculados le toca este pedido. ' +
-               'Le aparecerá solo en su app, sin que tenga que recargar.') +
+               'Le aparecerá solo en su app, sin que tenga que recargar. ' +
+               '<b>Asignarlo no significa que ya salió</b>: el pedido pasa a «en camino» ' +
+               'cuando él confirme que lo recogió.') +
            '</p>';
-      h += '<div class="vp-ent-btns">' +
-           '<button type="button" class="btn ' + (s.repartidor_id ? 'ghost' : 'primary') + '" ' +
-           'onclick="VPPedidos.elegirRepartidor(\'' + esc(o.id) + '\')">' +
-           ico('users') + ' ' + (s.repartidor_id ? 'Cambiar repartidor' : 'Seleccionar repartidor') +
-           '</button>';
+
+      /* Los repartidores se despliegan AQUÍ MISMO, debajo del pedido:
+         no hay que irse a otra pantalla a buscarlos. */
+      h += '<div class="vp-reps-aqui" id="vpRepsAqui">' + listaRepsHTML(o.id, s) + '</div>';
+
       if (dueno()) {
-        h += '<button type="button" class="btn ghost" onclick="VPPedidos.excepcional(\'' + esc(o.id) + '\')">' +
-             ico('alert') + ' Entrega sin código</button>';
+        h += '<div class="vp-ent-btns">' +
+             '<button type="button" class="btn ghost" onclick="VPPedidos.excepcional(\'' + esc(o.id) + '\')">' +
+             ico('alert') + ' Entrega sin código</button></div>';
       }
-      h += '</div>';
       /* Nada de seguimiento aquí: el repartidor todavía no salió. */
       return h + '</div>';
     }
@@ -544,10 +632,177 @@
     return h + '</div>';
   }
 
+  /* ---------------------------------------------------------------------
+     La lista de repartidores, DENTRO de la ficha del pedido.
+
+     Es la misma información que la hoja de "Seleccionar repartidor",
+     pero desplegada debajo del pedido, que es donde la pediste: al
+     marcar "Pedido preparado" ya está ahí, sin cambiar de pantalla.
+  --------------------------------------------------------------------- */
+  function listaRepsHTML(ordenId, s) {
+    var libres = P.repartidores.filter(function (r) { return r.estado === 'aceptado'; });
+    var pend = P.repartidores.filter(function (r) { return r.estado === 'pendiente'; });
+
+    if (!libres.length) {
+      var h0 = '<div class="vp-aviso falta">' + ico('alert') +
+        '<span><b>No tienes ningún repartidor vinculado</b>' +
+        'Genera un código en <b>Menú Digital → Servicio a domicilio</b> y dáselo a tu ' +
+        'repartidor. Él lo escribe en la app <b>VendoPlus Repartidor</b> y su solicitud ' +
+        'te llega aquí sola.' +
+        (pend.length ? '<br><br>Tienes <b>' + pend.length + '</b> solicitud' +
+                       (pend.length === 1 ? '' : 'es') + ' esperando.' : '') +
+        '</span></div>';
+      h0 += '<div class="vp-ent-btns"><button type="button" class="btn primary block" ' +
+            'onclick="VPPedidos.panel()">' + ico('users') + ' Abrir repartidores</button></div>';
+      return h0;
+    }
+
+    var h = '<div class="vp-reps-t">' +
+            (s.repartidor_id ? 'Cambiar de repartidor' : 'Envíaselo a uno de tus repartidores') +
+            '</div><div class="vp-rep-lista">';
+    libres.forEach(function (r) {
+      var yo = r.repartidor_id === s.repartidor_id;
+      h += '<button type="button" class="vp-rep-item' + (yo ? ' sel' : '') + '" ' +
+           'onclick="VPPedidos.asignar(\'' + esc(ordenId) + '\',\'' + esc(r.repartidor_id) + '\')">' +
+           '<div class="vp-rep-ini">' + esc((r.nombre || '?').charAt(0).toUpperCase()) + '</div>' +
+           '<div class="vp-rep-main"><b>' + esc(r.nombre || 'Sin nombre') + '</b>' +
+           '<span>' + (yo ? 'Ya lleva este pedido'
+                          : (r.ocupado ? 'Con una entrega en curso' : 'Disponible')) + '</span></div>' +
+           (yo ? '<span class="vp-rep-ok">' + ico('check') + '</span>'
+               : '<span class="vp-rep-env">Enviar</span>') +
+           '</button>';
+    });
+    h += '</div>';
+    if (s.repartidor_id) {
+      h += '<div class="vp-ent-btns"><button type="button" class="btn ghost" ' +
+           'onclick="VPPedidos.asignar(\'' + esc(ordenId) + '\', null)">Quitar asignación</button></div>';
+    }
+    return h;
+  }
+
+  /* =====================================================================
+     LAS TRES SECCIONES DE "PEDIDOS ENTRANTES"
+
+       1. Pendientes        → revisarlo, ajustar el importe, aceptar o
+                              rechazar
+       2. En preparación    → aceptado; aquí se marca "Pedido preparado"
+                              y se le manda a un repartidor
+       3. Entrega y cobro   → ya salió (o ya está listo para recoger):
+                              seguimiento, entrega y cobro
+
+     El estado que manda es el del SEGUIMIENTO (vp_pedidos). Si un
+     pedido todavía no lo tiene, se usa el estado local del POS, para
+     que nunca desaparezca de la lista.
+  ===================================================================== */
+  var SECCIONES = [
+    { id: 'pendientes', titulo: 'Pendientes',
+      sub: 'Revísalos y acéptalos o recházalos' },
+    { id: 'preparacion', titulo: 'En preparación',
+      sub: 'Prepáralos y mándaselos a un repartidor' },
+    { id: 'entrega', titulo: 'Entrega y cobro',
+      sub: 'En camino, entregados y lo que falta cobrar' }
+  ];
+
+  /** ¿En qué sección va este pedido? */
+  function seccionDe(o) {
+    var s = dePedido(o);
+    var est = s ? s.estado : null;
+
+    if (!est) {
+      /* Sin seguimiento todavía: se usa el estado local del POS. */
+      var etapa = fn('mdiStage') ? ref('mdiStage')(o) : null;
+      var id = etapa ? etapa.id : 'nuevo';
+      if (id === 'nuevo') return 'pendientes';
+      if (id === 'pendiente') return 'preparacion';
+      return null;                 /* terminado: no va en los activos */
+    }
+
+    if (est === 'enviado') return 'pendientes';
+    if (est === 'preparando') return 'preparacion';
+    if (est === 'listo') {
+      /* Para recoger, "listo" ya es entrega y cobro.
+         A domicilio, sigue en preparación hasta que el repartidor sale. */
+      return s.tipo_entrega === 'recoger' ? 'entrega' : 'preparacion';
+    }
+    if (est === 'en_camino') return 'entrega';
+    if (est === 'entregado') {
+      /* Entregado pero sin cobrar: sigue a la vista. Es lo que pediste:
+         no se esconde un saldo pendiente al cerrar la entrega. */
+      return s.pago_estado === 'pagado' ? null : 'entrega';
+    }
+    return null;                   /* rechazado o cancelado */
+  }
+
+  function seccionesHTML() {
+    var todos = [];
+    try { todos = window.MDI ? MDI.all() : []; } catch (e) { return ''; }
+    if (!todos.length) return '';
+
+    todos = todos.slice().sort(function (a, b) {
+      return new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt);
+    });
+
+    var grupos = { pendientes: [], preparacion: [], entrega: [] };
+    todos.forEach(function (o) {
+      if (o.source && o.source !== 'menu') {
+        /* Los pegados o hechos en caja siguen su camino de siempre. */
+        var e2 = fn('mdiStage') ? ref('mdiStage')(o) : null;
+        var i2 = e2 ? e2.id : 'nuevo';
+        if (i2 === 'nuevo') grupos.pendientes.push(o);
+        else if (i2 === 'pendiente') grupos.preparacion.push(o);
+        return;
+      }
+      var g = seccionDe(o);
+      if (g && grupos[g]) grupos[g].push(o);
+    });
+
+    var total = grupos.pendientes.length + grupos.preparacion.length + grupos.entrega.length;
+    if (!total) {
+      return '<div class="mdi-empty">' +
+             '<span class="mdi-empty-ico">' + ico('inbox') + '</span>' +
+             '<b>Sin pedidos por ahora</b>' +
+             '<span>Cuando un cliente pida desde tu Menú Digital, aparecerá aquí.</span>' +
+             '</div>';
+    }
+
+    var tarjeta = fn('mdiCardSimpleHTML');
+    var h = '<div class="vp-secs">';
+    SECCIONES.forEach(function (sec) {
+      var l = grupos[sec.id];
+      h += '<div class="vp-sec vp-sec-' + sec.id + (l.length ? '' : ' vacia') + '">';
+      h += '<div class="vp-sec-cab"><b>' + esc(sec.titulo) + '</b>' +
+           (l.length ? '<span class="vp-sec-n">' + l.length + '</span>' : '') +
+           '<small>' + esc(sec.sub) + '</small></div>';
+      if (!l.length) {
+        h += '<p class="vp-sec-vacia">Nada por ahora</p>';
+      } else if (tarjeta) {
+        h += '<div class="mdi-list">' +
+             l.map(function (o) { return tarjeta(o, false); }).join('') +
+             '</div>';
+      }
+      h += '</div>';
+    });
+    return h + '</div>';
+  }
+
   function btn(ordenId, estado, texto, icono, primario) {
     return '<button type="button" class="btn ' + (primario ? 'primary' : 'ghost') + '" ' +
            'onclick="VPPedidos.estado(\'' + esc(ordenId) + '\',\'' + estado + '\')">' +
            ico(icono) + ' ' + esc(texto) + '</button>';
+  }
+
+  /* Vuelve a pintar la lista de pedidos entrantes, si está a la vista y
+     no hay ninguna hoja abierta encima (para no cerrarle nada al
+     comerciante mientras escribe). */
+  var repintando = false;
+  function repintarLista() {
+    if (repintando) return;
+    if (document.querySelector('#modal-layer .modal-sheet')) return;
+    var f = fn('render');
+    var v = ref('currentView');
+    if (!f || (v !== 'menu' && v !== 'home')) return;
+    repintando = true;
+    setTimeout(function () { repintando = false; try { f(); } catch (e) {} }, 80);
   }
 
   /* Vuelve a pintar SOLO el bloque de entrega, sin recargar toda la
@@ -572,7 +827,7 @@
   /* =======================================================================
      4. ACCIONES
   ======================================================================= */
-  function cambiarEstado(ordenId, estado) {
+  function cambiarEstado(ordenId, estado, motivo) {
     var o = null;
     try { o = MDI.get(ordenId); } catch (e) {}
     var s = o ? dePedido(o) : null;
@@ -584,11 +839,14 @@
       entregado: 'Entrega registrada',
       rechazado: 'Pedido rechazado'
     };
-    rpc('vp_pedido_estado', { p_pedido_id: s.id, p_estado: estado }).then(function (r) {
+    rpc('vp_pedido_estado', {
+      p_pedido_id: s.id, p_estado: estado, p_motivo: String(motivo || '').slice(0, 300)
+    }).then(function (r) {
       if (r && r.ok) {
         s.estado = r.estado || estado;
         avisar(textos[estado] || 'Pedido actualizado', { icon: ico('check') });
         repintarBloque();
+        repintarLista();
       } else {
         avisar(mensajeError(r), { icon: ico('alert') });
       }
@@ -1420,6 +1678,34 @@
       'color:var(--ink,#16213E);cursor:pointer;}',
       '.vp-cob-check input{width:20px;height:20px;accent-color:#16C15B;}',
       '.vp-cob-campos{margin:-4px 0 11px;padding:0 2px;}',
+      /* La lista de repartidores dentro de la ficha */
+      '.vp-reps-aqui{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border,#E8E9EF);}',
+      '.vp-reps-t{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;',
+      'color:var(--ink-soft,#6B7487);margin-bottom:8px;}',
+      '.vp-rep-env{flex:none;padding:6px 11px;border-radius:999px;background:#16C15B;color:#fff;',
+      'font-size:12px;font-weight:800;}',
+
+      /* Las tres secciones de Pedidos entrantes */
+      '.vp-secs{display:flex;flex-direction:column;gap:18px;}',
+      '.vp-sec-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px;}',
+      '.vp-sec-cab b{font-size:15px;font-weight:800;color:var(--ink,#16213E);}',
+      '.vp-sec-cab small{flex:1 1 100%;font-size:12px;font-weight:600;color:var(--ink-soft,#6B7487);}',
+      '.vp-sec-n{min-width:21px;height:21px;padding:0 6px;border-radius:999px;background:#16C15B;',
+      'color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;',
+      'justify-content:center;}',
+      '.vp-sec-pendientes .vp-sec-n{background:#F3A712;}',
+      '.vp-sec-entrega .vp-sec-n{background:#1D5FA8;}',
+      '.vp-sec-vacia{margin:0;padding:14px 12px;border:1px dashed var(--border,#E8E9EF);',
+      'border-radius:12px;font-size:12.5px;font-weight:600;color:var(--ink-soft,#9AA3B5);',
+      'text-align:center;}',
+      '.vp-sec.vacia .vp-sec-cab b{color:var(--ink-soft,#6B7487);}',
+      '.vp-diag{padding:11px 12px;border:1px solid var(--border,#E8E9EF);border-radius:11px;',
+      'margin-bottom:9px;}',
+      '.vp-diag b{display:block;font-size:13.5px;font-weight:800;color:var(--ink,#16213E);}',
+      '.vp-diag-v{display:inline-block;margin:4px 0 5px;padding:3px 9px;border-radius:999px;',
+      'background:#EAF9F0;color:#0B7A38;font-size:12.5px;font-weight:800;}',
+      '.vp-diag small{display:block;font-size:12px;font-weight:600;color:var(--ink-soft,#6B7487);',
+      'line-height:1.45;}',
       '.btn.mini{padding:7px 11px;font-size:12.5px;}'
     ].join('');
     document.head.appendChild(st);
@@ -1501,6 +1787,40 @@
       };
     }
 
+    /* ---- Los pedidos entrantes, en TRES SECCIONES ----
+       Se envuelve la sección de siempre y se reparten los pedidos
+       activos en los tres procesos, usando el estado REAL del
+       seguimiento. La tarjeta de cada pedido es la misma de siempre:
+       no se rediseñó ninguna. */
+    if (typeof window.mdiSectionHTML === 'function') {
+      var _sec = window.mdiSectionHTML;
+      window.mdiSectionHTML = function () {
+        var html = _sec.apply(this, arguments);
+        try {
+          if (!premium()) return html;
+          /* Si el seguimiento está viejo, se refresca y se vuelve a
+             pintar cuando llegue. Sin esperar a nada. */
+          if (nube()) {
+            cargar().then(function (hubo) { if (hubo) repintarLista(); });
+            cargarRepartidores();
+            escuchar();
+          }
+          var sec = seccionesHTML();
+          if (!sec) return html;
+          /* Se sustituye SOLO el bloque de tarjetas, dejando intactos
+             el título, el aviso de la nube y el botón "Todos". Si la
+             marca no está donde se espera, se devuelve el original: más
+             vale la lista de siempre que una pantalla rota. */
+          var fin = html.indexOf('<button type="button" class="mdi-todos-btn');
+          if (fin < 0) return html;
+          var i = html.indexOf('<div class="mdi-list">');
+          if (i < 0 || i > fin) i = html.indexOf('<div class="mdi-empty">');
+          if (i < 0 || i > fin) return html;
+          return html.slice(0, i) + sec + html.slice(fin);
+        } catch (e) { return html; }
+      };
+    }
+
     /* ---- El menú publicado: la verdad manda ----
        Dos reglas que se aplican aquí, en el último momento antes de
        publicar, para que no se le pueda ofrecer al cliente algo que
@@ -1546,9 +1866,22 @@
         cargar(true).then(function () {
           var o = null; try { o = MDI.get(ordenId); } catch (e) {}
           var s = o ? dePedido(o) : null;
-          if (!s || s.estado === estado) return;
-          rpc('vp_pedido_estado', { p_pedido_id: s.id, p_estado: estado })
-            .then(function (r) { if (r && r.ok) { s.estado = r.estado || estado; repintarBloque(); } })
+          if (!s) return;
+          /* El motivo del rechazo o la cancelación viaja con el estado:
+             es lo que el cliente va a leer en su pantalla. */
+          var motivo = '';
+          if (o && estado === 'rechazado') {
+            motivo = [o.rejectReason || '', o.rejectNote || ''].filter(Boolean).join(' · ');
+          } else if (o && estado === 'cancelado') {
+            motivo = o.cancelReason || o.rejectNote || '';
+          }
+          if (s.estado === estado && !motivo) return;
+          rpc('vp_pedido_estado', {
+            p_pedido_id: s.id, p_estado: estado, p_motivo: motivo.slice(0, 300)
+          })
+            .then(function (r) {
+              if (r && r.ok) { s.estado = r.estado || estado; repintarBloque(); repintarLista(); }
+            })
             .catch(function () {});
           /* De paso se le manda el nombre del negocio, para que el
              cliente lo vea en su pantalla de seguimiento. */
@@ -1605,6 +1938,8 @@
     resolver: resolver,
     desvincular: desvincular,
     sincronizar: sincronizar,
+    reparar: reparar,
+    diagnostico: diagnostico,
     recargar: function () { return cargar(true); },
 
     /* Lo que usa la configuración de "Servicio a domicilio" del menú */

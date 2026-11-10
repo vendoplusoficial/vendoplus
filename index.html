@@ -15280,15 +15280,57 @@ function mdMpEstadoHTML(){
     return `<div class="md-del-info" style="margin-top:14px">
       <div>${icon('check')}<span><b>Mercado Pago está enlazado.</b> El dinero de cada pedido entra directo a tu cuenta; VendoPlus no se queda con nada.</span></div>
       <div>${icon('alert')}<span>El cobro con tarjeta <b>todavía no está probado de punta a punta</b>. Haz una compra de prueba antes de ofrecérselo a tus clientes.</span></div>
-      <div>${icon('gear')}<span>Puedes administrarlo en <b>Pedidos y entregas → Cómo cobro</b>.</span></div>
     </div>
-    <button type="button" class="btn ghost block md-del-gps" onclick="closeModal(); if(window.VPPedidos) VPPedidos.cobros();">${icon('card')} Administrar Mercado Pago</button>`;
+    <button type="button" class="btn ghost block md-del-gps" id="mdMpBtn" onclick="mdEnlazarMercadoPago(this)">${icon('card')} Volver a enlazar Mercado Pago</button>`;
   }
   return `<div class="md-del-info" style="margin-top:14px">
       <div>${icon('card')}<span>Para cobrar con tarjeta necesitas <b>enlazar tu cuenta de Mercado Pago</b>. El cobro llega directo a tu cuenta.</span></div>
       <div>${icon('alert')}<span>Mientras no esté enlazada, <b>la opción «Tarjeta» no le aparece a tus clientes</b>, aunque guardes «Sí» aquí.</span></div>
     </div>
-    <button type="button" class="btn ghost block md-del-gps" onclick="closeModal(); if(window.VPPedidos) VPPedidos.cobros();">${icon('card')} Enlazar Mercado Pago</button>`;
+    <button type="button" class="btn ghost block md-del-gps" id="mdMpBtn" onclick="mdEnlazarMercadoPago(this)">${icon('card')} Enlazar Mercado Pago</button>`;
+}
+
+/* ---------------------------------------------------------------------
+   "Enlazar Mercado Pago" ahora empieza la autorización DIRECTAMENTE.
+
+   Antes este botón abría otra pantalla ("Cómo cobro") y había que
+   volver a buscar el botón allí. Se quitó ese paso de en medio.
+
+   El enlace de autorización lo pide la función del servidor que ya
+   existe (vp-mp-oauth): NO se arma ninguna dirección a mano, porque
+   lleva el identificador de la aplicación y la dirección de regreso,
+   que viven en el servidor y pueden cambiar.
+
+   Si falla, se dice qué falló, sin adornos.
+--------------------------------------------------------------------- */
+function mdEnlazarMercadoPago(btn){
+  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
+  const txt = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Abriendo Mercado Pago…'; }
+  const falla = (t, s) => {
+    if(btn && btn.isConnected){ btn.disabled = false; btn.innerHTML = txt; }
+    toast(t, { icon:icon('alert'), variant:'toast-danger', subtitle:s || '', duration:5000 });
+  };
+  if(!(window.Cloud && Cloud.ready && Cloud.uid && Cloud.sb)){
+    falla('Necesitas estar conectado', 'Entra a tu cuenta para enlazar Mercado Pago');
+    return;
+  }
+  Cloud.sb.functions.invoke('vp-mp-oauth', { body:{ accion:'url' } }).then(r => {
+    const d = r && r.data;
+    if(d && d.ok && d.url){ location.href = d.url; return; }
+    const e = (d && d.error) || (r && r.error && r.error.message) || '';
+    if(e === 'sin_configurar'){
+      falla('Falta configurar Mercado Pago en tu servidor',
+            'Hay que poner VP_MP_CLIENT_ID y los demás secretos en Supabase (ver la guía de pagos)');
+    }else if(e){
+      falla('Mercado Pago no aceptó la solicitud', e);
+    }else{
+      falla('No se pudo abrir Mercado Pago', 'Revisa tu internet e inténtalo otra vez');
+    }
+  }).catch(err => {
+    falla('No se pudo abrir Mercado Pago',
+          (err && err.message) ? err.message : 'Revisa tu internet e inténtalo otra vez');
+  });
 }
 
 function mdRenderPayForm(){
@@ -15578,24 +15620,12 @@ function mdSaveHours(){
 
 /* ---------- WhatsApp del negocio ----------
    Si no se configura uno distinto, se usa el número de la cuenta de Mesa. */
-function mdWhatsapp(){
-  const cfg = mdCfg();
-  const u = (typeof currentUser === 'function' ? currentUser() : null) || {};
-  const own = (cfg.whatsapp.number || '').replace(/\D/g, '');
-  if(own) return { country:cfg.whatsapp.country || u.country || 'MX', number:own, fromAccount:false };
-  const acc = (u.phone || '').replace(/\D/g, '');
-  if(acc) return { country:u.country || 'MX', number:acc, fromAccount:true };
-  return null;
-}
-function mdWhatsappDigits(){
-  const w = mdWhatsapp();
-  if(!w) return '';
-  return countryOf(w.country).dial.replace(/\D/g, '') + w.number;
-}
-function mdWhatsappLabel(){
-  const w = mdWhatsapp();
-  return w ? countryOf(w.country).dial + ' ' + formatPhone(w.number, w.country) : '';
-}
+/* Stubs: el Menú Digital ya no usa WhatsApp. Se dejan devolviendo
+   vacío para que nada se rompa si quedó alguna llamada suelta. */
+function mdWhatsapp(){ return null; }
+function mdWhatsappDigits(){ return ''; }
+function mdWhatsappLabel(){ return ''; }
+
 
 function mdTotals(lines){
   return calcTax(round2(lines.reduce((a, l) => a + l.price * l.qty, 0)));
@@ -15617,7 +15647,7 @@ function renderMenuDigital(){
   const cfg = mdCfg();
   return `
     <h1 class="page-title">Menú Digital</h1>
-    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>
+    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí, al instante</p>
 
     <div class="section-title">Configuración del Menú Digital</div>
     ${mdConfigHTML(cfg)}
@@ -15630,7 +15660,6 @@ function mdChecklist(){
   const b = u.business || {};
   const prods = DB.getProducts().filter(p => p.active);
   const sinDesc = prods.filter(p => !(p.description || '').trim()).length;
-  const wa = mdWhatsapp();
   return [
     { label:'Nombre del negocio', ok:!!(b.name || '').trim(), owner:true,
       sub:(b.name || '').trim() ? escapeHtml(b.name) + ' · aparece arriba de tu menú' : 'Aparece arriba de tu menú', action:'openBusinessForm()' },
@@ -15672,12 +15701,9 @@ function mdChecklist(){
            : '¿Aceptas transferencias? Toca para responder',
         action:'mdOpenTransferForm()' };
     })(),
-    /* Los pedidos ya NO pasan por WhatsApp: llegan solos a esta caja y
-       el cliente ve su estado en su propia pantalla. El número sigue
-       sirviendo para que un cliente te pueda escribir, pero ya no es
-       obligatorio para activar el menú. */
-    { label:'WhatsApp del negocio', ok:!!wa, optional:true,
-      sub:wa ? escapeHtml(mdWhatsappLabel()) + (wa.fromAccount ? ' · el de tu cuenta de ' + APP_NAME : ' · por si un cliente quiere escribirte') : 'Opcional · por si un cliente quiere escribirte', action:'mdOpenWhatsappForm()' },
+    /* El apartado "WhatsApp del negocio" se quitó del Menú Digital: los
+       pedidos ya no pasan por ahí. Llegan solos a esta caja y el cliente
+       ve su estado en su propia pantalla, que se actualiza sola. */
     { label:'Productos del menú', ok:prods.length > 0, free:true,
       sub:prods.length ? prods.length + ' activo' + (prods.length === 1 ? '' : 's') + (sinDesc ? ' · ' + sinDesc + ' sin descripción' : ' · todos con descripción') : 'Activa al menos un producto', action:"goTo('products')" },
   ];
@@ -15710,7 +15736,7 @@ function mdConfigHTML(cfg){
   /* Las mismas opciones de siempre, ahora en bloques con sentido */
   const toggleRow = `
     <div class="acc-row md-ro">
-      <span class="acc-ico green">${icon('whatsapp')}</span>
+      <span class="acc-ico green">${icon('inbox')}</span>
       <span class="acc-txt">
         <span class="acc-label">Recibir pedidos</span>
         <span class="acc-sub">Apágalo para pausar los pedidos sin quitar tu menú.</span>
@@ -15719,7 +15745,7 @@ function mdConfigHTML(cfg){
     </div>`;
   const GROUPS = [
     { title:'Lo esencial',       sub:'Lo mínimo para que tu menú funcione',
-      labels:['Nombre del negocio', 'WhatsApp del negocio', 'Productos del menú'] },
+      labels:['Nombre del negocio', 'Productos del menú'] },
     { title:'Apariencia',        sub:'Cómo ven tu menú tus clientes',
       labels:['Diseño del menú', 'Color del menú', 'Logo del negocio'] },
     { title:'Pedidos y horario', sub:'Cuándo y cómo te llegan los pedidos',
@@ -15756,7 +15782,7 @@ function mdConfigHTML(cfg){
         <span class="md-status-ico ${cfg.active ? 'on' : ''}">${icon('menuBook')}</span>
         <span class="md-status-txt">
           <span class="md-status-title">${cfg.active ? 'Tu Menú Digital está activo' : 'Menú Digital desactivado'}</span>
-          <span class="md-status-sub">${cfg.active ? (cfg.paused ? 'Tus clientes ven el menú, pero no pueden enviar pedidos' : (mdClosedNow(cfg) ? 'Fuera de horario: ven el menú, pero no pueden pedir' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') : 'Los pedidos llegan aquí y a tu WhatsApp')) : 'Confirma estas opciones y actívalo'}</span>
+          <span class="md-status-sub">${cfg.active ? (cfg.paused ? 'Tus clientes ven el menú, pero no pueden enviar pedidos' : (mdClosedNow(cfg) ? 'Fuera de horario: ven el menú, pero no pueden pedir' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') : 'Los pedidos llegan aquí, al instante')) : 'Confirma estas opciones y actívalo'}</span>
         </span>
         <span class="md-pill ${estado.cls}">${estado.txt}</span>
       </div>
@@ -15768,7 +15794,7 @@ function mdConfigHTML(cfg){
           <button class="btn ghost" onclick="mdShareLink()">${icon('share')} Compartir</button>
         </div>
         ${typeof mdPubStatusHTML === 'function' ? mdPubStatusHTML() : ''}
-        <p class="md-hint">Este es el link único de tu negocio. Compártelo con tus clientes para que vean tus productos y te manden su pedido por WhatsApp.</p>
+        <p class="md-hint">Este es el link único de tu negocio. Compártelo con tus clientes para que vean tus productos y te manden su pedido.</p>
       ` : ''}
     </div>
 
@@ -15864,7 +15890,7 @@ function mdOpenLink(){
 }
 function mdShareLink(){
   const b = ((currentUser() || {}).business || {});
-  const data = { title:(b.name || 'Nuestro menú'), text:'Mira nuestro menú y haz tu pedido por WhatsApp:', url:mdLink(mdCfg()) };
+  const data = { title:(b.name || 'Nuestro menú'), text:'Mira nuestro menú y haz tu pedido aquí:', url:mdLink(mdCfg()) };
   if(typeof MenuPub !== 'undefined') MenuPub.run();
   if(navigator.share){ navigator.share(data).catch(() => {}); }
   else mdCopy(data.url, 'Link copiado para compartir');
@@ -15887,7 +15913,7 @@ function mdRenderColorForm(){
       <h2>Color del menú</h2>
       <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
     </div>
-    <p class="sheet-text" style="margin-bottom:16px;">Elige el color con el que tus clientes verán tu Menú Digital. Los botones para enviar por WhatsApp se quedan en verde.</p>
+    <p class="sheet-text" style="margin-bottom:16px;">Elige el color con el que tus clientes verán tu Menú Digital.</p>
     <div class="md-swatches">
       ${MD_COLORS.map(x => `<button class="md-swatch ${x.hex === c ? 'active' : ''}" onclick="mdPickColor('${x.hex}')" aria-label="${x.name}">
         <span class="c" style="background:${x.hex}; color:${mdPalette(x.hex).on}">${icon('check')}</span>${x.name}
@@ -15946,46 +15972,11 @@ function mdSaveColor(){
   mdRerenderIfMenu();
 }
 
-/* ---------- WhatsApp del negocio (formulario) ---------- */
-function mdOpenWhatsappForm(){
-  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
-  const w = mdWhatsapp() || { country:((currentUser() || {}).country) || 'MX', number:'' };
-  openModal(`
-    <div class="sheet-header">
-      <h2>WhatsApp del negocio</h2>
-      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
-    </div>
-    <p class="sheet-text" style="margin-bottom:16px;">A este número llegarán los pedidos de tu Menú Digital. Debe tener WhatsApp.</p>
-    <div class="field">
-      <label for="mdWaCountry">País</label>
-      <select id="mdWaCountry">
-        ${COUNTRIES.map(c => `<option value="${c.code}" ${c.code === w.country ? 'selected' : ''}>${c.name} (${c.dial})</option>`).join('')}
-      </select>
-    </div>
-    <div class="field" id="mdWaField">
-      <label for="mdWaNumber">Número de WhatsApp</label>
-      <input id="mdWaNumber" type="tel" inputmode="numeric" maxlength="16" placeholder="Ej. 981 123 4567" value="${escapeHtml(w.number)}">
-    </div>
-    <button class="btn primary block" onclick="mdSaveWhatsapp()">Guardar número</button>
-  `, { dismissible:true });
-}
-function mdSaveWhatsapp(){
-  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
-  clearFieldError('mdWaField');
-  const country = document.getElementById('mdWaCountry').value;
-  const number = document.getElementById('mdWaNumber').value.replace(/\D/g, '');
-  const c = countryOf(country);
-  if(number.length !== c.digits){
-    setFieldError('mdWaField', 'El número de ' + c.name + ' tiene ' + c.digits + ' dígitos (sin el ' + c.dial + ')');
-    return;
-  }
-  const cfg = mdCfg();
-  cfg.whatsapp = { country, number };
-  mdSaveCfg(cfg);
-  closeModal();
-  toast('WhatsApp guardado', { subtitle:c.dial + ' ' + formatPhone(number, country) });
-  mdRerenderIfMenu();
-}
+/* El formulario de "WhatsApp del negocio" se quitó del Menú Digital.
+   Los pedidos ya no pasan por WhatsApp, así que no hay ningún número
+   que configurar aquí. Las demás funciones de WhatsApp de VendoPlus
+   (tickets, clientes, cortes) no usan este número y siguen igual. */
+
 
 /* ---------- Link único del negocio ---------- */
 function mdSlug(s){
@@ -16253,7 +16244,7 @@ function dmRender(){
   root.innerHTML = top + `
     <main class="dm-view">
       <h1 class="dm-title">${typeof bizIsFood === 'function' && !bizIsFood() ? 'Nuestros productos' : 'Nuestro menú'}</h1>
-      <p class="dm-lead">Elige tus productos y envía tu pedido por WhatsApp.</p>
+      <p class="dm-lead">Elige tus productos y haz tu pedido aquí mismo.</p>
       ${dmHoursLineHTML(d.cfg)}
       ${d.cfg.paused ? `<div class="dm-banner">${icon('pause')}<span><b>Por ahora no estamos recibiendo pedidos</b>Puedes ver el menú; vuelve a intentarlo más tarde.</span></div>`
         : (mdClosedNow(d.cfg) ? `<div class="dm-banner">${icon('clock')}<span><b>Estamos cerrados en este momento</b>Puedes ver el menú${hrsNextOpen(mdMenuHours(d.cfg)) ? '; recibimos pedidos de nuevo ' + hrsNextOpen(mdMenuHours(d.cfg)) : ''}.</span></div>` : '')}
@@ -16582,6 +16573,13 @@ function bootMenu(route){
   document.body.append(root, bar, layer, t);
   dmRender();
   dm.sig = dmSig();
+  /* ---- Recuperar la pantalla del pedido ----
+     Si este navegador tiene un pedido de ESTE negocio que todavía toca
+     enseñar, se abre su pantalla sola. Lo decide el SERVIDOR, no lo que
+     esté guardado aquí: se consulta el estado real. */
+  if(window.VPSeguimiento && typeof VPSeguimiento.restaurar === 'function'){
+    try{ VPSeguimiento.restaurar(dm.id); }catch(e){}
+  }
   setTimeout(() => { const r = document.getElementById('dmRoot'); if(r) r.classList.add('dm-booted'); }, 2200);
   let dmSpyRaf = 0;
   window.addEventListener('scroll', () => { if(dmSpyRaf) return; dmSpyRaf = requestAnimationFrame(() => { dmSpyRaf = 0; dmSpy(); }); }, { passive:true });
@@ -17095,34 +17093,29 @@ function mdiQuickConfirm(id){
   }
   mdiConfirm(id);
 }
-/* Después de aceptar o rechazar: una hoja corta para avisarle al cliente */
+/* ---------------------------------------------------------------------
+   Después de aceptar o rechazar.
+
+   ANTES: una pantalla completa de "Pedido aceptado" con un botón de
+   WhatsApp y un salto directo a "Por cobrar". Se quitó entera:
+     · El cliente ya se entera solo, en su propia pantalla de estado.
+     · El pedido ahora pasa a "En preparación", no a "Por cobrar".
+   Queda un aviso corto y el pedido se queda a la vista en su sección.
+--------------------------------------------------------------------- */
 function mdiAfterDecision(id){
   const o = MDI.get(id); if(!o) return;
   const ok = o.status === 'confirmado';
-  const nombre = (((o.customer && o.customer.name) || '').trim().split(/\s+/)[0]) || 'el cliente';
   mdiUI = { id:null, compare:false, text:'', result:null };
-  /* Pantalla completa: el mensaje al centro y los botones hasta abajo */
-  openModal(`
-    <i class="fs-marker" hidden></i>
-    <div class="mdn-done mdn-full">
-      <div class="mdn-full-main">
-        ${ok ? `<div class="mdn-okwrap"><span class="mdn-done-ico ok">${icon('check')}</span></div>` : `<span class="mdn-done-ico no">${icon('close')}</span>`}
-        <h2>${ok ? 'Pedido aceptado' : 'Pedido rechazado'}</h2>
-        <p>${ok ? 'Ahora lo verás en <b>Por cobrar</b>. Avísale al cliente que ya lo estás preparando.' : 'Avísale a ' + escapeHtml(nombre) + ' para que sepa que no se pudo surtir.'}</p>
-        ${ok ? `<img class="mdn-bag" src="data:image/webp;base64,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" alt="" width="220" height="220">` : ''}
-      </div>
-      <div class="mdn-full-actions">
-        ${ok ? `<button class="btn whatsapp block mdn-wa" onclick="mdiNotify('${id}')">${icon('whatsapp')}<span>Avisar al cliente por WhatsApp</span>${icon('chevronRight')}</button>
-             <button type="button" class="mdn-later" onclick="mdiDoneClose()">Salir y cobrar después ${icon('chevronRight')}</button>`
-             : `<button class="btn whatsapp block" onclick="mdiNotify('${id}')">${icon('whatsapp')} Avisar a ${escapeHtml(nombre)} por WhatsApp</button>
-                <button class="btn ghost block" onclick="mdiDoneClose()">Listo</button>`}
-      </div>
-    </div>
-  `, { dismissible:true });
-  /* Entra de abajo hacia arriba, como las demás pantallas completas */
-  const ovNew = document.getElementById('modalOverlay'); if(ovNew) ovNew.classList.remove('is-swap');
+  closeModal();
   mdiPaintBadge();
-  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
+  if(currentView === 'menu' || currentView === 'home') render();
+  toast(ok ? 'Pedido aceptado' : 'Pedido rechazado', {
+    icon: icon(ok ? 'check' : 'close'),
+    variant: ok ? 'toast-success' : '',
+    subtitle: ok ? 'Pasó a En preparación · el cliente ya lo ve en su pantalla'
+                 : 'El cliente ya lo ve en su pantalla',
+    duration: 3200
+  });
 }
 /* Después de aceptar: abre el pedido "Aceptado · falta cobrarlo" */
 function mdiChargeFromDone(id){
@@ -17150,7 +17143,7 @@ function mdiCardHTML(o){
   const stop = 'event.stopPropagation(); ';
   let acts = '';
   if(st.id === 'nuevo') acts = `<button type="button" class="mdn-btn no" onclick="${stop}mdiAskReject('${o.id}')">Rechazar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiQuickConfirm('${o.id}')">${icon('check')} Aceptar</button>`;
-  else if(st.id === 'pendiente') acts = `<button type="button" class="mdn-btn wa" onclick="${stop}mdiNotify('${o.id}')">${icon('whatsapp')} Avisar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('cash')} Cobrar</button>`;
+  else if(st.id === 'pendiente') acts = `<button type="button" class="mdn-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('cash')} Cobrar</button>`;
   const badge = (st.id === 'nuevo' || st.id === 'pendiente') ? '' : `<span class="mdn-state ${st.cls}">${st.label}</span>`;
   return `
     <div class="mdn-card" role="button" tabindex="0" onclick="mdiOpen('${o.id}')">
@@ -17262,7 +17255,7 @@ function mdiOpen(id, keepScroll){
   const sh = document.querySelector('#modal-layer .modal-sheet');
   if(sh){ sh.classList.add('mdi-sheet'); if(y) sh.scrollTop = y; }
   mdiMountMap(o);
-  try{ mdiEtaMount(o); }catch(e){}
+
 }
 /* Mapa (solo para ver) con el lugar que marcó el cliente */
 function mdiMountMap(o){
@@ -17316,7 +17309,7 @@ function mdiDeliveryHTML(o){
         <div class="md-map mdi-map" id="mdiMap">${mdMapPH()}</div>
         ${loc.ref ? `<div class="mdi-ref">${icon('pin')}<span><small>Dirección o referencias</small>${escapeHtml(loc.ref)}</span></div>` : ''}
         <button class="btn ghost block mdi-gmaps" onclick="mdiOpenMaps('${o.id}')">${icon('external')} Abrir en Google Maps</button>` : `
-        <div class="mdi-noloc">${icon('alert')}<span>El cliente no mandó su ubicación. Pídesela por WhatsApp.</span></div>`}
+        <div class="mdi-noloc">${icon('alert')}<span>El cliente no marcó su ubicación en el mapa al pedir. Comunícate con él para que te diga dónde llevarlo.</span></div>`}
       ${editable ? `
         <div class="mdi-fee" id="mdiFeeBox">
           <label for="mdiFee"><b>Costo de envío</b><small>Cargo adicional por llevar el pedido al domicilio del cliente.</small></label>
@@ -17339,74 +17332,12 @@ function mdiEtaLong(m){
   const h = Math.floor(m / 60), r = m % 60;
   return h + (h === 1 ? ' hora' : ' horas') + ' y ' + r + ' minutos';
 }
-function mdiEtaOptHTML(id, m, sel){ const c = mdiEtaChip(m); return `<button type="button" class="eta-opt ${m === sel ? 'sel' : ''}" data-min="${m}" onclick="mdiEtaPick('${id}', ${m}, true)"><b>${c[0]}</b><small>${c[1]}</small></button>`; }
-function mdiEtaHTML(o){
-  const del = mdiIsDelivery(o);
-  const sel = Number(o.etaMin) || 0;
-  const ttl = del ? 'Tiempo para llevar el pedido' : 'Tiempo para que lo recojan';
-  if(o.status !== 'nuevo'){
-    if(!sel) return '';
-    return `<div class="mdi-eta ro"><span class="mdi-eta-t"><b>${ttl}</b><small>Lo que le dijiste al cliente</small></span><b class="mdi-eta-val">${mdiEtaShort(sel)}</b></div>`;
-  }
-  const list = MDI_ETAS.slice();
-  return `
-    <div class="mdi-eta" id="mdiEta">
-      <div class="mdi-eta-head">
-        <span class="mdi-eta-t"><b>${ttl}</b><small>${del ? 'Incluye lo que tardas en cobrarlo y en llevarlo' : 'Incluye lo que tardas en prepararlo y cobrarlo'}</small></span>
-        <div class="eta-slider ${sel ? 'set' : ''}" id="mdiEtaSlider" data-id="${o.id}">
-          <div class="eta-frame"></div>
-          <div class="eta-track" id="mdiEtaTrack">
-            ${list.map(m => mdiEtaOptHTML(o.id, m, sel)).join('')}
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-function mdiEtaPick(id, m, fromTap){
-  const o = MDI.get(id); if(!o || o.status !== 'nuevo') return;
-  MDI.update(id, x => { if(x.status === 'nuevo') x.etaMin = m; });
-  vibrate(8);
-  const sl = document.getElementById('mdiEtaSlider');
-  if(sl){
-    mdiNeedClear('mdiEta');
-    sl.classList.add('set');
-    sl.querySelectorAll('.eta-opt').forEach(b => b.classList.toggle('sel', Number(b.dataset.min) === m));
-    const v = document.getElementById('mdiEtaVal'); if(v){ v.textContent = mdiEtaShort(m); if(v.animate) v.animate([{ transform:'scale(.85)', opacity:.4 }, { transform:'scale(1)', opacity:1 }], { duration:260, easing:'cubic-bezier(.34,1.56,.64,1)' }); }
-    if(fromTap){ const b = sl.querySelector('.eta-opt[data-min="' + m + '"]'); if(b) mdiEtaCenter(b, true); }
-  }
-  mdiPaintTotals(id);
-}
-function mdiEtaCenter(btn, smooth){
-  const tr = document.getElementById('mdiEtaTrack'); if(!tr || !btn) return;
-  const left = btn.offsetLeft + btn.offsetWidth / 2 - tr.clientWidth / 2;
-  try{ tr.scrollTo({ left, behavior: smooth ? 'smooth' : 'auto' }); }catch(e){ tr.scrollLeft = left; }
-}
-function mdiEtaMount(o){
-  const tr = document.getElementById('mdiEtaTrack'); if(!tr || !o || o.status !== 'nuevo') return;
-  const sl = document.getElementById('mdiEtaSlider');
-  const getOpts = () => Array.prototype.slice.call(tr.querySelectorAll('.eta-opt'));
-  const start = getOpts().find(b => Number(b.dataset.min) === Number(o.etaMin)) || getOpts()[0];
-  requestAnimationFrame(() => { mdiEtaCenter(start, false); mark(); });
-  let timer = null, touched = false;
-  function nearest(){
-    const mid = tr.scrollLeft + tr.clientWidth / 2; let best = null, bd = 1e9;
-    getOpts().forEach(b => { const d = Math.abs(b.offsetLeft + b.offsetWidth / 2 - mid); if(d < bd){ bd = d; best = b; } });
-    return best;
-  }
-  function mark(){ const n = nearest(); getOpts().forEach(b => b.classList.toggle('near', b === n)); return n; }
-  ['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach(ev => tr.addEventListener(ev, () => { touched = true; }, { passive:true }));
-  tr.addEventListener('scroll', () => {
-    const n = mark();
-    clearTimeout(timer);
-    timer = setTimeout(() => { if(touched && n && Number(n.dataset.min) !== Number((MDI.get(sl.dataset.id) || {}).etaMin)) mdiEtaPick(sl.dataset.id, Number(n.dataset.min), false); }, 140);
-  }, { passive:true });
-  /* con el mouse en PC: arrastrar para deslizar */
-  let down = false, sx = 0, sleft = 0, moved = false;
-  tr.addEventListener('mousedown', e => { down = true; moved = false; sx = e.pageX; sleft = tr.scrollLeft; tr.classList.add('drag'); });
-  window.addEventListener('mouseup', () => { if(down){ down = false; tr.classList.remove('drag'); } });
-  tr.addEventListener('mousemove', e => { if(!down) return; const dx = e.pageX - sx; if(Math.abs(dx) > 4) moved = true; tr.scrollLeft = sleft - dx; });
-  tr.addEventListener('click', e => { if(moved){ e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
-}
+/* El selector "Tiempo para llevar el pedido" se quitó.
+   Era un tiempo que había que adivinar antes de empezar, y el cliente
+   ya ve el estado real de su pedido en su pantalla, que vale más.
+   Se conservan mdiEtaShort y mdiEtaChip, que siguen usándose para
+   mostrar el tiempo de llegada que calcula la app del repartidor. */
+
 
 function mdiToggleMore(){
   const open = !mdiUI.more; mdiUI.more = open;
@@ -17459,7 +17390,11 @@ function mdiTotalsHTML(o){
     </div>`;
 }
 function mdiMissing(o){ return (o.lines || []).filter(l => !l.productId || !findProduct(l.productId)).length; }
-function mdiCanConfirm(o){ return (o.lines || []).length > 0 && !mdiMissing(o) && (!mdiIsDelivery(o) || mdiHasFee(o)) && Number(o.etaMin) > 0; }
+/* Para aceptar hace falta: productos, que no falte ninguno por elegir y,
+   si es a domicilio, el costo de envío. El tiempo aproximado se quitó:
+   el cliente ve el estado real de su pedido en su pantalla, que es
+   mejor que un tiempo adivinado de antemano. */
+function mdiCanConfirm(o){ return (o.lines || []).length > 0 && !mdiMissing(o) && (!mdiIsDelivery(o) || mdiHasFee(o)); }
 function mdiSetFee(id, v){
   const raw = String(v == null ? '' : v).trim().replace(',', '.');
   const n = raw === '' ? null : parseFloat(raw);
@@ -17477,7 +17412,7 @@ function mdiPaintTotals(id){
   const btn = document.getElementById('mdiConfirmBtn');
   if(btn){ btn.innerHTML = icon('check') + ' Aceptar · ' + formatMoney(mdiOrderTotal(o)); btn.disabled = false; }
   const need = document.getElementById('mdiFeeNeed'); if(need) need.hidden = mdiHasFee(o);
-  const needEta = document.getElementById('mdiEtaNeed'); if(needEta) needEta.hidden = Number(o.etaMin) > 0;
+
 }
 
 function mdiDetailHTML(o){
@@ -17537,13 +17472,10 @@ function mdiDetailHTML(o){
     </div>
 
     ${o.status === 'confirmado' && o.pendingNext ? `
-      <div class="mdi-banner ok">${icon('check')}<span><b>Pedido aceptado</b>${o.notifiedAt ? 'Ya le avisaste al cliente. Toca “Siguiente” para pasarlo a Pendiente de pago.' : 'Avísale al cliente por WhatsApp y luego toca “Siguiente” para pasarlo a Pendiente de pago.'}</span></div>
-      <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que lo aceptaste'}</button>` : ''}
+      <div class="mdi-banner ok">${icon('check')}<span><b>Pedido aceptado</b>El cliente ya lo ve en su pantalla. Toca “Siguiente” para continuar.</span></div>` : ''}
     ${o.status === 'confirmado' && !o.pendingNext ? `
       ${mdiIsPaid(o) ? `<div class="mdi-banner ok">${icon('check')}<span><b>Pedido cobrado</b>${sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : ''}
-      ${mdiIsPaid(o)
-        ? `<button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>`
-        : `<button class="btn primary block mdi-notify" onclick="mdiCharge('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(mdiOrderTotal(o))}</button>`}` : ''}
+      ${mdiIsPaid(o) ? '' : `<button class="btn primary block mdi-notify" onclick="mdiCharge('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(mdiOrderTotal(o))}</button>`}` : ''}
     ${o.status === 'rechazado' ? `
       <div class="mdi-banner no">${icon('close')}<span><b>Pedido rechazado</b>${escapeHtml(o.rejectReason || 'Sin motivo')}${o.rejectNote ? ' · ' + escapeHtml(o.rejectNote) : ''}</span></div>` : ''}
     ${o.status === 'cancelado' ? `
@@ -17552,7 +17484,7 @@ function mdiDetailHTML(o){
     ${collapsible ? `<button type="button" class="mdi-more ${mdiUI.more ? 'open' : ''}" onclick="mdiToggleMore()" aria-expanded="${mdiUI.more ? 'true' : 'false'}"><span>${mdiUI.more ? 'Ocultar información' : 'Ver más información'}</span><svg class="svc-dbl" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6"/></svg></button><div class="mdi-more-body ${mdiUI.more ? 'open' : ''}" id="mdiMore">` : ''}
     ${o.status === 'rechazado' ? '' : mdiServiceHTML(o)}
     ${o.status === 'rechazado' || o.status === 'cancelado' ? '' : mdiDeliveryHTML(o)}
-    ${o.status === 'rechazado' || o.status === 'cancelado' ? '' : mdiEtaHTML(o)}
+
 
     ${o.status === 'rechazado' ? '' : `
     <div class="mdi-block-title">
@@ -17579,7 +17511,6 @@ function mdiDetailHTML(o){
     ` : `
       <div class="mdi-after">
         ${o.pendingNext ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiNext('${o.id}')">Siguiente ${icon('chevronRight')}</button>` : ''}
-        ${o.status === 'confirmado' ? '' : `<button class="btn whatsapp" style="${o.pendingNext ? 'flex:1 1 100%;' : ''}" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} Avisar al cliente</button>`}
         ${sale && canSeeSale(sale) ? `<button class="btn ghost" onclick="showTicket(DB.getSales().find(s => s.id === '${sale.id}'))">${icon('receipt')} Ver ticket</button>` : ''}
         ${o.status === 'confirmado' && !o.pendingNext && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
         ${o.status === 'rechazado' && !o.pendingNext ? `<button class="btn ghost" onclick="mdiReopen('${o.id}')">${icon('undo')} Volver a revisar</button>` : ''}
@@ -17737,7 +17668,7 @@ function mdiConfirm(id){
   const falta = !o.lines.length ? { id:'mdiLines', msg:'El pedido no tiene productos' }
     : mdiMissing(o) ? { id:'mdiLines', msg:'Elige el producto que falta en tu catálogo' }
     : (mdiIsDelivery(o) && !mdiHasFee(o)) ? { id:'mdiFeeBox', msg:'Escribe el costo de envío (si no cobras, pon 0)', focus:'mdiFee' }
-    : !(Number(o.etaMin) > 0) ? { id:'mdiEta', msg:'Elige en cuánto tiempo estará el pedido' } : null;
+    : null;
   if(falta){ mdiNeed(falta.id, falta.msg, falta.focus); return; }
   const inventario = DB.getProducts();
   if(o.lines.some(l => !inventario.find(p => p.id === l.productId))){ toast('Hay productos que no están en tu catálogo', { variant:'toast-danger', icon:icon('alert') }); return; }
@@ -17877,7 +17808,7 @@ function mdiAskReject(id){
       <h2>Rechazar pedido ${escapeHtml(o.code)}</h2>
       <button class="sheet-close" onclick="mdiOpen('${id}')">${icon('close')}</button>
     </div>
-    <p class="sheet-text">El pedido no se cobra ni entra a tus ventas. Después puedes avisarle al cliente por WhatsApp.</p>
+    <p class="sheet-text">El pedido no se cobra ni entra a tus ventas. <b>El cliente lo verá al instante en su pantalla</b>, con el motivo que elijas aquí.</p>
     <div class="filter-modal-label">¿Por qué?</div>
     <div class="filter-pill-row" id="mdiReasons" style="margin-bottom:14px;">
       ${MDI_REJECT_REASONS.map(r => `<button class="filter-chip ${mdiRejectReason === r ? 'active' : ''}" onclick="mdiRejectReason='${r}'; document.querySelectorAll('#mdiReasons .filter-chip').forEach(b => b.classList.toggle('active', b.textContent === '${r}'));">${r}</button>`).join('')}
@@ -17928,10 +17859,6 @@ function mdiDelete(id){
 function mdiNext(id, force){
   const o = MDI.get(id);
   if(!o || !o.pendingNext) return;
-  if(!o.notifiedAt && !force){
-    askConfirm({ title:'¿Seguir sin avisar al cliente?', text:'Todavía no le mandas el aviso por WhatsApp. Puedes avisarle después desde el pedido.', ok:'Sí, siguiente', cancel:'Volver', icon:icon('alert') }, () => mdiNext(id, true));
-    return;
-  }
   const acepto = o.status === 'confirmado';
   MDI.update(id, x => { delete x.pendingNext; });
   shieldClicks();
@@ -17944,46 +17871,18 @@ function mdiNext(id, force){
   toast(acepto ? 'Pasó a Pendiente de pago' : 'Pasó a Rechazados', { icon:icon('check'), variant:'toast-success' });
 }
 
-/* ---------- Avisar al cliente por WhatsApp ---------- */
-function mdiNotify(id){
-  const o = MDI.get(id); if(!o) return;
-  const b = bizData();
-  const nombre = (o.customer && o.customer.name) ? ' ' + o.customer.name.split(/\s+/)[0] : '';
-  let msg;
-  if(o.status === 'confirmado'){
-    const t = mdTotals(o.lines);
-    const c = o.customer || {};
-    const del = mdiIsDelivery(o);
-    const fee = mdiDeliveryFee(o);
-    msg = '¡Hola' + nombre + '! Confirmamos tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + '.\n';
-    if(mdiIsModified(o)) msg += 'Hicimos unos cambios, así quedó:\n';
-    msg += '\n' + o.lines.map(l => '• ' + mdiLineLabel(l) + ' ' + mdiQtyText(l) + ' - ' + formatMoney(l.price * l.qty)).join('\n');
-    if(del){
-      msg += '\n\nProductos: ' + formatMoney(t.total);
-      msg += '\nEnvío a domicilio: ' + (fee ? formatMoney(fee) : 'gratis');
-      msg += '\n*Total: ' + formatMoney(round2(t.total + fee)) + ' MXN*';
-    }else msg += '\n\n*Total: ' + formatMoney(t.total) + ' MXN*';
-    const extra = [];
-    if(del) extra.push('Te lo llevamos a la ubicación que nos mandaste.' + (o.etaMin ? ' Llegará en aproximadamente ' + mdiEtaLong(o.etaMin) + '.' : ''));
-    else if(c.service === 'llevar' || !c.service) extra.push('Puedes pasar por él al negocio.' + (o.etaMin ? ' Estará listo en aproximadamente ' + mdiEtaLong(o.etaMin) + '.' : ''));
-    if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
-    if(extra.length) msg += '\n\n' + extra.join('\n');
-    msg += '\n¡Gracias por tu compra!';
-    MDI.update(id, x => { x.notifiedAt = new Date().toISOString(); });
-    setTimeout(() => { if(mdiUI.id === id) mdiOpen(id, true); }, 400);
-  }else if(o.status === 'cancelado'){
-    MDI.update(id, x => { x.notifiedAt = new Date().toISOString(); });
-    setTimeout(() => { if(mdiUI.id === id) mdiOpen(id, true); }, 400);
-    msg = 'Hola' + nombre + ', te avisamos que tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + ' quedó cancelado. Si tienes alguna duda, escríbenos.';
-  }else{
-    MDI.update(id, x => { x.notifiedAt = new Date().toISOString(); });
-    setTimeout(() => { if(mdiUI.id === id) mdiOpen(id, true); }, 400);
-    msg = 'Hola' + nombre + ', lo sentimos. No podemos surtir tu pedido ' + o.code + (o.rejectReason && o.rejectReason !== 'Otro motivo' ? ': ' + o.rejectReason.toLowerCase() + '.' : '.');
-    if(o.rejectNote) msg += '\n' + o.rejectNote;
-  }
-  const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
-  const w = window.open(url, '_blank'); if(!w) location.href = url;
-}
+/* ---------------------------------------------------------------------
+   "Avisar al cliente por WhatsApp" se quitó del Menú Digital.
+
+   Ya no hace falta y además era un paso manual que se podía olvidar:
+   el cliente ve el estado de su pedido en su propia pantalla, y se
+   actualiza solo. Si el negocio rechaza o cancela, también lo ve ahí,
+   con el motivo.
+
+   OJO: esto es SOLO del Menú Digital. Las demás funciones de WhatsApp
+   de VendoPlus (mandar un ticket, escribirle a un cliente desde su
+   ficha, mandar un corte de caja) siguen intactas.
+--------------------------------------------------------------------- */
 
 /* ---------- Aviso en Inicio ---------- */
 function mdiHomeCardHTML(){
@@ -18107,7 +18006,7 @@ function mdCompactHTML(cfg){
   const cerrado = mdClosedNow(cfg);
   const estado = cfg.paused ? { cls:'paused', txt:'Pausado', sub:'Pedidos pausados · tus clientes solo ven el menú' }
                : cerrado ? { cls:'paused', txt:'Cerrado', sub:'Fuera de horario' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') }
-               : { cls:'on', txt:'Activo', sub:'Recibiendo pedidos aquí y en tu WhatsApp' };
+               : { cls:'on', txt:'Activo', sub:'Recibiendo pedidos aquí, al instante' };
   return `
     <div class="md-compact">
       <div class="section-title mdx-title">Configuración del Menú Digital</div>
@@ -18151,7 +18050,7 @@ renderMenuDigital = function(){
   const titulo = cfg.active ? `
     <h1 class="page-title">Menú Digital</h1>` : `
     <h1 class="page-title">Menú Digital</h1>
-    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>`;
+    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí, al instante</p>`;
   if(!cfg.active) return titulo + mdOffCardHTML();
   return `
     <div class="mdx-head">
@@ -18503,15 +18402,25 @@ window.dmEnviarPedido = async function(){
      el pedido YA llegó al negocio: lo único que se pierde es el enlace,
      y la caja lo rescata sola. */
   if(order.t && window.VPSeguimiento){
-    const reg = await VPSeguimiento.registrar(dm.id, order.code, order.t);
-    if(reg){
-      VPSeguimiento.abrir(order.t, { nuevo:true, negocio:(dm.cfg && dm.cfg.name) || '' });
+    /* Se manda también el identificador interno del pedido. Es la
+       segunda prueba de que quien pide la pantalla es quien hizo el
+       pedido, y es lo que permite recuperarlo aunque submit_menu_order
+       no haya conservado el token. */
+    const reg = await VPSeguimiento.registrar(dm.id, order.code, order.t, order.id);
+    if(reg.ok){
+      VPSeguimiento.abrir(order.t, { nuevo:true, negocio:(dm.cfg && dm.cfg.name) || '', menu:dm.id });
       return;
     }
+    /* Si falló, se dice POR QUÉ de verdad y se ofrece reintentar el
+       MISMO pedido: reintentar no duplica nada. */
     VPSeguimiento.panelEnviado({
       code: order.code,
       token: '',
-      negocio: (dm.cfg && dm.cfg.name) || ''
+      negocio: (dm.cfg && dm.cfg.name) || '',
+      menu: dm.id,
+      error: reg.error,
+      reintento: { menu:dm.id, code:order.code, token:order.t, orderId:order.id,
+                   negocio:(dm.cfg && dm.cfg.name) || '' }
     });
     return;
   }
@@ -23078,7 +22987,8 @@ function mdPublicSnapshot(){
          delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null },
          /* Formas de pago: la CLABE solo se publica si aceptas transferencias */
          payments:{ card: cfg.payments.card === true, transfer: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe), clabe: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe) ? cfg.payments.clabe : '', holder: cfg.payments.transfer === true ? cfg.payments.holder : '' } },
-    wa: mdWhatsappDigits(),
+    /* El menú ya no publica ningún WhatsApp: el pedido se confirma y
+       se sigue dentro de VendoPlus. */
     biz:{ name:b.name || '', logo:b.logo || u.photo || null, giro:b.giro || '', type:b.type || '', hours:hrsClean(b.hours) },
     tax:{ taxMode:pc.taxMode, taxRate:pc.taxRate },
     season:{ on:false },
@@ -23266,7 +23176,6 @@ function dmrInstall(sameBiz){
     return { business:Object.assign({}, DMR.biz || {}), photo:null, country: se.country || 'MX',
              prefs:{ seasonDecor: se.on !== false } };
   };
-  mdWhatsappDigits = function(){ return DMR.wa || ''; };
   dmSig = function(){ return DMR.updated || ''; };
   /* En el celular de un cliente no se guardan pedidos (solo en el aparato del negocio) */
   if(!sameBiz) mdiReceive = function(o){ return { order:o, isNew:true }; };

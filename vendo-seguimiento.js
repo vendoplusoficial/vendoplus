@@ -101,20 +101,179 @@
     return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   }
 
-  /* Los pedidos de ESTE celular. Sirve para ofrecerle al cliente
-     "¿quieres ver tu pedido de hace rato?" sin que tenga cuenta.
-     OJO: es solo una comodidad. El enlace es lo que de verdad manda,
-     porque el almacenamiento local se borra y no viaja a otro teléfono. */
+  /* =====================================================================
+     LOS PEDIDOS DE ESTE NAVEGADOR
+
+     El comprador no tiene cuenta, así que lo único que lo liga a su
+     pedido es el token. Aquí se guarda, para que si recarga la página,
+     la cierra o vuelve al menú, recupere su pantalla sin pedirle nada.
+
+     Reglas que se cumplen:
+       · Se guarda POR NEGOCIO (menuId). Un pedido nuevo en otro negocio
+         NO pisa el acceso a uno que siga vivo.
+       · De un mismo negocio se guardan los últimos 5, no solo el
+         último: si pide dos veces seguidas, no pierde el primero.
+       · Lo que manda es SIEMPRE lo que diga el servidor. Esto de aquí
+         es nada más la llave; el estado se consulta.
+       · Nunca se escribe el token en la URL que queda en el historial
+         salvo cuando el propio cliente abre su enlace.
+  ===================================================================== */
   var LS_MIOS = 'vp_seg_mios';
+  var MS_GRACIA = 30 * 60 * 1000;     /* los 30 minutos que pediste */
+
   function mios() {
-    try { return JSON.parse(localStorage.getItem(LS_MIOS) || '[]') || []; } catch (e) { return []; }
-  }
-  function guardarMio(token, code, negocio) {
     try {
-      var l = mios().filter(function (x) { return x && x.token !== token; });
-      l.unshift({ token: token, code: code || '', negocio: negocio || '', en: Date.now() });
-      localStorage.setItem(LS_MIOS, JSON.stringify(l.slice(0, 12)));
+      var l = JSON.parse(localStorage.getItem(LS_MIOS) || '[]');
+      return Array.isArray(l) ? l.filter(function (x) { return x && x.token; }) : [];
+    } catch (e) { return []; }
+  }
+
+  /** Guarda (o actualiza) un pedido de este navegador. */
+  function guardarMio(token, code, negocio, menuId) {
+    try {
+      var l = mios();
+      var i = -1, k;
+      for (k = 0; k < l.length; k++) if (l[k].token === token) { i = k; break; }
+      var it = i >= 0 ? l[i] : { token: token, en: Date.now() };
+      if (code) it.code = code;
+      if (negocio) it.negocio = negocio;
+      if (menuId) it.menu = menuId;
+      it.visto = Date.now();
+      if (i >= 0) l.splice(i, 1);
+      l.unshift(it);
+      /* Se conservan hasta 5 por negocio y 20 en total: así un pedido
+         nuevo nunca borra el acceso a otro que siga activo. */
+      var porNegocio = {};
+      l = l.filter(function (x) {
+        var m = x.menu || '';
+        porNegocio[m] = (porNegocio[m] || 0) + 1;
+        return porNegocio[m] <= 5;
+      });
+      localStorage.setItem(LS_MIOS, JSON.stringify(l.slice(0, 20)));
     } catch (e) {}
+  }
+
+  /** Apunta cuándo terminó un pedido, para contar los 30 minutos. */
+  function marcarFin(token, finIso) {
+    try {
+      var l = mios(), k;
+      for (k = 0; k < l.length; k++) {
+        if (l[k].token === token) {
+          l[k].fin = finIso ? new Date(finIso).getTime() : Date.now();
+          break;
+        }
+      }
+      localStorage.setItem(LS_MIOS, JSON.stringify(l));
+    } catch (e) {}
+  }
+
+  /** Lo quita de este navegador (al caducar). El pedido NO se toca. */
+  function olvidarMio(token) {
+    try {
+      localStorage.setItem(LS_MIOS, JSON.stringify(
+        mios().filter(function (x) { return x.token !== token; })));
+    } catch (e) {}
+  }
+
+  /** Los tokens que este navegador guardó para ESTE negocio. */
+  function misDe(menuId) {
+    return mios().filter(function (x) {
+      /* Los guardados antes de esta versión no traen menú: se admiten,
+         porque es mejor ofrecerle su pedido que perderlo. */
+      return !x.menu || !menuId || x.menu === menuId;
+    });
+  }
+
+  /** Limpia los que llevan mucho tiempo cerrados o son muy viejos. */
+  function limpiarMios() {
+    var ahora = Date.now();
+    var l = mios().filter(function (x) {
+      if (x.fin && ahora - x.fin > MS_GRACIA) return false;        /* cerrado hace rato */
+      if (!x.fin && ahora - (x.en || 0) > 24 * 3600 * 1000) return false;  /* de ayer y sin cerrar */
+      return true;
+    });
+    try { localStorage.setItem(LS_MIOS, JSON.stringify(l)); } catch (e) {}
+    return l;
+  }
+
+  /* =====================================================================
+     QUÉ SE LE DICE AL CLIENTE CUANDO FALLA DE VERDAD
+
+     Cada motivo tiene su texto y dice si se puede reintentar. Ya no se
+     le echa la culpa a internet por costumbre.
+  ===================================================================== */
+  var ERRORES = {
+    pedido_no_encontrado: {
+      t: 'No encontramos tu pedido en el sistema',
+      s: 'Tu pedido sí le llegó al negocio. Lo que no pudimos es crear tu pantalla de ' +
+         'seguimiento. Apunta tu número de pedido y pregúntale al negocio.',
+      reintentar: true
+    },
+    token_no_coincide: {
+      t: 'Este pedido ya tiene su pantalla abierta',
+      s: 'Parece que lo abriste en otro teléfono o en otra pestaña. Usa ese enlace: ' +
+         'el pedido es el mismo y sigue su curso.',
+      reintentar: false
+    },
+    falta_identificador: {
+      t: 'No pudimos comprobar que este pedido es tuyo',
+      s: 'Por seguridad no abrimos la pantalla de un pedido sin estar seguros de que es ' +
+         'de quien la pide. Tu pedido ya está con el negocio.',
+      reintentar: true
+    },
+    token_invalido: {
+      t: 'Hubo un problema al crear tu enlace',
+      s: 'Tu pedido sí le llegó al negocio. Vuelve a intentarlo y, si sigue igual, ' +
+         'apunta tu número de pedido.',
+      reintentar: true
+    },
+    demasiados_intentos: {
+      t: 'Demasiados intentos seguidos',
+      s: 'Espera un momento y vuelve a intentarlo. Tu pedido ya está con el negocio.',
+      reintentar: true
+    },
+    http_404: {
+      t: 'Falta una pieza en el servidor del negocio',
+      s: 'El seguimiento de pedidos todavía no está instalado del todo en este negocio. ' +
+         'Tu pedido sí le llegó: pregúntale con tu número de pedido.',
+      reintentar: false
+    },
+    http_401: {
+      t: 'El servidor del negocio rechazó la consulta',
+      s: 'Tu pedido sí le llegó al negocio. Pregúntale con tu número de pedido.',
+      reintentar: false
+    },
+    http_403: {
+      t: 'El servidor del negocio rechazó la consulta',
+      s: 'Tu pedido sí le llegó al negocio. Pregúntale con tu número de pedido.',
+      reintentar: false
+    },
+    sin_nube: {
+      t: 'Este menú no tiene el seguimiento activado',
+      s: 'Tu pedido sí le llegó al negocio. Pregúntale con tu número de pedido.',
+      reintentar: false
+    }
+  };
+
+  function explicaError(codigo) {
+    if (ERRORES[codigo]) return ERRORES[codigo];
+    /* Cualquier http_5xx o un fallo de red de verdad sí es conexión. */
+    if (/^http_5/.test(codigo || '')) {
+      return { t: 'El servidor no está respondiendo',
+               s: 'Tu pedido sí le llegó al negocio. Inténtalo otra vez en un momento.',
+               reintentar: true };
+    }
+    return { t: 'No pudimos abrir tu pantalla de seguimiento',
+             s: 'Tu pedido sí le llegó al negocio. Inténtalo otra vez; si sigue igual, ' +
+                'apunta tu número de pedido y pregúntale al negocio.',
+             reintentar: true };
+  }
+
+  function hora(iso) {
+    try {
+      return 'a las ' + new Date(iso).toLocaleTimeString('es-MX',
+        { hour: 'numeric', minute: '2-digit' });
+    } catch (e) { return ''; }
   }
 
   function enlaceDe(token) {
@@ -162,6 +321,32 @@
       '@media (prefers-reduced-motion:no-preference){',
       '.vp-seg-nuevo{animation:vp-seg-entra .42s cubic-bezier(.22,1,.36,1) both;}',
       '@keyframes vp-seg-entra{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}}',
+
+      /* ---- Motivo del rechazo o la cancelación ---- */
+      '.vp-seg-motivo{margin-top:10px;padding:11px 12px;border-radius:11px;',
+      'background:#FDF3F3;border:1px solid #F3B9B9;font-size:13.5px;font-weight:600;',
+      'color:#7A2020;line-height:1.45;}',
+      '.vp-seg-motivo b{display:block;font-size:11.5px;font-weight:800;text-transform:uppercase;',
+      'letter-spacing:.4px;margin-bottom:3px;opacity:.75;}',
+
+      /* ---- Botón flotante "Ver mi pedido" ---- */
+      '.vp-seg-volver{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));',
+      'z-index:8500;display:flex;align-items:center;gap:10px;max-width:420px;margin:0 auto;',
+      'padding:11px 14px;border-radius:14px;border:0;background:#16213E;color:#fff;',
+      'box-shadow:0 10px 26px rgba(22,33,62,.3);cursor:pointer;font-family:inherit;',
+      'text-align:left;-webkit-tap-highlight-color:transparent;}',
+      '.vp-seg-volver:active{transform:scale(.985);}',
+      '.vp-sv-pt{flex:none;width:9px;height:9px;border-radius:50%;background:#16C15B;}',
+      '@media (prefers-reduced-motion:no-preference){',
+      '.vp-sv-pt{animation:vp-sv-late 1.6s ease-in-out infinite;}',
+      '@keyframes vp-sv-late{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}}',
+      '.vp-sv-tx{flex:1;min-width:0;}',
+      '.vp-sv-tx b{display:block;font-size:14px;font-weight:800;line-height:1.2;}',
+      '.vp-sv-tx small{display:block;font-size:11.5px;opacity:.72;margin-top:1px;',
+      'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+      '.vp-sv-ch{flex:none;font-size:20px;opacity:.6;line-height:1;}',
+      /* Con la pantalla del pedido abierta, el botón estorba */
+      '.vp-seg[style*="display: none"] ~ .vp-seg-volver{display:flex;}',
 
       /* ---- Pastilla del estado del pago ---- */
       '.vp-pago-cab{display:flex;align-items:center;gap:10px;margin-bottom:8px;}',
@@ -278,7 +463,7 @@
   var ETAPAS = ['Enviado', 'Preparando', 'En camino', 'Entregado'];
 
   function titulo(d) {
-    if (d.estado === 'rechazado') return 'El restaurante no pudo tomar tu pedido';
+    if (d.estado === 'rechazado') return 'El negocio no pudo tomar tu pedido';
     if (d.estado === 'cancelado') return 'Tu pedido fue cancelado';
     if (d.estado === 'entregado') {
       return d.tipo_entrega === 'recoger' ? '¡Tu pedido fue entregado!' : '¡Tu pedido ha sido entregado!';
@@ -294,8 +479,14 @@
   }
 
   function subtitulo(d) {
-    if (d.estado === 'rechazado') return 'Si tienes dudas, comunícate directamente con el establecimiento.';
-    if (d.estado === 'cancelado') return 'Si no reconoces esta cancelación, comunícate con el establecimiento.';
+    if (d.estado === 'rechazado') {
+      return d.motivo ? 'El negocio dice: ' + d.motivo
+                      : 'Si tienes dudas, comunícate directamente con el establecimiento.';
+    }
+    if (d.estado === 'cancelado') {
+      return d.motivo ? 'El negocio dice: ' + d.motivo
+                      : 'Si no reconoces esta cancelación, comunícate con el establecimiento.';
+    }
     if (d.estado === 'entregado') return '¡Gracias por tu compra!';
     if (d.estado === 'en_camino') return 'Ya va en camino a tu domicilio.';
     if (d.estado === 'listo') {
@@ -389,7 +580,14 @@
            'en cuanto salga con tu pedido.</div>';
     }
     if (d.estado === 'rechazado' || d.estado === 'cancelado') {
-      h += '<div class="vp-seg-nota bad">Este pedido ya no continuará.</div>';
+      h += '<div class="vp-seg-nota bad">Este pedido ya no continuará' +
+           (d.finalizado_en ? ' · ' + hora(d.finalizado_en) : '') + '.</div>';
+      if (d.motivo) {
+        h += '<div class="vp-seg-motivo"><b>Motivo</b>' + esc(d.motivo) + '</div>';
+      }
+    }
+    if (d.estado === 'entregado' && d.finalizado_en) {
+      h += '<div class="vp-seg-nota">Entregado ' + hora(d.finalizado_en) + '.</div>';
     }
     h += '</div>';
 
@@ -464,14 +662,27 @@
     }
     h += '</div>';
 
-    /* ---- Compartir ---- */
+    /* ---- Compartir y volver al menú ---- */
     h += '<div class="vp-seg-card"><div class="vp-seg-btns">' +
          '<button type="button" class="vp-seg-btn" onclick="VPSeguimiento.compartir()">Compartir pedido</button>' +
          '<button type="button" class="vp-seg-btn" onclick="VPSeguimiento.copiar()">Copiar enlace</button>' +
-         '</div></div>';
+         '</div>';
+    /* "Nuevo pedido": vuelve al menú sin perder este pedido. */
+    h += '<div class="vp-seg-btns" style="margin-top:9px">' +
+         '<button type="button" class="vp-seg-btn verde" onclick="VPSeguimiento.nuevoPedido()">' +
+         (d.final ? 'Volver al menú' : 'Hacer otro pedido') + '</button></div>';
+    if (!d.final) {
+      h += '<p class="sub" style="margin-top:10px;font-size:12.5px">Tu pedido no se cancela: ' +
+           'puedes volver a esta pantalla cuando quieras con el botón ' +
+           '<b>Ver mi pedido</b>.</p>';
+    }
+    h += '</div>';
 
     h += '<div class="vp-seg-pie">Guarda este enlace para volver a ver tu pedido.<br>' +
-         'Funciona desde cualquier teléfono, sin crear ninguna cuenta.</div>';
+         'Funciona desde cualquier teléfono, sin crear ninguna cuenta.' +
+         (d.final ? '<br><br>Esta pantalla se abre sola durante 30 minutos después de que ' +
+                    'el pedido terminó. Después, el enlace te la sigue abriendo.' : '') +
+         '</div>';
 
     caja.innerHTML = h;
 
@@ -839,7 +1050,11 @@
       S.estadoPrevio = d.estado;
       S.firma = firma(d);
       if (antes && antes !== d.estado) vibra(30);
-      guardarMio(S.token, d.code, d.negocio);
+      guardarMio(S.token, d.code, d.negocio, S.menu);
+      /* En cuanto el servidor dice que el pedido terminó, se apunta su
+         hora de cierre: es la que cuenta para los 30 minutos, y así
+         sigue valiendo aunque después se quede sin internet. */
+      if (d.final && d.finalizado_en) marcarFin(S.token, d.finalizado_en);
       /* Solo se repinta si de verdad cambió algo que se ve. */
       if (S.firma !== firmaAntes) pintar();
       /* Si acaba de empezar el reparto, se pide la ubicación y los
@@ -921,6 +1136,7 @@
     S.token = token;
     S.nuevo = !!op.nuevo;
     S.negocioPrevio = op.negocio || '';
+    S.menu = op.menu || MENU_ACTUAL || '';
     S.abierta = true;
     S.datos = null; S.pago = null; S.firma = ''; S.estadoPrevio = null; S.error = ''; S.ubic = null;
     S.mensajes = []; S.pendientes = []; S.ultimoMsg = 0;
@@ -936,6 +1152,9 @@
     }
     cap.style.display = '';
     document.body.style.overflow = 'hidden';
+    /* Con la pantalla del pedido abierta, el botón flotante estorba. */
+    var bv = document.getElementById('vpSegVolver');
+    if (bv) bv.hidden = true;
 
     pintar();
     traer().then(function () { traerUbic(); traerMsgs(); traerPago(); });
@@ -959,7 +1178,16 @@
         if (!document.hidden && S.abierta) { traer(); traerUbic(); traerMsgs(); traerPago(); }
       });
     }
-    try { history.replaceState(null, '', enlaceDe(token)); } catch (e) {}
+    /* El token NO se escribe en la barra de direcciones.
+       Antes sí, y traía dos problemas de verdad:
+         1. Se quedaba en el historial del navegador, y salía en
+            cualquier captura de pantalla que hiciera el cliente. Es
+            justo el dato que protege su pedido.
+         2. Al recargar, la página lo leía de la URL y volvía a abrir
+            la pantalla aunque ya hubieran pasado los 30 minutos: se
+            saltaba la regla entera.
+       El enlace para compartir se sigue armando igual (enlaceDe), pero
+       solo cuando el cliente toca "Compartir" o "Copiar enlace". */
   }
 
   function cerrar() {
@@ -973,6 +1201,32 @@
       u.searchParams.delete('seguir');
       history.replaceState(null, '', u.pathname + (u.search || '') + (u.hash || ''));
     } catch (e) {}
+    /* Al cerrar la pantalla se deja el botón para volver, si el pedido
+       todavía toca enseñarse. Así nunca se queda sin camino de vuelta. */
+    if (S.datos && S.token && sigueVigente(S.datos)) {
+      botonVerMiPedido(Object.assign({ token: S.token }, S.datos));
+    } else {
+      quitarBoton();
+    }
+  }
+
+  /**
+   * "Nuevo pedido": vuelve al menú SIN cancelar ni borrar nada.
+   *
+   * Lo que pediste: si lo toca con un pedido todavía activo, el pedido
+   * sigue igual y puede regresar con "Ver mi pedido". Lo único que
+   * cambia es que ya no se le abre la pantalla encima al recargar.
+   */
+  function nuevoPedido() {
+    if (S.token) {
+      volverAlMenu(S.token);
+      if (S.datos && sigueVigente(S.datos)) {
+        botonVerMiPedido(Object.assign({ token: S.token }, S.datos));
+      }
+    }
+    cerrar();
+    cerrarEnviado();
+    try { window.scrollTo(0, 0); } catch (e) {}
   }
 
   /* =======================================================================
@@ -1120,12 +1374,21 @@
       h += '<p class="sub" style="margin-top:12px;font-size:12.5px">Guarda este enlace: con él puedes ' +
            'ver tu pedido más tarde, desde este o desde cualquier otro teléfono. No necesitas ninguna cuenta.</p>';
     } else {
-      /* El pedido SÍ está con el negocio. Lo que falló fue el enlace.
-         Se dice tal cual, sin prometer lo que no hay. */
-      h += '<p class="sub">Tu pedido ya está con el negocio, pero no pudimos crear tu enlace ' +
-           'de seguimiento por un problema de conexi\u00f3n. Apunta tu n\u00famero de pedido' +
-           (code ? ' (' + esc(code) + ')' : '') + ': con \u00e9l el negocio te puede decir ' +
-           'c\u00f3mo va tu pedido.</p>';
+      /* El pedido SÍ está con el negocio. Lo que falló fue el enlace, y
+         aquí se dice POR QUÉ de verdad, no "problema de conexión" por
+         costumbre. Si tiene arreglo, se ofrece reintentar: el reintento
+         NO duplica el pedido, lo recupera. */
+      var ex = explicaError(op.error || '');
+      h += '<p class="sub" style="font-weight:700;color:#16213E">' + esc(ex.t) + '</p>';
+      h += '<p class="sub" style="margin-top:6px">' + esc(ex.s) + '</p>';
+      if (code) {
+        h += '<div class="vp-seg-folio" style="margin-top:10px">Tu pedido: ' + esc(code) + '</div>';
+      }
+      if (ex.reintentar && op.reintento) {
+        h += '<div class="vp-seg-btns" style="margin-top:12px">' +
+             '<button type="button" class="vp-seg-btn verde" id="vpSegReint" ' +
+             'onclick="VPSeguimiento._reintentarRegistro()">Volver a intentarlo</button></div>';
+      }
     }
     h += '</div>';
 
@@ -1135,7 +1398,8 @@
 
     cap.innerHTML = h;
     S.token = token;
-    if (token) guardarMio(token, code, op.negocio);
+    S._reint = op.reintento || null;
+    if (token) guardarMio(token, code, op.negocio, op.menu);
     vibra([60, 40, 60]);
   }
 
@@ -1148,6 +1412,17 @@
   /* =======================================================================
      11. ARRANQUE: ¿viene un enlace de seguimiento?
   ======================================================================= */
+  /** Quita el token de la barra de direcciones sin recargar la página. */
+  function limpiarURL() {
+    try {
+      var u = new URL(location.href);
+      if (!u.searchParams.has('seguir') && !/seguir=/.test(location.hash || '')) return;
+      u.searchParams.delete('seguir');
+      var hash = (location.hash || '').replace(/[?&]?seguir=[A-Za-z0-9_-]+/, '');
+      history.replaceState(null, '', u.pathname + (u.search || '') + hash);
+    } catch (e) {}
+  }
+
   function tokenDeLaURL() {
     try {
       var u = new URL(location.href);
@@ -1158,10 +1433,163 @@
     } catch (e) { return ''; }
   }
 
+  /* =====================================================================
+     12. RECUPERAR LA PANTALLA DEL PEDIDO
+
+     Lo que pediste, punto por punto:
+
+       · Al abrir la página se consulta el ESTADO REAL del servidor. No
+         se confía en lo guardado en el navegador: eso es solo la llave.
+       · Si el pedido sigue vivo, se abre su pantalla sola.
+       · Si ya terminó (entregado, cancelado o rechazado), se sigue
+         abriendo durante 30 minutos, contados desde la hora de cierre
+         DEL SERVIDOR, no desde la última recarga.
+       · Pasados esos 30 minutos, se vuelve al menú normal.
+       · Mientras tanto, si navega por el menú, tiene siempre a la vista
+         un botón "Ver mi pedido".
+  ===================================================================== */
+  var MENU_ACTUAL = '';
+
+  /** Pregunta al servidor por todos los pedidos guardados de un menú. */
+  function consultarMios(menuId) {
+    var l = limpiarMios();
+    var míos = misDe(menuId);
+    if (!míos.length || !hayNube()) return Promise.resolve([]);
+    var tokens = míos.slice(0, 10).map(function (x) { return x.token; });
+    return rpc('vp_seg_varios', { p_tokens: tokens })
+      .then(function (r) {
+        var lista = (r && r.ok && r.pedidos) ? r.pedidos : [];
+        /* Se apunta el cierre para poder contar los 30 min aunque luego
+           se quede sin internet. */
+        lista.forEach(function (d) {
+          if (d.final && d.finalizado_en) marcarFin(d.token, d.finalizado_en);
+        });
+        /* Los que el servidor ya no reconoce se olvidan... pero no los
+           recién hechos. Si el pedido se acaba de crear y la consulta
+           llega un instante antes de que exista, borrarlo le quitaría
+           al cliente el acceso a un pedido que sí está. Se le da un
+           minuto de gracia. */
+        var vivos = {};
+        lista.forEach(function (d) { vivos[d.token] = true; });
+        var ahora = Date.now();
+        var porToken = {};
+        míos.forEach(function (x) { porToken[x.token] = x; });
+        tokens.forEach(function (t) {
+          if (vivos[t]) return;
+          var it = porToken[t];
+          if (it && ahora - (it.en || 0) < 60000) return;   /* recién hecho */
+          olvidarMio(t);
+        });
+        return lista;
+      })
+      .catch(function () {
+        /* Sin internet no se borra nada: se reintenta en la siguiente. */
+        return [];
+      });
+  }
+
+  /** ¿Hay que seguir enseñándole este pedido? Lo decide el SERVIDOR. */
+  function sigueVigente(d) {
+    if (!d) return false;
+    if (typeof d.vigente === 'boolean') return d.vigente;
+    /* Respaldo por si el servidor es viejo: se calcula con su reloj. */
+    if (!d.final) return true;
+    var fin = d.finalizado_en ? new Date(d.finalizado_en).getTime() : 0;
+    var ahora = d.ahora ? new Date(d.ahora).getTime() : Date.now();
+    return !fin || (ahora - fin) < MS_GRACIA;
+  }
+
+  /**
+   * Al abrir el menú: si hay un pedido que todavía toca enseñar, se
+   * abre su pantalla. Si no, se deja el menú en paz.
+   */
+  function restaurar(menuId) {
+    MENU_ACTUAL = menuId || '';
+    estilos();
+    return consultarMios(MENU_ACTUAL).then(function (lista) {
+      var vigentes = lista.filter(sigueVigente);
+      if (!vigentes.length) { quitarBoton(); return null; }
+      /* El más reciente manda */
+      vigentes.sort(function (a, b) {
+        return new Date(b.creado_en || 0) - new Date(a.creado_en || 0);
+      });
+      var d = vigentes[0];
+      botonVerMiPedido(d);
+      /* Si el cliente venía de "Nuevo pedido", se respeta: se le deja
+         el botón, pero NO se le abre la pantalla encima. */
+      if (volvioAlMenu(d.token)) return d;
+      abrir(d.token, { negocio: d.negocio, restaurado: true });
+      return d;
+    });
+  }
+
+  /* "Nuevo pedido": el cliente quiere volver al menú SIN perder su
+     pedido. Se apunta que no se le vuelva a abrir solo, pero el acceso
+     se conserva entero: el botón "Ver mi pedido" sigue ahí. */
+  var LS_ATRAS = 'vp_seg_al_menu';
+  function volverAlMenu(token) {
+    try {
+      var l = JSON.parse(sessionStorage.getItem(LS_ATRAS) || '[]');
+      if (l.indexOf(token) < 0) l.push(token);
+      sessionStorage.setItem(LS_ATRAS, JSON.stringify(l.slice(-20)));
+    } catch (e) {}
+  }
+  function volvioAlMenu(token) {
+    try {
+      var l = JSON.parse(sessionStorage.getItem(LS_ATRAS) || '[]');
+      return l.indexOf(token) >= 0;
+    } catch (e) { return false; }
+  }
+
+  /** El botón flotante "Ver mi pedido" mientras navega por el menú. */
+  function botonVerMiPedido(d) {
+    if (!d || !d.token) return;
+    var b = document.getElementById('vpSegVolver');
+    if (!b) {
+      b = document.createElement('button');
+      b.id = 'vpSegVolver';
+      b.type = 'button';
+      b.className = 'vp-seg-volver';
+      document.body.appendChild(b);
+    }
+    b.onclick = function () { abrir(d.token, { negocio: d.negocio }); };
+    var estado = d.final
+      ? (d.estado === 'entregado' ? 'Entregado' :
+         d.estado === 'rechazado' ? 'No se pudo' : 'Cancelado')
+      : (d.estado === 'en_camino' ? 'Va en camino' :
+         d.estado === 'listo' ? 'Ya está listo' :
+         d.estado === 'preparando' ? 'Preparándose' : 'Enviado');
+    b.innerHTML = '<span class="vp-sv-pt"></span>' +
+                  '<span class="vp-sv-tx"><b>Ver mi pedido</b><small>' +
+                  esc((d.code || '') + (estado ? ' · ' + estado : '')) + '</small></span>' +
+                  '<span class="vp-sv-ch">&#8250;</span>';
+    b.hidden = false;
+  }
+
+  function quitarBoton() {
+    var b = document.getElementById('vpSegVolver');
+    if (b && b.parentNode) b.parentNode.removeChild(b);
+  }
+
+  /* =======================================================================
+     13. ARRANQUE
+  ======================================================================= */
   function arrancar() {
     estilos();
+    limpiarMios();
     var t = tokenDeLaURL();
-    if (t) abrir(t);
+    if (t) {
+      /* Llegó por su enlace. Se guarda en este navegador y se LIMPIA de
+         la barra de direcciones: a partir de aquí el acceso vive en el
+         almacén del navegador, no a la vista de todos. */
+      guardarMio(t, '', '', '');
+      limpiarURL();
+      abrir(t);
+      return;
+    }
+    /* Sin enlace en la URL: lo decide index.html llamando a restaurar()
+       con el id del menú que se está viendo. Así un pedido de otro
+       negocio no se abre encima de este menú. */
   }
 
   if (document.readyState === 'loading') {
@@ -1190,13 +1618,74 @@
     panelEnviado: panelEnviado,
     _cerrarEnviado: cerrarEnviado,
     _verDesdeEnviado: function () { cerrarEnviado(); abrir(S.token); },
-    /* Registra el seguimiento en el servidor justo después de mandar el
-       pedido. Lo llama index.html. */
-    registrar: function (menuId, code, token) {
-      return rpc('vp_pedido_registrar', { p_menu_id: menuId, p_code: code, p_token: token })
-        .then(function (r) { return !!(r && r.ok); })
-        .catch(function () { return false; });
+
+    /* Reintenta registrar el MISMO pedido. No se vuelve a mandar nada
+       al negocio: solo se intenta recuperar su pantalla. Si el pedido
+       ya tenía seguimiento, el servidor lo reconoce y no lo duplica. */
+    _reintentarRegistro: function () {
+      var r = S._reint;
+      if (!r) return;
+      var b = document.getElementById('vpSegReint');
+      if (b) { b.disabled = true; b.textContent = 'Intentando…'; }
+      return window.VPSeguimiento.registrar(r.menu, r.code, r.token, r.orderId)
+        .then(function (res) {
+          if (res.ok) {
+            cerrarEnviado();
+            abrir(r.token, { negocio: r.negocio, menu: r.menu, nuevo: true });
+            return;
+          }
+          panelEnviado({ code: r.code, token: '', negocio: r.negocio,
+                         menu: r.menu, error: res.error, reintento: r });
+        });
     },
+
+    /* ------------------------------------------------------------------
+       Registra el seguimiento en el servidor justo después de mandar el
+       pedido. Lo llama index.html.
+
+       ANTES devolvía true/false y se tragaba el motivo: un
+       'token_no_coincide' del servidor y un corte de internet acababan
+       los dos en el mismo mensaje de "problema de conexión". Por eso
+       parecía un fallo de red cuando no lo era.
+
+       AHORA devuelve { ok, error, detalle } con el motivo de verdad, y
+       lo deja en la consola para poder diagnosticarlo. NUNCA se escribe
+       el token ni ninguna clave en la consola.
+    ------------------------------------------------------------------ */
+    registrar: function (menuId, code, token, orderId) {
+      return rpc('vp_pedido_registrar', {
+        p_menu_id: menuId, p_code: code, p_token: token, p_order_id: orderId || null
+      }).then(function (r) {
+        if (r && r.ok) {
+          return { ok: true, recuperado: !!r.recuperado, yaExistia: !!r.ya_existia };
+        }
+        var e = (r && r.error) || 'respuesta_rara';
+        /* Sin token, sin claves: solo el código del pedido y el motivo. */
+        try { console.warn('[VendoPlus] No se pudo registrar el seguimiento de ' +
+                           (code || '?') + ': ' + e); } catch (x) {}
+        return { ok: false, error: e };
+      }).catch(function (err) {
+        var m = (err && err.message) || 'sin_respuesta';
+        try { console.warn('[VendoPlus] Falló la llamada de seguimiento de ' +
+                           (code || '?') + ': ' + m); } catch (x) {}
+        return { ok: false, error: m };
+      });
+    },
+
+    /* Lo que ve el cliente según lo que haya pasado de verdad. */
+    explicaError: explicaError,
+
+    /* Pedidos de este navegador y restauración automática */
+    misDe: misDe,
+    olvidarMio: olvidarMio,
+    limpiarMios: limpiarMios,
+    restaurar: restaurar,
+    botonVerMiPedido: botonVerMiPedido,
+    quitarBoton: quitarBoton,
+    volverAlMenu: volverAlMenu,
+    nuevoPedido: nuevoPedido,
+    marcarFin: marcarFin,
+
     _estado: S
   };
 })();
