@@ -4761,9 +4761,86 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 .md-quick .mdq-n{ position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:var(--accent-strong,#F5BF3C); color:#4A3300; font-style:normal; font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
 @media (max-width:699px){ .tool-btn.md-quick{ width:52px; padding:0; } .md-quick .mdq-txt{ display:none; } }
 
-</style>
-<style id="vp-lealtad-identidad">
-.vl-program-card{width:100%;text-align:left;padding:24px 18px;border:1px solid var(--border);border-left:5px solid #16865d;border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:0 5px 18px #12251b08}.vl-program-card .md-status-top{display:flex;align-items:center;gap:14px}.vl-program-card .md-status-ico{background:#e6f3ed;border-radius:10px;padding:12px;color:#16865d}.vl-program-card .md-status-txt{flex:1}.vl-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.vl-metrics>div{border:1px solid var(--border);border-top:3px solid #16865d;border-radius:10px;padding:16px 12px;background:var(--surface)}.vl-metrics span,.vl-metrics small{display:block;color:var(--ink-soft);font-size:12px}.vl-metrics b{display:block;font-size:25px;margin:8px 0}.vl-tabs{display:flex;border-bottom:1px solid var(--border);gap:20px;margin:20px 0 14px}.vl-tabs button{border:0;border-bottom:3px solid transparent;background:none;padding:12px 0;font:inherit;color:var(--ink-soft);cursor:pointer}.vl-tabs button.active{border-color:#16865d;color:#16865d;font-weight:800}.vl-tabs span{margin-left:6px}.vl-wrap .vl-head{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;border-left:5px solid #16865d}@media(max-width:480px){.vl-metrics{gap:6px}.vl-metrics>div{padding:12px 8px}.vl-metrics b{font-size:21px}}
+
+/* ===== Cobro del pedido: efectivo · tarjeta · transferencia ===== */
+.mdi-pay{ border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:var(--shadow-card); padding:14px; margin:0 0 14px; }
+.mdi-pay.st-wait{ border-color:#EED79B; background:#FFFCF3; }
+.mdi-pay.st-live{ border-color:#A7D8F2; background:#F4FAFE; }
+.mdi-pay-top{ display:flex; align-items:center; gap:9px; }
+.mdi-pay-top b{ flex:1; min-width:0; font-size:15px; font-weight:800; color:var(--ink); }
+.mdi-pay-ico{ display:inline-flex; flex:none; width:21px; height:21px; color:var(--ink); }
+.mdi-pay-ico svg{ width:21px; height:21px; }
+.mdi-pay-pill{ flex:none; border:1.5px solid currentColor; border-radius:999px; padding:3px 11px; font-size:11.5px; font-weight:800; white-space:nowrap; }
+.mdi-pay.st-wait .mdi-pay-pill{ color:#9A6B00; }
+.mdi-pay.st-live .mdi-pay-pill{ color:#1368A6; }
+.mdi-pay-amt{ margin:11px 0 0; font-size:32px; font-weight:800; line-height:1.04; letter-spacing:-.6px; color:var(--ink); }
+.mdi-pay-amt small{ display:block; margin-top:3px; font-size:13px; font-weight:700; letter-spacing:0; color:var(--ink-soft); }
+.mdi-pay-txt{ margin:10px 0 0; font-size:13.5px; font-weight:600; line-height:1.45; color:var(--ink-soft); }
+.mdi-pay-note{ display:flex; align-items:flex-start; gap:8px; margin:10px 0 0; padding:9px 11px; border-radius:11px; background:rgba(255,255,255,.75); border:1px solid var(--border); font-size:12.5px; font-weight:600; line-height:1.45; color:var(--ink); }
+.mdi-pay-note svg{ width:16px; height:16px; flex:none; margin-top:1px; color:var(--ink-soft); }
+.mdi-pay-note b{ font-weight:800; }
+.mdi-pay-lnk{ display:inline; border:0; padding:0; background:none; font:inherit; font-weight:800; color:var(--vp-green-d,#0F8F46); text-decoration:underline; cursor:pointer; }
+.mdi-pay-acts{ display:flex; flex-direction:column; gap:8px; margin-top:13px; }
+.mdi-pay-go{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; border:0; border-radius:14px; padding:15px 14px; cursor:pointer; font-family:inherit; font-size:15.5px; font-weight:800; color:#fff; background:var(--vp-green,#16C15B); box-shadow:0 7px 18px -10px rgba(22,193,91,.95); -webkit-tap-highlight-color:transparent; transition:transform .12s ease; }
+.mdi-pay-go svg{ width:19px; height:19px; }
+.mdi-pay-go:active{ transform:scale(.985); }
+.mdi-pay-go.wa{ background:#25D366; box-shadow:0 7px 18px -10px rgba(37,211,102,.95); }
+.mdi-pay-alt{ width:100%; border:1px solid var(--border); border-radius:13px; padding:12px; cursor:pointer; background:var(--surface); font-family:inherit; font-size:13.5px; font-weight:700; color:var(--ink-soft); -webkit-tap-highlight-color:transparent; }
+.mdi-pay-alt:active{ opacity:.6; }
+.mdi-pay-live{ display:flex; align-items:center; gap:8px; margin:11px 0 0; font-size:12.5px; font-weight:700; color:#1368A6; }
+.mdi-pay-dot{ width:9px; height:9px; border-radius:50%; background:#2196D8; flex:none; animation:mdiPayPulse 1.5s ease-in-out infinite; }
+@keyframes mdiPayPulse{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.3; transform:scale(.72); } }
+@media (prefers-reduced-motion: reduce){ .mdi-pay-dot{ animation:none; } .mdi-pay-go{ transition:none; } }
+
+/* ===== Hoja de enlace con Mercado Pago ===== */
+.mp-hero{ display:flex; align-items:center; gap:12px; margin:4px 0 16px; padding:14px; border-radius:16px; background:var(--surface-alt); }
+.mp-hero-ico{ display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; flex:none; border-radius:14px; background:#009EE3; color:#fff; }
+.mp-hero-ico svg{ width:24px; height:24px; }
+.mp-hero-txt{ min-width:0; }
+.mp-hero-txt b{ display:block; font-size:15px; font-weight:800; color:var(--ink); }
+.mp-hero-txt small{ display:block; margin-top:3px; font-size:12.5px; font-weight:600; line-height:1.4; color:var(--ink-soft); }
+.mp-rows{ display:flex; flex-direction:column; gap:10px; margin:0 0 18px; }
+.mp-row{ display:flex; align-items:flex-start; gap:10px; }
+.mp-row > span:first-child{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; flex:none; border-radius:10px; background:var(--success-bg,#E6F7EE); color:#0E7A3D; }
+.mp-row > span:first-child svg{ width:16px; height:16px; }
+.mp-row > span:last-child{ min-width:0; font-size:12.5px; font-weight:600; line-height:1.45; color:var(--ink-soft); }
+.mp-row b{ display:block; font-size:13.5px; font-weight:800; color:var(--ink); }
+
+/* ===== Pantalla de pago del cliente (…#pago/<pedido>) ===== */
+body.pg-mode{ background:#F4F6FA; }
+.pg{ display:flex; align-items:flex-start; justify-content:center; min-height:100dvh; padding:18px 14px calc(28px + env(safe-area-inset-bottom)); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#16213E; }
+.pg-card{ width:100%; max-width:440px; margin-top:14px; padding:20px 18px 22px; border-radius:20px; background:#fff; box-shadow:0 14px 40px -22px rgba(16,22,42,.35); }
+.pg-card.pg-center{ text-align:center; }
+.pg-head{ display:flex; align-items:center; gap:11px; margin-bottom:16px; text-align:left; }
+.pg-logo{ width:42px; height:42px; flex:none; border-radius:13px; object-fit:cover; background:#EAF9F0; }
+.pg-logo-ph{ display:inline-flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#0E7A3D; }
+.pg-head-txt{ min-width:0; }
+.pg-head-txt b{ display:block; font-size:15.5px; font-weight:800; }
+.pg-head-txt small{ display:block; margin-top:1px; font-size:12.5px; font-weight:600; color:#6B7487; }
+.pg-amt{ margin:0 0 14px; padding:14px 16px; border-radius:15px; background:#EAF9F0; }
+.pg-amt small{ display:block; font-size:12.5px; font-weight:700; color:#0E7A3D; }
+.pg-amt b{ display:block; margin-top:2px; font-size:32px; font-weight:800; letter-spacing:-.6px; }
+.pg-safe{ display:flex; align-items:flex-start; gap:9px; margin:0 0 16px; padding:11px 12px; border-radius:13px; background:#F4F6FA; font-size:12.5px; font-weight:600; line-height:1.45; color:#6B7487; }
+.pg-safe svg{ width:18px; height:18px; flex:none; margin-top:1px; color:#009EE3; }
+.pg-safe b{ font-weight:800; color:#16213E; }
+.pg-brick{ min-height:120px; }
+.pg-err{ margin-top:12px; padding:11px 12px; border-radius:12px; background:#FDECEA; color:#A5362B; font-size:13px; font-weight:700; line-height:1.4; }
+.pg-mini{ margin:14px 0 0; font-size:11.5px; font-weight:600; color:#9AA3B5; text-align:center; }
+.pg-card h1{ margin:14px 0 8px; font-size:20px; font-weight:800; }
+.pg-card p{ margin:0; font-size:14px; font-weight:600; line-height:1.5; color:#6B7487; }
+.pg-big{ display:inline-flex; align-items:center; justify-content:center; width:66px; height:66px; border-radius:50%; font-size:34px; font-weight:800; line-height:1; }
+.pg-ok{ background:#E6F7EE; color:#16C15B; }
+.pg-bad{ background:#FDECEA; color:#E5484D; }
+.pg-btn{ display:block; width:100%; margin-top:18px; border:0; border-radius:14px; padding:15px; cursor:pointer; font-family:inherit; font-size:15.5px; font-weight:800; color:#fff; background:#16C15B; -webkit-tap-highlight-color:transparent; }
+.pg-btn:active{ opacity:.85; }
+.pg-load{ display:flex; align-items:center; justify-content:center; gap:7px; padding:18px 0; }
+.pg-load i{ width:10px; height:10px; border-radius:50%; background:#16C15B; animation:pgBounce 1.1s ease-in-out infinite; }
+.pg-load i:nth-child(2){ animation-delay:.14s; }
+.pg-load i:nth-child(3){ animation-delay:.28s; }
+.pg-load-txt{ text-align:center; font-size:14px; font-weight:600; color:#6B7487; }
+@keyframes pgBounce{ 0%,80%,100%{ transform:translateY(0); opacity:.45; } 40%{ transform:translateY(-8px); opacity:1; } }
+@media (prefers-reduced-motion: reduce){ .pg-load i{ animation:none; } }
+
 </style>
 </head>
 <body>
@@ -15094,7 +15171,7 @@ const MD_DESIGNS = [
 ];
 function mdValidDesign(d){ return MD_DESIGNS.some(x => x.id === d) ? d : 'clasico'; }
 function mdDefaultCfg(){
-  return { active:false, id:null, activatedAt:null, paused:false, whatsapp:{ country:'', number:'' }, color:MD_DEFAULT_COLOR, design:'clasico', hours:{ mode:'business', days:null }, delivery:{ on:null, lat:null, lng:null }, payments:{ card:null, transfer:null, clabe:'', holder:'' } };
+  return { active:false, id:null, activatedAt:null, paused:false, whatsapp:{ country:'', number:'' }, color:MD_DEFAULT_COLOR, design:'clasico', hours:{ mode:'business', days:null }, delivery:{ on:null, lat:null, lng:null }, payments:{ card:null, transfer:null, clabe:'', holder:'', mp:null } };
 }
 /* ---------- Servicio a domicilio ----------
    on = true  -> el cliente elige "Ir a buscar" o "Servicio a domicilio"
@@ -15239,11 +15316,21 @@ function mdCleanPayments(p){
   p = p || {};
   const clabe = String(p.clabe || '').replace(/\D/g, '').slice(0, 18);
   const transfer = p.transfer === true ? true : (p.transfer === false ? false : null);
+  /* Mercado Pago: aquí solo se guarda si está enlazado y la clave PÚBLICA.
+     Los tokens secretos del negocio viven en Supabase y nunca llegan aquí. */
+  const m = p.mp || {};
   return {
     card: p.card === true ? true : (p.card === false ? false : null),
     transfer: transfer,
     clabe: clabe,
-    holder: String(p.holder || '').replace(/\s+/g, ' ').trim().slice(0, 60)
+    holder: String(p.holder || '').replace(/\s+/g, ' ').trim().slice(0, 60),
+    mp: {
+      on: m.on === true,
+      nickname: String(m.nickname || '').slice(0, 60),
+      publicKey: String(m.publicKey || '').slice(0, 120),
+      liveMode: m.liveMode !== false,
+      at: m.at || null
+    }
   };
 }
 let mdPayDraft = null, mdPayKind = 'card';
@@ -15289,11 +15376,14 @@ function mdRenderPayForm(){
     <p class="md-yn-q">${card ? '¿Tu negocio cobra con tarjeta?' : '¿Tu negocio acepta transferencias?'}</p>
     <div class="md-yn">
       ${card
-        ? opt(true, 'card', 'Sí, cobro con terminal', 'El cliente verá «Tarjeta» y se le cobra al recibir su pedido')
+        ? opt(true, 'card', 'Sí, con Mercado Pago', 'Tus clientes pagan con su tarjeta desde tu menú y el dinero llega a tu cuenta de Mercado Pago')
           + opt(false, 'cash', 'No, tarjeta no', 'La opción Tarjeta no le aparece al cliente')
         : opt(true, 'transfer', 'Sí, acepto transferencias', 'El cliente verá tu CLABE y el número de su pedido como concepto')
           + opt(false, 'cash', 'No, transferencia no', 'La opción Transferencia no le aparece al cliente')}
     </div>
+    ${card && d.on === true ? (mpLinked()
+      ? `<div class="mdi-banner ok" style="margin:14px 0 0;">${icon('check')}<span><b>Mercado Pago enlazado</b>${escapeHtml(mpCfg().nickname || 'Tu cuenta está conectada')} · tus clientes ya pueden pagar con tarjeta. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Ver o desenlazar</button></span></div>`
+      : `<div class="mdi-banner warn" style="margin:14px 0 0;">${icon('alert')}<span><b>Falta enlazar tu Mercado Pago</b>Sin enlazarlo, la opción Tarjeta no le aparece a tus clientes. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Enlazar ahora</button></span></div>`) : ''}
     ${!card && d.on === true ? `
       <div class="md-pay-fields">
         <div class="field" id="mdPayClabeField">
@@ -15598,8 +15688,9 @@ function mdChecklist(){
     })(),
     (function(){
       const pm = mdCfg().payments;
-      return { label:'Pago con tarjeta', ok:pm.card !== null,
-        sub: pm.card === true ? 'Sí · se cobra con tu terminal al recibir el pedido'
+      const mpOn = !!(pm.mp && pm.mp.on && pm.mp.publicKey);
+      return { label:'Pago con tarjeta', ok:pm.card === false || (pm.card === true && mpOn),
+        sub: pm.card === true ? (mpOn ? 'Sí · Mercado Pago enlazado' + (pm.mp.nickname ? ' · ' + escapeHtml(pm.mp.nickname) : '') : 'Falta enlazar tu Mercado Pago · toca para hacerlo')
            : pm.card === false ? 'No · la opción Tarjeta no se muestra'
            : '¿Cobras con tarjeta? Toca para responder',
         action:'mdOpenCardForm()' };
@@ -17486,7 +17577,7 @@ function mdiDetailHTML(o){
       ${mdiIsPaid(o) ? `<div class="mdi-banner ok">${icon('check')}<span><b>Pedido cobrado</b>${sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : ''}
       ${mdiIsPaid(o)
         ? `<button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>`
-        : `<button class="btn primary block mdi-notify" onclick="mdiCharge('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(mdiOrderTotal(o))}</button>`}` : ''}
+        : mdiCobroHTML(o)}` : ''}
     ${o.status === 'rechazado' ? `
       <div class="mdi-banner no">${icon('close')}<span><b>Pedido rechazado</b>${escapeHtml(o.rejectReason || 'Sin motivo')}${o.rejectNote ? ' · ' + escapeHtml(o.rejectNote) : ''}</span></div>` : ''}
     ${o.status === 'cancelado' ? `
@@ -17701,6 +17792,9 @@ function mdiConfirm(id){
   if(!ok) return;
   shieldClicks();
   vibrate([15, 60, 15]);
+  /* Pago con tarjeta: el total que se va a cobrar queda fijado EN EL SERVIDOR.
+     Es el único monto que Mercado Pago puede cobrar por este pedido. */
+  try{ const oc = MDI.get(id); if(oc) mpArm(oc, true); }catch(e){}
   mdiAfterDecision(id);
 }
 
@@ -17743,6 +17837,530 @@ function mdiCharge(id){
   openCartSheet('checkout');
   toast('Cobrando el pedido ' + o.code, { icon:icon('check'), variant:'toast-success toast-top', subtitle:formatMoney(mdTotals(o.lines).total) });
 }
+
+
+/* =========================================================================
+   COBRO DEL PEDIDO · tarjeta que cambia según cómo paga el cliente
+   -------------------------------------------------------------------------
+   Antes, el botón "Cobrar" del pedido te mandaba a la pantalla de venta
+   con el carrito ya lleno y ahí generabas la venta. Ahora no: el pedido
+   trae su propia tarjeta de cobro que dice cómo va a pagar el cliente
+   (efectivo, tarjeta o transferencia), cuánto es y qué tienes que revisar
+   antes de darlo por pagado. Si tocas el botón, se te pregunta si de
+   verdad ya te pagaron y, si dices que sí, el pedido se cobra AQUÍ MISMO:
+   se guarda la venta, se descuenta el inventario y entra a la caja, sin
+   salir del pedido ni pasar por la pantalla de ventas.
+
+   Con tarjeta y Mercado Pago enlazado no hace falta ni tocar el botón:
+   cuando Mercado Pago confirma el pago, el pedido se cobra solo.
+========================================================================= */
+
+/** Cómo dijo el cliente que va a pagar (efectivo si no eligió). */
+function mdiPayId(o){
+  const p = (o && o.customer && o.customer.payment) || (o && o.payment) || 'efectivo';
+  return MD_PAY_IDS.indexOf(p) >= 0 ? p : 'efectivo';
+}
+
+/** Textos de la tarjeta de cobro, uno por método de pago. */
+function mdiCobroTextos(o){
+  const dom = mdiIsDelivery(o);
+  const pid = mdiPayId(o);
+  if(pid === 'transferencia'){
+    return {
+      titulo:'Cobro · Transferencia',
+      ico:'transfer',
+      sub:'pendiente de confirmar',
+      texto:'El cliente te transfiere. Revisa tu cuenta y confírmalo solo cuando veas el dinero.',
+      boton:'Ya recibí la transferencia',
+      pregunta:'¿Ya te llegó la transferencia?',
+      aviso:'Confírmalo solo si ya viste el dinero en tu cuenta.'
+    };
+  }
+  if(pid === 'tarjeta'){
+    return {
+      titulo:'Cobro · Tarjeta',
+      ico:'card',
+      sub:'pendiente de cobrar',
+      texto: dom
+        ? 'El cliente paga con tarjeta al recibir su pedido. Confírmalo solo cuando el pago haya pasado.'
+        : 'El cliente paga con tarjeta al pasar por su pedido. Confírmalo solo cuando el pago haya pasado.',
+      boton:'Ya me pagó con tarjeta',
+      pregunta:'¿Ya te pagó con tarjeta?',
+      aviso:'Confírmalo solo si el pago ya pasó.'
+    };
+  }
+  return {
+    titulo:'Cobro · Efectivo',
+    ico:'cash',
+    sub:'pendiente de cobrar',
+    texto: dom
+      ? 'El cliente paga en efectivo al recibir su pedido. Confírmalo solo cuando tengas el dinero en la mano.'
+      : 'El cliente paga en efectivo al pasar por su pedido. Confírmalo solo cuando tengas el dinero en la mano.',
+    boton:'Ya me pagó en efectivo',
+    pregunta:'¿Ya te pagó en efectivo?',
+    aviso:'Confírmalo solo si ya tienes el dinero en la mano.'
+  };
+}
+
+/** La tarjeta de cobro que se ve dentro del pedido aceptado. */
+function mdiCobroHTML(o){
+  const t     = mdiCobroTextos(o);
+  const pid   = mdiPayId(o);
+  const total = mdiOrderTotal(o);
+  const c     = o.customer || {};
+  const mp    = (pid === 'tarjeta') ? mpOrderState(o) : null;
+  const id    = o.id;
+
+  /* Mercado Pago ya confirmó el pago pero falta registrarlo (casi siempre
+     porque la caja del día está cerrada). Se cobra en cuanto la abras. */
+  if(mp && mp.pagado){
+    return `
+      <div class="mdi-pay st-live">
+        <div class="mdi-pay-top">
+          <span class="mdi-pay-ico">${icon('check')}</span>
+          <b>Pagado con tarjeta</b>
+          <span class="mdi-pay-pill">Mercado Pago</span>
+        </div>
+        <div class="mdi-pay-amt">${formatMoney(total)}<small>el cliente ya pagó${mp.paymentId ? ' · pago ' + escapeHtml(mp.paymentId) : ''}</small></div>
+        <p class="mdi-pay-txt">Mercado Pago confirmó el pago y el dinero ya va a tu cuenta. Falta registrarlo como venta: para eso necesitas la caja del día abierta.</p>
+        <div class="mdi-pay-acts">
+          <button type="button" class="mdi-pay-go" onclick="mdiChargeNow('${id}', 'tarjeta')">${icon('check')} Registrar la venta</button>
+        </div>
+      </div>`;
+  }
+
+  /* Con Mercado Pago el pago lo confirma Mercado Pago, no tú. */
+  if(mp && mp.esperando){
+    return `
+      <div class="mdi-pay st-live">
+        <div class="mdi-pay-top">
+          <span class="mdi-pay-ico">${icon('card')}</span>
+          <b>Cobro · Tarjeta</b>
+          <span class="mdi-pay-pill">Mercado Pago</span>
+        </div>
+        <div class="mdi-pay-amt">${formatMoney(total)}<small>esperando el pago del cliente</small></div>
+        <p class="mdi-pay-txt">El cliente paga con su tarjeta en Mercado Pago y el dinero llega directo a tu cuenta. En cuanto Mercado Pago confirme el pago, este pedido se cobra solo.</p>
+        <div class="mdi-pay-live"><i class="mdi-pay-dot"></i>Pendiente en Mercado Pago · se revisa solo</div>
+        <div class="mdi-pay-acts">
+          <button type="button" class="mdi-pay-go wa" onclick="mpSendLink('${id}')">${icon('whatsapp')} Mandarle el link de pago</button>
+          <button type="button" class="mdi-pay-alt" onclick="mdiAskPaid('${id}')">Me pagó de otra forma · cobrar a mano</button>
+        </div>
+      </div>`;
+  }
+
+  const notas = [];
+  if(pid === 'efectivo' && c.cashWith > 0){
+    const cambio = round2(Number(c.cashWith) - total);
+    notas.push(`<div class="mdi-pay-note">${icon('coin')}<span>Dijo que paga con <b>${formatMoney(c.cashWith)}</b>${cambio > 0.004 ? ' · su cambio es <b>' + formatMoney(cambio) + '</b>' : (cambio < -0.004 ? ' · le faltan <b>' + formatMoney(-cambio) + '</b>' : ' · paga exacto')}</span></div>`);
+  }
+  if(pid === 'transferencia'){
+    notas.push(`<div class="mdi-pay-note">${icon('search')}<span>Busca el concepto <b>${escapeHtml(o.code)}</b> en tu cuenta</span></div>`);
+  }
+  if(pid === 'tarjeta' && mp && !mp.enlazado && mpCanLink()){
+    notas.push(`<div class="mdi-pay-note">${icon('alert')}<span>Enlaza tu Mercado Pago y tus clientes pagarán con tarjeta desde el menú, sin que tú confirmes nada. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Enlazar ahora</button></span></div>`);
+  }
+
+  return `
+    <div class="mdi-pay st-wait">
+      <div class="mdi-pay-top">
+        <span class="mdi-pay-ico">${icon(t.ico)}</span>
+        <b>${t.titulo}</b>
+        <span class="mdi-pay-pill">Pendiente</span>
+      </div>
+      <div class="mdi-pay-amt">${formatMoney(total)}<small>${t.sub}</small></div>
+      <p class="mdi-pay-txt">${t.texto}</p>
+      ${notas.join('')}
+      <div class="mdi-pay-acts">
+        <button type="button" class="mdi-pay-go" onclick="mdiAskPaid('${id}')">${icon('check')} ${t.boton}</button>
+      </div>
+    </div>`;
+}
+
+/** Pregunta antes de dar el pedido por pagado. */
+function mdiAskPaid(id){
+  const o = MDI.get(id);
+  if(!o || o.status !== 'confirmado') return;
+  if(mdiIsPaid(o)){ toast('Este pedido ya se cobró', { icon:icon('alert'), subtitle:'Lo encuentras en Historial' }); return; }
+  const t = mdiCobroTextos(o);
+  const total = mdiOrderTotal(o);
+  askConfirm({
+    title: t.pregunta,
+    text: 'Son <b>' + formatMoney(total) + '</b>. ' + t.aviso + ' Al confirmar, el pedido ' + escapeHtml(o.code) + ' se cobra y se guarda como venta.',
+    ok:'Sí, ya me pagaron', cancel:'Todavía no', icon:icon('check')
+  }, () => mdiChargeNow(id, mdiPayId(o)));
+}
+
+/* ---------- Cobrar el pedido sin salir de él ----------
+   Hace lo mismo que cobrar en la caja (guarda la venta, descuenta el
+   inventario, entra a la caja del día y liga la venta al pedido), pero
+   sin mandarte a la pantalla de ventas y sin tocar el carrito que ya
+   tenías abierto: se guarda, se cobra el pedido y se te regresa igual. */
+function mdiChargeNow(id, metodo, opts){
+  opts = opts || {};
+  const o = MDI.get(id);
+  if(!o || o.status !== 'confirmado') return false;
+  if(o.pendingNext){ toast('Primero avisa al cliente y toca «Siguiente»', { icon:icon('alert') }); return false; }
+  if(mdiIsPaid(o)){ if(!opts.silencio) toast('Este pedido ya se cobró', { icon:icon('alert'), subtitle:'Lo encuentras en Historial' }); return false; }
+
+  const prods = DB.getProducts();
+  if(!(o.lines || []).length || o.lines.some(l => !prods.some(p => p.id === l.productId))){
+    toast('Hay productos que ya no están en tu catálogo', { icon:icon('alert'), variant:'toast-danger', subtitle:'Ábrelo y cámbialos para poder cobrarlo' });
+    return false;
+  }
+  /* Cobrar es una venta: se necesita la caja del día abierta. Cuando el cobro
+     lo dispara Mercado Pago solo (opts.sinGate) no se le abre nada a nadie:
+     el pedido se queda marcado como pagado y se registra al abrir la caja. */
+  if(opts.sinGate){ if(!cashReadyForSale()) return false; }
+  else if(!cashGate(() => mdiChargeNow(id, metodo, opts), { ok:'Abrir caja y cobrar', what:'cobrar', after:() => mdiOpen(id) })) return false;
+
+  if(basicPayMethods().every(p => p.id !== metodo)) metodo = 'efectivo';
+
+  /* Se guarda lo que había en el carrito para devolverlo tal cual */
+  const antesCart = cart, antesCustom = customItems, antesCheckout = checkout;
+
+  cart = [];
+  customItems = {};
+  checkout = newCheckout();
+  if(SERVICE_TYPES.some(s => s.id === o.service)) checkout.serviceType = o.service;
+  checkout.paymentMethod = metodo;
+  checkout.menuOrderId = o.id;
+  if(metodo === 'tarjeta' || metodo === 'transferencia') checkout.ref = String(opts.ref || '').slice(0, 40);
+  { const c = o.customer || {}; const ref = (mdiIsDelivery(o) && c.loc && c.loc.ref) ? c.loc.ref : ''; checkout.table = String(ref || c.name || '').slice(0, 60); }
+  cart = o.lines.map(l => {
+    const line = { productId:l.productId, qty:l.qty, unitPrice:l.price };   /* se respeta el precio del pedido */
+    if(l.sizeId){ line.sizeId = l.sizeId; line.sizeLabel = l.sizeLabel; }
+    if(l.note) line.note = l.note;
+    return line;
+  });
+  const envio = mdiDeliveryFee(o);
+  if(envio > 0){ const fid = '_libre_' + uid(''); customItems[fid] = { name:'Envío a domicilio', price:envio }; cart.push({ productId:fid, qty:1 }); }
+
+  /* El ticket no se abre: el pedido se queda a la vista con su "Ver ticket" */
+  const nAntes = DB.getSales().length;
+  const verTicket = window.showTicket;
+  window.showTicket = function(){};
+  try{ confirmarCobro(); }
+  catch(e){ console.warn('Vendo plus · cobrar pedido', e); }
+  finally{ window.showTicket = verTicket; }
+  const cobrado = DB.getSales().length > nAntes;
+
+  /* El carrito que tenías antes regresa como estaba (sin quedarse colgado
+     del pedido que acabamos de cobrar) */
+  cart = antesCart; customItems = antesCustom; checkout = antesCheckout;
+  if(checkout && checkout.menuOrderId === o.id) delete checkout.menuOrderId;
+
+  if(!cobrado) return false;
+
+  const venta = DB.getSales()[DB.getSales().length - 1];
+  vibrate([15, 60, 15]);
+  shieldClicks();
+  mdiRefresh();
+  if(userPrefs().notifSales !== false){
+    toast('Pedido ' + o.code + ' cobrado', { icon:icon('check'), variant:'toast-success toast-top',
+      subtitle: formatMoney(mdiOrderTotal(o)) + ' · ' + paymentOf(metodo).name, duration:2400 });
+  }
+  return true;
+}
+
+
+/* =========================================================================
+   MERCADO PAGO · cada negocio enlaza SU PROPIA cuenta
+   -------------------------------------------------------------------------
+   Antes, "pago con tarjeta" en el Menú Digital solo le avisaba al cliente
+   que se le iba a cobrar con la terminal del negocio. Ahora no hace falta
+   terminal: el negocio enlaza su cuenta de Mercado Pago una sola vez y sus
+   clientes pagan con tarjeta desde el menú. El dinero llega DIRECTO a la
+   cuenta de Mercado Pago del negocio; Vendo Plus no cobra comisión y no
+   toca el dinero.
+
+   Lo importante de seguridad:
+   · Los tokens secretos de cada negocio NUNCA están aquí. Viven en
+     Supabase, en una tabla sin acceso público, y solo los leen las Edge
+     Functions con la llave de servidor.
+   · Los datos de la tarjeta NO pasan por Vendo Plus ni se guardan en
+     Supabase: el formulario es de Mercado Pago (Checkout Bricks) y la
+     tarjeta viaja de su celular a Mercado Pago.
+   · El monto se calcula y se valida EN EL SERVIDOR. Lo que mande el
+     navegador del cliente no decide cuánto se cobra.
+   · Un pedido se marca como pagado solo cuando el servidor le pregunta a
+     Mercado Pago y Mercado Pago dice que sí. Que el cliente llegue a la
+     pantalla de "listo" no alcanza.
+========================================================================= */
+
+const MP_FN = {
+  start:  'mp-oauth-start',
+  status: 'mp-status',
+  unlink: 'mp-unlink',
+  arm:    'mp-arm-order',
+  order:  'mp-order',
+  pay:    'mp-pay'
+};
+function mpBase(){ return String(VENDO_CONFIG.SUPABASE_URL || '').replace(/\/+$/, ''); }
+function mpReady(){ return !!(mpBase() && VENDO_CONFIG.SUPABASE_ANON_KEY); }
+
+/** Llamada a una Edge Function. Con sesión manda el token del negocio. */
+async function mpCall(fn, body, conSesion){
+  if(!mpReady()) throw new Error('Falta configurar Supabase');
+  const headers = { 'Content-Type':'application/json', apikey:VENDO_CONFIG.SUPABASE_ANON_KEY };
+  let auth = VENDO_CONFIG.SUPABASE_ANON_KEY;
+  if(conSesion){
+    let s = null;
+    try{ s = (await Cloud.sb.auth.getSession()).data.session; }catch(e){}
+    if(!s || !s.access_token) throw new Error('Inicia sesión en tu cuenta para hacer esto');
+    auth = s.access_token;
+  }
+  headers.Authorization = 'Bearer ' + auth;
+  const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const t = ctl ? setTimeout(() => ctl.abort(), 20000) : null;
+  let r;
+  try{
+    r = await fetch(mpBase() + '/functions/v1/' + fn, {
+      method:'POST', headers, body:JSON.stringify(body || {}), signal: ctl ? ctl.signal : undefined
+    });
+  }finally{ if(t) clearTimeout(t); }
+  let j = null;
+  try{ j = await r.json(); }catch(e){}
+  if(!r.ok || (j && j.ok === false)) throw new Error((j && (j.error || j.message)) || mpHttpErr(r.status));
+  return j || {};
+}
+function mpHttpErr(code){
+  if(code === 404) return 'Falta subir las funciones de Mercado Pago a Supabase';
+  if(code === 401 || code === 403) return 'Tu sesión venció. Vuelve a entrar e inténtalo otra vez';
+  if(code === 429) return 'Mercado Pago está recibiendo muchas peticiones. Espera un momento';
+  return 'No se pudo conectar con Mercado Pago (error ' + code + ')';
+}
+
+/* ---------- Lo que este aparato sabe del enlace ---------- */
+function mpCfg(){
+  const m = (mdCfg().payments || {}).mp || {};
+  return { on:!!m.on, nickname:m.nickname || '', publicKey:m.publicKey || '', liveMode:m.liveMode !== false, at:m.at || null };
+}
+function mpLinked(){ const m = mpCfg(); return !!(m.on && m.publicKey); }
+function mpCanLink(){ return typeof can === 'function' ? can('gestionarProductos') : true; }
+function mpSaveCfg(m){
+  const cfg = mdCfg();
+  cfg.payments.mp = { on:!!(m && m.on), nickname:(m && m.nickname) || '', publicKey:(m && m.publicKey) || '', liveMode:!(m && m.liveMode === false), at:(m && m.at) || null };
+  mdSaveCfg(cfg);
+}
+
+/** Le pregunta al servidor si la cuenta sigue enlazada (nunca pide los tokens). */
+async function mpSyncStatus(silencio){
+  if(!mpReady() || !Cloud.ready || !Cloud.uid) return null;
+  try{
+    const j = await mpCall(MP_FN.status, {}, true);
+    mpSaveCfg({ on:!!j.connected, nickname:j.nickname || '', publicKey:j.public_key || '', liveMode:j.live_mode !== false, at:j.connected_at || null });
+    return j;
+  }catch(e){
+    if(!silencio) console.warn('Vendo plus · Mercado Pago', e);
+    return null;
+  }
+}
+
+/* ---------- Enlazar / desenlazar ---------- */
+function mpOpenForm(){
+  if(!mpCanLink()){ toast('No tienes permiso para cambiar el Menú Digital', { icon:icon('alert'), variant:'toast-danger' }); return; }
+  const m = mpCfg();
+  const puesto = mpLinked();
+  openModal(`
+    <div class="sheet-header">
+      <h2>Pago con tarjeta</h2>
+      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+    </div>
+    <div class="mp-hero">
+      <span class="mp-hero-ico">${icon('card')}</span>
+      <div class="mp-hero-txt">
+        <b>${puesto ? 'Tu Mercado Pago está enlazado' : 'Cobra con tarjeta por Mercado Pago'}</b>
+        <small>${puesto
+          ? 'Tus clientes ya pueden pagar con tarjeta desde tu menú' + (m.nickname ? ' · cuenta ' + escapeHtml(m.nickname) : '') + '.'
+          : 'Tus clientes ponen su tarjeta en tu menú y el dinero llega directo a tu cuenta de Mercado Pago. No necesitas terminal.'}</small>
+      </div>
+    </div>
+    ${puesto ? `
+      ${m.liveMode === false ? `<div class="mdi-banner warn">${icon('alert')}<span><b>Cuenta de pruebas</b>Enlazaste una cuenta de prueba de Mercado Pago. Los cobros no son reales.</span></div>` : ''}
+      <div class="mp-rows">
+        <div class="mp-row"><span>${icon('check')}</span><span><b>Las tarjetas las cobra Mercado Pago</b>Vendo Plus nunca ve ni guarda los datos de la tarjeta de tu cliente.</span></div>
+        <div class="mp-row"><span>${icon('coin')}</span><span><b>El dinero es tuyo</b>Cae en tu cuenta de Mercado Pago. Vendo Plus no cobra comisión.</span></div>
+        <div class="mp-row"><span>${icon('check')}</span><span><b>El pedido se cobra solo</b>Cuando Mercado Pago confirma el pago, el pedido pasa a cobrado sin que hagas nada.</span></div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn ghost block" onclick="closeModal()">Listo</button>
+        <button class="btn danger block" onclick="mpAskUnlink()">Desenlazar</button>
+      </div>
+    ` : `
+      <div class="mp-rows">
+        <div class="mp-row"><span>${icon('person')}</span><span><b>Entras con tu cuenta de Mercado Pago</b>Se abre Mercado Pago, inicias sesión y autorizas a Vendo Plus. Tu contraseña nunca pasa por aquí.</span></div>
+        <div class="mp-row"><span>${icon('card')}</span><span><b>Tus clientes pagan en tu menú</b>Ponen su tarjeta sin salir del menú ni instalar nada.</span></div>
+        <div class="mp-row"><span>${icon('coin')}</span><span><b>El dinero llega a tu cuenta</b>Directo a tu Mercado Pago. Vendo Plus no cobra comisión.</span></div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn ghost block" onclick="mdOpenCardForm()">Volver</button>
+        <button class="btn primary block" id="mpGoBtn" onclick="mpConnect(this)">${icon('external')} Enlazar con Mercado Pago</button>
+      </div>
+    `}
+  `, { dismissible:true });
+}
+
+async function mpConnect(btn){
+  if(!mpCanLink()) return;
+  if(!Cloud.ready || !Cloud.uid){ toast('Entra a tu cuenta para enlazar Mercado Pago', { icon:icon('alert'), variant:'toast-danger' }); return; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Abriendo Mercado Pago…'; }
+  try{
+    const j = await mpCall(MP_FN.start, { back: location.origin + location.pathname }, true);
+    if(!j.url) throw new Error('Mercado Pago no devolvió el enlace');
+    const w = window.open(j.url, '_blank');
+    if(!w) location.href = j.url;
+    else{
+      closeModal();
+      toast('Autoriza en Mercado Pago y regresa', { icon:icon('external'), subtitle:'Al volver, revisamos el enlace solo', duration:3600 });
+      mpWaitLink();
+    }
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.innerHTML = icon('external') + ' Enlazar con Mercado Pago'; }
+    toast('No se pudo abrir Mercado Pago', { icon:icon('alert'), variant:'toast-danger', subtitle:String(e.message || e).slice(0, 120), duration:4200 });
+  }
+}
+/** Al volver de Mercado Pago se revisa el enlace unas cuantas veces. */
+function mpWaitLink(){
+  let n = 0;
+  const revisa = async () => {
+    n++;
+    const j = await mpSyncStatus(true);
+    if(j && j.connected){
+      toast('Mercado Pago enlazado', { icon:icon('check'), variant:'toast-success', subtitle:j.nickname ? 'Cuenta ' + j.nickname : 'Ya puedes cobrar con tarjeta' });
+      mdRerenderIfMenu();
+      return;
+    }
+    if(n < 20) setTimeout(revisa, 3000);
+  };
+  setTimeout(revisa, 2500);
+  const alVolver = () => { if(!document.hidden){ document.removeEventListener('visibilitychange', alVolver); setTimeout(() => mpSyncStatus(true).then(j => { if(j && j.connected){ toast('Mercado Pago enlazado', { icon:icon('check'), variant:'toast-success' }); mdRerenderIfMenu(); } }), 600); } };
+  document.addEventListener('visibilitychange', alVolver);
+}
+
+function mpAskUnlink(){
+  askConfirm({
+    title:'¿Desenlazar tu Mercado Pago?',
+    text:'Tus clientes dejarán de poder pagar con tarjeta desde el menú. Los pagos que ya te hicieron no se tocan. Puedes volver a enlazarlo cuando quieras.',
+    ok:'Desenlazar', cancel:'Volver', danger:true, icon:icon('alert')
+  }, async () => {
+    try{
+      await mpCall(MP_FN.unlink, {}, true);
+      mpSaveCfg({ on:false });
+      closeModal();
+      toast('Mercado Pago desenlazado', { icon:icon('check') });
+      mdRerenderIfMenu();
+    }catch(e){
+      toast('No se pudo desenlazar', { icon:icon('alert'), variant:'toast-danger', subtitle:String(e.message || e).slice(0, 120) });
+    }
+  });
+}
+
+/* ---------- El pedido y su cobro en Mercado Pago ---------- */
+/** Estado del cobro con tarjeta de un pedido. */
+function mpOrderState(o){
+  const enlazado = mpLinked() && mdCfg().payments.card === true;
+  const mp = (o && o.mp) || null;
+  const pagado = !!(mp && mp.status === 'paid');
+  return {
+    enlazado: enlazado,
+    status: mp ? mp.status : null,
+    paymentId: mp ? mp.paymentId : null,
+    pagado: pagado,
+    esperando: enlazado && !pagado
+  };
+}
+/** El link que se le manda al cliente para pagar su pedido. */
+function mpPayUrl(o){
+  const base = location.protocol === 'file:' ? location.href.split(/[?#]/)[0] : location.origin + location.pathname;
+  return base + '#pago/' + encodeURIComponent(o.id);
+}
+/** Fija EN EL SERVIDOR cuánto hay que cobrar por este pedido.
+    Es lo único que decide el monto: el navegador del cliente no puede cambiarlo. */
+async function mpArm(o, silencio){
+  if(!o || !mpLinked() || mdiPayId(o) !== 'tarjeta') return false;
+  if(!Cloud.ready || !Cloud.uid) return false;
+  try{
+    await mpCall(MP_FN.arm, { order_id:o.id, code:o.code, total:mdiOrderTotal(o) }, true);
+    return true;
+  }catch(e){
+    if(!silencio) console.warn('Vendo plus · preparar cobro', e);
+    return false;
+  }
+}
+function mpSendLink(id){
+  const o = MDI.get(id); if(!o) return;
+  /* Los pedidos del menú no traen teléfono: WhatsApp abre para que elijas el chat del cliente */
+  const tel = String((o.customer && o.customer.phone) || '').replace(/\D/g, '');
+  const b = bizData();
+  const nombre = (o.customer && o.customer.name) ? ' ' + o.customer.name.split(/\s+/)[0] : '';
+  const msg = '¡Hola' + nombre + '! Aquí puedes pagar con tarjeta tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') +
+    '.\n\n*Total: ' + formatMoney(mdiOrderTotal(o)) + ' MXN*\n' + mpPayUrl(o) +
+    '\n\nEl pago lo procesa Mercado Pago. En cuanto se confirme, te avisamos.';
+  const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(msg);
+  const w = window.open(url, '_blank');
+  if(!w) location.href = url;
+}
+
+/* ---------- Vigilante: los pedidos pagados se cobran solos ----------
+   El pedido se marca como pagado en Supabase únicamente cuando el
+   servidor le preguntó a Mercado Pago y Mercado Pago contestó que el
+   pago está aprobado. Aquí solo se lee ese resultado. */
+const MpWatch = {
+  t:null, ch:null, chUid:null, busy:false,
+  pendientes(){
+    return MDI.all().filter(o => o.status === 'confirmado' && !o.pendingNext && !mdiIsPaid(o) && mdiPayId(o) === 'tarjeta');
+  },
+  canRun(){ return mpReady() && Cloud.ready && !!Cloud.uid && mpLinked() && !document.body.classList.contains('dm-mode'); },
+  async pull(){
+    if(this.busy || !this.canRun()) return;
+    const lista = this.pendientes();
+    if(!lista.length) return;
+    this.busy = true;
+    try{
+      const ids = lista.map(o => o.id).slice(0, 60);
+      const { data, error } = await Cloud.sb.from(MDI_TABLE)
+        .select('id, charge_status, mp_payment_id, paid_amount, paid_at')
+        .eq('user_id', Cloud.uid).in('id', ids);
+      if(error || !Array.isArray(data)) return;
+      data.forEach(row => {
+        const o = MDI.get(row.id);
+        if(!o || mdiIsPaid(o) || o.status !== 'confirmado' || o.pendingNext) return;
+        const st = row.charge_status || 'pending';
+        MDI.update(row.id, x => { x.mp = { status:st, paymentId:row.mp_payment_id || null, amount:row.paid_amount == null ? null : Number(row.paid_amount), at:row.paid_at || null }; });
+        if(st === 'paid'){
+          /* No se cobra dos veces: mdiChargeNow revisa otra vez que siga sin
+             cobrar. Con la caja cerrada no se cobra ni se abre nada: el pedido
+             queda marcado como pagado y se registra al abrir la caja. */
+          const ok = mdiChargeNow(row.id, 'tarjeta', { ref:String(row.mp_payment_id || '').slice(0, 40), silencio:true, sinGate:true });
+          if(ok) toast('Pedido ' + o.code + ' pagado con tarjeta', { icon:icon('check'), variant:'toast-success toast-top', subtitle:'Mercado Pago confirmó el pago · se cobró solo', duration:3200 });
+          else if(!cashReadyForSale()) toast('Pedido ' + o.code + ' pagado con tarjeta', { icon:icon('alert'), variant:'toast-top', subtitle:'Abre tu caja del día para registrarlo como venta', duration:4000 });
+        }
+      });
+      if(mdiUI.id && lista.some(o => o.id === mdiUI.id)) mdiRefresh();
+    }catch(e){ /* sin internet: se vuelve a intentar */ }
+    finally{ this.busy = false; }
+  },
+  listen(){
+    if(!this.canRun() || !Cloud.sb || !Cloud.sb.channel) return;
+    if(this.ch && this.chUid === Cloud.uid) return;
+    this.unlisten();
+    try{
+      const uid = Cloud.uid; this.chUid = uid;
+      this.ch = Cloud.sb.channel('vendo-mp-' + uid)
+        .on('postgres_changes', { event:'UPDATE', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
+            () => { if(Cloud.uid === uid) this.pull(); })
+        .subscribe();
+    }catch(e){ this.ch = null; this.chUid = null; }
+  },
+  unlisten(){ if(this.ch){ try{ Cloud.sb.removeChannel(this.ch); }catch(e){} } this.ch = null; this.chUid = null; },
+  start(){
+    if(this.t) return;
+    this.t = setInterval(() => { if(!document.hidden) { this.listen(); this.pull(); } }, 12000);
+    document.addEventListener('visibilitychange', () => { if(!document.hidden){ this.listen(); this.pull(); } });
+    window.addEventListener('online', () => { this.listen(); this.pull(); });
+    setTimeout(() => { this.listen(); this.pull(); }, 2500);
+  }
+};
 
 /* ---------- Cancelar un pedido ya confirmado ----------
    · Por cobrar: solo cambia a cancelado (no hubo venta, ni dinero, ni
@@ -17910,6 +18528,10 @@ function mdiNotify(id){
     if(del) extra.push('Te lo llevamos a la ubicación que nos mandaste.' + (o.etaMin ? ' Llegará en aproximadamente ' + mdiEtaLong(o.etaMin) + '.' : ''));
     else if(c.service === 'llevar' || !c.service) extra.push('Puedes pasar por él al negocio.' + (o.etaMin ? ' Estará listo en aproximadamente ' + mdiEtaLong(o.etaMin) + '.' : ''));
     if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
+    /* Con tarjeta y Mercado Pago enlazado, el link de pago va en el mismo aviso */
+    if(c.payment === 'tarjeta' && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
+      extra.push('Paga con tu tarjeta aquí: ' + mpPayUrl(o));
+    }
     if(extra.length) msg += '\n\n' + extra.join('\n');
     msg += '\n¡Gracias por tu compra!';
     MDI.update(id, x => { x.notifiedAt = new Date().toISOString(); });
@@ -18299,7 +18921,14 @@ function dmPayInfoHTML(){
     </div>`;
   }
   if(co.pay === 'tarjeta'){
-    return `<div class="dm-pi">${head('card', 'Pago con tarjeta', dom ? 'Te cobramos con terminal cuando te entreguen tu pedido.' : 'Te cobramos con terminal cuando pases por tu pedido.')}</div>`;
+    const mpOn = !!(pm.mp && pm.mp.on);
+    if(mpOn){
+      return `<div class="dm-pi">
+        ${head('card', 'Pago con tarjeta', 'Pagas en línea con Mercado Pago, desde tu celular.')}
+        <small class="dm-pi-note">Al confirmarte el pedido, el negocio te manda por WhatsApp tu link de pago. Ahí pones tu tarjeta en Mercado Pago y listo: el negocio ve el pago al instante. Tus datos de tarjeta no los ve el negocio ni esta app.</small>
+      </div>`;
+    }
+    return `<div class="dm-pi">${head('card', 'Pago con tarjeta', dom ? 'Te cobramos con tarjeta cuando te entreguen tu pedido.' : 'Te cobramos con tarjeta cuando pases por tu pedido.')}</div>`;
   }
   if(co.pay === 'transferencia'){
     if(!co.code) co.code = mdiNewCode();
@@ -22991,7 +23620,7 @@ function mdPublicSnapshot(){
          /* Servicio a domicilio: si lo hay y dónde empieza el mapa del cliente */
          delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null },
          /* Formas de pago: la CLABE solo se publica si aceptas transferencias */
-         payments:{ card: cfg.payments.card === true, transfer: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe), clabe: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe) ? cfg.payments.clabe : '', holder: cfg.payments.transfer === true ? cfg.payments.holder : '' } },
+         payments:{ card: cfg.payments.card === true, mp:{ on: cfg.payments.card === true && !!(cfg.payments.mp && cfg.payments.mp.on && cfg.payments.mp.publicKey) }, transfer: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe), clabe: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe) ? cfg.payments.clabe : '', holder: cfg.payments.transfer === true ? cfg.payments.holder : '' } },
     wa: mdWhatsappDigits(),
     biz:{ name:b.name || '', logo:b.logo || u.photo || null, giro:b.giro || '', type:b.type || '', hours:hrsClean(b.hours) },
     tax:{ taxMode:pc.taxMode, taxRate:pc.taxRate },
@@ -23362,6 +23991,221 @@ function mdiFromCloud(row){
       status:'nuevo', service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true
     };
   }catch(e){ return null; }
+}
+
+
+/* =========================================================================
+   PÁGINA DE PAGO DEL CLIENTE  ·  …#pago/<id del pedido>
+   -------------------------------------------------------------------------
+   La abre EL CLIENTE del negocio con el link que le llega por WhatsApp.
+   No entra a Vendo Plus ni pide cuenta.
+
+   · El monto NO viene del link ni del navegador: se lo pide al servidor,
+     que lo tomó de lo que el negocio fijó al aceptar el pedido.
+   · La tarjeta se escribe en el formulario de Mercado Pago (Bricks). Los
+     datos de la tarjeta van de este celular a Mercado Pago, no pasan por
+     Vendo Plus ni se guardan en ningún lado.
+   · Llegar a la pantalla de "listo" no marca nada como pagado: el pedido
+     se marca pagado cuando el servidor le pregunta a Mercado Pago.
+========================================================================= */
+const MP_SDK = 'https://sdk.mercadopago.com/js/v2';
+const pg = { id:null, data:null, mp:null, brick:null, t:null, enviando:false };
+
+function pgRoute(){
+  const m = location.hash.match(/^#pago\/([A-Za-z0-9_-]+)/);
+  return m ? { id:decodeURIComponent(m[1]) } : null;
+}
+function pgEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
+function pgMoney(n){ try{ return formatMoney(n); }catch(e){ return '$' + (Number(n) || 0).toFixed(2); } }
+
+async function pgFetch(fn, body){
+  const base = String(VENDO_CONFIG.SUPABASE_URL || '').replace(/\/+$/, '');
+  const r = await fetch(base + '/functions/v1/' + fn, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', apikey:VENDO_CONFIG.SUPABASE_ANON_KEY, Authorization:'Bearer ' + VENDO_CONFIG.SUPABASE_ANON_KEY },
+    body:JSON.stringify(body || {})
+  });
+  let j = null;
+  try{ j = await r.json(); }catch(e){}
+  if(!r.ok || (j && j.ok === false)) throw new Error((j && (j.error || j.message)) || ('Error ' + r.status));
+  return j || {};
+}
+
+function bootPago(route){
+  document.body.classList.add('dm-mode', 'pg-mode');
+  const sp = document.getElementById('splash'); if(sp) sp.remove();
+  pg.id = route.id;
+  const root = document.createElement('div'); root.id = 'pgRoot'; root.className = 'pg';
+  document.body.appendChild(root);
+  pgPaint(pgCargandoHTML());
+  pgLoad();
+}
+function pgPaint(html){ const r = document.getElementById('pgRoot'); if(r) r.innerHTML = html; }
+
+function pgCargandoHTML(){
+  return `<div class="pg-card"><div class="pg-load"><i></i><i></i><i></i></div><p class="pg-load-txt">Buscando tu pedido…</p></div>`;
+}
+function pgErrorHTML(titulo, texto, reintentar){
+  return `<div class="pg-card pg-center">
+    <span class="pg-big pg-bad">!</span>
+    <h1>${pgEsc(titulo)}</h1>
+    <p>${pgEsc(texto)}</p>
+    ${reintentar ? `<button class="pg-btn" onclick="pgLoad()">Intentar otra vez</button>` : ''}
+  </div>`;
+}
+
+async function pgLoad(){
+  pgPaint(pgCargandoHTML());
+  try{
+    const j = await pgFetch('mp-order', { order_id:pg.id });
+    pg.data = j;
+    if(j.status === 'paid') return pgPaintOk();
+    if(!j.public_key) return pgPaint(pgErrorHTML('Este negocio aún no cobra con tarjeta', 'Escríbele por WhatsApp para pagar de otra forma.', false));
+    if(!(Number(j.amount) > 0)) return pgPaint(pgErrorHTML('Tu pedido todavía no tiene total', 'El negocio te mandará el link otra vez en cuanto confirme cuánto es.', true));
+    pgPaintForm();
+  }catch(e){
+    const m = String(e.message || e);
+    if(/no existe|not found|404/i.test(m)) pgPaint(pgErrorHTML('No encontramos ese pedido', 'Revisa que el link esté completo o pídele al negocio que te lo mande otra vez.', true));
+    else pgPaint(pgErrorHTML('No se pudo abrir tu pago', m.slice(0, 140), true));
+  }
+}
+
+function pgCabeza(){
+  const d = pg.data || {};
+  return `<div class="pg-head">
+      ${d.business_logo ? `<img class="pg-logo" src="${pgEsc(d.business_logo)}" alt="">` : `<span class="pg-logo pg-logo-ph">${pgEsc((d.business || 'N').slice(0, 1).toUpperCase())}</span>`}
+      <div class="pg-head-txt"><b>${pgEsc(d.business || 'Tu pedido')}</b><small>Pedido ${pgEsc(d.code || '')}</small></div>
+    </div>`;
+}
+
+function pgPaintOk(){
+  const d = pg.data || {};
+  if(pg.t){ clearInterval(pg.t); pg.t = null; }
+  pgPaint(`<div class="pg-card pg-center">
+      ${pgCabeza()}
+      <span class="pg-big pg-ok">✓</span>
+      <h1>¡Listo, ya pagaste!</h1>
+      <p>Tu pago de <b>${pgMoney(d.amount)}</b> quedó confirmado por Mercado Pago. El negocio ya lo vio y está preparando tu pedido.</p>
+      <p class="pg-mini">Pedido ${pgEsc(d.code || '')}${d.mp_payment_id ? ' · pago ' + pgEsc(d.mp_payment_id) : ''}</p>
+    </div>`);
+}
+function pgPaintEsperando(detalle){
+  pgPaint(`<div class="pg-card pg-center">
+      ${pgCabeza()}
+      <div class="pg-load"><i></i><i></i><i></i></div>
+      <h1>Estamos confirmando tu pago</h1>
+      <p>${pgEsc(detalle || 'Mercado Pago lo está revisando. No cierres esta pantalla; en cuanto se confirme te avisamos aquí.')}</p>
+    </div>`);
+  pgWatch();
+}
+function pgPaintRechazado(motivo){
+  const d = pg.data || {};
+  pgPaint(`<div class="pg-card pg-center">
+      ${pgCabeza()}
+      <span class="pg-big pg-bad">×</span>
+      <h1>Tu banco no autorizó el pago</h1>
+      <p>${pgEsc(motivo || 'No se hizo ningún cargo. Puedes intentar con otra tarjeta.')}</p>
+      <button class="pg-btn" onclick="pgLoad()">Probar con otra tarjeta</button>
+      <p class="pg-mini">Pedido ${pgEsc(d.code || '')} · ${pgMoney(d.amount)}</p>
+    </div>`);
+}
+
+/** Revisa con el servidor (que a su vez le pregunta a Mercado Pago) hasta que el pago quede confirmado. */
+function pgWatch(){
+  if(pg.t) clearInterval(pg.t);
+  let n = 0;
+  pg.t = setInterval(async () => {
+    n++;
+    try{
+      const j = await pgFetch('mp-order', { order_id:pg.id });
+      pg.data = Object.assign({}, pg.data, j);
+      if(j.status === 'paid'){ clearInterval(pg.t); pg.t = null; pgPaintOk(); return; }
+      if(j.status === 'rejected'){ clearInterval(pg.t); pg.t = null; pgPaintRechazado(j.status_detail_text); return; }
+    }catch(e){}
+    if(n >= 60){ clearInterval(pg.t); pg.t = null; }
+  }, 4000);
+}
+
+function pgPaintForm(){
+  const d = pg.data;
+  pgPaint(`
+    <div class="pg-card">
+      ${pgCabeza()}
+      <div class="pg-amt"><small>Total a pagar</small><b>${pgMoney(d.amount)}</b></div>
+      <div class="pg-safe">${icon('card')}<span>Pagas con <b>Mercado Pago</b>. Tus datos de tarjeta viajan directo a Mercado Pago: este negocio y Vendo Plus no los ven ni los guardan.</span></div>
+      <div id="pgBrick" class="pg-brick"><div class="pg-load"><i></i><i></i><i></i></div></div>
+      <div id="pgErr" class="pg-err" hidden></div>
+      <p class="pg-mini">Pedido ${pgEsc(d.code || '')}${d.live_mode === false ? ' · cuenta de prueba' : ''}</p>
+    </div>`);
+  pgMountBrick();
+}
+
+function pgLoadSdk(){
+  if(window.MercadoPago) return Promise.resolve();
+  return new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = MP_SDK; s.async = true;
+    s.onload = ok;
+    s.onerror = () => fail(new Error('No se pudo cargar Mercado Pago. Revisa tu internet.'));
+    document.head.appendChild(s);
+  });
+}
+
+async function pgMountBrick(){
+  const d = pg.data;
+  try{ await pgLoadSdk(); }
+  catch(e){ pgPaint(pgErrorHTML('No se pudo cargar Mercado Pago', String(e.message || e), true)); return; }
+  try{
+    pg.mp = new window.MercadoPago(d.public_key, { locale:'es-MX' });
+    const bricks = pg.mp.bricks();
+    pg.brick = await bricks.create('cardPayment', 'pgBrick', {
+      initialization:{ amount:Number(d.amount) },
+      customization:{ visual:{ style:{ theme:'default' } }, paymentMethods:{ maxInstallments:1 } },
+      callbacks:{
+        onReady: () => { const l = document.querySelector('#pgBrick .pg-load'); if(l) l.remove(); },
+        onError: e => pgShowErr((e && (e.message || e.cause)) ? String(e.message || e.cause) : 'Revisa los datos de tu tarjeta'),
+        onSubmit: datos => pgSubmit(datos)
+      }
+    });
+  }catch(e){
+    pgPaint(pgErrorHTML('No se pudo abrir el formulario de pago', String(e.message || e).slice(0, 140), true));
+  }
+}
+
+function pgShowErr(msg){
+  const b = document.getElementById('pgErr');
+  if(!b) return;
+  b.hidden = false;
+  b.textContent = msg;
+}
+
+/** Manda a nuestro servidor SOLO el token de la tarjeta. El monto lo pone el servidor. */
+function pgSubmit(datos){
+  return new Promise(async (listo) => {
+    if(pg.enviando){ listo(); return; }
+    pg.enviando = true;
+    pgShowErr('');
+    const b = document.getElementById('pgErr'); if(b) b.hidden = true;
+    try{
+      const f = (datos && datos.formData) || datos || {};
+      const j = await pgFetch('mp-pay', {
+        order_id: pg.id,
+        token: f.token,
+        payment_method_id: f.payment_method_id,
+        issuer_id: f.issuer_id,
+        installments: f.installments || 1,
+        payer: f.payer || {}
+      });
+      if(j.status === 'approved'){ pg.data = Object.assign({}, pg.data, { status:'paid', mp_payment_id:j.mp_payment_id }); pgPaintOk(); }
+      else if(j.status === 'rejected') pgPaintRechazado(j.status_detail_text);
+      else pgPaintEsperando(j.status_detail_text);
+    }catch(e){
+      pgShowErr(String(e.message || e).slice(0, 160));
+    }finally{
+      pg.enviando = false;
+      listo();
+    }
+  });
 }
 
 /* ---------- Aviso de pedido nuevo (lo usan Realtime, la revisión y otra pestaña) ---------- */
@@ -24282,6 +25126,10 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
   const route = dmRoute();
   if(route){ bootMenu(route); return; }
 
+  /* Link de pago con tarjeta que el negocio le mandó a su cliente */
+  const rutaPago = pgRoute();
+  if(rutaPago){ bootPago(rutaPago); return; }
+
   /* Link "registrar en caja" de mensajes de WhatsApp anteriores */
   let llegado = null, malo = false;
   const m = location.hash.match(/^#pedido\/([A-Za-z0-9_-]+)/);
@@ -24292,6 +25140,8 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
 
   bootApp();
   mdiWatch();
+  /* Mercado Pago: revisa los pedidos que ya pagaron y los cobra solos */
+  try{ MpWatch.start(); setTimeout(() => mpSyncStatus(true), 4000); }catch(e){}
   mdiPaintBadge();
   /* "hace 5 min" se mantiene al día */
   setInterval(() => { if(currentView === 'menu' && !document.querySelector('#modal-layer .modal-sheet')){ const y = window.scrollY; render(); window.scrollTo(0, y); } }, 60000);
