@@ -2386,10 +2386,18 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .md-del-map-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin:0 2px 8px; }
   .md-del-map-head b{ display:block; font-size:14px; font-weight:800; }
   .md-del-map-head small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-top:1px; }
+  /* La ubicación del negocio dejó de ser opcional: cuando falta se marca en rojo */
+  .md-del-map-head small.md-req{ color:var(--accent-2,#D23B3B); font-weight:700; }
+  .md-del-falta{ display:flex; align-items:flex-start; gap:7px; margin:10px 2px 0; font-size:12.5px; font-weight:700; line-height:1.4; color:var(--accent-2,#D23B3B); }
+  .md-del-falta svg{ width:15px; height:15px; flex:none; margin-top:1px; }
+  .md-del-falta[hidden]{ display:none; }
   .md-del-clear{ border:none; background:none; color:var(--accent-2); font-weight:800; font-size:12.5px; font-family:inherit; padding:4px 2px; cursor:pointer; }
   .md-del-clear[hidden]{ display:none; }
   .md-del-map{ height:190px; }
   .btn.md-del-gps{ margin-top:8px; padding:11px 10px; font-size:13.5px; }
+  .md-del-manual{ display:block; width:100%; margin-top:6px; border:0; background:none; cursor:pointer;
+    font-family:inherit; font-size:12.5px; font-weight:700; color:var(--ink-soft); padding:9px;
+    text-decoration:underline; -webkit-tap-highlight-color:transparent; }
   .md-nudge{ display:flex; align-items:center; gap:11px; width:100%; margin-top:12px; text-align:left; border:none; cursor:pointer; background:var(--accent-soft); color:#6B4A00; border-radius:14px; padding:11px 12px; font-family:inherit; font-size:12.5px; font-weight:600; line-height:1.4; }
   .md-nudge-ico{ width:36px; height:36px; border-radius:11px; background:var(--accent); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .md-nudge-ico svg{ width:19px; height:19px; }
@@ -3842,6 +3850,29 @@ body.dm-feed #dmRoot, body.dm-feed .dm-cartbar{ display:none !important; }
   }
 
   /* Botón de estadísticas detalladas */
+  /* ---------- Estadísticas detalladas: comparar y "lo que se nota" ---------- */
+  .sd-cmp-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
+  .sd-cmp{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-card,16px);
+    padding:13px 14px; box-shadow:var(--shadow-card); min-width:0; }
+  .sd-cmp-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .sd-cmp-top > span{ font-size:12.5px; font-weight:700; color:var(--ink-soft); min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sd-cmp b{ display:block; margin-top:6px; font-size:22px; font-weight:800; letter-spacing:-.4px; color:var(--ink); }
+  .sd-cmp small{ display:block; margin-top:2px; font-size:11.5px; font-weight:600; color:var(--ink-soft); }
+  .sd-chip{ flex:none; border-radius:999px; padding:3px 8px; font-size:11.5px; font-weight:800; white-space:nowrap; }
+  .sd-chip.up{ background:var(--success-bg,#E6F7EE); color:#0E7A3D; }
+  .sd-chip.down{ background:var(--danger-bg,#FDE8E8); color:var(--accent-2,#D23B3B); }
+  .sd-chip.flat{ background:var(--surface-alt); color:var(--ink-soft); }
+  .sd-tips{ display:flex; flex-direction:column; gap:11px; }
+  .sd-tip{ display:flex; align-items:flex-start; gap:10px; font-size:13.5px; font-weight:600; line-height:1.45; color:var(--ink); }
+  .sd-tip svg{ width:17px; height:17px; flex:none; margin-top:2px; color:var(--ink-soft); }
+  .sd-tip b{ font-weight:800; }
+  .sd-chips{ display:flex; flex-wrap:wrap; gap:7px; }
+  .sd-prod{ display:inline-block; max-width:100%; border:1px solid var(--border); border-radius:999px;
+    padding:6px 11px; font-size:12.5px; font-weight:700; color:var(--ink-soft); background:var(--surface-alt);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (max-width:380px){ .sd-cmp-grid{ grid-template-columns:1fr 1fr; } .sd-cmp b{ font-size:19px; } }
+
   .stats-detail-btn{ margin-top:26px; display:flex; align-items:center; justify-content:center; gap:8px; }
   .stats-detail-btn .sdb-chev{ display:flex; transition:transform .2s ease; }
   .stats-detail-btn .sdb-chev svg{ width:18px; height:18px; }
@@ -4794,8 +4825,20 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 
 /* ===== Hoja de enlace con Mercado Pago ===== */
 .mp-hero{ display:flex; align-items:center; gap:12px; margin:4px 0 16px; padding:14px; border-radius:16px; background:var(--surface-alt); }
-.mp-hero-ico{ display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; flex:none; border-radius:14px; background:#009EE3; color:#fff; }
+/* El logo de Mercado Pago ya trae su propio óvalo azul, así que la cajita va
+   en blanco con un borde suave: el logo se ve como viene de la marca y no
+   azul sobre azul. El logo es cuadrado y se escala con object-fit:contain,
+   o sea que nunca se estira ni se recorta. */
+.mp-hero-ico{ display:inline-flex; align-items:center; justify-content:center; width:46px; height:46px; flex:none; border-radius:14px; background:#fff; border:1px solid var(--border); overflow:hidden; padding:5px; }
 .mp-hero-ico svg{ width:24px; height:24px; }
+.mp-hero-ico img{ display:block; width:100%; height:100%; object-fit:contain; object-position:center; }
+
+/* Los botones de esta hoja: "Enlazar con Mercado Pago" no cabe en un renglón
+   en pantallas angostas y los dejaba altísimos. Aquí se aprietan y los dos
+   quedan de la misma altura. */
+.mp-acts .btn{ min-height:46px; padding:10px 12px; font-size:14.5px; line-height:1.2; }
+.mp-acts .btn svg{ width:15px; height:15px; }
+@media (max-width:380px){ .mp-acts .btn{ font-size:13.5px; padding:10px; } }
 .mp-hero-txt{ min-width:0; }
 .mp-hero-txt b{ display:block; font-size:15px; font-weight:800; color:var(--ink); }
 .mp-hero-txt small{ display:block; margin-top:3px; font-size:12.5px; font-weight:600; line-height:1.4; color:var(--ink-soft); }
@@ -5280,6 +5323,8 @@ const ICONS = {
 };
 function icon(name){ return ICONS[name] || ''; }
 ICONS.vpCrown = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg>';
+/* Reloj: lo usan el horario del menú y las estadísticas ("la hora más fuerte") */
+ICONS.clock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>';
 
 /* ---------- Íconos de línea en lugar de emojis ----------
    icx('cash') = ícono pequeño que acompaña a un texto (se ajusta al
@@ -10548,6 +10593,45 @@ function renderStats(){
   const porCobrar = typeof totalReceivable === 'function' ? totalReceivable() : 0;
   const pedidos = n => n + ' pedido' + (n === 1 ? '' : 's');
 
+  /* ---- Comparación con el periodo anterior ---- */
+  const ant = reportResumenPrev();
+  const antNombre = periodoAnteriorNombre();
+
+  /* ---- Tu mejor día y tu mejor hora, dicho con palabras ---- */
+  const mejorDiaKey = days.length ? days.reduce((a, k) => (d.byDay[k] > d.byDay[a] ? k : a), days[0]) : '';
+  const mejorDiaVal = mejorDiaKey ? d.byDay[mejorDiaKey] : 0;
+  const mejorDiaTxt = mejorDiaKey
+    ? new Date(Number(mejorDiaKey.slice(0, 4)), Number(mejorDiaKey.slice(5, 7)) - 1, Number(mejorDiaKey.slice(8, 10)))
+        .toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'short' })
+    : '';
+  const mejorHora = horas.length ? horas.reduce((a, x) => (x.v > a.v ? x : a), horas[0]) : null;
+  /* El día de la semana que más vende (sumando todos los de ese nombre) */
+  const porSemana = [0, 0, 0, 0, 0, 0, 0], cuentaSemana = [0, 0, 0, 0, 0, 0, 0];
+  days.forEach(k => {
+    const f = new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, Number(k.slice(8, 10)));
+    porSemana[f.getDay()] += d.byDay[k] || 0;
+    if((d.byDay[k] || 0) > 0) cuentaSemana[f.getDay()] += 1;
+  });
+  const DIAS_SEM = ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados'];
+  const mejorSem = porSemana.some(v => v > 0) ? porSemana.indexOf(Math.max(...porSemana)) : -1;
+  const variosDias = cuentaSemana.filter(c => c > 0).length > 1 && days.length > 7;
+
+  /* ---- Lo que más ganancia deja (no es lo mismo que lo más vendido) ---- */
+  const porGanancia = prods.filter(p => p.profit > 0.004).sort((a, b) => b.profit - a.profit);
+  const maxGan = Math.max(0.01, ...porGanancia.map(p => p.profit));
+  /* Lo que se vende pero deja poco o nada */
+  const flojos = prods.filter(p => p.total > 0.004 && p.profit <= 0.004);
+
+  /* ---- Lo que no se vendió nada en el periodo ---- */
+  let dormidos = [];
+  try{
+    const vendidos = {};
+    Object.values(d.byProd).forEach(p => { if(p.qty > 0) vendidos[mdNorma(p.name)] = true; });
+    dormidos = DB.getProducts()
+      .filter(p => p && p.name && p.active !== false && !vendidos[mdNorma(p.name)])
+      .slice(0, 40);
+  }catch(e){ dormidos = []; }
+
   return head + `
     <div class="section-title">Gráficas</div>
     <div class="stats-top">
@@ -10592,6 +10676,26 @@ function renderStats(){
       <span class="sdb-txt">${statsDetailOpen ? 'Ocultar estadísticas detalladas' : 'Ver estadísticas detalladas'}</span><span class="sdb-chev">${icon('chevronDown')}</span>
     </button>
     <div id="statsDetail" class="stats-detail" ${statsDetailOpen ? '' : 'hidden'}>
+
+    <div class="section-title">Cómo vas contra ${antNombre}</div>
+    <div class="sd-cmp-grid">
+      ${statsCompareCard('Ventas netas', d.net, ant.net)}
+      ${statsCompareCard('Pedidos', d.orders.length, ant.pedidos, fmtNum)}
+      ${statsCompareCard('Ticket promedio', ticket, ant.ticket)}
+      ${ver ? statsCompareCard('Ganancia', d.prof.profit, ant.profit) : ''}
+    </div>
+    <div class="kv-note">Comparado con ${antNombre}${periodoEnCurso() ? ', hasta la misma hora' : ''}, para que sea parejo.</div>
+
+    ${(mejorDiaKey && days.length > 1) || mejorHora || (variosDias && mejorSem >= 0) ? `
+      <div class="section-title">Lo que se nota</div>
+      <div class="card sd-tips">
+        ${mejorDiaKey && days.length > 1 ? `<div class="sd-tip">${icon('calendar')}<span>Tu mejor día fue el <b>${escapeHtml(mejorDiaTxt)}</b> con <b>${formatMoney(mejorDiaVal)}</b>.</span></div>` : ''}
+        ${variosDias && mejorSem >= 0 ? `<div class="sd-tip">${icon('chart')}<span>De la semana, los <b>${DIAS_SEM[mejorSem]}</b> son los que más te dejan.</span></div>` : ''}
+        ${mejorHora ? `<div class="sd-tip">${icon('clock')}<span>La hora más fuerte es alrededor de las <b>${hLabel(mejorHora.h)}</b> (${formatMoney(mejorHora.v)}).</span></div>` : ''}
+        ${d.returns.length ? `<div class="sd-tip">${icon('alert')}<span>Hubo <b>${d.returns.length}</b> devolución${d.returns.length === 1 ? '' : 'es'} por <b>${formatMoney(d.returnsTotal)}</b>.</span></div>` : ''}
+        ${d.discounts > 0.004 ? `<div class="sd-tip">${icon('tag')}<span>Diste <b>${formatMoney(d.discounts)}</b> en descuentos.</span></div>` : ''}
+        ${ver && d.gastos > 0.004 ? `<div class="sd-tip">${icon('coin')}<span>Los gastos se llevaron <b>${(d.prof.profit > 0.004 ? (d.gastos / d.prof.profit * 100) : 0).toFixed(0)}%</b> de tu ganancia.</span></div>` : ''}
+      </div>` : ''}
 
     <div class="section-title">Indicadores del periodo</div>
     <div class="stat-grid">
@@ -10644,6 +10748,25 @@ function renderStats(){
         <div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, c.total / maxCat) * 100}%; background:var(--ink);"></div></div>
       </div>`).join('')}</div>` : ''}
 
+    ${ver && porGanancia.length ? `
+      <div class="section-title">Los que más ganancia te dejan</div>
+      <div class="card">
+        ${porGanancia.slice(0, 8).map(p => `<div class="bar-row">
+          <div class="bar-row-top"><span>${escapeHtml(p.name)}${p.sizeLabel ? ' · ' + escapeHtml(p.sizeLabel) : ''}</span><span class="bv">${formatMoney(p.profit)}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2, p.profit / maxGan * 100)}%; background:var(--vp-green,#16C15B);"></div></div>
+        </div>`).join('')}
+        <div class="kv-note">No siempre es lo más vendido: aquí está lo que de verdad te deja dinero.</div>
+        ${flojos.length ? `<div class="kv-note">${fmtNum(flojos.length)} producto${flojos.length === 1 ? '' : 's'} se ${flojos.length === 1 ? 'vendió' : 'vendieron'} sin dejar ganancia: revisa su precio de producción.</div>` : ''}
+      </div>` : ''}
+
+    ${dormidos.length ? `
+      <div class="section-title">No se vendieron en este periodo</div>
+      <div class="card">
+        <div class="sd-chips">${dormidos.slice(0, 24).map(p => `<span class="sd-prod">${escapeHtml(p.name)}</span>`).join('')}</div>
+        ${dormidos.length > 24 ? `<div class="kv-note">Y ${dormidos.length - 24} más.</div>` : ''}
+        <div class="kv-note">Están en tu catálogo pero nadie los pidió. Tal vez les falta foto, precio o moverlos de lugar en el menú.</div>
+      </div>` : ''}
+
     ${prods.length ? `
       <div class="section-title">Detalle por producto</div>
       <div class="card rep-table">
@@ -10675,6 +10798,35 @@ function renderStats(){
     </div>
     `}
   `;
+}
+
+/* Nombre de producto en "plano", para comparar sin acentos ni mayúsculas. */
+function mdNorma(s){ return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+
+/* ---------- Comparar con el periodo anterior ----------
+   Devuelve la pastillita verde/roja con el porcentaje de cambio. */
+function statsDelta(ahora, antes, opts){
+  opts = opts || {};
+  ahora = Number(ahora) || 0; antes = Number(antes) || 0;
+  if(Math.abs(antes) < 0.004){
+    if(Math.abs(ahora) < 0.004) return '<span class="sd-chip flat">igual</span>';
+    return '<span class="sd-chip up">nuevo</span>';
+  }
+  const pct = (ahora - antes) / Math.abs(antes) * 100;
+  if(Math.abs(pct) < 0.5) return '<span class="sd-chip flat">igual</span>';
+  const sube = pct > 0;
+  /* En los gastos, subir es malo: se puede invertir el color. */
+  const bueno = opts.menosEsMejor ? !sube : sube;
+  return '<span class="sd-chip ' + (bueno ? 'up' : 'down') + '">' +
+         (sube ? '▲' : '▼') + ' ' + Math.abs(pct).toFixed(Math.abs(pct) < 10 ? 1 : 0) + '%</span>';
+}
+function statsCompareCard(label, ahora, antes, fmt, opts){
+  const f = fmt || formatMoney;
+  return '<div class="sd-cmp">' +
+    '<div class="sd-cmp-top"><span>' + label + '</span>' + statsDelta(ahora, antes, opts) + '</div>' +
+    '<b>' + f(ahora) + '</b>' +
+    '<small>antes ' + f(antes) + '</small>' +
+  '</div>';
 }
 
 /* ---------- Estadísticas detalladas: se muestran u ocultan con un botón ---------- */
@@ -15177,11 +15329,18 @@ function mdDefaultCfg(){
    on = true  -> el cliente elige "Ir a buscar" o "Servicio a domicilio"
    on = false -> solo "Ir a buscar"
    on = null  -> el negocio aún no responde (se pide antes de activar el menú)
-   lat/lng    -> ubicación del negocio (opcional): ahí empieza el mapa del cliente */
+   lat/lng    -> ubicación del negocio (OBLIGATORIA): ahí empieza el mapa del
+                 cliente y es la que se le manda cuando pasa a recoger */
 function mdValidLatLng(lat, lng){
   lat = Number(lat); lng = Number(lng);
   return (isFinite(lat) && isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0))
     ? { lat:Math.round(lat * 1e6) / 1e6, lng:Math.round(lng * 1e6) / 1e6 } : null;
+}
+/* ¿El negocio ya marcó dónde está? Sin esto no se puede encender el menú:
+   es la ubicación que se le manda al cliente cuando pasa a recoger. */
+function mdBizPin(cfg){
+  const d = ((cfg || mdCfg()).delivery) || {};
+  return mdValidLatLng(d.lat, d.lng);
 }
 function mdCleanDelivery(d){
   d = d || {};
@@ -15302,6 +15461,10 @@ function mdGeoErr(e){
    card / transfer = null -> el negocio aún no responde (se pide antes de activar el menú)
    El efectivo siempre está disponible. Con transferencia se guarda la CLABE
    para que el cliente sepa a dónde pagar. */
+/* El logo oficial de Mercado Pago (WebP, 256x256, fondo transparente).
+   Va escrito aquí dentro a propósito: así viaja igual en la web y en la app
+   y nunca se queda sin subir. */
+const MP_LOGO = 'data:image/webp;base64,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';
 const MD_BANKS = { '002':'Banamex', '012':'BBVA', '014':'Santander', '021':'HSBC', '030':'BanBajío', '036':'Inbursa', '042':'Mifel', '044':'Scotiabank', '058':'Banregio', '059':'Invex', '062':'Afirme', '072':'Banorte', '127':'Banco Azteca', '137':'BanCoppel', '638':'Nu México', '646':'STP', '722':'Mercado Pago' };
 function mdClabeOk(c){
   c = String(c || '').replace(/\D/g, '');
@@ -15458,29 +15621,110 @@ function mdRenderDeliveryForm(){
         <div>${icon('monito')}<span>El cliente marca en un mapa dónde está.</span></div>
         <div>${icon('whatsapp')}<span>El costo del envío lo pones tú al confirmar el pedido y le llega por WhatsApp.</span></div>
       </div>
+    ` : ''}
+    ${d.on === null ? '' : `
       <div class="md-del-map-head">
-        <span><b>¿Dónde está tu negocio?</b><small>Opcional · así el mapa de tus clientes empieza cerca de ti</small></span>
+        <span><b>¿Dónde está tu negocio?</b><small class="${pin ? '' : 'md-req'}">${pin ? 'Marcado en el mapa' : 'Obligatorio · es la ubicación que se le manda al cliente que pasa a recoger'}</small></span>
         <button type="button" class="md-del-clear" id="mdDelClear" onclick="mdDelClear()" ${pin ? '' : 'hidden'}>Quitar</button>
       </div>
       <div class="md-map md-del-map" id="mdDelMap">${mdMapPH()}</div>
       <button type="button" class="btn ghost block md-del-gps" onclick="mdDelGps(this)">${icon('locate')} Usar mi ubicación actual</button>
-    ` : ''}
+      <button type="button" class="md-del-manual" onclick="mdDelManual()">O pega un link de Google Maps</button>
+    `}
     <div class="sheet-actions">
-      <button class="btn ghost block" onclick="closeModal()">Cancelar</button>
-      <button class="btn primary block" onclick="mdSaveDelivery()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
+      <button class="btn ghost block" onclick="mdCloseDeliveryForm()">Cancelar</button>
+      <button class="btn primary block" id="mdDelSave" onclick="mdSaveDelivery()" ${(d.on === null || !pin) ? 'disabled' : ''}>Guardar</button>
     </div>
+    ${(d.on !== null && !pin) ? `<p class="md-del-falta">${icon('alert')} Marca en el mapa dónde está tu negocio para poder guardar.</p>` : ''}
   `, { dismissible:true });
-  if(d.on === true){
+  if(d.on !== null){
     mdMapMount('biz', document.getElementById('mdDelMap'), { editable:true, pin, center:pin, tip:'Toca el mapa donde está tu negocio',
-      errText:'Puedes guardar sin marcarlo.', onPick:p => { mdDelDraft.lat = p.lat; mdDelDraft.lng = p.lng; const b = document.getElementById('mdDelClear'); if(b) b.hidden = false; } });
+      errText:'Sin mapa, usa el botón de abajo para tomar tu ubicación.',
+      onPick:p => { mdDelDraft.lat = p.lat; mdDelDraft.lng = p.lng; mdDelPaintSave(); } });
   }
+}
+/* Prende o apaga el botón Guardar según si ya hay ubicación. Se usa en vez
+   de volver a pintar toda la hoja, para que el mapa no parpadee. */
+function mdDelPaintSave(){
+  const d = mdDelDraft; if(!d) return;
+  const pin = mdValidLatLng(d.lat, d.lng);
+  const b = document.getElementById('mdDelSave');
+  if(b) b.disabled = (d.on === null || !pin);
+  const q = document.getElementById('mdDelClear');
+  if(q) q.hidden = !pin;
+  const f = document.querySelector('.md-del-falta');
+  if(f) f.hidden = !!pin;
+  const h = document.querySelector('.md-del-map-head small');
+  if(h && pin){ h.textContent = 'Marcado en el mapa'; h.classList.remove('md-req'); }
+}
+/* Cancelar: si el negocio todavía no tiene ubicación guardada, se avisa en
+   vez de salir callando, porque sin ella el Menú Digital no se puede
+   encender. */
+function mdCloseDeliveryForm(){
+  if(mdBizPin()){ closeModal(); return; }
+  askConfirm({
+    title:'Falta la ubicación de tu negocio',
+    text:'Sin ella no puedes encender el Menú Digital: es la que se le manda al cliente cuando pasa a recoger su pedido.',
+    ok:'Marcarla ahora', cancel:'Salir sin guardar', icon:icon('alert')
+  },
+  () => { mdRenderDeliveryForm(); },
+  () => { mdDelDraft = null; closeModal(); });
 }
 function mdDelSet(on){ if(!mdDelDraft) return; mdDelDraft.on = on; vibrate(8); mdRenderDeliveryForm(); }
 function mdDelClear(){
   if(!mdDelDraft) return;
   mdDelDraft.lat = null; mdDelDraft.lng = null;
   const m = mdMaps.biz; if(m && m.clearPin) m.clearPin();
-  const b = document.getElementById('mdDelClear'); if(b) b.hidden = true;
+  mdRenderDeliveryForm();
+}
+/* Escribir la ubicación a mano: se pega un link de Google Maps (el de
+   "Compartir") o las dos coordenadas separadas por coma. Es la salida por
+   si el mapa no carga y el celular no deja usar el GPS. */
+function mdDelManual(){
+  askConfirm({
+    title:'Pega la ubicación de tu negocio',
+    text:'Abre Google Maps, busca tu negocio y copia el link de la barra de direcciones (el largo, el que trae los números). También sirve escribir las dos coordenadas separadas por coma.',
+    ok:'Usar esta ubicación', cancel:'Cancelar', icon:icon('pin'),
+    extraHTML:'<div class="field"><input id="mdDelPega" type="text" autocomplete="off" ' +
+              'placeholder="https://maps.app.goo.gl/… o 19.432608, -99.133209"></div>',
+    validate:(layer) => {
+      const el = layer.querySelector('#mdDelPega');
+      const p = mdCoordsDeTexto(el ? el.value : '');
+      if(!p){ toast('No encontré las coordenadas en lo que pegaste', { icon:icon('alert'), variant:'toast-danger' }); return false; }
+      mdDelManualPick = p;
+      return true;
+    }
+  }, () => {
+    if(!mdDelDraft || !mdDelManualPick) return;
+    mdDelDraft.lat = mdDelManualPick.lat; mdDelDraft.lng = mdDelManualPick.lng;
+    mdDelManualPick = null;
+    mdRenderDeliveryForm();
+    toast('Ubicación marcada', { icon:icon('check'), variant:'toast-success', subtitle:'Revísala en el mapa si puedes' });
+  });
+}
+var mdDelManualPick = null;
+/* Saca "lat, lng" de un texto: sirve un link de Google Maps (@lat,lng,
+   ?q=lat,lng, !3dlat!4dlng) o las coordenadas escritas a secas. */
+function mdCoordsDeTexto(txt){
+  const s = String(txt || '');
+  const pares = [];
+  let m;
+  /* El orden importa: primero el punto exacto del lugar (!3d!4d), luego lo
+     que trae el link en q=/ll=, después el centro del mapa (@) y al final
+     dos números pelones. */
+  const re1 = /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/g;
+  while((m = re1.exec(s))) pares.push([m[1], m[2]]);
+  const re2 = /[?&](?:q|ll|daddr|destination)=(-?\d{1,3}\.\d+)(?:%2C|,)\s*(-?\d{1,3}\.\d+)/gi;
+  while((m = re2.exec(s))) pares.push([m[1], m[2]]);
+  const re3 = /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/g;
+  while((m = re3.exec(s))) pares.push([m[1], m[2]]);
+  const re4 = /(-?\d{1,3}\.\d{3,})\s*[,;\s]\s*(-?\d{1,3}\.\d{3,})/g;
+  while((m = re4.exec(s))) pares.push([m[1], m[2]]);
+  for(const p of pares){
+    const ok = mdValidLatLng(p[0], p[1]);
+    if(ok) return ok;
+  }
+  return null;
 }
 function mdDelGps(btn){
   if(btn){ btn.disabled = true; btn.classList.add('is-busy'); }
@@ -15488,7 +15732,7 @@ function mdDelGps(btn){
     if(!mdDelDraft) return;
     mdDelDraft.lat = p.lat; mdDelDraft.lng = p.lng;
     const m = mdMaps.biz; if(m && m.el.isConnected) m.setPin(p, 17);
-    const b = document.getElementById('mdDelClear'); if(b) b.hidden = false;
+    mdDelPaintSave();
     toast('Ubicación marcada', { icon:icon('check'), variant:'toast-success', subtitle:'Muévela en el mapa si hace falta' });
   }).catch(e => toast(mdGeoErr(e), { icon:icon('alert') }))
     .then(() => { if(btn){ btn.disabled = false; btn.classList.remove('is-busy'); } });
@@ -15497,6 +15741,11 @@ function mdSaveDelivery(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
   const d = mdDelDraft;
   if(!d || d.on === null){ toast('Elige Sí o No'); return; }
+  if(!mdValidLatLng(d.lat, d.lng)){
+    toast('Falta la ubicación de tu negocio', { icon:icon('alert'), variant:'toast-danger',
+      subtitle:'Márcala en el mapa o usa "Usar mi ubicación actual"' });
+    return;
+  }
   const cfg = mdCfg();
   cfg.delivery = mdCleanDelivery({ on:d.on, lat:d.lat, lng:d.lng });
   mdSaveCfg(cfg);
@@ -15680,10 +15929,12 @@ function mdChecklist(){
       sub:escapeHtml(mdHoursSub()), action:'mdOpenHoursForm()' },
     (function(){
       const d = mdCfg().delivery;
-      return { label:'Servicio a domicilio', ok:d.on !== null,
-        sub: d.on === true ? 'Sí · tus clientes eligen ir a buscar o a domicilio'
-           : d.on === false ? 'No · tus clientes solo pueden ir a buscar su pedido'
-           : '¿Tu negocio tiene servicio a domicilio? Toca para responder',
+      const pin = mdValidLatLng(d.lat, d.lng);
+      return { label:'Servicio a domicilio y ubicación', ok:d.on !== null && !!pin,
+        sub: d.on === null ? '¿Tu negocio tiene servicio a domicilio? Toca para responder'
+           : !pin ? 'Falta marcar dónde está tu negocio · toca para marcarlo'
+           : d.on === true ? 'Sí · tus clientes eligen ir a buscar o a domicilio · ubicación marcada'
+           : 'No · tus clientes solo pueden ir a buscar su pedido · ubicación marcada',
         action:'mdOpenDeliveryForm()' };
     })(),
     (function(){
@@ -15751,7 +16002,7 @@ function mdConfigHTML(cfg){
     { title:'Apariencia',        sub:'Cómo ven tu menú tus clientes',
       labels:['Diseño del menú', 'Color del menú', 'Logo del negocio'] },
     { title:'Pedidos y horario', sub:'Cuándo y cómo te llegan los pedidos',
-      labels:['Servicio a domicilio', 'Horario del menú'], pre:(cfg.active && puedeMenu) ? toggleRow : '' },
+      labels:['Servicio a domicilio y ubicación', 'Horario del menú'], pre:(cfg.active && puedeMenu) ? toggleRow : '' },
   ];
   const usados = new Set(GROUPS.reduce((acc, g) => acc.concat(g.labels), []));
   const otras = list.filter(x => !usados.has(x.label));
@@ -16935,10 +17186,20 @@ const MDI = {
     const o = list.find(x => x.id === id);
     if(!o) return null;
     fn(o);
+    /* Marca de tiempo del último cambio. Sirve para que, al juntar lo de dos
+       aparatos, gane el cambio más reciente aunque no avance de etapa
+       (cambiar las líneas, el tiempo de entrega o el costo de envío). */
+    o.updatedAt = new Date().toISOString();
     MDI.save(list);
     return o;
   }
 };
+/* Cuándo se tocó por última vez un pedido (0 si nunca se supo). */
+function mdiStamp(o){
+  if(!o) return 0;
+  const t = Date.parse(o.updatedAt || o.cancelledAt || o.decidedAt || o.chargedAt || '');
+  return isFinite(t) ? t : 0;
+}
 
 /* ---------- Utilidades ---------- */
 function mdiStr(v, max){ return String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max || 120); }
@@ -17943,7 +18204,7 @@ function mdiCobroHTML(o){
         <div class="mdi-pay-live"><i class="mdi-pay-dot"></i>Pendiente en Mercado Pago · se revisa solo</div>
         <div class="mdi-pay-acts">
           <button type="button" class="mdi-pay-go wa" onclick="mpSendLink('${id}')">${icon('whatsapp')} Mandarle el link de pago</button>
-          <button type="button" class="mdi-pay-alt" onclick="mdiAskPaid('${id}')">Me pagó de otra forma · cobrar a mano</button>
+          <button type="button" class="mdi-pay-alt" onclick="mdiChargeOther('${id}')">Pagó de otra forma · abrir el cobro</button>
         </div>
       </div>`;
   }
@@ -17972,8 +18233,20 @@ function mdiCobroHTML(o){
       ${notas.join('')}
       <div class="mdi-pay-acts">
         <button type="button" class="mdi-pay-go" onclick="mdiAskPaid('${id}')">${icon('check')} ${t.boton}</button>
+        <button type="button" class="mdi-pay-alt" onclick="mdiChargeOther('${id}')">Pagó de otra forma · abrir el cobro</button>
       </div>
     </div>`;
+}
+
+/** "Pagó de otra forma": el cliente dijo un método en el menú pero al final
+    pagó con otro. Abre la pantalla de cobro de siempre, con el pedido ya
+    cargado, para que ahí elijas cómo te pagó (efectivo, tarjeta,
+    transferencia, mixto o crédito) igual que en cualquier venta. */
+function mdiChargeOther(id){
+  const o = MDI.get(id);
+  if(!o || o.status !== 'confirmado') return;
+  if(mdiIsPaid(o)){ toast('Este pedido ya se cobró', { icon:icon('alert'), subtitle:'Lo encuentras en Historial' }); return; }
+  mdiCharge(id);
 }
 
 /** Pregunta antes de dar el pedido por pagado. */
@@ -18167,7 +18440,7 @@ function mpOpenForm(){
       <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
     </div>
     <div class="mp-hero">
-      <span class="mp-hero-ico">${icon('card')}</span>
+      <span class="mp-hero-ico"><img src="${MP_LOGO}" alt="Mercado Pago" decoding="async"></span>
       <div class="mp-hero-txt">
         <b>${puesto ? 'Tu Mercado Pago está enlazado' : 'Cobra con tarjeta por Mercado Pago'}</b>
         <small>${puesto
@@ -18182,7 +18455,7 @@ function mpOpenForm(){
         <div class="mp-row"><span>${icon('coin')}</span><span><b>El dinero es tuyo</b>Cae en tu cuenta de Mercado Pago. Vendo Plus no cobra comisión.</span></div>
         <div class="mp-row"><span>${icon('check')}</span><span><b>El pedido se cobra solo</b>Cuando Mercado Pago confirma el pago, el pedido pasa a cobrado sin que hagas nada.</span></div>
       </div>
-      <div class="sheet-actions">
+      <div class="sheet-actions mp-acts">
         <button class="btn ghost block" onclick="closeModal()">Listo</button>
         <button class="btn danger block" onclick="mpAskUnlink()">Desenlazar</button>
       </div>
@@ -18192,7 +18465,7 @@ function mpOpenForm(){
         <div class="mp-row"><span>${icon('card')}</span><span><b>Tus clientes pagan en tu menú</b>Ponen su tarjeta sin salir del menú ni instalar nada.</span></div>
         <div class="mp-row"><span>${icon('coin')}</span><span><b>El dinero llega a tu cuenta</b>Directo a tu Mercado Pago. Vendo Plus no cobra comisión.</span></div>
       </div>
-      <div class="sheet-actions">
+      <div class="sheet-actions mp-acts">
         <button class="btn ghost block" onclick="mdOpenCardForm()">Volver</button>
         <button class="btn primary block" id="mpGoBtn" onclick="mpConnect(this)">${icon('external')} Enlazar con Mercado Pago</button>
       </div>
@@ -18526,7 +18799,17 @@ function mdiNotify(id){
     }else msg += '\n\n*Total: ' + formatMoney(t.total) + ' MXN*';
     const extra = [];
     if(del) extra.push('Te lo llevamos a la ubicación que nos mandaste.' + (o.etaMin ? ' Llegará en aproximadamente ' + mdiEtaLong(o.etaMin) + '.' : ''));
-    else if(c.service === 'llevar' || !c.service) extra.push('Puedes pasar por él al negocio.' + (o.etaMin ? ' Estará listo en aproximadamente ' + mdiEtaLong(o.etaMin) + '.' : ''));
+    else if(c.service === 'llevar' || !c.service){
+      extra.push('Puedes pasar por él al negocio.' + (o.etaMin ? ' Estará listo en aproximadamente ' + mdiEtaLong(o.etaMin) + '.' : ''));
+      /* La ubicación del negocio se manda SOLO aquí: cuando ya confirmaste el
+         pedido y le estás avisando al cliente que pase a recogerlo. Antes de
+         eso no se le da a nadie. */
+      const pin = (typeof mdBizPin === 'function') ? mdBizPin() : null;
+      if(pin){
+        const dir = (b.address || '').trim();
+        extra.push('Aquí estamos' + (dir ? ' (' + dir + ')' : '') + ': ' + mdiMapsUrl(pin));
+      }
+    }
     if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
     /* Con tarjeta y Mercado Pago enlazado, el link de pago va en el mismo aviso */
     if(c.payment === 'tarjeta' && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
@@ -18625,10 +18908,34 @@ function mdCfgSheetHTML(){
     ${mdConfigHTML(mdCfg())}
     <button type="button" class="btn primary block" style="margin-top:18px;" onclick="mdSetCfgVisible(false)">Listo</button>`;
 }
+/* ---- Volver de una subsección sin perder el lugar ----
+   Al entrar a "Servicio a domicilio", "Horarios", etc., la hoja de
+   Configuración del Menú Digital se reemplaza por el formulario. Antes, al
+   regresar, la configuración se volvía a abrir hasta arriba y había que
+   buscar otra vez dónde ibas. Aquí se guarda a qué altura estaba y se
+   regresa a esa misma altura. */
+var mdCfgScrollY = 0;
+var _mdOpenModalBase = openModal;
+openModal = function(html, opts){
+  try{
+    const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
+    if(sh && sheetTitleOf(sh) === MD_CFG_TITLE) mdCfgScrollY = sh.scrollTop || 0;
+  }catch(e){}
+  return _mdOpenModalBase.apply(this, arguments);
+};
 function mdOpenCfgSheet(){
   if(!mdCfg().active){ mdCfgSheetOn = false; return; }
   mdCfgSheetOn = true;
   openModal(mdCfgSheetHTML(), { dismissible:true });
+  if(mdCfgScrollY){
+    const sh = document.querySelector('#modal-layer .modal-sheet');
+    if(sh){
+      sh.scrollTop = mdCfgScrollY;
+      /* El alto real se conoce hasta que termina de pintarse, así que se
+         vuelve a acomodar en el siguiente cuadro. */
+      requestAnimationFrame(() => { if(sh.isConnected && mdCfgScrollY) sh.scrollTop = mdCfgScrollY; });
+    }
+  }
 }
 function mdCfgSheetShowing(){
   const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
@@ -18645,6 +18952,7 @@ function mdCfgSheetSync(){
   if(!mdCfgSheetOn) return;
   if(currentView !== 'menu' || !mdCfg().active){
     mdCfgSheetOn = false;
+    mdCfgScrollY = 0;   /* se salió de la configuración: la próxima vez, desde arriba */
     if(mdCfgSheetShowing()) _mdCloseModalBase();
     return;
   }
@@ -18656,7 +18964,7 @@ closeModal = function(){
   const eraCfg = !!sh && sheetTitleOf(sh) === MD_CFG_TITLE;
   const eraSetup = !!sh && sheetTitleOf(sh) === MD_SETUP_TITLE;
   _mdCloseModalBase();
-  if(eraCfg){ mdCfgSheetOn = false; return; }
+  if(eraCfg){ mdCfgSheetOn = false; mdCfgScrollY = 0; return; }
   if(eraSetup){ mdSetupOn = false; return; }
   /* se cerró un formulario que estaba sobre la configuración inicial */
   if(mdSetupOn && currentView === 'menu' && !mdCfg().active){ mdOpenSetup(); return; }
@@ -18665,8 +18973,11 @@ closeModal = function(){
 };
 function mdSetCfgVisible(v){
   vibrate(8);
-  if(v) mdOpenCfgSheet();
-  else { mdCfgSheetOn = false; _mdCloseModalBase(); }
+  if(v){ mdOpenCfgSheet(); return; }
+  /* Se cierra la configuración completa: la próxima vez empieza arriba. */
+  mdCfgScrollY = 0;
+  mdCfgSheetOn = false;
+  _mdCloseModalBase();
 }
 function mdCompactHTML(cfg){
   const cerrado = mdClosedNow(cfg);
@@ -21788,6 +22099,54 @@ function reportRangeLabel(r){
   const last = new Date(r[1].getTime() - 1);
   return isSameDay(r[0], last) ? f(r[0]) : f(r[0]) + ' al ' + f(last);
 }
+/* El periodo de antes, del mismo tamaño que el elegido. Sirve para decir
+   "vendiste 12% más que la semana pasada", que es lo que de verdad le dice
+   algo al dueño: un número solo no dice si va bien o mal. */
+const PERIODO_ANTERIOR = { today:'yesterday', week:'lastweek', month:'lastmonth' };
+function reportRangePrev(){
+  const r = reportRange();
+  const ahora = Date.now();
+  /* Si el periodo elegido todavía va corriendo (hoy, esta semana, este mes),
+     solo se compara el rato que de verdad ha pasado. Si no, el periodo de
+     antes siempre saldría ganando nomás porque está completo. */
+  const corrido = Math.max(60000, Math.min(r[1].getTime(), ahora) - r[0].getTime());
+  const id = reportState.period;
+  const base = PERIODO_ANTERIOR[id] ? periodRange(PERIODO_ANTERIOR[id]) : null;
+  const ini = base ? base[0] : new Date(r[0].getTime() - (r[1].getTime() - r[0].getTime()));
+  const fin = new Date(ini.getTime() + corrido);
+  /* Nunca se pasa del final del periodo anterior */
+  const tope = base ? base[1] : new Date(r[0].getTime());
+  return [ini, fin > tope ? tope : fin];
+}
+/* ¿El periodo elegido todavía va corriendo? */
+function periodoEnCurso(){
+  const r = reportRange();
+  return Date.now() < r[1].getTime() && Date.now() >= r[0].getTime();
+}
+/* Nombre corto del periodo de comparación, tal como se lee en pantalla. */
+function periodoAnteriorNombre(){
+  const id = reportState.period;
+  if(id === 'today') return 'ayer';
+  if(id === 'yesterday') return 'el día anterior';
+  if(id === 'week') return 'la semana pasada';
+  if(id === 'lastweek') return 'la semana anterior';
+  if(id === 'month') return 'el mes pasado';
+  if(id === 'lastmonth') return 'el mes anterior';
+  if(id === 'year') return 'el año pasado';
+  return 'el periodo anterior';
+}
+/* Los números gruesos del periodo anterior (sin cargar todo el reporte). */
+function reportResumenPrev(){
+  const r = reportRangePrev();
+  const inR = iso => { const d = new Date(iso); return d >= r[0] && d < r[1]; };
+  const activas = visibleSales().filter(s => inR(s.date) && !s.cancelled);
+  const pedidos = activas.filter(s => !saleIsReturn(s));
+  const net = activas.reduce((a, s) => a + (Number(s.total) || 0), 0);
+  let profit = 0;
+  try{ profit = computeProfit(activas).profit; }catch(e){ profit = 0; }
+  return { net, pedidos:pedidos.length, ticket: pedidos.length ? net / pedidos.length : 0, profit };
+}
+
 function reportData(){
   const r = reportRange();
   const inR = iso => { const d = new Date(iso); return d >= r[0] && d < r[1]; };
@@ -24364,7 +24723,10 @@ const MdiCloud = {
   },
   /** Junta los pedidos con lo que ya hizo otro celular de la misma cuenta (confirmar, rechazar, cobrar…). */
   async merge(force){
-    if(!force && this.lastMerge && Date.now() - this.lastMerge < 40000) return;
+    /* Antes esperaba 40 s entre una revisión y otra: por eso un pedido que ya
+       cobraste en la computadora seguía apareciendo en el celular. Ahora son
+       5 s, y además los cambios llegan al instante por el canal en vivo. */
+    if(!force && this.lastMerge && Date.now() - this.lastMerge < 5000) return;
     this.lastMerge = Date.now();
     try{
       const { data, error } = await mdiTimeout(Cloud.sb.from('user_data').select('key,value').in('key', [MDI_KEY, MDI_GONE_KEY]), 15000);
@@ -24381,7 +24743,12 @@ const MdiCloud = {
         if(!r || !r.id || gone.indexOf(r.id) >= 0) return;
         const l = byId[r.id];
         if(!l){ list.push(r); byId[r.id] = r; changed = true; if(r.status === 'nuevo') nuevos.push(r); }
-        else if(mdiRank(r) > mdiRank(l)){ Object.keys(l).forEach(k => delete l[k]); Object.assign(l, r); changed = true; }
+        else if(mdiRank(r) > mdiRank(l) || (mdiRank(r) === mdiRank(l) && mdiStamp(r) > mdiStamp(l))){
+          /* Gana el que va más adelante y, si van parejos, el que se tocó
+             al último: así también viajan los cambios que no cambian de
+             etapa (líneas, tiempo de entrega, costo de envío). */
+          Object.keys(l).forEach(k => delete l[k]); Object.assign(l, r); changed = true;
+        }
       });
       if(changed){
         MDI.save(list);
@@ -24404,9 +24771,15 @@ const MdiCloud = {
     try{
       const uid = Cloud.uid;
       this.chUid = uid;
-      this.ch = Cloud.sb.channel('vendo-pedidos-' + uid)
+      this.ch = Cloud.sb.channel('vendo-pedidos-' + uid, { config:{ broadcast:{ self:false } } })
         .on('postgres_changes', { event:'INSERT', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
             payload => { if(this.canRun() && Cloud.uid === uid && payload && payload.new) this.take([payload.new]).then(() => this.ok()); })
+        /* Aviso directo entre aparatos: en cuanto la computadora cobra,
+           cancela o rechaza un pedido, el celular se entera en el momento
+           (y al revés). No necesita nada en la base de datos. */
+        .on('broadcast', { event:'mdi-estado' }, () => {
+          if(this.canRun() && Cloud.uid === uid) this.merge(true);
+        })
         .subscribe(status => {
           /* Al reconectar el Realtime se revisa por si algo llegó mientras */
           if(status === 'SUBSCRIBED') setTimeout(() => this.pull(), 400);
@@ -24417,11 +24790,53 @@ const MdiCloud = {
             this.reT = setTimeout(() => { this.unlisten(); if(this.canRun()) this.pull(true); }, 3000);
           }
         });
+      this.listenEstado(uid);
     }catch(e){ this.ch = null; this.chUid = null; }
+  },
+  /* Respaldo del aviso entre aparatos: si la tabla user_data está publicada
+     en Realtime, el cambio también llega por aquí. Va en un canal APARTE a
+     propósito: si esa tabla no está publicada, Supabase tumba el canal donde
+     esté esa suscripción, y no queremos que se lleve entre las patas los
+     pedidos nuevos. Si falla, se apaga solo y no se vuelve a intentar. */
+  listenEstado(uid){
+    if(this.chEst) return;
+    try{
+      this.chEst = Cloud.sb.channel('vendo-estado-' + uid)
+        .on('postgres_changes', { event:'*', schema:'public', table:'user_data', filter:'user_id=eq.' + uid },
+            payload => {
+              const row = (payload && (payload.new || payload.old)) || {};
+              if(row.key !== MDI_KEY && row.key !== MDI_GONE_KEY) return;
+              if(this.canRun() && Cloud.uid === uid) this.merge(true);
+            })
+        .subscribe(status => {
+          if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
+            const c = this.chEst; this.chEst = null;
+            if(c){ try{ Cloud.sb.removeChannel(c); }catch(e){} }
+          }
+        });
+    }catch(e){ this.chEst = null; }
   },
   unlisten(){
     if(this.ch){ try{ Cloud.sb.removeChannel(this.ch); }catch(e){} }
-    this.ch = null; this.chUid = null;
+    if(this.chEst){ try{ Cloud.sb.removeChannel(this.chEst); }catch(e){} }
+    this.ch = null; this.chUid = null; this.chEst = null;
+  },
+  /** Le avisa a los demás aparatos de la cuenta que un pedido cambió.
+      Se manda DESPUÉS de que el cambio ya subió, para que al otro aparato
+      no le toque leer todavía lo viejo. */
+  avisar(){
+    if(!this.canRun()) return;
+    const mandar = () => {
+      try{
+        if(this.ch && this.ch.state === 'joined'){
+          this.ch.send({ type:'broadcast', event:'mdi-estado', payload:{ t:Date.now() } });
+        }
+      }catch(e){}
+    };
+    if(!this.ch) this.listen();
+    mandar();
+    /* Si el canal apenas se estaba conectando, se reintenta una vez. */
+    setTimeout(mandar, 1200);
   },
   /** Al volver a la app: si estuvo mucho tiempo atrás, el celular pudo cortar la conexión en vivo;
       se crea una nueva y se bajan los pedidos que llegaron mientras tanto. */
@@ -24467,6 +24882,20 @@ function mdiCloudPaint(){
 
 /* Se arma DESPUÉS de cargar la cuenta (si no, la descarga inicial de datos
    pisaría los pedidos recién bajados) y se apaga al cerrar sesión. */
+/* En cuanto termina de subirse un cambio de pedidos, se les avisa a los otros
+   aparatos de la cuenta. Así, si cobras en la computadora, el pedido
+   desaparece del celular en el momento, sin tener que salir y volver a entrar
+   a la app (y al revés). */
+(function(){
+  const prevFlush = Cloud.flush;
+  Cloud.flush = async function(){
+    const tocaPedidos = this.q && (this.q.has(MDI_KEY) || this.q.has(MDI_GONE_KEY));
+    const ok = await prevFlush.apply(this, arguments);
+    if(ok && tocaPedidos){ try{ MdiCloud.avisar(); }catch(e){} }
+    return ok;
+  };
+})();
+
 (function(){
   const arm = () => { MdiCloud.armed = true; MdiCloud.start(); MdiCloud.pull(); };
   const prevBoot = bootApp;
