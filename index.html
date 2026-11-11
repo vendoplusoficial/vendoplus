@@ -15737,7 +15737,10 @@ function mdCleanBanner(b){
   b = b || {};
   const redes = {};
   MD_REDES.forEach(r => { redes[r.id] = mdRedUser((b.redes || {})[r.id]); });
-  const img = (typeof b.img === 'string' && b.img.indexOf('data:image/') === 0) ? b.img : null;
+  /* Se acepta de las dos formas: la foto recién elegida (data:image/...) y
+     la que ya se subió a Supabase (https://...). */
+  const s = (typeof b.img === 'string') ? b.img.trim() : '';
+  const img = (s.indexOf('data:image/') === 0 || /^https:\/\//i.test(s)) ? s : null;
   return { img:img, redes:redes };
 }
 /* ¿Cuántas redes puso? (para acomodarlas en 1, 2 o 3 columnas) */
@@ -16213,7 +16216,13 @@ function mdCfg(){
 }
 function mdSaveCfg(c){
   const limpio = { active:!!c.active, id:c.id || null, activatedAt:c.activatedAt || null, paused:!!c.paused, whatsapp:c.whatsapp || { country:'', number:'' }, color:mdValidColor(c.color) || MD_DEFAULT_COLOR, design:mdValidDesign(c.design), hours:mdCleanHours(c.hours), delivery:mdCleanDelivery(c.delivery), payments:mdCleanPayments(c.payments), banner:mdCleanBanner(c.banner) };
-  try{ localStorage.setItem(MD_CFG_KEY, JSON.stringify(limpio)); }catch(e){}
+  try{
+    localStorage.setItem(MD_CFG_KEY, JSON.stringify(limpio));
+    return true;
+  }catch(e){
+    console.error('Vendo plus · no se pudo guardar la configuración del menú', e);
+    return false;
+  }
 }
 /* ---------- Horario del Menú Digital ----------
    mode 'business' = igual que el horario del negocio (Mi cuenta)
@@ -26047,7 +26056,7 @@ function mdBannerHTML(b, opts){
   }).join('');
   return `
     <div class="cgb">
-      <div class="cgb-pic"><img src="${b.img}" alt="" decoding="async" draggable="false"></div>
+      <div class="cgb-pic"><img src="${escapeHtml(b.img)}" alt="" decoding="async" draggable="false"></div>
       ${nombre ? `<div class="cgb-redes n${nombre}">${linea}</div>` : ''}
     </div>`;
 }
@@ -26138,7 +26147,7 @@ function mdRenderBannerForm(){
 
         <div class="md-ban-drop ${d.img ? 'has' : ''}" id="mdBanDrop">
           ${d.img
-            ? `<img src="${d.img}" alt="Tu banner">`
+            ? `<img src="${escapeHtml(d.img)}" alt="Tu banner">`
             : `<span class="md-ban-ph">${icon('image')}<b>Sube tu banner</b><small>${MD_BANNER_W} × ${MD_BANNER_H} px</small></span>`}
         </div>
 
@@ -26275,7 +26284,13 @@ function mdSaveBanner(){
   mdBanGrab();
   const cfg = mdCfg();
   cfg.banner = mdCleanBanner(mdBanDraft);
-  mdSaveCfg(cfg);
+  if(mdSaveCfg(cfg) === false){
+    /* Casi siempre es que al teléfono ya no le cabe nada más. Se avisa en
+       vez de dejar creer que se guardó. */
+    toast('No se pudo guardar el banner', { icon:icon('alert'), variant:'toast-danger',
+      subtitle:'Al parecer ya no hay espacio en este aparato. Manda la imagen más chica o borra fotos de productos que no uses.', duration:5200 });
+    return;
+  }
   const redes = mdRedesPuestas(cfg.banner);
   mdBanDraft = null;
   closeModal();
