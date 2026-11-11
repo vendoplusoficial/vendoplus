@@ -15461,6 +15461,26 @@ function mdGeoErr(e){
    card / transfer = null -> el negocio aún no responde (se pide antes de activar el menú)
    El efectivo siempre está disponible. Con transferencia se guarda la CLABE
    para que el cliente sepa a dónde pagar. */
+/* =========================================================================
+   MERCADO PAGO · ESCONDIDO POR AHORA
+   -------------------------------------------------------------------------
+   Nada se borró ni se apagó: el código, las funciones de Supabase y la
+   configuración que ya tengan los negocios siguen tal cual. Lo único que
+   pasa es que NO se muestra en ninguna pantalla, ni a ti ni a tus clientes.
+
+   Para volver a mostrarlo: cambia esta línea a  = false  y ya está. No hay
+   que tocar nada más.
+
+   Mientras está escondido:
+     · No aparece la hoja de "Enlazar con Mercado Pago".
+     · El cobro con tarjeta del Menú Digital sigue existiendo, pero como
+       tarjeta normal (el negocio cobra con su terminal), sin link de pago.
+     · A los pedidos ya pagados por Mercado Pago no les pasa nada: se siguen
+       revisando y cobrando solos como siempre.
+========================================================================= */
+const MP_OCULTO = true;
+function mpVisible(){ return !MP_OCULTO; }
+
 /* El logo oficial de Mercado Pago (WebP, 256x256, fondo transparente).
    Va escrito aquí dentro a propósito: así viaja igual en la web y en la app
    y nunca se queda sin subir. */
@@ -15539,12 +15559,14 @@ function mdRenderPayForm(){
     <p class="md-yn-q">${card ? '¿Tu negocio cobra con tarjeta?' : '¿Tu negocio acepta transferencias?'}</p>
     <div class="md-yn">
       ${card
-        ? opt(true, 'card', 'Sí, con Mercado Pago', 'Tus clientes pagan con su tarjeta desde tu menú y el dinero llega a tu cuenta de Mercado Pago')
+        ? (mpVisible()
+            ? opt(true, 'card', 'Sí, con Mercado Pago', 'Tus clientes pagan con su tarjeta desde tu menú y el dinero llega a tu cuenta de Mercado Pago')
+            : opt(true, 'card', 'Sí, acepto tarjeta', 'Tus clientes eligen Tarjeta y tú se las cobras con tu terminal al entregar'))
           + opt(false, 'cash', 'No, tarjeta no', 'La opción Tarjeta no le aparece al cliente')
         : opt(true, 'transfer', 'Sí, acepto transferencias', 'El cliente verá tu CLABE y el número de su pedido como concepto')
           + opt(false, 'cash', 'No, transferencia no', 'La opción Transferencia no le aparece al cliente')}
     </div>
-    ${card && d.on === true ? (mpLinked()
+    ${card && d.on === true && mpVisible() ? (mpLinked()
       ? `<div class="mdi-banner ok" style="margin:14px 0 0;">${icon('check')}<span><b>Mercado Pago enlazado</b>${escapeHtml(mpCfg().nickname || 'Tu cuenta está conectada')} · tus clientes ya pueden pagar con tarjeta. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Ver o desenlazar</button></span></div>`
       : `<div class="mdi-banner warn" style="margin:14px 0 0;">${icon('alert')}<span><b>Falta enlazar tu Mercado Pago</b>Sin enlazarlo, la opción Tarjeta no le aparece a tus clientes. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Enlazar ahora</button></span></div>`) : ''}
     ${!card && d.on === true ? `
@@ -15940,6 +15962,15 @@ function mdChecklist(){
     (function(){
       const pm = mdCfg().payments;
       const mpOn = !!(pm.mp && pm.mp.on && pm.mp.publicKey);
+      /* Con Mercado Pago escondido, la tarjeta es tarjeta normal: basta con
+         que el negocio diga sí o no, sin nada que enlazar. */
+      if(!mpVisible()){
+        return { label:'Pago con tarjeta', ok:pm.card !== null,
+          sub: pm.card === true ? 'Sí · tú se la cobras con tu terminal al entregar'
+             : pm.card === false ? 'No · la opción Tarjeta no se muestra'
+             : '¿Cobras con tarjeta? Toca para responder',
+          action:'mdOpenCardForm()' };
+      }
       return { label:'Pago con tarjeta', ok:pm.card === false || (pm.card === true && mpOn),
         sub: pm.card === true ? (mpOn ? 'Sí · Mercado Pago enlazado' + (pm.mp.nickname ? ' · ' + escapeHtml(pm.mp.nickname) : '') : 'Falta enlazar tu Mercado Pago · toca para hacerlo')
            : pm.card === false ? 'No · la opción Tarjeta no se muestra'
@@ -18169,7 +18200,9 @@ function mdiCobroHTML(o){
   const pid   = mdiPayId(o);
   const total = mdiOrderTotal(o);
   const c     = o.customer || {};
-  const mp    = (pid === 'tarjeta') ? mpOrderState(o) : null;
+  /* Escondido: no se pinta ninguna pantalla de Mercado Pago. El pedido se
+     cobra como tarjeta normal, con "Ya me pagó con tarjeta". */
+  const mp    = (pid === 'tarjeta' && mpVisible()) ? mpOrderState(o) : null;
   const id    = o.id;
 
   /* Mercado Pago ya confirmó el pago pero falta registrarlo (casi siempre
@@ -18217,7 +18250,7 @@ function mdiCobroHTML(o){
   if(pid === 'transferencia'){
     notas.push(`<div class="mdi-pay-note">${icon('search')}<span>Busca el concepto <b>${escapeHtml(o.code)}</b> en tu cuenta</span></div>`);
   }
-  if(pid === 'tarjeta' && mp && !mp.enlazado && mpCanLink()){
+  if(pid === 'tarjeta' && mp && !mp.enlazado && mpCanLink() && mpVisible()){
     notas.push(`<div class="mdi-pay-note">${icon('alert')}<span>Enlaza tu Mercado Pago y tus clientes pagarán con tarjeta desde el menú, sin que tú confirmes nada. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Enlazar ahora</button></span></div>`);
   }
 
@@ -18431,6 +18464,7 @@ async function mpSyncStatus(silencio){
 
 /* ---------- Enlazar / desenlazar ---------- */
 function mpOpenForm(){
+  if(!mpVisible()) return;          /* escondido: no se abre nada */
   if(!mpCanLink()){ toast('No tienes permiso para cambiar el Menú Digital', { icon:icon('alert'), variant:'toast-danger' }); return; }
   const m = mpCfg();
   const puesto = mpLinked();
@@ -18561,6 +18595,7 @@ async function mpArm(o, silencio){
   }
 }
 function mpSendLink(id){
+  if(!mpVisible()) return;          /* escondido: no se manda link de pago */
   const o = MDI.get(id); if(!o) return;
   /* Los pedidos del menú no traen teléfono: WhatsApp abre para que elijas el chat del cliente */
   const tel = String((o.customer && o.customer.phone) || '').replace(/\D/g, '');
@@ -18605,7 +18640,9 @@ const MpWatch = {
              cobrar. Con la caja cerrada no se cobra ni se abre nada: el pedido
              queda marcado como pagado y se registra al abrir la caja. */
           const ok = mdiChargeNow(row.id, 'tarjeta', { ref:String(row.mp_payment_id || '').slice(0, 40), silencio:true, sinGate:true });
-          if(ok) toast('Pedido ' + o.code + ' pagado con tarjeta', { icon:icon('check'), variant:'toast-success toast-top', subtitle:'Mercado Pago confirmó el pago · se cobró solo', duration:3200 });
+          /* Con Mercado Pago escondido no se le nombra, pero el pago que ya
+             venía en camino sí se cobra y sí se avisa. */
+          if(ok) toast('Pedido ' + o.code + ' pagado con tarjeta', { icon:icon('check'), variant:'toast-success toast-top', subtitle:(mpVisible() ? 'Mercado Pago confirmó el pago · se cobró solo' : 'El pago quedó confirmado · se cobró solo'), duration:3200 });
           else if(!cashReadyForSale()) toast('Pedido ' + o.code + ' pagado con tarjeta', { icon:icon('alert'), variant:'toast-top', subtitle:'Abre tu caja del día para registrarlo como venta', duration:4000 });
         }
       });
@@ -18812,7 +18849,7 @@ function mdiNotify(id){
     }
     if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
     /* Con tarjeta y Mercado Pago enlazado, el link de pago va en el mismo aviso */
-    if(c.payment === 'tarjeta' && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
+    if(c.payment === 'tarjeta' && mpVisible() && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
       extra.push('Paga con tu tarjeta aquí: ' + mpPayUrl(o));
     }
     if(extra.length) msg += '\n\n' + extra.join('\n');
@@ -23979,7 +24016,7 @@ function mdPublicSnapshot(){
          /* Servicio a domicilio: si lo hay y dónde empieza el mapa del cliente */
          delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null },
          /* Formas de pago: la CLABE solo se publica si aceptas transferencias */
-         payments:{ card: cfg.payments.card === true, mp:{ on: cfg.payments.card === true && !!(cfg.payments.mp && cfg.payments.mp.on && cfg.payments.mp.publicKey) }, transfer: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe), clabe: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe) ? cfg.payments.clabe : '', holder: cfg.payments.transfer === true ? cfg.payments.holder : '' } },
+         payments:{ card: cfg.payments.card === true, mp:{ on: mpVisible() && cfg.payments.card === true && !!(cfg.payments.mp && cfg.payments.mp.on && cfg.payments.mp.publicKey) }, transfer: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe), clabe: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe) ? cfg.payments.clabe : '', holder: cfg.payments.transfer === true ? cfg.payments.holder : '' } },
     wa: mdWhatsappDigits(),
     biz:{ name:b.name || '', logo:b.logo || u.photo || null, giro:b.giro || '', type:b.type || '', hours:hrsClean(b.hours) },
     tax:{ taxMode:pc.taxMode, taxRate:pc.taxRate },
