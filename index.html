@@ -4746,12 +4746,14 @@ body.dm-cat .dm{ background:#fff; box-shadow:none; }
 .cg-srch input{ flex:1; min-width:0; border:0; background:none; font:inherit; font-size:16px; font-weight:600; color:#141726; outline:none; }
 .cg-srch-x{ width:36px; height:36px; border-radius:50%; border:0; background:#fff; color:#6B7080; display:flex; align-items:center; justify-content:center; cursor:pointer; }
 .cg-srch-x svg{ width:15px; height:15px; }
-.cg-view{ padding:0 0 calc(120px + env(safe-area-inset-bottom, 0px)) !important; max-width:none !important; overflow:hidden; }
+.cg-view{ position:relative; padding:0 0 calc(120px + env(safe-area-inset-bottom, 0px)) !important; max-width:none !important; overflow:hidden; }
 /* El encabezado (categorías + banner + CATÁLOGO) se queda pegado arriba:
    solo los productos se desplazan. */
 .cg-top{ padding-bottom:0 !important; }
 .cg-hero{ position:relative; text-align:center; padding:6px 16px 12px; }
-.cg-blob{ position:absolute; top:18px; width:120px; height:120px; border-radius:50%; background:var(--dm-soft,#FCE9D7); opacity:1; z-index:0; }
+/* Los adornos de los lados: sobre el fondo blanco, pero debajo de las
+   tarjetas de productos (las tarjetas van en z-index 1). */
+.cg-blob{ position:absolute; top:-26px; width:120px; height:120px; border-radius:50%; background:var(--dm-soft,#FCE9D7); opacity:1; z-index:0; pointer-events:none; }
 .cg-blob.l{ left:-74px; } .cg-blob.r{ right:-74px; }
 .cg-title{ position:relative; z-index:1; margin:0; font-family:'Anton','Impact','Arial Narrow Bold',sans-serif; font-weight:400; font-size:clamp(40px, 12.5vw, 62px); line-height:1.02; letter-spacing:.5px; text-transform:uppercase; color:#0E0F17; }
 .cg-hours{ position:relative; z-index:1; display:flex; margin:-6px auto 14px; justify-content:center; }
@@ -4800,9 +4802,9 @@ body.dm-cat .dm{ background:#fff; box-shadow:none; }
 .cgb-redes.n2 .cgb-red + .cgb-red, .cgb-redes.n3 .cgb-red + .cgb-red{ box-shadow:inset 1px 0 0 #ECEEF3; }
 .cgb-red-ico{ flex:none; display:flex; align-items:center; justify-content:center; width:20px; height:20px; }
 .cgb-red-ico svg{ width:18px; height:18px; }
-.cgb-red:nth-child(1) .cgb-red-ico{ color:#1877F2; }
-.cgb-red:nth-child(2) .cgb-red-ico{ color:#E1306C; }
-.cgb-red:nth-child(3) .cgb-red-ico{ color:#111; }
+/* El color lo trae cada logo en su propio estilo (ver mdBannerHTML):
+   Instagram rosa, TikTok negro. No se pinta por posición, porque entonces
+   dependía de cuántas redes pusiera el negocio. */
 .cgb-red-tx{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cgb-red:active{ background:#F4F5F8; }
 @media (max-width:360px){ .cgb-red{ font-size:12px; gap:5px; padding:10px 5px; } .cgb-red-ico svg{ width:16px; height:16px; } }
@@ -15712,17 +15714,15 @@ function mdValidDesign(d){ return MD_DESIGNS.some(x => x.id === d) ? d : 'clasic
 const MD_BANNER_W = 1200, MD_BANNER_H = 400;        /* la medida que se recomienda */
 const MD_BANNER_MAX = 1600;                          /* a lo más, se guarda así de ancho */
 const MD_REDES = [
-  { id:'facebook',  name:'Facebook',  pre:'facebook.com/',  ej:'LaParrillaMx',  marca:'#1877F2' },
-  { id:'instagram', name:'Instagram', pre:'instagram.com/', ej:'laparrillamx',  marca:'#E1306C' },
-  { id:'tiktok',    name:'TikTok',    pre:'tiktok.com/@',   ej:'laparrillamx',  marca:'#111111' },
+  { id:'instagram', name:'Instagram', pre:'instagram.com/', ej:'laparrillamx', marca:'#E1306C' },
+  { id:'tiktok',    name:'TikTok',    pre:'tiktok.com/@',   ej:'laparrillamx', marca:'#111111' },
 ];
 /* Deja el usuario "en limpio": sin arroba, sin link completo, sin barras. */
 function mdRedUser(v){
   let s = String(v || '').trim();
   if(!s) return '';
   s = s.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-  s = s.replace(/^(m\.|web\.)?facebook\.com\//i, '')
-       .replace(/^instagram\.com\//i, '')
+  s = s.replace(/^instagram\.com\//i, '')
        .replace(/^(vm\.|vt\.)?tiktok\.com\/?@?/i, '');
   s = s.replace(/^@+/, '').replace(/[\/?#].*$/, '').trim();
   return s.slice(0, 40);
@@ -25952,9 +25952,10 @@ function cgRender(d){
         <button type="button" class="cg-srch-x" onclick="cgToggleSearch(false)" aria-label="Cerrar búsqueda">${icon('close')}</button>
       </div>
       ${mdBannerHTML(d.cfg.banner)}
-      <div class="cg-hero"><i class="cg-blob l" aria-hidden="true"></i><i class="cg-blob r" aria-hidden="true"></i><h1 class="cg-title">Catálogo</h1></div>
+      <div class="cg-hero"><h1 class="cg-title">Catálogo</h1></div>
     </header>
     <main class="dm-view cg-view">
+      <i class="cg-blob l" aria-hidden="true"></i><i class="cg-blob r" aria-hidden="true"></i>
       ${dmHoursLineHTML(d.cfg).replace('class="dm-hours"', 'class="dm-hours cg-hours"')}
       ${aviso}
       ${d.prods.length ? `<div class="cg-grid" id="cgGrid"></div>` : `<div class="dm-empty">${icon('bag')}<h2>Aún no hay productos</h2><p>Pronto verás aquí el catálogo del negocio.</p></div>`}
@@ -26030,7 +26031,6 @@ function cgCartHTML(){
 
 /* ---------- Los logos de las redes ---------- */
 function mdRedIcon(id){
-  if(id === 'facebook') return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06C2 17.08 5.66 21.25 10.44 22v-7.03H7.9v-2.91h2.54V9.85c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.44 2.91h-2.34V22C18.34 21.25 22 17.08 22 12.06Z"/></svg>';
   if(id === 'instagram') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5.4"/><circle cx="12" cy="12" r="4.1"/><circle cx="17.4" cy="6.6" r="1.25" fill="currentColor" stroke="none"/></svg>';
   if(id === 'tiktok') return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.6 2h-3.1v13.2a2.7 2.7 0 1 1-2.2-2.66V9.4a5.8 5.8 0 1 0 5.3 5.78V8.9a6.9 6.9 0 0 0 4 1.28V7.07a3.96 3.96 0 0 1-3.99-3.9V2Z"/></svg>';
   return '';
@@ -26048,8 +26048,8 @@ function mdBannerHTML(b, opts){
   const linea = redes.map(r => {
     const u = mdRedUser(b.redes[r.id]);
     const href = mdRedUrl(r.id, u);
-    const etiqueta = (r.id === 'facebook' ? '/' : '@') + u;
-    const dentro = `<span class="cgb-red-ico">${mdRedIcon(r.id)}</span><span class="cgb-red-tx">${escapeHtml(etiqueta)}</span>`;
+    const etiqueta = '@' + u;
+    const dentro = `<span class="cgb-red-ico" style="color:${r.marca}">${mdRedIcon(r.id)}</span><span class="cgb-red-tx">${escapeHtml(etiqueta)}</span>`;
     return opts.muestra
       ? `<span class="cgb-red">${dentro}</span>`
       : `<a class="cgb-red" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow">${dentro}</a>`;
