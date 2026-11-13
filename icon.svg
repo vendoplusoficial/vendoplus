@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Vendo Plus">
+  <defs>
+    <linearGradient id="vp" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#25D366"/>
+      <stop offset="1" stop-color="#1DAF5A"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#vp)"/>
+  <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 180h212l-22 176a26 26 0 0 1-26 23H198a26 26 0 0 1-26-23L150 180Z"/>
+    <path d="M205 180v-24a51 51 0 0 1 102 0v24"/>
+    <path d="M256 236v92M210 282h92" stroke-width="36"/>
+  </g>
+</svg>

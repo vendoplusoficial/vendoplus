@@ -4,7 +4,7 @@
    Este archivo cambia por completo la forma de cobrar:
 
    ANTES:  1 mes gratis y después la app se bloqueaba entera.
-   AHORA:  la app NUNCA se bloquea. Lo que se vende es Premium ($149/mes).
+   AHORA:  la app NUNCA se bloquea. Lo que se vende es Premium ($199/mes).
 
    GRATIS PARA SIEMPRE (sin pagar un peso, sin tarjeta, sin avisos):
      · Vender y cobrar            · Generar y enviar tickets
@@ -15,7 +15,7 @@
      · Estadísticas simples (ventas netas, pedidos, ticket promedio, gráficas)
      · 3 pruebas de escaneo de carta con IA en total
 
-   PREMIUM · $149 MXN al mes:
+   PREMIUM · $199 MXN al mes:
      · Menú Digital con pedidos
      · Chat con IA (el asistente del robot)
      · Escáner de carta con IA sin límite
@@ -38,7 +38,7 @@
   'use strict';
   if (window.VPPremium) return;
 
-  var PRECIO = 149;
+  var PRECIO = 199;
 
   /* Atajos seguros a lo que ya existe en index.html (se declara con const,
      así que se llega por nombre, pero todo va envuelto por si cambiara). */
@@ -1094,6 +1094,145 @@
     return '<div class="vp-prf">' + cab + banner + '<div class="vp-prf-grid">' + tarjetas + '</div></div>';
   }
 
+  /* =======================================================================
+     12-bis.  ATAJO "ESCANEAR CARTA" · SIEMPRE DESDE PRODUCTOS
+     Antes la tarjeta abría el escáner encima de la pantalla en la que
+     estuvieras. Ahora SIEMPRE: primero Productos, y hasta que Productos
+     quede pintado de verdad se abre el MISMO escáner de siempre
+     (window.vpIaAbrir). No hay retrasos fijos: se revisa cuadro por cuadro,
+     así que en un celular lento espera lo que tenga que esperar y en uno
+     rápido abre al instante.
+  ======================================================================= */
+
+  /* Candado: dos toques seguidos no abren el escáner dos veces. */
+  var abriendoEscaner = false;
+
+  /** ¿Productos ya quedó pintado? render() deja la marca data-v en #view. */
+  function productosListo() {
+    var v = document.getElementById('view');
+    if (!v) return false;
+    if (v.getAttribute('data-v') !== 'products') return false;
+    return v.childNodes.length > 0;          /* pintado de verdad, no vacío */
+  }
+
+  /** Espera a que Productos esté listo, cuadro por cuadro (sin retrasos fijos). */
+  function cuandoProductosListo(accion) {
+    var vueltas = 0;
+    (function revisar() {
+      if (productosListo()) { accion(); return; }
+      /* Tope de seguridad (~4 s): pase lo que pase nunca se queda atorado. */
+      if (++vueltas > 240) { accion(); return; }
+      if (window.requestAnimationFrame) window.requestAnimationFrame(revisar);
+      else setTimeout(revisar, 16);
+    })();
+  }
+
+  /** Los ids de los productos que hay ahorita (para saber cuáles son nuevos). */
+  function idsProductos() {
+    try {
+      var db = ref('DB');
+      var lista = (db && typeof db.getProducts === 'function') ? db.getProducts() : [];
+      var ids = [];
+      for (var i = 0; i < (lista || []).length; i++) if (lista[i]) ids.push(lista[i].id);
+      return ids;
+    } catch (e) { return []; }
+  }
+
+  /* El resaltado temporal de los productos nuevos. Es un brillo que se va
+     solo: no cambia el diseño de la lista ni deja nada pegado. */
+  function estiloNuevos() {
+    if (document.getElementById('vp-pr-nuevo-css')) return;
+    var st = document.createElement('style');
+    st.id = 'vp-pr-nuevo-css';
+    st.textContent = [
+      '@keyframes vp-pr-nuevo{0%{background:rgba(37,211,102,.20)}100%{background:transparent}}',
+      '.prod-row.vp-nuevo{animation:vp-pr-nuevo 2.4s ease-out 1;border-radius:14px;}',
+      '@media (prefers-reduced-motion: reduce){.prod-row.vp-nuevo{animation:none;}}'
+    ].join('');
+    document.head.appendChild(st);
+  }
+
+  /** Deja a la vista (y marca un momento) los productos recién agregados. */
+  function marcarNuevos(antes) {
+    try {
+      var db = ref('DB');
+      var lista = (db && typeof db.getProducts === 'function') ? db.getProducts() : [];
+      var nombres = [];
+      for (var i = 0; i < (lista || []).length; i++) {
+        var p = lista[i];
+        if (p && antes.indexOf(p.id) < 0) nombres.push(String(p.name || '').trim());
+      }
+      if (!nombres.length) return;              /* no se agregó nada: nada que marcar */
+      estiloNuevos();
+      var filas = document.querySelectorAll('#view .prod-row');
+      var primera = null;
+      for (var j = 0; j < filas.length; j++) {
+        var n = filas[j].querySelector('.pr-name');
+        if (!n || nombres.indexOf(n.textContent.trim()) < 0) continue;
+        filas[j].classList.add('vp-nuevo');
+        if (!primera) primera = filas[j];
+      }
+      if (primera && primera.scrollIntoView) {
+        var suave = true;
+        try { suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+        primera.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'center' });
+      }
+      setTimeout(function () {
+        var m = document.querySelectorAll('#view .prod-row.vp-nuevo');
+        for (var k = 0; k < m.length; k++) m[k].classList.remove('vp-nuevo');
+      }, 2600);
+    } catch (e) {}
+  }
+
+  /** Avisa cuando la hoja del escáner se cierra (importó, canceló o hubo error). */
+  function alCerrarElEscaner(cb) {
+    var capa = document.getElementById('modal-layer');
+    if (!capa) { cb(); return; }
+    var hecho = false, obs = null, reloj = 0;
+    function terminar() {
+      if (hecho) return;
+      hecho = true;
+      if (obs) { try { obs.disconnect(); } catch (e) {} }
+      if (reloj) clearInterval(reloj);
+      cb();
+    }
+    function revisar() { if (!capa.querySelector('.modal-overlay')) terminar(); }
+    if (window.MutationObserver) {
+      obs = new MutationObserver(revisar);
+      try { obs.observe(capa, { childList: true }); } catch (e) { obs = null; }
+    }
+    /* Red de seguridad para navegadores viejitos (y por si algo se escapa). */
+    reloj = setInterval(revisar, 300);
+  }
+
+  /**
+   * Tarjeta Premium "Escanear carta / Escanear menú".
+   * 1) Lleva a Productos.  2) Espera a que Productos esté listo.
+   * 3) Abre el escáner de siempre.  4) Al cerrarse, se queda en Productos
+   * y deja a la vista los productos que se acaban de agregar.
+   */
+  function escanearDesdeProductos() {
+    if (abriendoEscaner) return;                              /* ya se está abriendo */
+    if (typeof window.vpIaAbrir !== 'function') { abrir('escaner'); return; }
+    abriendoEscaner = true;
+    var ir = fn('goTo');
+    try { if (ir) ir('products'); } catch (e) {}              /* 1) Productos primero */
+    cuandoProductosListo(function () {                        /* 2) ya cargado */
+      var antes = idsProductos();
+      try { window.vpIaAbrir(); }                             /* 3) el escáner de siempre */
+      catch (e) { abriendoEscaner = false; return; }
+      /* Si no se abrió (por ejemplo, sin permiso para administrar productos)
+         se suelta el candado y el usuario se queda en Productos. */
+      var capa = document.getElementById('modal-layer');
+      if (!capa || !capa.querySelector('.modal-overlay')) { abriendoEscaner = false; return; }
+      alCerrarElEscaner(function () {                         /* 4) al terminar */
+        abriendoEscaner = false;
+        if (!productosListo() && ir) { try { ir('products'); } catch (e) {} }
+        marcarNuevos(antes);
+      });
+    });
+  }
+
   /** Lleva a la función de la tarjeta. Si no es Premium, cada puerta abre la pantalla de Premium. */
   function irA(clave) {
     /* Por ahora, sin Premium no pasa nada al tocar (después aquí irá el video y luego el pago). */
@@ -1112,22 +1251,17 @@
       return;
     }
     if (clave === 'escaner') {
-      if (typeof window.vpIaAbrir === 'function') window.vpIaAbrir(); else abrir('escaner');
+      /* Ya no se abre encima de donde estés: primero Productos y luego el
+         escáner (ver escanearDesdeProductos, aquí arriba). */
+      puerta('escaner', escanearDesdeProductos);
       return;
     }
     if (clave === 'stats') {
-      puerta('stats', function () {
-        if (ir) ir('stats');
-        setTimeout(function () {
-          try {
-            var abierto = ref('statsDetailOpen');
-            var t = fn('toggleStatsDetail');
-            if (!abierto && t) t();
-            var caja = document.getElementById('statsDetail');
-            if (caja && caja.scrollIntoView) caja.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          } catch (e) {}
-        }, 60);
-      });
+      /* Estadísticas NORMALES, las de siempre. Antes esta tarjeta abría
+         sola las estadísticas detalladas; ya no las abre ni se desplaza
+         hasta ellas. El botón "Ver estadísticas detalladas" sigue igual
+         y ahí adentro, si el dueño quiere, las abre él. */
+      puerta('stats', function () { if (ir) ir('stats'); });
       return;
     }
     if (clave === 'usuarios') {

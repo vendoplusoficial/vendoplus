@@ -1,0 +1,9 @@
+# Vendo Plus · https://vendoplusoficial.com
+# Nada bloqueado: Googlebot necesita leer la página de inicio y
+# Googlebot-Image necesita poder bajar el favicon. Si alguna vez bloqueas
+# algo aquí, NO bloquees los iconos ni la raíz del sitio.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://vendoplusoficial.com/sitemap.xml
