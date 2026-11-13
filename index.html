@@ -1037,7 +1037,15 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .auth-screen.auth-plain .auth-top:empty{ min-height:calc(10px + env(safe-area-inset-top)); padding:0; }
   .auth-screen.auth-plain .auth-title{ margin-top:4px; }
   .auth-screen.auth-plain .auth-sub{ margin-bottom:18px; }
-  .auth-screen.auth-plain .user-pick-grid{ margin-top:0; }
+  .auth-screen.auth-plain .user-pick-grid{
+    margin-top:0;
+    /* Se acomodan solas y quedan centradas, sean los que sean: ya no hay
+       columnas fijas que dejen un hueco cuando no alcanzan a llenarse. */
+    display:flex; flex-wrap:wrap; justify-content:center; align-items:stretch;
+  }
+  .auth-screen.auth-plain .user-pick{
+    flex:1 1 140px; max-width:200px; min-width:0;
+  }
   /* El botón de ayuda: chiquito, discreto y pegado debajo (no al fondo) */
   .auth-screen.auth-plain .auth-actions{
     margin-top:18px; padding-top:0; align-items:center;
@@ -1060,7 +1068,8 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
     .auth-screen.auth-plain > .auth-body{
       align-self:center; max-height:none; padding-top:10px; padding-bottom:40px;
     }
-    .auth-screen.auth-plain .user-pick-grid{ grid-template-columns:1fr 1fr 1fr; }
+    /* En PC caben más por fila, pero igual quedan centradas */
+    .auth-screen.auth-plain .user-pick{ flex:0 1 150px; }
   }
   @keyframes authEnter{
     from{ opacity:0; transform:translateY(12px); }
@@ -1555,99 +1564,6 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
      Estilos nuevos que solo se usan cuando el Dueño decide
      agregar a alguien más. No tocan nada de lo anterior.
   ===================================================== */
-
-  /* ================= COMBOS CON ELECCIONES ================= */
-  /* --- Configuración (Opciones avanzadas del producto) --- */
-  .cbo-groups{ display:flex; flex-direction:column; gap:12px; margin-top:12px; }
-  .cbo-group{
-    border:1.5px solid var(--border); border-radius:16px; padding:12px;
-    background:var(--surface-alt);
-  }
-  .cbo-g-head{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-  .cbo-g-head .cbo-g-n{
-    width:26px; height:26px; border-radius:9px; flex-shrink:0;
-    background:var(--ink); color:#fff; font-size:12.5px; font-weight:800;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .cbo-g-head input{ flex:1; min-width:0; }
-  .cbo-ico-btn{
-    width:32px; height:32px; border-radius:10px; border:1px solid var(--border);
-    background:var(--surface); color:var(--ink-soft); flex-shrink:0;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .cbo-ico-btn svg{ width:16px; height:16px; }
-  .cbo-ico-btn:disabled{ opacity:.3; }
-  .cbo-ico-btn.danger{ color:var(--danger); }
-  .cbo-g-rules{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
-  .cbo-g-rules .field{ margin:0; }
-  .cbo-g-rules label{ font-size:11.5px; }
-  .cbo-req{
-    display:flex; align-items:center; gap:9px; padding:8px 0 12px;
-    font-size:13px; font-weight:700; color:var(--ink);
-  }
-  .cbo-req .switch{ margin-left:auto; }
-  .cbo-opts{ display:flex; flex-direction:column; gap:8px; }
-  .cbo-opt{
-    display:flex; align-items:center; gap:8px;
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:12px; padding:8px;
-  }
-  .cbo-opt-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
-  .cbo-opt-main select, .cbo-opt-main input{ width:100%; }
-  .cbo-opt-row{ display:flex; gap:8px; align-items:center; }
-  .cbo-opt-row .cbo-extra{ width:110px; flex-shrink:0; }
-  .cbo-opt-name{ font-size:12.5px; font-weight:700; color:var(--ink-soft); white-space:nowrap; }
-  .cbo-hint{ font-size:11.5px; font-weight:600; color:var(--ink-soft); margin-top:7px; line-height:1.45; }
-  .cbo-err{ color:var(--danger); font-weight:700; }
-  .cbo-group.has-error{ border-color:var(--danger); }
-  .cbo-add{ margin-top:10px; }
-  .cbo-empty{
-    text-align:center; padding:18px 12px; border:1.5px dashed var(--border);
-    border-radius:16px; color:var(--ink-soft); font-size:13px; font-weight:600;
-  }
-
-  /* --- Lo que ve el cliente y lo que ve la caja --- */
-  .cbo-pick-g{ margin-bottom:16px; }
-  .cbo-pick-head{ display:flex; align-items:baseline; gap:8px; margin-bottom:8px; }
-  .cbo-pick-title{ font-size:13.5px; font-weight:800; color:var(--ink); }
-  .cbo-pick-rule{ font-size:11.5px; font-weight:700; color:var(--ink-soft); }
-  .cbo-pick-rule.falta{ color:var(--danger); }
-  .cbo-pick-list{ display:flex; flex-direction:column; gap:8px; }
-  .cbo-pick{
-    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
-    background:var(--surface); border:1.5px solid var(--border);
-    border-radius:13px; padding:11px 12px; color:var(--ink);
-  }
-  .cbo-pick .cbo-box{
-    width:21px; height:21px; border-radius:7px; flex-shrink:0;
-    border:1.8px solid var(--border); background:var(--surface);
-    display:flex; align-items:center; justify-content:center; color:#fff;
-  }
-  .cbo-pick .cbo-box.round{ border-radius:50%; }
-  .cbo-pick .cbo-box svg{ width:13px; height:13px; opacity:0; }
-  .cbo-pick.on{ border-color:var(--dm-main, var(--accent-strong)); background:var(--dm-soft, var(--accent-soft)); }
-  .cbo-pick.on .cbo-box{ background:var(--dm-main, var(--accent-strong)); border-color:var(--dm-main, var(--accent-strong)); }
-  .cbo-pick.on .cbo-box svg{ opacity:1; }
-  .cbo-pick-txt{ flex:1; min-width:0; font-size:14px; font-weight:700; }
-  .cbo-pick-tag{ font-size:12px; font-weight:800; flex-shrink:0; color:var(--ink-soft); }
-  .cbo-pick-tag.extra{ color:var(--dm-main, var(--accent-strong)); }
-  .cbo-pick-tag.out{ color:var(--danger); }
-  .cbo-pick:disabled{ opacity:.45; }
-  .cbo-pick:active:not(:disabled){ transform:scale(.985); }
-  /* Resumen de elecciones debajo de una línea (carrito, pedido, ticket) */
-  .cbo-sum{
-    font-size:11.5px; font-weight:600; color:var(--ink-soft);
-    margin-top:4px; line-height:1.5;
-  }
-  .cbo-sum b{ color:var(--ink); font-weight:800; }
-  .cbo-sum i{ font-style:normal; color:var(--dm-main, var(--accent-strong)); font-weight:800; }
-  .cbo-sum-li{ display:block; }
-  .cbo-chip{
-    display:inline-block; font-size:10.5px; font-weight:800;
-    padding:2px 8px; border-radius:999px; margin-left:6px;
-    background:var(--accent-soft); color:var(--accent-ink, var(--ink));
-  }
-
   .user-pick-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; }
   .user-pick{
     background:var(--surface); border:1.5px solid var(--border); border-radius:18px;
@@ -5608,7 +5524,7 @@ function askConfirm(o, onOk, onCancel){
   layer.querySelector('#confYes').onclick = yes;
   layer.querySelector('#confOverlay').addEventListener('click', e => { if(e.target.id === 'confOverlay'){ close(); if(onCancel) onCancel(); } });
   document.addEventListener('keydown', onKey, true);
-  setTimeout(() => { const f = layer.querySelector('input:not([type=checkbox]), textarea'); if(f) f.focus(); }, 60);
+  vpFoco(layer.querySelector('input:not([type=checkbox]), textarea'), 60);
 }
 
 /* ---------- Destrabar la pantalla ----------
@@ -5682,9 +5598,6 @@ const ICONS = {
   list: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m4 7 1.6 1.6L8.4 5.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m4 16 1.6 1.6 2.8-2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 7.2H20M11.5 16.2H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
   boxes: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.2" y="9.5" width="7.6" height="7.6" rx="1.4" stroke="currentColor" stroke-width="1.7"/><rect x="13.2" y="9.5" width="7.6" height="7.6" rx="1.4" stroke="currentColor" stroke-width="1.7"/><rect x="8.2" y="2.6" width="7.6" height="6" rx="1.4" stroke="currentColor" stroke-width="1.7"/></svg>`,
 };
-/* Flecha hacia arriba: la usan los botones de reordenar los grupos y las
-   opciones de un combo. chevronDown ya existía más abajo. */
-ICONS.chevronUp = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 15l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function icon(name){ return ICONS[name] || ''; }
 ICONS.vpCrown = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></svg>';
 /* Reloj: lo usan el horario del menú y las estadísticas ("la hora más fuerte") */
@@ -6206,209 +6119,16 @@ function cartStockUse(productId){
   const p = findProduct(productId);
   return r3(cart.filter(c => c.productId === productId).reduce((a, c) => a + lineStockUse(p, c), 0));
 }
-/* Suma por producto lo que se va a descontar ({ productId: cantidad }).
-   Con combos también se suman los COMPONENTES que el cliente eligió, ya
-   multiplicados por la cantidad de combos. Como esta misma función la usan
-   la revisión de existencias Y el descuento, nunca se descuenta dos veces
-   ni se descuenta algo que no se revisó. */
+/* Suma por producto lo que se va a descontar ({ productId: cantidad }). */
 function stockUseByProduct(lines, inventario){
   const uso = {};
-  const sumar = (pid, q) => { if(q > 0) uso[pid] = r3((uso[pid] || 0) + q); };
   lines.forEach(l => {
     const prod = inventario.find(x => x.id === l.productId);
-    if(prod) sumar(l.productId, lineStockUse(prod, l));
-    /* Componentes del combo (la bebida, el acompañamiento, el extra) */
-    comboStockUseOf(l).forEach(c => { if(inventario.some(x => x.id === c.productId)) sumar(c.productId, c.qty); });
+    if(!prod) return;
+    uso[l.productId] = r3((uso[l.productId] || 0) + lineStockUse(prod, l));
   });
   return uso;
 }
-/* =========================================================================
-   COMBOS CON ELECCIONES
-   -------------------------------------------------------------------------
-   Un combo es un producto normal al que el negocio le arma GRUPOS de
-   elecciones. Ejemplo de una hamburguesa:
-
-     Grupo "Elige tu bebida"        obligatorio, de 1 a 1
-       · Refresco de cola ........ incluido  (vinculado a inventario)
-       · Agua de horchata ........ incluido  (vinculado a inventario)
-       · Jugo natural ............ +$12      (vinculado a inventario)
-     Grupo "Elige tu salsa"         opcional, de 0 a 2
-       · Sin salsa ............... incluido  (opción simple, sin inventario)
-       · Chipotle ................ incluido
-     Grupo "Agrega extras"          opcional, de 0 a 3
-       · Tocino extra ............ +$18      (vinculado a inventario)
-
-   CÓMO SE GUARDA EN EL PRODUCTO
-     p.comboOn      = true
-     p.comboGroups  = [ {
-        id:'cg…', name:'Elige tu bebida', required:true, min:1, max:1,
-        options:[ { id:'co…', name:'Refresco de cola', extra:0,
-                    productId:'p…'|null, qty:1 } ]
-     } ]
-
-   CÓMO VIAJA UNA ELECCIÓN YA HECHA (carrito, pedido, venta y ticket)
-     linea.combo = [ { gid, gname, oid, name, extra, productId, qty } ]
-
-   · Los ids (cg…/co…) son ESTABLES: aunque el negocio cambie el nombre o
-     el orden, lo que el cliente ya eligió se sigue reconociendo.
-   · Cada pedido y cada venta se guardan con su COPIA de nombres y precios
-     (linea.combo), así que editar el catálogo después no cambia pedidos
-     ni tickets de antes.
-   · El precio de la línea = precio base + la suma de los "extra". Se pone
-     en linea.unitPrice, así que todo lo demás de la app (descuentos,
-     mayoreo, IVA, totales, devoluciones) sigue funcionando igual.
-========================================================================= */
-const COMBO_MAX_GROUPS = 10;    /* grupos por producto */
-const COMBO_MAX_OPTS = 24;      /* opciones por grupo */
-const COMBO_MAX_PICKS = 12;     /* elecciones guardadas en una línea */
-
-function comboNum(v, def){ const n = Number(v); return isFinite(n) ? n : (def || 0); }
-function comboStr(v, max){ return String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max || 60); }
-function comboId(pre){ return pre + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-
-/** Limpia y valida los grupos, vengan del catálogo o del menú publicado. */
-function comboCleanGroups(gs){
-  if(!Array.isArray(gs)) return [];
-  const out = [];
-  gs.slice(0, COMBO_MAX_GROUPS).forEach(g => {
-    if(!g || typeof g !== 'object') return;
-    const name = comboStr(g.name, 60);
-    const opts = [];
-    const vistos = {};
-    (Array.isArray(g.options) ? g.options : []).slice(0, COMBO_MAX_OPTS).forEach(o => {
-      if(!o || typeof o !== 'object') return;
-      const nm = comboStr(o.name, 60);
-      if(!nm) return;
-      let id = comboStr(o.id, 40) || comboId('co');
-      while(vistos[id]) id = comboId('co');      /* ids repetidos: se separan */
-      vistos[id] = 1;
-      opts.push({
-        id: id,
-        name: nm,
-        extra: Math.max(0, round2(comboNum(o.extra, 0))),
-        productId: o.productId ? comboStr(o.productId, 60) : null,
-        qty: Math.max(0, r3(comboNum(o.qty, 1))) || 1
-      });
-    });
-    if(!name || !opts.length) return;            /* grupo sin nombre u opciones: se ignora */
-    const required = g.required === true;
-    /* Límites imposibles se corrigen aquí: nunca se publica un grupo que
-       el cliente no pueda cumplir (mínimo mayor que las opciones, etc.) */
-    let max = Math.round(comboNum(g.max, 1));
-    let min = Math.round(comboNum(g.min, required ? 1 : 0));
-    if(!(max >= 1)) max = 1;
-    max = Math.min(max, opts.length);
-    if(!(min >= 0)) min = 0;
-    if(required && min < 1) min = 1;
-    if(!required) min = Math.min(min, max);
-    min = Math.min(min, max, opts.length);
-    out.push({ id: comboStr(g.id, 40) || comboId('cg'), name: name, required: required || min > 0, min: min, max: max, options: opts });
-  });
-  return out;
-}
-
-function comboIsOn(p){ return !!(p && p.comboOn && Array.isArray(p.comboGroups) && p.comboGroups.length); }
-function comboGroupsOf(p){ return comboIsOn(p) ? comboCleanGroups(p.comboGroups) : []; }
-/** ¿Este producto pide elegir algo antes de venderlo? */
-function comboNeedsPick(p){ return comboGroupsOf(p).length > 0; }
-
-/* ---------- Elecciones ya hechas ---------- */
-/** Lo que suma de más una línea por sus elecciones. */
-function comboExtraOf(elec){
-  if(!Array.isArray(elec)) return 0;
-  return round2(elec.reduce((a, e) => a + Math.max(0, comboNum(e && e.extra, 0)), 0));
-}
-/** Limpia las elecciones que llegan de un pedido (de internet). */
-function comboCleanPicks(elec){
-  if(!Array.isArray(elec)) return [];
-  return elec.slice(0, COMBO_MAX_PICKS).map(e => ({
-    gid: comboStr(e && e.gid, 40),
-    gname: comboStr(e && e.gname, 60),
-    oid: comboStr(e && e.oid, 40),
-    name: comboStr(e && e.name, 60) || 'Opción',
-    extra: Math.max(0, round2(comboNum(e && e.extra, 0))),
-    productId: (e && e.productId) ? comboStr(e.productId, 60) : null,
-    qty: Math.max(0, r3(comboNum(e && e.qty, 1))) || 1
-  })).filter(e => e.oid || e.name);
-}
-/** Firma estable: dos líneas se juntan SOLO si eligieron exactamente igual. */
-function comboSig(elec){
-  if(!Array.isArray(elec) || !elec.length) return '';
-  return elec.map(e => (e.gid || '') + ':' + (e.oid || e.name || '') + ':' + round2(comboNum(e.extra, 0)))
-             .sort().join('|');
-}
-/** Texto de las elecciones, para WhatsApp y para la impresora. */
-function comboTextOf(elec, sep){
-  if(!Array.isArray(elec) || !elec.length) return '';
-  const por = {};
-  elec.forEach(e => { const k = e.gname || ''; (por[k] = por[k] || []).push(e.name + (e.extra > 0 ? ' (+' + formatMoney(e.extra) + ')' : '')); });
-  return Object.keys(por).map(k => (k ? k + ': ' : '') + por[k].join(', ')).join(sep || ' · ');
-}
-/** Componentes de inventario que gasta UN combo (sin multiplicar por cantidad). */
-function comboComponents(elec){
-  const out = [];
-  (Array.isArray(elec) ? elec : []).forEach(e => {
-    if(!e || !e.productId) return;
-    const q = Math.max(0, r3(comboNum(e.qty, 1))) || 1;
-    const ya = out.find(x => x.productId === e.productId);
-    if(ya) ya.qty = r3(ya.qty + q); else out.push({ productId:e.productId, qty:q });
-  });
-  return out;
-}
-/** Las elecciones de una línea, ya limpias (sirve para cualquier línea). */
-function lineCombo(l){ return (l && Array.isArray(l.combo) && l.combo.length) ? l.combo : null; }
-
-/* ---------- Validación de lo que eligió el cliente ----------
-   picks = { idDelGrupo: [idDeOpcion, …] }
-   Regresa { ok, falta:[nombres de grupos], elecciones:[…], extra } */
-function comboValidate(p, picks){
-  const gs = comboGroupsOf(p);
-  const elec = [], falta = [];
-  picks = picks || {};
-  gs.forEach(g => {
-    const eleg = (Array.isArray(picks[g.id]) ? picks[g.id] : []).filter((x, i, a) => a.indexOf(x) === i);
-    const buenas = eleg.map(oid => g.options.find(o => o.id === oid)).filter(Boolean).slice(0, g.max);
-    if(buenas.length < g.min){ falta.push(g.name); return; }
-    buenas.forEach(o => elec.push({ gid:g.id, gname:g.name, oid:o.id, name:o.name, extra:o.extra, productId:o.productId || null, qty:o.qty || 1 }));
-  });
-  return { ok: falta.length === 0, falta: falta, elecciones: elec, extra: comboExtraOf(elec) };
-}
-/** Cuántas elecciones faltan o sobran en un grupo (para pintar el aviso). */
-function comboGroupHint(g){
-  if(g.min === g.max) return g.min === 1 ? 'Elige 1' : 'Elige ' + g.min;
-  if(g.min > 0) return 'Elige de ' + g.min + ' a ' + g.max;
-  return g.max === 1 ? 'Opcional · máximo 1' : 'Opcional · hasta ' + g.max;
-}
-
-/* ---------- Referencias circulares ----------
-   Si una opción vincula un producto que TAMBIÉN es combo, se revisa que no
-   se forme un círculo (A trae a B, B trae a A), porque al calcular
-   existencias o precios se quedaría dando vueltas para siempre. */
-function comboLinkCycle(rootId, pid, visto){
-  if(!rootId || !pid) return false;
-  if(pid === rootId) return true;
-  visto = visto || {};
-  if(visto[pid]) return false;
-  visto[pid] = 1;
-  const p = (typeof findProduct === 'function') ? findProduct(pid) : null;
-  if(!comboIsOn(p)) return false;
-  return comboGroupsOf(p).some(g => g.options.some(o => o.productId && comboLinkCycle(rootId, o.productId, visto)));
-}
-/** Productos que se pueden ofrecer dentro de un grupo de este combo. */
-function comboLinkables(rootId){
-  return (typeof DB === 'object' ? DB.getProducts() : []).filter(x =>
-    x && x.id !== rootId && !x.custom && !comboLinkCycle(rootId, x.id));
-}
-
-/** Lo que gastan del inventario los componentes de una línea de combo. */
-function comboStockUseOf(l){
-  const elec = lineCombo(l);
-  if(!elec) return [];
-  const qty = Math.max(0, r3(comboNum(l.qty, 0)));
-  if(!(qty > 0)) return [];
-  return comboComponents(elec).map(c => ({ productId:c.productId, qty:r3(c.qty * qty) }));
-}
-
 function stockProblems(uso, inventario){
   const out = [];
   Object.keys(uso).forEach(pid => {
@@ -7182,8 +6902,7 @@ function onSaleSearchKey(e){
     saleSearch = '';
     e.target.value = '';
     const p = res[0];
-    if(comboNeedsPick(p)) openComboPicker(p.id);
-    else if(hasSizes(p)) openSizePicker(p.id);
+    if(hasSizes(p)) openSizePicker(p.id);
     else if(isFracProduct(p)) openQtyPad(p.id);
     else addToCart(p.id);
     render();
@@ -7197,8 +6916,7 @@ function saleScanCode(code, fromSearch){
   if(!p.active){ toast('Ese producto está desactivado', { icon:icon('alert'), variant:'toast-danger toast-top', subtitle:p.name }); return true; }
   if(fromSearch){ saleSearch = ''; const inp = document.getElementById('saleSearch'); if(inp) inp.value = ''; }
   scanBeep();
-  if(comboNeedsPick(p)) openComboPicker(p.id);
-  else if(hasSizes(p)) openSizePicker(p.id);
+  if(hasSizes(p)) openSizePicker(p.id);
   else if(isFracProduct(p)) openQtyPad(p.id);
   else addToCart(p.id);
   if(fromSearch){ render(); const el = document.getElementById('saleSearch'); if(el) el.focus(); }
@@ -7225,8 +6943,6 @@ function addToCart(productId, qtyAdd, opts){
   opts = opts || {};
   const p = findProduct(productId);
   if(!p) return;
-  /* Combo: primero se eligen bebida, salsas, acompañamientos o extras */
-  if(comboNeedsPick(p) && !opts.yaEligio){ openComboPicker(productId); return; }
   if(hasSizes(p)){ openSizePicker(productId); return; }
   const st = stockInfo(p);
   qtyAdd = r3(qtyAdd != null ? qtyAdd : (isFracProduct(p) ? productStep(p) : 1));
@@ -7253,7 +6969,7 @@ function addToCart(productId, qtyAdd, opts){
   // Primera venta: antes del primer producto tiene que estar abierta la caja del día.
   if(!saleStartGate(() => addToCart(productId, qtyAdd, opts))) return;
 
-  const item = cart.find(c => c.productId === productId && !c.sizeId && !c.note && !c.disc && !c.combo && c.manualPrice == null);
+  const item = cart.find(c => c.productId === productId && !c.sizeId && !c.note && !c.disc && c.manualPrice == null);
   if(item){ item.qty = r3(item.qty + qtyAdd); } else { cart.push({ productId, qty:qtyAdd }); }
 
   const restan = st.control ? r3(st.stock - cartStockUse(productId)) : null;
@@ -7277,7 +6993,7 @@ function changeQtyFromGrid(productId, delta){
   const st = stockInfo(p);
   const step = isFracProduct(p) ? productStep(p) : 1;
   const lines = cart.filter(c => c.productId === productId);
-  const item = lines.find(c => !c.sizeId && !c.note && !c.disc && !c.combo && c.manualPrice == null) || lines[lines.length - 1];
+  const item = lines.find(c => !c.sizeId && !c.note && !c.disc && c.manualPrice == null) || lines[lines.length - 1];
   if(delta > 0 && st.control && cartStockUse(productId) + step > st.stock + 1e-9){
     vibrate(40);
     toast(st.stock <= 0 ? 'Se acabó este producto' : 'Solo te quedan ' + fmtStock(p, st.stock), {
@@ -7303,7 +7019,7 @@ function openQtyPad(productId){
   const p = findProduct(productId); if(!p) return;
   const u = productUnit(p);
   const step = productStep(p);
-  const ya = cart.find(c => c.productId === productId && !c.sizeId && !c.note && !c.disc && !c.combo && c.manualPrice == null);
+  const ya = cart.find(c => c.productId === productId && !c.sizeId && !c.note && !c.disc && c.manualPrice == null);
   qtyPad = { productId, qty: ya ? ya.qty : step, editing: !!ya };
   const quick = u.id === 'gramo' || u.id === 'mililitro' ? [100, 250, 500, 750, 1000]
               : u.id === 'centimetro' ? [10, 25, 50, 100]
@@ -7354,7 +7070,7 @@ function qpSave(){
   const q = r3(parseFloat((document.getElementById('qpQty') || {}).value) || 0);
   if(!(q > 0)){ toast('Escribe una cantidad mayor a 0'); return; }
   const st = stockInfo(p);
-  const ya = cart.find(c => c.productId === p.id && !c.sizeId && !c.note && !c.disc && !c.combo && c.manualPrice == null);
+  const ya = cart.find(c => c.productId === p.id && !c.sizeId && !c.note && !c.disc && c.manualPrice == null);
   const otros = r3(cartStockUse(p.id) - (ya ? lineStockUse(p, ya) : 0));
   if(st.control && otros + q > st.stock + 1e-9){
     vibrate(40);
@@ -7363,7 +7079,7 @@ function qpSave(){
   }
   const pid = p.id;
   const apply = () => {
-    const linea = cart.find(c => c.productId === pid && !c.sizeId && !c.note && !c.disc && !c.combo && c.manualPrice == null);
+    const linea = cart.find(c => c.productId === pid && !c.sizeId && !c.note && !c.disc && c.manualPrice == null);
     if(linea) linea.qty = q; else cart.push({ productId:pid, qty:q });
     qtyPad = null;
     closeModal();
@@ -7375,7 +7091,7 @@ function qpSave(){
   apply();
 }
 function qpRemove(){
-  cart = cart.filter(c => !(c.productId === qtyPad.productId && !c.sizeId && !c.note && !c.disc && !c.combo && c.manualPrice == null));
+  cart = cart.filter(c => !(c.productId === qtyPad.productId && !c.sizeId && !c.note && !c.disc && c.manualPrice == null));
   cartLinkCheck();
   qtyPad = null; closeModal(); render();
 }
@@ -7406,181 +7122,6 @@ function computeTotals(){
   const tip = tipAmount(t.total);
   return { list, lineDisc, orderDisc, discount:round2(lineDisc + orderDisc), base,
            subtotal:t.subtotal, iva:t.iva, total:t.total, tip, toPay:round2(t.total + tip) };
-}
-
-/* =========================================================================
-   VENDER UN COMBO EN EL MOSTRADOR
-   -------------------------------------------------------------------------
-   Misma lógica que en el Menú Digital del cliente, pero en la hoja del
-   punto de venta: se eligen los grupos, se ve el total al momento y se
-   avisa qué falta. La línea del carrito guarda las elecciones (con sus
-   ids, nombres y precios), así que el ticket y el inventario cuadran.
-========================================================================= */
-let comboPick = null;      /* { productId, picks:{gid:[oid]}, qty, lineIndex } */
-
-function openComboPicker(productId, lineIndex){
-  const p = findProduct(productId);
-  if(!p || !comboNeedsPick(p)) return;
-  if(lineIndex == null && !saleStartGate(() => openComboPicker(productId))) return;
-  const linea = (lineIndex != null) ? cart[lineIndex] : null;
-  const picks = {};
-  if(linea && Array.isArray(linea.combo)) linea.combo.forEach(e => { (picks[e.gid] = picks[e.gid] || []).push(e.oid); });
-  comboPick = {
-    productId: productId,
-    picks: picks,
-    qty: linea ? linea.qty : (isFracProduct(p) ? productStep(p) : 1),
-    lineIndex: (lineIndex == null ? null : lineIndex)
-  };
-  renderComboPicker();
-}
-function comboPickerToggle(gid, oid){
-  if(!comboPick) return;
-  const p = findProduct(comboPick.productId);
-  const g = comboGroupsOf(p).find(x => x.id === gid);
-  if(!g) return;
-  const lista = comboPick.picks[gid] = (comboPick.picks[gid] || []).filter(x => g.options.some(o => o.id === x));
-  const i = lista.indexOf(oid);
-  if(i >= 0){
-    /* Quitar una elección obligatoria que dejaría el grupo por debajo del
-       mínimo: con máximo 1 se cambia por la nueva, nunca se queda vacío. */
-    if(g.max === 1 && g.min >= 1) return;
-    lista.splice(i, 1);
-  }else{
-    if(g.max === 1) comboPick.picks[gid] = [oid];
-    else{
-      if(lista.length >= g.max){
-        toast('En “' + g.name + '” puedes elegir máximo ' + g.max, { icon:icon('alert') });
-        return;
-      }
-      lista.push(oid);
-    }
-  }
-  vibrate(8);
-  renderComboPicker();
-}
-function comboPickerQty(dir){
-  if(!comboPick) return;
-  const p = findProduct(comboPick.productId);
-  const s = isFracProduct(p) ? productStep(p) : 1;
-  comboPick.qty = Math.max(s, r3(comboPick.qty + dir * s));
-  renderComboPicker();
-}
-/** Existencias libres considerando el combo y TODOS sus componentes. */
-function comboPickerFalta(p, elec, qty){
-  const inventario = DB.getProducts();
-  /* Lo que ya ocupa el carrito, sin contar la línea que se está editando */
-  const otras = cart.filter((c, i) => i !== comboPick.lineIndex);
-  const uso = stockUseByProduct(otras, inventario);
-  const sumar = (pid, q) => { uso[pid] = r3((uso[pid] || 0) + q); };
-  sumar(p.id, lineStockUse(p, { qty:qty }));
-  comboComponents(elec).forEach(c => sumar(c.productId, r3(c.qty * qty)));
-  return stockProblems(uso, inventario);
-}
-function renderComboPicker(){
-  if(!comboPick) return;
-  const p = findProduct(comboPick.productId);
-  if(!p){ closeModal(); comboPick = null; return; }
-  const v = comboValidate(p, comboPick.picks);
-  const base = Number(p.price) || 0;
-  const unidad = round2(base + v.extra);
-  const faltan = comboPickerFalta(p, v.elecciones, comboPick.qty);
-  const editando = comboPick.lineIndex != null;
-  openModal(`
-    <div class="sheet-header">
-      <h2>${escapeHtml(p.name)}</h2>
-      <button class="sheet-close" onclick="closeModal(); comboPick = null;">${icon('close')}</button>
-    </div>
-    <p class="sheet-text" style="margin-top:-6px;">${formatMoney(base)} + lo que elijas</p>
-    ${comboPickHTML(p, comboPick.picks, 'comboPickerToggle')}
-    ${faltan.length ? `<div class="field-hint warn" style="display:block;">${icon('alert')} ${escapeHtml(faltan[0])}</div>` : ''}
-    <div class="qp-row" style="display:flex; align-items:center; gap:12px; margin-top:10px;">
-      <div class="qty-control">
-        <button class="qty-btn" onclick="comboPickerQty(-1)">−</button>
-        <span class="qty-val">${escapeHtml(isFracProduct(p) ? fmtQty(comboPick.qty, productUnit(p).id) : fmtNum(comboPick.qty))}</span>
-        <button class="qty-btn" onclick="comboPickerQty(1)">+</button>
-      </div>
-      <div style="margin-left:auto; font-size:17px; font-weight:800;">${formatMoney(round2(unidad * comboPick.qty))}</div>
-    </div>
-    <button class="btn primary block" style="margin-top:14px;" ${v.ok && !faltan.length ? '' : 'disabled'} onclick="comboPickerSave()">
-      ${!v.ok ? 'Te falta elegir: ' + escapeHtml(v.falta[0])
-        : editando ? 'Guardar cambios · ' + formatMoney(round2(unidad * comboPick.qty))
-        : icon('cart') + ' Agregar · ' + formatMoney(round2(unidad * comboPick.qty))}
-    </button>
-  `, { dismissible:true });
-}
-function comboPickerSave(){
-  if(!comboPick) return;
-  const p = findProduct(comboPick.productId); if(!p) return;
-  const v = comboValidate(p, comboPick.picks);
-  if(!v.ok){ toast('Te falta elegir: ' + v.falta[0], { variant:'toast-danger', icon:icon('alert') }); return; }
-  const faltan = comboPickerFalta(p, v.elecciones, comboPick.qty);
-  if(faltan.length){ vibrate(40); toast('No hay existencias suficientes', { variant:'toast-danger', icon:icon('alert'), subtitle:faltan[0], duration:3000 }); return; }
-  const unidad = round2((Number(p.price) || 0) + v.extra);
-  if(comboPick.lineIndex != null){
-    const l = cart[comboPick.lineIndex];
-    if(l){ l.qty = comboPick.qty; l.combo = v.elecciones; l.unitPrice = unidad; }
-  }else{
-    /* Solo se junta con una línea que eligió EXACTAMENTE lo mismo */
-    const sig = comboSig(v.elecciones);
-    const ya = cart.find(c => c.productId === p.id && !c.sizeId && !c.disc && c.manualPrice == null && comboSig(c.combo) === sig && !c.note);
-    if(ya) ya.qty = r3(ya.qty + comboPick.qty);
-    else cart.push({ productId:p.id, qty:comboPick.qty, unitPrice:unidad, combo:v.elecciones });
-  }
-  const n = comboPick.lineIndex != null;
-  comboPick = null;
-  closeModal();
-  vibrate(25);
-  toast(n ? 'Combo actualizado' : 'Combo agregado al carrito', { icon:icon('check'), variant:'toast-success toast-top', subtitle:escapeHtml(p.name), duration:1400 });
-  render();
-}
-
-/** Los grupos para elegir. Lo usan el mostrador y el Menú Digital. */
-function comboPickHTML(p, picks, fn, opts){
-  opts = opts || {};
-  const gs = comboGroupsOf(p);
-  if(!gs.length) return '';
-  picks = picks || {};
-  return gs.map(g => {
-    const eleg = (picks[g.id] || []).filter(x => g.options.some(o => o.id === x));
-    const falta = eleg.length < g.min;
-    const radio = g.max === 1;
-    return `
-      <div class="cbo-pick-g">
-        <div class="cbo-pick-head">
-          <span class="cbo-pick-title">${escapeHtml(g.name)}</span>
-          <span class="cbo-pick-rule ${falta ? 'falta' : ''}">${escapeHtml(comboGroupHint(g))}${falta && g.min > eleg.length ? ' · te falta' : ''}</span>
-        </div>
-        <div class="cbo-pick-list">
-          ${g.options.map(o => {
-            const on = eleg.indexOf(o.id) >= 0;
-            /* Si la opción es un producto del inventario y está agotado, no se puede elegir */
-            const cp = o.productId ? (opts.find ? opts.find(o.productId) : findProduct(o.productId)) : null;
-            const agotado = !!(cp && stockInfo(cp).level === 'out');
-            const tag = agotado ? 'Agotado' : (o.extra > 0 ? '+' + formatMoney(o.extra) : 'Incluido');
-            return `
-              <button type="button" class="cbo-pick ${on ? 'on' : ''}" ${agotado && !on ? 'disabled' : ''}
-                      onclick="${fn}('${g.id}','${o.id}')">
-                <span class="cbo-box ${radio ? 'round' : ''}">${icon('check')}</span>
-                <span class="cbo-pick-txt">${escapeHtml(o.name)}</span>
-                <span class="cbo-pick-tag ${agotado ? 'out' : (o.extra > 0 ? 'extra' : '')}">${escapeHtml(tag)}</span>
-              </button>`;
-          }).join('')}
-        </div>
-      </div>`;
-  }).join('');
-}
-
-/** Resumen de las elecciones, para pintarlo debajo de una línea. */
-function comboSumHTML(elec){
-  if(!Array.isArray(elec) || !elec.length) return '';
-  const por = [];
-  elec.forEach(e => {
-    let g = por.find(x => x.k === (e.gname || ''));
-    if(!g){ g = { k:e.gname || '', items:[] }; por.push(g); }
-    g.items.push(escapeHtml(e.name) + (e.extra > 0 ? ' <i>+' + formatMoney(e.extra) + '</i>' : ''));
-  });
-  return `<div class="cbo-sum">${por.map(g =>
-    `<span class="cbo-sum-li">${g.k ? '<b>' + escapeHtml(g.k) + ':</b> ' : ''}${g.items.join(', ')}</span>`).join('')}</div>`;
 }
 
 /* ---------- Selector de tamaño (medio litro, litro, por kilo, etc.) ---------- */
@@ -7760,7 +7301,7 @@ function whQtyValues(p){
 openQtyPad = function(productId){
   const p = findProduct(productId); if(!p) return;
   const u = productUnit(p);
-  const ya = cart.find(c => c.productId === productId && !c.sizeId && !c.note && !c.disc && !c.combo && c.manualPrice == null);
+  const ya = cart.find(c => c.productId === productId && !c.sizeId && !c.note && !c.disc && c.manualPrice == null);
   const vals = whQtyValues(p);
   if(ya && !vals.some(v => Math.abs(v - ya.qty) < 1e-9)){ return _whOpenQtyPad(productId); }   /* cantidad escrita a mano: se edita escribiéndola */
   qtyPad = { productId, qty: ya ? ya.qty : vals[0], editing: !!ya };
@@ -8070,7 +7611,6 @@ function cartSheetHTML(step){
             <div class="cart-item-name">${escapeHtml(label)} <span class="ci-edit">${icon('edit')}</span></div>
             <div class="cart-item-price">${formatMoney(base)} ${c.sizeLabel || !isFracProduct(p) ? 'c/u' : 'por ' + productUnit(p).short}${stockNote}</div>
             ${tags.length ? `<div class="ci-tags">${tags.join('')}</div>` : ''}
-            ${comboSumHTML(c.combo)}
             ${c.note ? `<div class="ci-note">${icx('note')}${escapeHtml(c.note)}</div>` : ''}
           </div>
           <div class="qty-control">
@@ -8201,12 +7741,6 @@ function openLineEditor(i){
           </div>
           <input id="leDisc" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${c.disc ? c.disc.value : ''}" oninput="leUpdate()">
         </div>
-      </div>` : ''}
-    ${lineCombo(c) ? `
-      <div class="field">
-        <label>Lo que eligió el cliente</label>
-        ${comboSumHTML(c.combo)}
-        <button type="button" class="btn ghost block" style="margin-top:8px;" onclick="closeModal(); openComboPicker('${c.productId}', ${i});">${icon('edit')} Cambiar las elecciones</button>
       </div>` : ''}
     <div class="field">
       <label for="leNote">Nota (opcional)</label>
@@ -8507,19 +8041,6 @@ function saleItemFromCart(c){
   /* Lo que esta línea descuenta del inventario (0.5 L, 2 kg…), para que
      una cancelación o devolución regrese exactamente lo mismo. */
   it.stockUse = (p && !p.custom && stockInfo(p).control) ? lineStockUse(p, c) : 0;
-  /* Combo: se guarda la COPIA de lo que eligió el cliente (nombres y
-     precios de ese momento) y lo que descontaron sus componentes. Así el
-     ticket de hace un mes sigue diciendo lo mismo aunque hoy el combo ya
-     tenga otras opciones u otros precios. */
-  const elec = lineCombo(c);
-  if(elec){
-    it.combo = elec.map(e => Object.assign({}, e));
-    const comp = comboStockUseOf(c).filter(x => {
-      const cp = findProduct(x.productId);
-      return cp && !cp.custom && stockInfo(cp).control;
-    });
-    if(comp.length) it.comboStockUse = comp;
-  }
   return it;
 }
 
@@ -8839,7 +8360,6 @@ function ticketPrintHTML(sale){
         <div class="p-item">
           <div class="p-name"><span>${escapeHtml(it.name)}</span><span class="p-r">${formatMoney(Math.abs(it.price * it.qty))}</span></div>
           <div class="p-qty">${escapeHtml(ticketItemQtyLine(it))}</div>
-          ${Array.isArray(it.combo) && it.combo.length ? it.combo.map(e => `<div class="p-qty">· ${escapeHtml(e.name)}${e.extra > 0 ? ' (+' + formatMoney(e.extra) + ')' : ''}</div>`).join('') : ''}
           ${it.note ? `<div class="p-qty">Nota: ${escapeHtml(it.note)}</div>` : ''}
         </div>`).join('')}
       <hr class="p-sep">
@@ -10120,10 +9640,6 @@ async function escposTicketBytes(sale){
     neg(false);
     for(let i = 1; i < lineas.length; i++) ln(lineas[i]);
     escWrap('  ' + ticketItemQtyLine(it), cols).forEach(ln);
-    /* Las elecciones del combo, una debajo de otra y en orden */
-    if(Array.isArray(it.combo)) it.combo.forEach(e => {
-      escWrap('  - ' + e.name + (e.extra > 0 ? ' (+' + formatMoney(e.extra) + ')' : ''), cols).forEach(ln);
-    });
     if(it.note) escWrap('  Nota: ' + it.note, cols).forEach(ln);
   });
   sep();
@@ -10527,7 +10043,6 @@ function ticketHTML(sale){
           <div class="ticket-item-row">
             <div class="ti-name"><span>${escapeHtml(it.name)}</span><span>${formatMoney(Math.abs(it.price * it.qty))}</span></div>
             <div class="ticket-item-qty">${escapeHtml(ticketItemQtyLine(it))}${it.note ? ' · ' + escapeHtml(it.note) : ''}</div>
-            ${comboSumHTML(it.combo)}
           </div>
         `).join('')}
       </div>
@@ -10839,8 +10354,7 @@ function ticketImageSpec(sale){
     title: biz.title, sub: biz.sub, address: bu.address || '',
     kind: ret ? 'DEVOLUCIÓN ' + (sale.folio || '') : '',
     metas: metas,
-    items: sale.items.map(it => ({ name:it.name, amount:formatMoney(Math.abs(it.price * it.qty)),
-      sub:ticketItemQtyLine(it) + (Array.isArray(it.combo) && it.combo.length ? ' · ' + comboTextOf(it.combo) : '') + (it.note ? ' · ' + it.note : '') })),
+    items: sale.items.map(it => ({ name:it.name, amount:formatMoney(Math.abs(it.price * it.qty)), sub:ticketItemQtyLine(it) + (it.note ? ' · ' + it.note : '') })),
     totals: ticketTotalsRows(sale).map(r => ({ label:r[0], value:r[1], grand:r[2] === 'grand' })),
     extras: extras,
     cancelled: !!sale.cancelled,
@@ -11065,7 +10579,7 @@ function matchesHistoryFilters(sale){
     const hay = saleNorm([
       sale.number, orderNumberLabel(sale.number || 0), sale.folio, sale.table, sale.customerName, sale.payRef,
       sale.menuCode, sale.userName,
-      sale.items.map(it => it.name + ' ' + (it.sku || '') + ' ' + (it.note || '') + ' ' + (Array.isArray(it.combo) ? it.combo.map(e => e.name).join(' ') : '')).join(' ')
+      sale.items.map(it => it.name + ' ' + (it.sku || '') + ' ' + (it.note || '')).join(' ')
     ].join(' '));
     if(!q.split(/\s+/).every(w => hay.indexOf(w) >= 0)) return false;
   }
@@ -11226,25 +10740,14 @@ function itemStockTaken(p, it){
   if(it.stockUse != null) return Math.abs(Number(it.stockUse) || 0);
   return itemStockUse(p, it);
 }
-/** Lo que descontaron los COMPONENTES de un combo vendido. */
-function itemComboTaken(it){
-  if(!it || !Array.isArray(it.comboStockUse)) return [];
-  const tot = Math.abs(Number(it.qty) || 0);
-  return it.comboStockUse.map(c => ({
-    productId: c.productId,
-    /* En una devolución parcial la línea trae menos cantidad: se regresa
-       la parte proporcional de lo que gastaron los componentes. */
-    qty: Math.abs(r3(Number(c.qty) || 0))
-  })).filter(c => c.productId && c.qty > 0);
-}
 /** Lo que una venta descontó del inventario, por producto ({ id: cantidad }). */
 function saleStockTaken(sale, inventario){
   const out = {};
-  const sumar = (pid, q) => { const p = inventario.find(x => x.id === pid); if(p && stockInfo(p).control && q > 0) out[pid] = r3((out[pid] || 0) + q); };
   (sale.items || []).forEach(it => {
     const p = inventario.find(x => x.id === it.productId);
-    if(p && stockInfo(p).control) sumar(p.id, itemStockTaken(p, it));
-    itemComboTaken(it).forEach(c => sumar(c.productId, c.qty));
+    if(!p || !stockInfo(p).control) return;
+    const q = itemStockTaken(p, it);
+    if(q > 0) out[p.id] = r3((out[p.id] || 0) + q);
   });
   return out;
 }
@@ -11252,25 +10755,20 @@ function saleStockTaken(sale, inventario){
 function saleTookStock(sale){
   return (sale.items || []).some(it => {
     const p = findProduct(it.productId);
-    if(p && !p.custom && stockInfo(p).control && itemStockTaken(p, it) > 0) return true;
-    return itemComboTaken(it).some(c => { const cp = findProduct(c.productId); return cp && !cp.custom && stockInfo(cp).control; });
+    return p && !p.custom && stockInfo(p).control && itemStockTaken(p, it) > 0;
   });
 }
 /** Regresa artículos al inventario (cancelaciones y devoluciones). */
 function restockItems(items){
   const inventario = DB.getProducts();
   let cambio = false;
-  const devolver = (pid, q) => {
-    const p = inventario.find(x => x.id === pid);
-    if(!p || !stockInfo(p).control || !(q > 0)) return;
-    p.stock = r3(Number(p.stock) + q);
-    cambio = true;
-  };
   items.forEach(it => {
     const p = inventario.find(x => x.id === it.productId);
-    if(p && stockInfo(p).control) devolver(p.id, itemStockTaken(p, it));
-    /* Los componentes del combo también regresan */
-    itemComboTaken(it).forEach(c => devolver(c.productId, c.qty));
+    if(!p || !stockInfo(p).control) return;
+    const q = itemStockTaken(p, it);
+    if(!(q > 0)) return;
+    p.stock = r3(Number(p.stock) + q);
+    cambio = true;
   });
   if(cambio) DB.saveProducts(inventario);
   return cambio;
@@ -12474,7 +11972,7 @@ function openProductForm(productId){
         <span class="acc-sub" id="pfSizesSub">Por ejemplo ${su.ex}. Cada tamaño con su propio precio.</span>
       </span>
       <label class="switch">
-        <input id="pfSizesOn" type="checkbox" ${sizesOn ? 'checked' : ''} onchange="toggleSizeFields(this.checked); if(this.checked) pfSizesApagaCombo();">
+        <input id="pfSizesOn" type="checkbox" ${sizesOn ? 'checked' : ''} onchange="toggleSizeFields(this.checked)">
         <span class="track"></span>
       </label>
     </div>
@@ -12499,269 +11997,13 @@ function openProductForm(productId){
       <div class="field-hint" id="pfSizesHint">Cada tamaño tiene su propio precio: ${su.hint}, tú decides cuánto vale cada uno.</div>
     </div>
 
-    <div class="section-title">Combo con elecciones</div>
-    <div class="toggle-row" style="padding-top:0;">
-      <span class="acc-ico green">${icon('plate')}</span>
-      <span class="acc-txt">
-        <span class="acc-label">Configurar como combo</span>
-        <span class="acc-sub">Permite elegir bebidas, acompañamientos, salsas o extras.</span>
-      </span>
-      <label class="switch">
-        <input id="pfComboOn" type="checkbox" ${comboIsOn(editing) ? 'checked' : ''} onchange="pfComboToggle(this.checked)">
-        <span class="track"></span>
-      </label>
-    </div>
-    <div id="pfComboBox" style="display:${comboIsOn(editing) ? 'block' : 'none'}; margin-top:14px;">
-      <div id="pfComboGroups"></div>
-      <button type="button" class="btn ghost block cbo-add" onclick="pfComboAddGroup()">${icon('plus')} Agregar grupo de elecciones</button>
-      <div class="field-hint" id="pfComboHint">Tú eliges exactamente qué productos ofrece cada grupo. Puedes vincular productos de tu inventario (así se descuentan al vender) o escribir opciones simples como “Sin salsa”.</div>
-    </div>
-
     <button class="btn primary block" style="margin-top:18px;" onclick="saveProductForm('${editing ? editing.id : ''}')">${editing ? 'Guardar cambios' : 'Agregar producto'}</button>
   `;
   openModal(html, { dismissible:true });
-  /* Copia de trabajo de los grupos: se edita aquí y se guarda al final.
-     Lleva los ids originales, así que lo que un cliente ya eligió se
-     sigue reconociendo aunque se cambien nombres, precios u orden. */
-  pfCombo = comboGroupsOf(editing).map(g => ({
-    id:g.id, name:g.name, required:g.required, min:g.min, max:g.max,
-    options:g.options.map(o => ({ id:o.id, name:o.name, extra:o.extra, productId:o.productId, qty:o.qty }))
-  }));
-  pfComboProdId = editing ? editing.id : null;
-  pfComboRender();
   updateProductFormWarnings();
   updateStockFieldLabels();
   if(typeof mdOnUnitChange === 'function') mdOnUnitChange();
   if(typeof vpEnhanceProductForm === 'function') vpEnhanceProductForm(editing);
-}
-
-/* =========================================================================
-   CONFIGURAR UN COMBO  ·  Productos/Inventario → Agregar o Editar producto
-                            → Opciones avanzadas → "Configurar como combo"
-   -------------------------------------------------------------------------
-   Se arma por pasos: primero prendes el interruptor, luego agregas un
-   grupo ("Elige tu bebida"), y dentro del grupo las opciones que TÚ
-   quieras ofrecer. Nada se mete automáticamente.
-========================================================================= */
-let pfCombo = [];           /* copia de trabajo mientras el formulario está abierto */
-let pfComboProdId = null;   /* producto que se está editando (para evitar círculos) */
-
-function pfComboToggle(on){
-  const box = document.getElementById('pfComboBox');
-  /* Un producto se vende POR TAMAÑO o se arma COMO COMBO, no las dos.
-     Si se prende el combo, se apagan los tamaños (y al revés), para que
-     el cliente nunca vea dos precios peleándose. */
-  const sz = document.getElementById('pfSizesOn');
-  if(on && sz && sz.checked){
-    sz.checked = false;
-    toggleSizeFields(false);
-    toast('Se apagaron los tamaños', { icon:icon('alert'), duration:3200,
-      subtitle:'Un producto se vende por tamaño o se arma como combo, no las dos a la vez.' });
-  }
-  if(box) box.style.display = on ? 'block' : 'none';
-  if(on && !pfCombo.length) pfComboAddGroup();
-  else if(on) pfComboRender();
-}
-/** Al prender los tamaños se apaga el combo (el mismo motivo, al revés). */
-function pfSizesApagaCombo(){
-  const cb = document.getElementById('pfComboOn');
-  if(!cb || !cb.checked) return;
-  cb.checked = false;
-  const box = document.getElementById('pfComboBox');
-  if(box) box.style.display = 'none';
-  toast('Se apagó el combo', { icon:icon('alert'), duration:3200,
-    subtitle:'Un producto se vende por tamaño o se arma como combo, no las dos a la vez.' });
-}
-function pfComboAddGroup(){
-  if(pfCombo.length >= COMBO_MAX_GROUPS){
-    toast('Ya tienes ' + COMBO_MAX_GROUPS + ' grupos', { icon:icon('alert'), subtitle:'Es el máximo por producto' });
-    return;
-  }
-  pfCombo.push({ id:comboId('cg'), name:'', required:true, min:1, max:1, options:[pfComboNewOpt()] });
-  pfComboRender();
-  /* El cursor va al nombre del grupo nuevo */
-  setTimeout(() => { const el = document.querySelector('#pfComboGroups .cbo-group:last-child .cbo-g-name'); if(el) el.focus(); }, 60);
-}
-function pfComboNewOpt(){ return { id:comboId('co'), name:'', extra:0, productId:null, qty:1 }; }
-function pfComboAddOpt(gi){
-  const g = pfCombo[gi]; if(!g) return;
-  if(g.options.length >= COMBO_MAX_OPTS){
-    toast('Ya tienes ' + COMBO_MAX_OPTS + ' opciones en este grupo', { icon:icon('alert') });
-    return;
-  }
-  g.options.push(pfComboNewOpt());
-  pfComboRender();
-}
-function pfComboDelGroup(gi){
-  const g = pfCombo[gi]; if(!g) return;
-  const nombre = g.name || 'este grupo';
-  askConfirm({ title:'¿Quitar el grupo?', text:'Se quita “' + escapeHtml(nombre) + '” y sus opciones.', ok:'Quitar', danger:true, icon:icon('trash') }, () => {
-    pfCombo.splice(gi, 1);
-    pfComboRender();
-  });
-}
-function pfComboDelOpt(gi, oi){
-  const g = pfCombo[gi]; if(!g) return;
-  g.options.splice(oi, 1);
-  if(!g.options.length) g.options.push(pfComboNewOpt());
-  pfComboFixRules(g);
-  pfComboRender();
-}
-function pfComboMove(gi, dir){
-  const j = gi + dir;
-  if(j < 0 || j >= pfCombo.length) return;
-  const t = pfCombo[gi]; pfCombo[gi] = pfCombo[j]; pfCombo[j] = t;
-  pfComboRender();
-}
-function pfComboMoveOpt(gi, oi, dir){
-  const g = pfCombo[gi]; if(!g) return;
-  const j = oi + dir;
-  if(j < 0 || j >= g.options.length) return;
-  const t = g.options[oi]; g.options[oi] = g.options[j]; g.options[j] = t;
-  pfComboRender();
-}
-/** Los límites nunca quedan imposibles (mínimo mayor que el máximo, etc.). */
-function pfComboFixRules(g){
-  const n = g.options.length;
-  g.max = Math.max(1, Math.min(Math.round(Number(g.max) || 1), n));
-  g.min = Math.max(0, Math.round(Number(g.min) || 0));
-  if(g.required && g.min < 1) g.min = 1;
-  if(!g.required) g.min = 0;
-  g.min = Math.min(g.min, g.max);
-}
-function pfComboSet(gi, campo, valor){
-  const g = pfCombo[gi]; if(!g) return;
-  if(campo === 'name'){ g.name = String(valor).slice(0, 60); return; }    /* sin repintar: no se pierde el cursor */
-  if(campo === 'required'){ g.required = !!valor; pfComboFixRules(g); pfComboRender(); return; }
-  if(campo === 'min' || campo === 'max'){ g[campo] = Number(valor); pfComboFixRules(g); pfComboRender(); }
-}
-function pfComboSetOpt(gi, oi, campo, valor){
-  const g = pfCombo[gi]; if(!g) return;
-  const o = g.options[oi]; if(!o) return;
-  if(campo === 'productId'){
-    o.productId = valor || null;
-    /* Al vincular un producto, su nombre y su precio se proponen solos */
-    if(o.productId){
-      const p = findProduct(o.productId);
-      if(p) o.name = p.name;
-    }
-    pfComboRender();
-    return;
-  }
-  if(campo === 'name'){ o.name = String(valor).slice(0, 60); return; }
-  if(campo === 'extra'){ o.extra = Math.max(0, round2(Number(valor) || 0)); return; }
-  if(campo === 'qty'){ o.qty = Math.max(0, r3(Number(valor) || 0)) || 1; }
-}
-
-function pfComboRender(){
-  const box = document.getElementById('pfComboGroups');
-  if(!box) return;
-  if(!pfCombo.length){
-    box.innerHTML = `<div class="cbo-empty">Todavía no hay grupos.<br>Agrega el primero, por ejemplo “Elige tu bebida”.</div>`;
-    return;
-  }
-  const vinculables = comboLinkables(pfComboProdId);
-  box.innerHTML = `<div class="cbo-groups">${pfCombo.map((g, gi) => {
-    const opciones = g.options.map((o, oi) => {
-      const p = o.productId ? findProduct(o.productId) : null;
-      const st = p ? stockInfo(p) : null;
-      return `
-        <div class="cbo-opt">
-          <div class="cbo-opt-main">
-            <select onchange="pfComboSetOpt(${gi},${oi},'productId',this.value)" aria-label="Producto de esta opción">
-              <option value="" ${o.productId ? '' : 'selected'}>Opción simple (sin inventario)</option>
-              ${vinculables.map(x => `<option value="${x.id}" ${o.productId === x.id ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('')}
-              ${o.productId && !vinculables.some(x => x.id === o.productId) ? `<option value="${o.productId}" selected>${escapeHtml(p ? p.name : 'Producto que ya no existe')}</option>` : ''}
-            </select>
-            <div class="cbo-opt-row">
-              <input type="text" maxlength="60" placeholder="Cómo se llama (ej. Sin salsa)" value="${escapeHtml(o.name)}"
-                     oninput="pfComboSetOpt(${gi},${oi},'name',this.value)" aria-label="Nombre de la opción">
-              <div class="cbo-extra">
-                <input type="number" min="0" step="0.5" inputmode="decimal" placeholder="Incluido" value="${o.extra > 0 ? o.extra : ''}"
-                       oninput="pfComboSetOpt(${gi},${oi},'extra',this.value)" aria-label="Precio adicional de la opción">
-              </div>
-            </div>
-            ${p ? `<div class="cbo-hint">Gasta <b>${escapeHtml(fmtStock(p, o.qty || 1))}</b> de ${escapeHtml(p.name)} por cada combo${st && st.control ? ' · ' + escapeHtml(st.label) : ' · sin control de existencias'}</div>` : ''}
-          </div>
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <button type="button" class="cbo-ico-btn" ${oi === 0 ? 'disabled' : ''} onclick="pfComboMoveOpt(${gi},${oi},-1)" aria-label="Subir opción">${icon('chevronUp')}</button>
-            <button type="button" class="cbo-ico-btn danger" onclick="pfComboDelOpt(${gi},${oi})" aria-label="Quitar opción">${icon('trash')}</button>
-            <button type="button" class="cbo-ico-btn" ${oi === g.options.length - 1 ? 'disabled' : ''} onclick="pfComboMoveOpt(${gi},${oi},1)" aria-label="Bajar opción">${icon('chevronDown')}</button>
-          </div>
-        </div>`;
-    }).join('');
-    return `
-      <div class="cbo-group" data-gi="${gi}">
-        <div class="cbo-g-head">
-          <span class="cbo-g-n">${gi + 1}</span>
-          <input class="cbo-g-name" type="text" maxlength="60" placeholder="Ej. Elige tu bebida" value="${escapeHtml(g.name)}"
-                 oninput="pfComboSet(${gi},'name',this.value)" aria-label="Nombre del grupo">
-          <button type="button" class="cbo-ico-btn" ${gi === 0 ? 'disabled' : ''} onclick="pfComboMove(${gi},-1)" aria-label="Subir grupo">${icon('chevronUp')}</button>
-          <button type="button" class="cbo-ico-btn" ${gi === pfCombo.length - 1 ? 'disabled' : ''} onclick="pfComboMove(${gi},1)" aria-label="Bajar grupo">${icon('chevronDown')}</button>
-          <button type="button" class="cbo-ico-btn danger" onclick="pfComboDelGroup(${gi})" aria-label="Quitar grupo">${icon('trash')}</button>
-        </div>
-        <div class="cbo-req">
-          <span>Obligatorio para el cliente</span>
-          <label class="switch">
-            <input type="checkbox" ${g.required ? 'checked' : ''} onchange="pfComboSet(${gi},'required',this.checked)">
-            <span class="track"></span>
-          </label>
-        </div>
-        <div class="cbo-g-rules">
-          <div class="field">
-            <label>Mínimo que elige</label>
-            <input type="number" min="0" max="${g.options.length}" step="1" inputmode="numeric" value="${g.min}" onchange="pfComboSet(${gi},'min',this.value)">
-          </div>
-          <div class="field">
-            <label>Máximo que elige</label>
-            <input type="number" min="1" max="${g.options.length}" step="1" inputmode="numeric" value="${g.max}" onchange="pfComboSet(${gi},'max',this.value)">
-          </div>
-        </div>
-        <div class="cbo-opts">${opciones}</div>
-        <button type="button" class="btn ghost block cbo-add" onclick="pfComboAddOpt(${gi})">${icon('plus')} Agregar opción</button>
-        <div class="cbo-hint">${escapeHtml(comboGroupHint({ min:g.min, max:g.max, required:g.required }))}. Deja el precio adicional vacío si la opción va incluida.</div>
-      </div>`;
-  }).join('')}</div>`;
-}
-
-/** Revisa la configuración del combo antes de guardar. Regresa null si todo bien. */
-function pfComboValidate(){
-  const on = (document.getElementById('pfComboOn') || {}).checked;
-  if(!on) return { on:false, groups:[] };
-  document.querySelectorAll('#pfComboGroups .cbo-group.has-error').forEach(e => e.classList.remove('has-error'));
-  const marcar = (gi, msg) => {
-    const el = document.querySelector('#pfComboGroups .cbo-group[data-gi="' + gi + '"]');
-    if(el){ el.classList.add('has-error'); try{ el.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){} }
-    return { error:msg };
-  };
-  if(!pfCombo.length) return { error:'Agrega al menos un grupo de elecciones, o apaga “Configurar como combo”' };
-  for(let gi = 0; gi < pfCombo.length; gi++){
-    const g = pfCombo[gi];
-    if(!String(g.name || '').trim()) return marcar(gi, 'Ponle nombre al grupo ' + (gi + 1) + ' (ej. “Elige tu bebida”)');
-    const buenas = g.options.filter(o => String(o.name || '').trim() || o.productId);
-    if(!buenas.length) return marcar(gi, 'El grupo “' + g.name + '” necesita al menos una opción');
-    const sinNombre = buenas.find(o => !String(o.name || '').trim());
-    if(sinNombre) return marcar(gi, 'Una opción de “' + g.name + '” no tiene nombre');
-    /* Límites imposibles */
-    if(Number(g.max) < 1) return marcar(gi, 'El máximo de “' + g.name + '” debe ser 1 o más');
-    if(Number(g.max) > buenas.length) return marcar(gi, '“' + g.name + '” deja elegir ' + g.max + ' pero solo tiene ' + buenas.length + (buenas.length === 1 ? ' opción' : ' opciones'));
-    if(Number(g.min) > Number(g.max)) return marcar(gi, 'En “' + g.name + '” el mínimo no puede ser mayor que el máximo');
-    if(g.required && Number(g.min) < 1) return marcar(gi, '“' + g.name + '” es obligatorio: el mínimo debe ser 1 o más');
-    /* Referencias circulares: un combo no puede traerse a sí mismo */
-    const circulo = buenas.find(o => o.productId && comboLinkCycle(pfComboProdId, o.productId));
-    if(circulo) return marcar(gi, '“' + circulo.name + '” lleva de regreso a este mismo combo. Elige otro producto.');
-    /* Un mismo producto repetido dentro del grupo confunde al cliente */
-    const vistos = {};
-    const rep = buenas.find(o => { const k = o.productId || ('n:' + String(o.name).trim().toLowerCase()); if(vistos[k]) return true; vistos[k] = 1; return false; });
-    if(rep) return marcar(gi, '“' + rep.name + '” está dos veces en “' + g.name + '”');
-  }
-  /* Ya validado: se limpia con las mismas reglas que usa el menú publicado */
-  const groups = comboCleanGroups(pfCombo.map(g => ({
-    id:g.id, name:g.name, required:g.required, min:g.min, max:g.max,
-    options:g.options.filter(o => String(o.name || '').trim() || o.productId)
-  })));
-  if(!groups.length) return { error:'La configuración del combo quedó vacía. Revisa los grupos y sus opciones.' };
-  return { on:true, groups:groups };
 }
 
 /* Redimensiona/recorta cualquier imagen a un cuadro fijo (cover) para que
@@ -13142,26 +12384,6 @@ function saveProductForm(productId){
   const wholesaleMin = (!sizesOn && wmEl && wmEl.value !== '') ? r3(parseFloat(wmEl.value)) : null;
   const wholeOk = wholesalePrice > 0 && wholesaleMin > 0;
 
-  /* ---- Combo con elecciones ---- */
-  const combo = (typeof pfComboValidate === 'function' && document.getElementById('pfComboOn'))
-    ? pfComboValidate()
-    : { on: !!(productId && comboIsOn(DB.getProducts().find(x => x.id === productId))), groups: comboGroupsOf(DB.getProducts().find(x => x.id === productId)) };
-  /* Red de seguridad: si por lo que sea llegaran los dos prendidos,
-     mandan los tamaños (es lo que el producto ya tenía) y el combo se
-     guarda apagado, sin borrar su configuración. */
-  if(combo.on && sizesOn){
-    combo.on = false;
-    toast('Este producto se vende por tamaño', { icon:icon('alert'),
-      subtitle:'Se guardó sin el combo. Apaga los tamaños si quieres usarlo como combo.', duration:4000 });
-  }
-  if(combo.error){
-    /* Se abren las Opciones avanzadas para que se vea dónde está el problema */
-    const sh = document.querySelector('#modal-layer .modal-sheet');
-    if(sh && sh.vpSetAdv) sh.vpSetAdv(true);
-    toast('Revisa el combo', { variant:'toast-danger', icon:icon('alert'), subtitle:combo.error, duration:4200 });
-    ok = false;
-  }
-
   if(!ok){
     if(firstErrorEl){ firstErrorEl.focus({ preventScroll:true }); firstErrorEl.scrollIntoView({ behavior:'smooth', block:'center' }); }
     return;
@@ -13179,15 +12401,10 @@ function saveProductForm(productId){
     p.sku = sku || null;
     p.wholesalePrice = wholeOk ? wholesalePrice : null;
     p.wholesaleMin = wholeOk ? wholesaleMin : null;
-    /* Combo: los grupos conservan sus ids, así que los pedidos que ya
-       traían elecciones de este producto siguen cuadrando. */
-    p.comboOn = !!combo.on;
-    p.comboGroups = combo.on ? combo.groups : [];
     p.updatedAt = now;
   } else {
     products.push({ id:uid('p'), name, price: round2(price), cost: cost === null ? null : round2(cost), category, active:true, image: productFormImage, stock: stock, minStock: minStock, sizesOn: sizesOn, sizeUnit: sizeUnit, sizes: sizes,
-                    sku: sku || null, wholesalePrice: wholeOk ? wholesalePrice : null, wholesaleMin: wholeOk ? wholesaleMin : null,
-                    comboOn: !!combo.on, comboGroups: combo.on ? combo.groups : [], createdAt: now, updatedAt: now });
+                    sku: sku || null, wholesalePrice: wholeOk ? wholesalePrice : null, wholesaleMin: wholeOk ? wholesaleMin : null, createdAt: now, updatedAt: now });
     rememberProductCategory(category);   /* el siguiente producto nuevo sale con esta categoría */
   }
   if(typeof invContext === 'function') invContext({ type:'ajuste', note: productId ? 'Cambio desde el producto' : 'Producto nuevo' });
@@ -13649,6 +12866,43 @@ function hideAuth(){
   clearInterval(authResendTimer);
   setThemeColor('#F3F4FA');
 }
+/* ---------------------------------------------------------------------
+   FOCO AUTOMÁTICO SIN TECLADO QUE SALTE SOLO
+   ---------------------------------------------------------------------
+   Antes, al pintar una pantalla con un campo (correo, contraseña, NIP),
+   la app le daba el foco sola y Android abría el teclado encima. En
+   iPhone no pasaba porque Safari ignora el foco que no viene de un
+   toque; Android sí lo obedece.
+
+   Ahora: en pantallas táctiles (celular, tableta y la app de Android)
+   NO se enfoca ningún campo solo. El teclado sale cuando la persona
+   toca el campo, que es lo normal. En computadora con mouse sí se
+   conserva el foco automático: ahí no hay teclado en pantalla y ahorra
+   un clic.
+
+   Se revisa en cada llamada (no se guarda) para que un aparato que
+   cambia de modo —una tableta con teclado puesto o quitado, o la app en
+   pantalla partida— se comporte bien sin recargar.
+--------------------------------------------------------------------- */
+function vpTactil(){
+  try{
+    if(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+    if(navigator.maxTouchPoints > 0 && !(window.matchMedia && window.matchMedia('(pointer: fine)').matches)) return true;
+  }catch(e){}
+  return false;
+}
+/** Enfoca un campo SOLO donde no hay teclado en pantalla. */
+function vpFoco(el, ms, seleccionar){
+  if(!el || vpTactil()) return;
+  const poner = () => {
+    try{
+      el.focus({ preventScroll:true });
+      if(seleccionar && el.select) el.select();
+    }catch(e){ try{ el.focus(); }catch(_){} }
+  };
+  if(ms > 0) setTimeout(poner, ms); else poner();
+}
+
 /* Color de la barra del navegador en el celular: igual al fondo de lo que se ve */
 function setThemeColor(c){
   const m = document.querySelector('meta[name="theme-color"]');
@@ -13688,19 +12942,15 @@ function renderAuth(){
   layer.innerHTML = `<div class="auth-screen${plano ? ' auth-plain' : ''}" key="${s}">${html}${authSideFor(s, html)}</div>`;
   setThemeColor(!plano && html.indexOf('auth-hero') !== -1 ? '#273146' : '#FFFFFF');
 
-  if(s === 'userpin'){
-    const pin = document.getElementById('userPinInput');
-    if(pin) setTimeout(() => pin.focus(), 180);
-  }
+  /* El teclado ya no salta solo: en celular y en la app de Android el
+     campo se enfoca cuando la persona lo toca. En computadora sigue
+     enfocándose solo (ahí no hay teclado en pantalla). */
+  if(s === 'userpin') vpFoco(document.getElementById('userPinInput'), 180);
 
   if(s === 'signup' || s === 'login'){
-    const inp = document.getElementById(authState.email && document.getElementById('authPw') ? 'authPw' : 'authEmail');
-    if(inp) setTimeout(() => inp.focus(), 180);
+    vpFoco(document.getElementById(authState.email && document.getElementById('authPw') ? 'authPw' : 'authEmail'), 180);
   }
-  if(s === 'otp'){
-    const first = document.getElementById('otp0');
-    if(first) setTimeout(() => first.focus(), 180);
-  }
+  if(s === 'otp') vpFoco(document.getElementById('otp0'), 180);
   if(s === 'name'){
     /* Acomoda el letrero de la tienda ya que está pintado y se conocen
        las medidas reales de la caja. */
@@ -15408,6 +14658,9 @@ function authUserPinHTML(){
       </div>
       <div class="field" style="max-width:220px; margin:18px auto 0;">
         <input id="userPinInput" class="phone-input" type="tel" inputmode="numeric" maxlength="4"
+               name="nip-${Math.random().toString(36).slice(2, 10)}"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               data-lpignore="true" data-1p-ignore data-form-type="other" data-bwignore
                style="text-align:center; letter-spacing:10px; font-size:22px;"
                placeholder="••••" oninput="onUserPinInput(this)">
       </div>
@@ -17732,38 +16985,18 @@ function dmAmountOf(pid){ return dm.cart.filter(l => l.productId === pid).reduce
 function dmUnits(){ return dm.cart.length; }
 function dmMaxFor(p){ const st = stockInfo(p); return st.control ? st.stock : Infinity; }
 /* Lo que el pedido ya ocupa de las existencias (medio kilo = 0.5 kg). */
-/* Lo que el pedido ya ocupa de un producto: como línea suelta Y como
-   componente de algún combo del carrito. Con "salvo" se deja fuera la
-   línea que se está editando, para que no se cuente a sí misma. */
-function dmStockUse(pid, salvo){
-  const p = dmFind(pid);
-  return r3(dm.cart.reduce((a, l, i) => {
-    if(salvo != null && i === salvo) return a;
-    let q = (l.productId === pid && p) ? lineStockUse(p, l) : 0;
-    comboStockUseOf(l).forEach(c => { if(c.productId === pid) q = r3(q + c.qty); });
-    return a + q;
-  }, 0));
-}
+function dmStockUse(pid){ const p = dmFind(pid); return r3(dm.cart.filter(l => l.productId === pid).reduce((a, l) => a + lineStockUse(p, l), 0)); }
 function dmUseOf(p, sizeId, qty){ return lineStockUse(p, { sizeId:sizeId || null, qty:qty }); }
-function dmAddLine(p, qty, sizeId, note, elec){
+function dmAddLine(p, qty, sizeId, note){
   note = (note || '').trim();
   const size = sizeId ? (p.sizes || []).find(s => s.id === sizeId) : null;
-  const sig = comboSig(elec);
-  /* Dos combos se juntan en una línea SOLO si eligieron exactamente lo
-     mismo (y mismo tamaño y misma nota). Si no, van en líneas aparte. */
-  const ex = dm.cart.find(l => l.productId === p.id && (l.sizeId || null) === (sizeId || null) && l.note === note && comboSig(l.combo) === sig);
-  if(ex){ ex.qty = r3(ex.qty + qty); dmCartSave(); return; }
-  const linea = { productId:p.id, sizeId:sizeId || null, sizeLabel:size ? size.label : null,
-                  unit:size ? 'pieza' : productUnit(p).id, qty:r3(qty),
-                  price: round2((size ? size.price : p.price) + comboExtraOf(elec)), note };
-  if(elec && elec.length) linea.combo = elec;
-  dm.cart.push(linea);
-  dmCartSave();
+  const ex = dm.cart.find(l => l.productId === p.id && (l.sizeId || null) === (sizeId || null) && l.note === note);
+  if(ex) ex.qty = r3(ex.qty + qty);
+  else dm.cart.push({ productId:p.id, sizeId:sizeId || null, sizeLabel:size ? size.label : null,
+                      unit:size ? 'pieza' : productUnit(p).id, qty:r3(qty), price:size ? size.price : p.price, note });
 }
 function dmStepCard(pid, dir){
   const p = dmFind(pid); if(!p) return;
-  /* Combo: se abre su hoja para elegir, no se agrega de corrido */
-  if(comboNeedsPick(p)){ if(dir > 0) dmOpenProduct(pid); return; }
   const step = productStep(p);
   if(dir > 0){
     if(dmStockUse(pid) + step > dmMaxFor(p) + 1e-9){ dmToast('Ya no hay más existencias'); return; }
@@ -17783,19 +17016,9 @@ function dmStepLine(i, dir){
   const l = dm.cart[i]; if(!l) return;
   const p = dmFind(l.productId);
   const s = l.sizeId ? 1 : productStep(p);
-  if(dir > 0 && p){
-    if(dmStockUse(p.id) + dmUseOf(p, l.sizeId, s) > dmMaxFor(p) + 1e-9){ dmToast('Ya no hay más existencias', 'warn'); return; }
-    /* Un combo más también necesita un componente más de cada opción */
-    const sinComp = comboComponents(lineCombo(l) || []).some(c => {
-      const cp = dmFind(c.productId); if(!cp) return false;
-      const max = dmMaxFor(cp);
-      return max !== Infinity && dmStockUse(c.productId) + r3(c.qty * s) > max + 1e-9;
-    });
-    if(sinComp){ dmToast('Ya no hay existencias de una de tus elecciones', 'warn'); return; }
-  }
+  if(dir > 0 && p && dmStockUse(p.id) + dmUseOf(p, l.sizeId, s) > dmMaxFor(p) + 1e-9){ dmToast('Ya no hay más existencias'); return; }
   l.qty = r3(l.qty + dir * s);
   if(l.qty < s - 1e-9) dm.cart.splice(i, 1);
-  dmCartSave();
   dmRefreshCards();
   if(!dm.cart.length){ dmCloseSheet(); return; }
   dmOpenSheet('cart');
@@ -17806,9 +17029,7 @@ function dmQtyText(p, q){ return hasSizes(p) ? fmtNum(q) : (productUnit(p).frac 
 function dmCardBar(p, paused){
   const q = dmQtyOf(p.id);
   const out = stockInfo(p).level === 'out';
-  /* Un combo siempre pasa por su hoja: ahí se eligen bebida, salsas y
-     extras. Nunca se agrega "a ciegas" con el + de la tarjeta. */
-  if(q > 0 && !hasSizes(p) && !comboNeedsPick(p)){
+  if(q > 0 && !hasSizes(p)){
     return `<div class="dm-bar">
       <div class="dm-q">
         <button onclick="dmStepCard('${p.id}',-1)" aria-label="Quitar">−</button>
@@ -17823,8 +17044,6 @@ function dmCardBar(p, paused){
   }
   const price = hasSizes(p)
     ? `<small>Desde</small> ${formatMoney(Math.min.apply(null, p.sizes.map(s => s.price)))}`
-    : comboNeedsPick(p)
-    ? `<small>Desde</small> ${formatMoney(p.price)}`
     : `${formatMoney(p.price)}${productUnit(p).plain ? '' : '<small> /' + productUnit(p).short + '</small>'}`;
   return `<div class="dm-bar" onclick="dmOpenProduct('${p.id}')" style="cursor:pointer;"><div class="dm-price">${price}</div>${out ? '' : ''}</div>`;
 }
@@ -18031,42 +17250,9 @@ function dmCloseSheet(){
   setTimeout(() => { if(ov.parentNode) ov.parentNode.removeChild(ov); }, 260);
 }
 
-function dmOpenProduct(pid, lineIndex){
+function dmOpenProduct(pid){
   const p = dmFind(pid); if(!p) return;
-  /* Al abrir desde el carrito se traen las elecciones de esa línea para
-     poder cambiarlas (editar sus elecciones sin volver a empezar). */
-  const l = (lineIndex != null) ? dm.cart[lineIndex] : null;
-  const picks = {};
-  if(l && Array.isArray(l.combo)) l.combo.forEach(e => { (picks[e.gid] = picks[e.gid] || []).push(e.oid); });
-  dm.pd = {
-    id:pid,
-    sizeId: l ? (l.sizeId || null) : (hasSizes(p) ? p.sizes[0].id : null),
-    qty: l ? l.qty : productStep(p),
-    note: l ? (l.note || '') : '',
-    picks: picks,
-    line: (lineIndex == null ? null : lineIndex)
-  };
-  dmOpenSheet('product');
-}
-/** El cliente toca una opción del combo. */
-function dmPdPick(gid, oid){
-  if(!dm.pd) return;
-  const p = dmFind(dm.pd.id); if(!p) return;
-  const g = comboGroupsOf(p).find(x => x.id === gid); if(!g) return;
-  dm.pd.picks = dm.pd.picks || {};
-  const lista = dm.pd.picks[gid] = (dm.pd.picks[gid] || []).filter(x => g.options.some(o => o.id === x));
-  const i = lista.indexOf(oid);
-  if(i >= 0){
-    if(g.max === 1 && g.min >= 1) return;        /* obligatorio de uno: se cambia, no se vacía */
-    lista.splice(i, 1);
-  }else{
-    if(g.max === 1) dm.pd.picks[gid] = [oid];
-    else{
-      if(lista.length >= g.max){ dmToast('En “' + g.name + '” puedes elegir máximo ' + g.max, 'warn'); return; }
-      lista.push(oid);
-    }
-  }
-  dmVib(8);
+  dm.pd = { id:pid, sizeId:hasSizes(p) ? p.sizes[0].id : null, qty:productStep(p), note:'' };
   dmOpenSheet('product');
 }
 function dmProductHTML(){
@@ -18075,10 +17261,7 @@ function dmProductHTML(){
   const c = categoryOf(p.category);
   const u = productUnit(p);
   const size = dm.pd.sizeId ? p.sizes.find(s => s.id === dm.pd.sizeId) : null;
-  /* Combo: el precio de la línea es el base más lo que eligió el cliente */
-  const cbo = comboValidate(p, dm.pd.picks);
-  const esCombo = comboNeedsPick(p);
-  const price = round2((size ? size.price : p.price) + (esCombo ? cbo.extra : 0));
+  const price = size ? size.price : p.price;
   const out = stockInfo(p).level === 'out';
   const step = productStep(p);
   const qtyTxt = size ? fmtNum(dm.pd.qty) : (u.frac ? fmtQty(dm.pd.qty, u.id) : fmtNum(dm.pd.qty));
@@ -18095,11 +17278,9 @@ function dmProductHTML(){
       <span class="dm-unit" style="margin:0;">${catDot(c)}${escapeHtml(c.name)}</span>
       ${unitTagText(p) ? `<span class="dm-unit" style="margin:0;">${unitTagText(p)}${!hasSizes(p) && u.frac ? ' · de ' + fmtQty(step, u.id) + ' en ' + fmtQty(step, u.id) : ''}</span>` : ''}
       ${out ? '<span class="md-pill st-pendiente">Agotado</span>' : ''}
-      ${esCombo ? '<span class="dm-unit" style="margin:0;">Combo · tú eliges</span>' : ''}
     </div>
     ${hasSizes(p) ? `<div class="field"><label style="display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px;">Elige el tamaño</label>
       <div class="dm-sizes">${p.sizes.map(s => `<button class="dm-size ${s.id === dm.pd.sizeId ? 'active' : ''}" onclick="dmPickSize('${s.id}')"><span>${escapeHtml(s.label)}</span><span>${formatMoney(s.price)}</span></button>`).join('')}</div></div>` : ''}
-    ${esCombo ? `<div class="field">${comboPickHTML(p, dm.pd.picks, 'dmPdPick', { find:dmFind })}</div>` : ''}
     <div class="field">
       <label for="dmNote" style="display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px;">Instrucciones especiales</label>
       <textarea id="dmNote" placeholder="Ej: Empacar por separado y avisar al llegar…" oninput="dm.pd.note=this.value">${escapeHtml(dm.pd.note)}</textarea>
@@ -18108,27 +17289,10 @@ function dmProductHTML(){
       <div class="dm-q big">
         <button onclick="dmPdQty(-1)" ${dm.pd.qty - step < step - 1e-9 ? 'disabled' : ''} aria-label="Menos">−</button>
         <span>${qtyTxt}</span>
-        <button onclick="dmPdQty(1)" ${dmComboSinCupo(p, dm.pd.qty + step, cbo.elecciones) ? 'disabled' : ''} aria-label="Más">+</button>
+        <button onclick="dmPdQty(1)" ${dmStockUse(p.id) + dmUseOf(p, dm.pd.sizeId, dm.pd.qty + step) > dmMaxFor(p) + 1e-9 ? 'disabled' : ''} aria-label="Más">+</button>
       </div>
-      <button class="btn dm-green" onclick="dmAddFromSheet()" ${disabled || (esCombo && !cbo.ok) ? 'disabled' : ''}>${
-        out ? 'Agotado'
-        : blocked ? (d.cfg.paused ? 'Pedidos pausados' : 'Cerrado por ahora')
-        : (esCombo && !cbo.ok) ? 'Elige: ' + escapeHtml(cbo.falta[0])
-        : icon('bag') + ' ' + (dm.pd.line != null ? 'Guardar · ' : 'Agregar · ') + formatMoney(round2(price * dm.pd.qty))
-      }</button>
+      <button class="btn dm-green" onclick="dmAddFromSheet()" ${disabled ? 'disabled' : ''}>${out ? 'Agotado' : (blocked ? (d.cfg.paused ? 'Pedidos pausados' : 'Cerrado por ahora') : icon('bag') + ' Agregar · ' + formatMoney(price * dm.pd.qty))}</button>
     </div>`;
-}
-/** ¿Ya no caben más combos por las existencias del combo o de un componente? */
-function dmComboSinCupo(p, qty, elec){
-  if(dmStockUse(p.id, dm.pd ? dm.pd.line : null) + dmUseOf(p, dm.pd ? dm.pd.sizeId : null, qty) > dmMaxFor(p) + 1e-9) return true;
-  /* Los componentes elegidos también tienen que alcanzar */
-  return comboComponents(elec || []).some(c => {
-    const cp = dmFind(c.productId);
-    if(!cp) return false;
-    const max = dmMaxFor(cp);
-    if(max === Infinity) return false;
-    return dmStockUse(c.productId, dm.pd ? dm.pd.line : null) + r3(c.qty * qty) > max + 1e-9;
-  });
 }
 function dmPickSize(id){ dm.pd.sizeId = id; dmOpenSheet('product'); }
 function dmPdQty(dir){
@@ -18138,29 +17302,11 @@ function dmPdQty(dir){
 }
 function dmAddFromSheet(){
   const p = dmFind(dm.pd.id); if(!p) return;
-  const esCombo = comboNeedsPick(p);
-  const cbo = comboValidate(p, dm.pd.picks);
-  if(esCombo && !cbo.ok){ dmToast('Te falta elegir: ' + cbo.falta[0], 'warn'); return; }
-  if(dmComboSinCupo(p, dm.pd.qty, cbo.elecciones)){ dmToast('No hay existencias suficientes', 'warn'); return; }
-  const editando = dm.pd.line != null;
-  if(editando){
-    const l = dm.cart[dm.pd.line];
-    if(l){
-      l.qty = r3(dm.pd.qty);
-      l.note = (dm.pd.note || '').trim();
-      if(esCombo){
-        const sz = l.sizeId ? (p.sizes || []).find(s => s.id === l.sizeId) : null;
-        l.combo = cbo.elecciones;
-        l.price = round2((sz ? Number(sz.price) : Number(p.price) || 0) + cbo.extra);
-      }
-    }
-  }else{
-    dmAddLine(p, dm.pd.qty, dm.pd.sizeId, dm.pd.note, esCombo ? cbo.elecciones : null);
-  }
-  dmCartSave();
+  if(dmStockUse(p.id) + dmUseOf(p, dm.pd.sizeId, dm.pd.qty) > dmMaxFor(p) + 1e-9){ dmToast('No hay existencias suficientes'); return; }
+  dmAddLine(p, dm.pd.qty, dm.pd.sizeId, dm.pd.note);
   dmCloseSheet();
   dmRefreshCards();
-  dmToast(editando ? 'Cambios guardados' : 'Agregado a tu pedido');
+  dmToast('Agregado a tu pedido');
 }
 
 function dmLinesHTML(editable){
@@ -18174,9 +17320,7 @@ function dmLinesHTML(editable){
       <div class="dm-line-main">
         <div class="dm-line-name">${escapeHtml(p ? p.name : 'Producto')}</div>
         <div class="dm-line-sub">${editable ? unitTxt : escapeHtml(lineQtyLabel(l)) + ' · ' + unitTxt}</div>
-        ${comboSumHTML(l.combo)}
         ${l.note ? `<div class="dm-line-note">${icx('note')}${escapeHtml(l.note)}</div>` : ''}
-        ${editable && lineCombo(l) ? `<button type="button" class="auth-help-link" style="padding:4px 0; font-size:12px;" onclick="dmOpenProduct('${l.productId}', ${i})">Cambiar mis elecciones</button>` : ''}
       </div>
       <div class="dm-line-right">
         ${editable ? `<div class="dm-q">
@@ -18189,61 +17333,6 @@ function dmLinesHTML(editable){
     </div>`;
   }).join('')}</div>`;
 }
-/* ---------- El carrito aguanta una recarga ----------
-   Se guarda en este celular, amarrado al id del menú. Al volver se revisa
-   contra el catálogo publicado AHORA: si un producto ya no está, ya no
-   está activo, o una elección que ya no existe, esa línea se quita y se
-   le avisa al cliente. Así nunca se manda un pedido con precios viejos. */
-const DM_CART_KEY = 'mesa_dm_cart';
-function dmCartSave(){
-  try{
-    if(!dm.id) return;
-    if(!dm.cart.length){ sessionStorage.removeItem(DM_CART_KEY); return; }
-    sessionStorage.setItem(DM_CART_KEY, JSON.stringify({ menu:dm.id, at:Date.now(), lines:dm.cart.slice(0, 150) }));
-  }catch(e){}
-}
-function dmCartRestore(){
-  let g = null;
-  try{ g = JSON.parse(sessionStorage.getItem(DM_CART_KEY) || 'null'); }catch(e){}
-  if(!g || g.menu !== dm.id || !Array.isArray(g.lines) || !g.lines.length) return;
-  if(Date.now() - (Number(g.at) || 0) > 6 * 60 * 60 * 1000){ try{ sessionStorage.removeItem(DM_CART_KEY); }catch(e){} return; }
-  let quitadas = 0;
-  const buenas = [];
-  g.lines.forEach(l => {
-    const p = dmFind(l && l.productId);
-    if(!p || !p.active){ quitadas++; return; }
-    const qty = Math.max(0, r3(Number(l.qty) || 0));
-    if(!(qty > 0)){ quitadas++; return; }
-    /* Tamaño que ya no existe: la línea se cae */
-    let size = null;
-    if(l.sizeId){
-      size = (p.sizes || []).find(s => s.id === l.sizeId);
-      if(!size){ quitadas++; return; }
-    }
-    /* Elecciones: se vuelven a validar contra los grupos de hoy, y el
-       precio se vuelve a calcular con los precios de hoy. */
-    let elec = null;
-    if(comboNeedsPick(p)){
-      const picks = {};
-      (Array.isArray(l.combo) ? l.combo : []).forEach(e => { if(e && e.gid && e.oid) (picks[e.gid] = picks[e.gid] || []).push(e.oid); });
-      const v = comboValidate(p, picks);
-      if(!v.ok){ quitadas++; return; }
-      elec = v.elecciones;
-    }
-    const linea = {
-      productId:p.id, sizeId:l.sizeId || null, sizeLabel:size ? size.label : null,
-      unit:size ? 'pieza' : productUnit(p).id, qty:qty,
-      price: round2((size ? size.price : p.price) + comboExtraOf(elec)),
-      note: String(l.note || '').slice(0, 160)
-    };
-    if(elec && elec.length) linea.combo = elec;
-    buenas.push(linea);
-  });
-  dm.cart = buenas;
-  dmCartSave();
-  if(quitadas) setTimeout(() => dmToast(quitadas === 1 ? 'Un producto de tu pedido ya no está disponible' : quitadas + ' productos de tu pedido ya no están disponibles', 'warn'), 700);
-}
-
 function dmTotalsHTML(){
   const t = mdTotals(dm.cart);
   return `<div class="dm-totals">
@@ -18277,7 +17366,6 @@ function dmClearCart(btn){
     return;
   }
   dm.cart = []; dm.co = null;
-  dmCartSave();
   dmCloseSheet(); dmRefreshCards();
   dmToast('Carrito vacío');
 }
@@ -18305,7 +17393,6 @@ function dmWhatsappMessage(){
     const nombre = (p ? p.name : 'Producto') + (l.sizeLabel ? ' (' + l.sizeLabel + ')' : '');
     const cant = (l.sizeLabel || !l.unit || unitOf(l.unit).plain) ? 'x' + fmtNum(l.qty) : fmtQty(l.qty, l.unit);
     msg += '• ' + nombre + ' ' + cant + ' - ' + formatMoney(l.price * l.qty) + '\n';
-    if(lineCombo(l)) l.combo.forEach(e => { msg += '   - ' + e.name + (e.extra > 0 ? ' (+' + formatMoney(e.extra) + ')' : '') + '\n'; });
     if(l.note) msg += '   Nota: ' + l.note + '\n';
   });
   if(showsTax()){
@@ -18341,9 +17428,6 @@ function bootMenu(route){
   const layer = document.createElement('div'); layer.id = 'dmLayer'; layer.className = 'dmx';
   const t = document.createElement('div'); t.id = 'dmToast'; t.className = 'dm-toast';
   document.body.append(root, bar, layer, t);
-  /* Si el cliente recargó o volvió de WhatsApp, su pedido sigue ahí
-     (revisado contra el catálogo publicado de ahora). */
-  try{ dmCartRestore(); }catch(e){ console.warn('carrito guardado', e); }
   dmRender();
   dm.sig = dmSig();
   setTimeout(() => { const r = document.getElementById('dmRoot'); if(r) r.classList.add('dm-booted'); }, 2200);
@@ -18685,7 +17769,7 @@ function mdiStr(v, max){ return String(v == null ? '' : v).replace(/[\u0000-\u00
 function mdiNum(v){ const n = Number(v); return isFinite(n) ? n : 0; }
 function mdiNorm(s){ return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
 function mdiCleanLine(l){
-  const out = {
+  return {
     productId: l.productId ? mdiStr(l.productId, 60) : null,
     name: mdiStr(l.name, 120) || 'Producto',
     sizeId: l.sizeId ? mdiStr(l.sizeId, 60) : null,
@@ -18695,15 +17779,9 @@ function mdiCleanLine(l){
     price: Math.max(0, round2(mdiNum(l.price))),
     note: mdiStr(l.note, 160)
   };
-  /* Las elecciones del combo viajan como datos (ids, nombres y precios),
-     NO escritas en la nota: así la caja, el ticket y el inventario las
-     entienden y nada se pierde al aceptar, editar o cobrar. */
-  const elec = comboCleanPicks(l.combo);
-  if(elec.length) out.combo = elec;
-  return out;
 }
 function mdiLinesEqual(a, b){
-  const k = l => [l.productId || mdiNorm(l.name), l.sizeId || '', r3(l.qty), round2(l.price), (l.note || '').trim(), comboSig(l.combo)].join('|');
+  const k = l => [l.productId || mdiNorm(l.name), l.sizeId || '', r3(l.qty), round2(l.price), (l.note || '').trim()].join('|');
   if(a.length !== b.length) return false;
   const sa = a.map(k).sort(), sb = b.map(k).sort();
   return sa.every((x, i) => x === sb[i]);
@@ -18719,11 +17797,6 @@ function mdiAgo(iso){
   return formatDateTime(iso);
 }
 function mdiLineLabel(l){ return l.name + (l.sizeLabel ? ' (' + l.sizeLabel + ')' : ''); }
-/** Para la impresora de cocina y los textos: combo + lo que eligieron. */
-function mdiLineFullLabel(l){
-  const c = lineCombo(l);
-  return mdiLineLabel(l) + (c ? ' — ' + comboTextOf(c) : '');
-}
 function mdiQtyText(l){ return (l.sizeLabel || unitOf(l.unit).plain) ? 'x' + fmtNum(l.qty) : fmtQty(l.qty, l.unit); }
 function mdiLineStep(l){ if(l.sizeId) return 1; const p = findProduct(l.productId); return p ? productStep(p) : 1; }
 
@@ -18759,8 +17832,7 @@ function mdiBuildFromCart(cartLines, customerName, extra){
   const customer = mdiCleanCustomer(Object.assign({}, extra || {}, { name:customerName }));
   const lines = cartLines.map(l => {
     const p = findProduct(l.productId);
-    return mdiCleanLine({ productId:l.productId, name:p ? p.name : 'Producto', sizeId:l.sizeId, sizeLabel:l.sizeLabel,
-                          unit:l.unit, qty:l.qty, price:l.price, note:l.note, combo:l.combo });
+    return mdiCleanLine({ productId:l.productId, name:p ? p.name : 'Producto', sizeId:l.sizeId, sizeLabel:l.sizeLabel, unit:l.unit, qty:l.qty, price:l.price, note:l.note });
   });
   const now = new Date().toISOString();
   return {
@@ -19245,21 +18317,6 @@ function mdiTotalsHTML(o){
     </div>`;
 }
 function mdiMissing(o){ return (o.lines || []).filter(l => !l.productId || !findProduct(l.productId)).length; }
-/** ¿Algún combo del pedido se quedó sin una elección obligatoria?
-    Pasa cuando el negocio editó el catálogo después de que entró el
-    pedido: la opción que el cliente eligió ya no existe. En vez de
-    aceptarlo a medias, se avisa para que se arregle con ✎. */
-function mdiComboFalta(o){
-  const malas = (o.lines || []).map(l => {
-    const p = l.productId ? findProduct(l.productId) : null;
-    if(!p || !comboNeedsPick(p)) return null;
-    const picks = {};
-    (Array.isArray(l.combo) ? l.combo : []).forEach(e => { if(e && e.gid && e.oid) (picks[e.gid] = picks[e.gid] || []).push(e.oid); });
-    const v = comboValidate(p, picks);
-    return v.ok ? null : (p.name + ': falta elegir ' + v.falta[0]);
-  }).filter(Boolean);
-  return malas.length ? ('Toca ✎ para completar · ' + malas[0]) : null;
-}
 function mdiCanConfirm(o){ return (o.lines || []).length > 0 && !mdiMissing(o) && (!mdiIsDelivery(o) || mdiHasFee(o)) && Number(o.etaMin) > 0; }
 function mdiSetFee(id, v){
   const raw = String(v == null ? '' : v).trim().replace(',', '.');
@@ -19292,11 +18349,9 @@ function mdiDetailHTML(o){
 
   const lineRows = (o.lines || []).map((l, i) => {
     const p = l.productId ? findProduct(l.productId) : null;
-    const origen = (o.original || []).find(x => (x.productId || mdiNorm(x.name)) === (l.productId || mdiNorm(l.name)) && (x.sizeId || '') === (l.sizeId || '') && comboSig(x.combo) === comboSig(l.combo));
+    const origen = (o.original || []).find(x => (x.productId || mdiNorm(x.name)) === (l.productId || mdiNorm(l.name)) && (x.sizeId || '') === (l.sizeId || ''));
     const cambiado = !origen || Math.abs(origen.qty - l.qty) > 1e-9 || round2(origen.price) !== round2(l.price) || (origen.note || '') !== (l.note || '');
-    let catPrice = p ? (l.sizeId ? ((p.sizes || []).find(s => s.id === l.sizeId) || {}).price : p.price) : null;
-    /* Con combo, el precio del catálogo es el base MÁS los extras elegidos */
-    if(p && catPrice != null && lineCombo(l)) catPrice = round2(Number(catPrice) + comboExtraOf(l.combo));
+    const catPrice = p ? (l.sizeId ? ((p.sizes || []).find(s => s.id === l.sizeId) || {}).price : p.price) : null;
     const priceWarn = editable && p && catPrice != null && round2(catPrice) !== round2(l.price);
     const step = mdiLineStep(l);
     return `
@@ -19305,7 +18360,6 @@ function mdiDetailHTML(o){
         <div class="mdi-line-main">
           <div class="mdi-line-name">${escapeHtml(mdiLineLabel(l))}${cambiado && mod ? ' <span class="mdi-tag">' + (origen ? 'Cambiado' : 'Agregado') + '</span>' : ''}</div>
           <div class="mdi-line-sub">${formatMoney(l.price)} ${l.sizeLabel ? 'c/u' : unitPriceWord(l.unit)}${origen && cambiado && mod && Math.abs(origen.qty - l.qty) > 1e-9 ? ' · antes ' + escapeHtml(mdiQtyText(origen)) : ''}</div>
-          ${comboSumHTML(l.combo)}
           ${l.note ? `<div class="dm-line-note">${icx('note')}${escapeHtml(l.note)}</div>` : ''}
           ${!p ? `<div class="mdi-warn">${icon('alert')} No está en tu catálogo. Toca ${icx('edit')} para elegir el producto.</div>` : ''}
           ${priceWarn ? `<div class="mdi-warn soft">${icon('tag')} Tu precio actual es ${formatMoney(catPrice)} <button onclick="mdiUseCatalogPrice('${o.id}', ${i})">Usar</button></div>` : ''}
@@ -19322,7 +18376,7 @@ function mdiDetailHTML(o){
       </div>`;
   }).join('');
 
-  const quitados = mod ? (o.original || []).filter(x => !(o.lines || []).some(l => (l.productId || mdiNorm(l.name)) === (x.productId || mdiNorm(x.name)) && (l.sizeId || '') === (x.sizeId || '') && comboSig(l.combo) === comboSig(x.combo))) : [];
+  const quitados = mod ? (o.original || []).filter(x => !(o.lines || []).some(l => (l.productId || mdiNorm(l.name)) === (x.productId || mdiNorm(x.name)) && (l.sizeId || '') === (x.sizeId || ''))) : [];
 
   return `
     <i class="fs-marker" hidden></i>
@@ -19413,13 +18467,7 @@ function mdiStepLine(id, i, dir){
   mdiRefresh();
 }
 function mdiUseCatalogPrice(id, i){
-  MDI.update(id, o => {
-    if(o.status !== 'nuevo') return;
-    const l = o.lines[i]; const p = l && findProduct(l.productId); if(!p) return;
-    const base = l.sizeId ? (((p.sizes || []).find(s => s.id === l.sizeId) || {}).price || l.price) : p.price;
-    /* Con combo, el precio del catálogo incluye los extras que eligió */
-    l.price = round2(Number(base) + comboExtraOf(l.combo));
-  });
+  MDI.update(id, o => { if(o.status !== 'nuevo') return; const l = o.lines[i]; const p = l && findProduct(l.productId); if(!p) return; l.price = l.sizeId ? (((p.sizes || []).find(s => s.id === l.sizeId) || {}).price || l.price) : p.price; });
   mdiRefresh();
 }
 function mdiRestore(id){
@@ -19441,41 +18489,7 @@ function mdiEditLine(id, i){
   const size = hasSizes(p) ? ((l && p.sizes.find(s => s.id === l.sizeId)) || p.sizes[0]) : null;
   mdiLe = { id, i, productId:p.id, sizeId:size ? size.id : null, qty: l ? l.qty : productStep(p),
             price: l && l.productId === p.id ? l.price : (size ? size.price : p.price), note: l ? (l.note || '') : '' };
-  /* Elecciones del combo: se conservan si sigue siendo el mismo producto */
-  mdiLe.picks = {};
-  if(l && l.productId === p.id && Array.isArray(l.combo)) l.combo.forEach(e => { (mdiLe.picks[e.gid] = mdiLe.picks[e.gid] || []).push(e.oid); });
-  mdiLeRePrice();
   mdiRenderLineEditor();
-}
-/** El cliente cambió de idea en la caja: se toca una opción del combo. */
-function mdiLePick(gid, oid){
-  const e = mdiLe; if(!e) return;
-  mdiLeKeep();
-  const p = findProduct(e.productId); if(!p) return;
-  const g = comboGroupsOf(p).find(x => x.id === gid); if(!g) return;
-  e.picks = e.picks || {};
-  const lista = e.picks[gid] = (e.picks[gid] || []).filter(x => g.options.some(o => o.id === x));
-  const i = lista.indexOf(oid);
-  if(i >= 0){
-    if(g.max === 1 && g.min >= 1) return;
-    lista.splice(i, 1);
-  }else{
-    if(g.max === 1) e.picks[gid] = [oid];
-    else{
-      if(lista.length >= g.max){ toast('En “' + g.name + '” puedes elegir máximo ' + g.max, { icon:icon('alert') }); return; }
-      lista.push(oid);
-    }
-  }
-  mdiLeRePrice();
-  mdiRenderLineEditor();
-}
-/** Precio de la línea = base del catálogo + los extras elegidos. */
-function mdiLeRePrice(){
-  const e = mdiLe; if(!e) return;
-  const p = findProduct(e.productId); if(!p || !comboNeedsPick(p)) return;
-  const size = e.sizeId ? (p.sizes || []).find(s => s.id === e.sizeId) : null;
-  const v = comboValidate(p, e.picks);
-  e.price = round2((size ? size.price : p.price) + v.extra);
 }
 function mdiRenderLineEditor(){
   const e = mdiLe; if(!e) return;
@@ -19515,7 +18529,6 @@ function mdiRenderLineEditor(){
       </div>
     </div>
     ${can('gestionarProductos') ? '' : `<p class="field-hint" style="margin:-8px 2px 14px;">El precio sale de tu catálogo. Solo el Dueño o el Administrador lo pueden cambiar.</p>`}
-    ${comboNeedsPick(p) ? `<div class="field">${comboPickHTML(p, e.picks, 'mdiLePick')}</div>` : ''}
     <div class="field">
       <label for="mdiLeNote">Nota (opcional)</label>
       <input id="mdiLeNote" type="text" maxlength="160" value="${escapeHtml(e.note)}" placeholder="Ej. Empacar por separado y avisar al llegar…">
@@ -19540,18 +18553,12 @@ function mdiLeProduct(pid){
   mdiLe.productId = pid; mdiLe.sizeId = size ? size.id : null;
   mdiLe.price = size ? size.price : p.price;
   mdiLe.qty = hasSizes(p) ? Math.max(1, Math.round(mdiLe.qty)) : productStep(p);
-  /* Otro producto: las elecciones del anterior no aplican. Si el nuevo es
-     combo, se arranca con lo mínimo obligatorio ya marcado. */
-  mdiLe.picks = {};
-  if(comboNeedsPick(p)) comboGroupsOf(p).forEach(g => { if(g.min > 0) mdiLe.picks[g.id] = g.options.slice(0, g.min).map(o => o.id); });
-  mdiLeRePrice();
   mdiRenderLineEditor();
 }
 function mdiLeSize(sid){
   mdiLeKeep();
   const p = findProduct(mdiLe.productId); const s = p && p.sizes.find(x => x.id === sid);
   if(s){ mdiLe.sizeId = s.id; mdiLe.price = s.price; }
-  mdiLeRePrice();
   mdiRenderLineEditor();
 }
 function mdiSaveLine(){
@@ -19561,15 +18568,8 @@ function mdiSaveLine(){
   if(!(e.qty > 0)){ toast('Escribe una cantidad mayor a 0'); return; }
   if(isNaN(e.price) || e.price < 0){ toast('Escribe un precio válido'); return; }
   const size = e.sizeId ? p.sizes.find(s => s.id === e.sizeId) : null;
-  /* Combo: no se guarda a medias. Lo obligatorio tiene que estar elegido. */
-  let elec = null;
-  if(comboNeedsPick(p)){
-    const v = comboValidate(p, e.picks);
-    if(!v.ok){ toast('Te falta elegir: ' + v.falta[0], { variant:'toast-danger', icon:icon('alert') }); return; }
-    elec = v.elecciones;
-  }
   const line = mdiCleanLine({ productId:p.id, name:p.name, sizeId:size ? size.id : null, sizeLabel:size ? size.label : null,
-    unit:size ? 'pieza' : (p.unit || 'pieza'), qty:size ? Math.round(e.qty) || 1 : e.qty, price:e.price, note:e.note, combo:elec });
+    unit:size ? 'pieza' : (p.unit || 'pieza'), qty:size ? Math.round(e.qty) || 1 : e.qty, price:e.price, note:e.note });
   MDI.update(e.id, o => { if(o.status !== 'nuevo') return; if(e.i >= 0) o.lines[e.i] = line; else o.lines.push(line); });
   mdiLe = null;
   toast(e.i >= 0 ? 'Producto cambiado' : 'Producto agregado', { icon:icon('check'), variant:'toast-success' });
@@ -19592,10 +18592,8 @@ function mdiConfirm(id){
   const o = MDI.get(id);
   if(!o || o.status !== 'nuevo') return;
   /* Si falta algo: no deja pasar, regresa a ese lugar y lo marca en rojo */
-  const comboMal = mdiComboFalta(o);
   const falta = !o.lines.length ? { id:'mdiLines', msg:'El pedido no tiene productos' }
     : mdiMissing(o) ? { id:'mdiLines', msg:'Elige el producto que falta en tu catálogo' }
-    : comboMal ? { id:'mdiLines', msg:comboMal }
     : (mdiIsDelivery(o) && !mdiHasFee(o)) ? { id:'mdiFeeBox', msg:'Escribe el costo de envío (si no cobras, pon 0)', focus:'mdiFee' }
     : !(Number(o.etaMin) > 0) ? { id:'mdiEta', msg:'Elige en cuánto tiempo estará el pedido' } : null;
   if(falta){ mdiNeed(falta.id, falta.msg, falta.focus); return; }
@@ -19651,9 +18649,6 @@ function mdiCharge(id){
     const line = { productId:l.productId, qty:l.qty, unitPrice:l.price };   /* se respeta el precio del pedido */
     if(l.sizeId){ line.sizeId = l.sizeId; line.sizeLabel = l.sizeLabel; }
     if(l.note) line.note = l.note;
-    /* Las elecciones siguen al carrito: así salen en el ticket y los
-       componentes se descuentan del inventario al cobrar. */
-    if(lineCombo(l)) line.combo = l.combo.map(e => Object.assign({}, e));
     return line;
   });
   const envio = mdiDeliveryFee(o);
@@ -19873,7 +18868,6 @@ function mdiChargeNow(id, metodo, opts){
     const line = { productId:l.productId, qty:l.qty, unitPrice:l.price };   /* se respeta el precio del pedido */
     if(l.sizeId){ line.sizeId = l.sizeId; line.sizeLabel = l.sizeLabel; }
     if(l.note) line.note = l.note;
-    if(lineCombo(l)) line.combo = l.combo.map(e => Object.assign({}, e));
     return line;
   });
   const envio = mdiDeliveryFee(o);
@@ -20375,14 +19369,7 @@ function mdiNotify(id){
     const fee = mdiDeliveryFee(o);
     msg = '¡Hola' + nombre + '! Confirmamos tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') + '.\n';
     if(mdiIsModified(o)) msg += 'Hicimos unos cambios, así quedó:\n';
-    msg += '\n' + o.lines.map(l => {
-      let t = '• ' + mdiLineLabel(l) + ' ' + mdiQtyText(l) + ' - ' + formatMoney(l.price * l.qty);
-      /* Las elecciones del combo, una por renglón y en orden */
-      const elec = lineCombo(l);
-      if(elec) t += '\n' + elec.map(e => '   - ' + e.name + (e.extra > 0 ? ' (+' + formatMoney(e.extra) + ')' : '')).join('\n');
-      if(l.note) t += '\n   Nota: ' + l.note;
-      return t;
-    }).join('\n');
+    msg += '\n' + o.lines.map(l => '• ' + mdiLineLabel(l) + ' ' + mdiQtyText(l) + ' - ' + formatMoney(l.price * l.qty)).join('\n');
     if(del){
       msg += '\n\nProductos: ' + formatMoney(t.total);
       msg += '\nEnvío a domicilio: ' + (fee ? formatMoney(fee) : 'gratis');
@@ -20917,7 +19904,6 @@ dmSendWhatsApp = async function(){
   const listo = msg => {
     dm.cart = [];
     dm.co = null;                 /* el nombre queda guardado en este celular */
-    dmCartSave();                 /* el pedido ya se mandó: se borra el guardado */
     dmCloseSheet();
     dmRefreshCards();
     dmToast(msg);
@@ -23423,11 +22409,6 @@ function returnCalc(sale, qtyMap){
     delete x.listPrice; delete x.disc; delete x.wholesale; delete x.catalogPrice;
     /* Solo la parte proporcional de lo que se descontó al vender */
     if(it.stockUse != null){ const tot = Math.abs(Number(it.qty) || 0); x.stockUse = tot ? r3(Math.abs(Number(it.stockUse) || 0) * q / tot) : 0; }
-    /* Y la parte proporcional de lo que gastaron los componentes del combo */
-    if(Array.isArray(it.comboStockUse)){
-      const tot2 = Math.abs(Number(it.qty) || 0);
-      x.comboStockUse = tot2 ? it.comboStockUse.map(c => ({ productId:c.productId, qty:r3(Math.abs(Number(c.qty) || 0) * q / tot2) })) : [];
-    }
     items.push(x);
   });
   const t = calcTax(round2(base), saleTaxInfo(sale));
@@ -25533,7 +24514,7 @@ renderAuth = function(){
     document.getElementById('authLayer').innerHTML = `<div class="auth-screen${authSinIlustracion(s) ? ' auth-plain' : ''}" key="${s}">${html}${authSideFor(s, html)}</div>`;
     setThemeColor('#FFFFFF');
     const foco = s === 'setpw' ? 'authPw2' : (authState.fstep === 2 ? 'fCode' : 'fEmail');
-    setTimeout(() => { const i = document.getElementById(foco); if(i) i.focus(); }, 180);
+    vpFoco(document.getElementById(foco), 180);
     return;
   }
   _renderAuth();
@@ -25982,21 +24963,6 @@ function mdPublicSnapshot(){
       o.sizeUnit = p.sizeUnit || 'litro';
       o.sizes = p.sizes.map(z => ({ id:z.id, label:z.label, price:Number(z.price) || 0, unitQty:z.unitQty == null ? null : z.unitQty }));
     }
-    /* Combo con elecciones: los grupos y sus opciones viajan al menú
-       público para que el cliente pueda elegir desde su celular. Solo se
-       publica lo que el cliente necesita ver (nombre, precio adicional y
-       el id del producto vinculado para saber si está agotado); nunca
-       costos ni nada interno. */
-    if(comboIsOn(p)){
-      const gs = comboGroupsOf(p);
-      if(gs.length){
-        o.comboOn = true;
-        o.comboGroups = gs.map(g => ({
-          id:g.id, name:g.name, required:g.required, min:g.min, max:g.max,
-          options:g.options.map(z => ({ id:z.id, name:z.name, extra:z.extra, productId:z.productId || null, qty:z.qty || 1 }))
-        }));
-      }
-    }
     /* Existencias: para marcar "Agotado" y no dejar pedir de más */
     if(p.stock !== null && p.stock !== undefined){ o.stock = Number(p.stock); o.minStock = p.minStock == null ? 2 : Number(p.minStock); }
     else o.stock = null;
@@ -26350,51 +25316,16 @@ function mdiCloudSend(order){
 }
 
 /* ---------- Caja: armar el pedido que llegó (limpio y con precios del catálogo) ---------- */
-/* -------------------------------------------------------------------------
-   PRECIOS AUTORIZADOS AL RECIBIR EL PEDIDO
-   -------------------------------------------------------------------------
-   Lo que manda el celular del cliente se trata como una PETICIÓN, nunca
-   como el precio. Aquí, ya en el aparato del negocio y con su catálogo
-   real, se vuelve a armar cada línea:
-     · el nombre y el precio base salen del catálogo;
-     · cada elección se busca por su id en los grupos del producto: si ya
-       no existe, se descarta; si existe, su precio adicional sale del
-       catálogo, no del pedido;
-     · el precio de la línea = base + la suma de esos extras.
-   Para el pago con tarjeta, el total ya fijado queda además del lado del
-   servidor (mp-arm-order), que es el único monto que Mercado Pago puede
-   cobrar por ese pedido. Y el SQL de submit_menu_order revisa lo mismo
-   antes de dejar entrar el pedido (ver combos_menu.sql).
-------------------------------------------------------------------------- */
 function mdiRepriceLine(l){
   const p = l.productId ? findProduct(l.productId) : null;
   if(!p) return l;
   l.name = mdiStr(p.name, 120) || l.name;
-  let base = 0;
   if(l.sizeId){
     const z = (Array.isArray(p.sizes) ? p.sizes : []).find(s => s.id === l.sizeId);
-    if(z){ base = Math.max(0, round2(Number(z.price) || 0)); l.sizeLabel = mdiStr(z.label, 60) || l.sizeLabel; }
-    else base = Math.max(0, round2(Number(p.price) || 0));
+    if(z){ l.price = Math.max(0, round2(Number(z.price) || 0)); l.sizeLabel = mdiStr(z.label, 60) || l.sizeLabel; }
   }else{
-    base = Math.max(0, round2(Number(p.price) || 0));
+    l.price = Math.max(0, round2(Number(p.price) || 0));
   }
-  /* Elecciones: se revalidan contra los grupos de HOY y se les pone el
-     precio adicional de HOY. Lo que ya no existe se cae. */
-  if(Array.isArray(l.combo) && l.combo.length){
-    const gs = comboGroupsOf(p);
-    const buenas = [];
-    l.combo.forEach(e => {
-      const g = gs.find(x => x.id === e.gid);
-      if(!g) return;
-      const o = g.options.find(z => z.id === e.oid);
-      if(!o) return;
-      if(buenas.filter(b => b.gid === g.id).length >= g.max) return;   /* más de lo permitido: se recorta */
-      buenas.push({ gid:g.id, gname:g.name, oid:o.id, name:o.name, extra:o.extra, productId:o.productId || null, qty:o.qty || 1 });
-    });
-    if(buenas.length) l.combo = buenas; else delete l.combo;
-    base = round2(base + comboExtraOf(buenas));
-  }
-  l.price = base;
   return l;
 }
 function mdiFromCloud(row){
@@ -27377,9 +26308,6 @@ function fdRefresh(){
 const cg = { cat:'all' };
 function cgPriceHTML(p){
   if(hasSizes(p)) return `<small>Desde</small> ${formatMoney(Math.min.apply(null, p.sizes.map(s => s.price)))}`;
-  /* Un combo arranca en su precio base: las opciones con costo lo suben,
-     así que se enseña "Desde" para no prometer un precio que no es. */
-  if(comboNeedsPick(p)) return `<small>Desde</small> ${formatMoney(p.price)}`;
   const u = productUnit(p);
   return formatMoney(p.price) + (u.plain ? '' : `<small> /${escapeHtml(u.short)}</small>`);
 }
@@ -27387,9 +26315,7 @@ function cgPriceHTML(p){
 dmCardBar = function(p){
   const q = dmQtyOf(p.id);
   const id = escapeHtml(p.id);
-  /* Un combo nunca se agrega "a ciegas" con el +: primero se eligen
-     bebida, salsas y extras en su hoja. Igual que con los tamaños. */
-  if(q > 0 && !hasSizes(p) && !comboNeedsPick(p)){
+  if(q > 0 && !hasSizes(p)){
     const full = dmStockUse(p.id) + productStep(p) > dmMaxFor(p) + 1e-9;
     return `<div class="cg-bar">
       <div class="cg-q">
@@ -28674,7 +27600,7 @@ function cartSanitize(){
   }
   var fxKeys = [], fxHad = false, fxTot = '';
   function spFx(){
-    var keys = cart.map(function(c){ return c.productId + '|' + (c.sizeId || '') + '|' + (c.note || '') + '|' + (c.manualPrice == null ? '' : c.manualPrice) + '|' + comboSig(c.combo); });
+    var keys = cart.map(function(c){ return c.productId + '|' + (c.sizeId || '') + '|' + (c.note || '') + '|' + (c.manualPrice == null ? '' : c.manualPrice); });
     panel.querySelectorAll('.cart-item').forEach(function(el, i){
       if(keys[i] && fxKeys.indexOf(keys[i]) < 0) el.classList.add('vp-new');
     });
@@ -29098,14 +28024,22 @@ function cartSanitize(){
 .auth-screen svg [stroke="#FFD666"], .auth-screen svg [stroke="#F5BF3C"]{ stroke:#25D366; }
 .auth-mail-tip b, .otp-help button{ color:#0E7A3D; }
 
-/* ===== Cambiar de usuario (elegir usuario + NIP): conserva sus colores de antes ===== */
-.auth-screen[key="users"], .auth-screen[key="userpin"]{ --accent:#FFD666; --accent-strong:#F5BF3C; --accent-soft:#FFF0C2; --accent-ink:#16213E; }
-.auth-screen[key="userpin"] .pin-dot.on{ background:#F5BF3C; border-color:#F5BF3C; }
-.auth-screen[key="userpin"] svg [fill="#FFD666"]{ fill:#FFD666; }
-.auth-screen[key="userpin"] svg [fill="#F5BF3C"]{ fill:#F5BF3C; }
-.auth-screen[key="userpin"] svg [fill="#FFF0C2"]{ fill:#FFF0C2; }
-.auth-screen[key="userpin"] svg [stroke="#FFD666"]{ stroke:#FFD666; }
-.auth-screen[key="userpin"] svg [stroke="#F5BF3C"]{ stroke:#F5BF3C; }
+/* ===== Cambiar de usuario (elegir usuario + NIP): en verde, como el resto =====
+   Antes estas dos pantallas volvían al amarillo. Ahora usan el verde de
+   la app: el contorno del usuario que eliges y los puntitos del NIP.
+   La etiqueta "Dueño" se queda dorada A PROPÓSITO: es lo que la
+   distingue de "Empleado" (verde) y "Administrador" (azul). */
+.auth-screen[key="users"], .auth-screen[key="userpin"]{ --accent:#25D366; --accent-strong:#16C15B; --accent-soft:#E5FAEC; --accent-ink:#FFFFFF; }
+.auth-screen[key="users"] .role-chip.dueno,
+.auth-screen[key="userpin"] .role-chip.dueno{ background:#FFF0C2; color:#8A6A18; }
+/* Los 4 puntitos del NIP, verdes */
+.auth-screen[key="userpin"] .pin-dot.on{ background:#16C15B; border-color:#16C15B; }
+/* El usuario que eliges o tocas: contorno verde (ya no amarillo) */
+.auth-screen[key="users"] .user-pick:active,
+.auth-screen[key="users"] .user-pick:focus-visible,
+.auth-screen[key="users"] .user-pick.sel{ border-color:#16C15B; }
+.auth-screen[key="users"] .user-pick:focus-visible{ outline:2px solid #16C15B; outline-offset:2px; }
+.auth-screen[key="users"] .user-pick:hover{ border-color:#BFEBD0; }
 /* ===== Entra a tu cuenta: contenido un poco más abajo (celular) ===== */
 @media (max-width:899px){
   .auth-screen[key="login"] > .auth-body{ padding-top:40px; }
