@@ -3548,6 +3548,10 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .rep-range{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:var(--brand-ink); background:var(--brand-soft); border-radius:999px; padding:6px 12px; margin:0 0 14px; }
   .rep-range svg{ width:14px; height:14px; }
   .rep-actions{ margin:0 0 6px; }
+  /* Estadísticas: el botón de Imprimir va solo y centrado, sin estirarse
+     de lado a lado (antes compartía el renglón con "Descargar Excel"). */
+  .inv-actions.rep-solo{ justify-content:center; }
+  .inv-actions.rep-solo .btn{ flex:0 1 auto; min-width:200px; max-width:320px; }
   .rep-table{ padding:4px 14px; }
   .rep-tr{ display:grid; grid-template-columns:minmax(0,2.2fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1fr); gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:600; color:var(--ink); }
   .rep-tr span:not(:first-child){ text-align:right; white-space:nowrap; }
@@ -10963,9 +10967,8 @@ function renderStats(){
     </div>` : ''}
 
 
-    <div class="inv-actions rep-actions">
+    <div class="inv-actions rep-actions rep-solo">
       <button class="btn ghost" onclick="withSalesOrigin(printReport)">${icon('print')} Imprimir</button>
-      <button class="btn ghost" onclick="withSalesOrigin(() => exportReportExcel())">${icon('download')} Descargar Excel</button>
     </div>
 
     ${!d.all.length && !d.exps.length ? `
@@ -11064,7 +11067,7 @@ function renderStats(){
       <div class="card rep-table">
         <div class="rep-tr head"><span>Producto</span><span>Cant.</span><span>Importe</span>${ver ? '<span>Ganancia</span>' : ''}</div>
         ${prods.slice(0, 30).map(p => `<div class="rep-tr"><span>${escapeHtml(p.name)}</span><span>${escapeHtml(p.unit && !p.sizeLabel && !unitOf(p.unit).plain ? fmtQty(p.qty, p.unit) : fmtNum(p.qty))}</span><span>${formatMoney(p.total)}</span>${ver ? `<span class="${p.profit < 0 ? 'neg' : ''}">${formatMoney(p.profit)}</span>` : ''}</div>`).join('')}
-        ${prods.length > 30 ? `<div class="kv-note">Y ${prods.length - 30} más · están todos en “Descargar Excel”.</div>` : ''}
+        ${prods.length > 30 ? `<div class="kv-note">Y ${prods.length - 30} más · aquí se ven los 30 que más vendiste. Toca “Imprimir” para la lista completa.</div>` : ''}
       </div>` : ''}
 
     ${users.length > 1 || (users.length === 1 && users[0][0] !== 'Sin usuario') ? `

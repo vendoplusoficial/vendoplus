@@ -190,6 +190,47 @@
     inventario:  ['inventario', 'existencias', 'stock', 'almacen', 'mercancia', 'cuanto tengo de'],
     valor_inv:   ['valor del inventario', 'cuanto vale mi inventario', 'cuanto tengo invertido', 'valor de mi mercancia', 'cuanto dinero tengo en producto'],
 
+    /* ---- preguntas nuevas del negocio ----
+       Cada una con las formas en que de verdad las escribe la gente. */
+    producto_rentable: ['producto que mas gana', 'que producto me deja mas', 'producto mas rentable', 'que me deja mas ganancia',
+                        'que producto deja mas', 'cual me deja mas', 'producto que mas ganancia', 'lo que mas me deja',
+                        'que me conviene vender', 'que es lo mas rentable', 'donde gano mas', 'que producto es mas rentable',
+                        'mas rentable', 'mayor margen', 'producto con mas ganancia'],
+    mejor_cliente:     ['mejor cliente', 'quien me compra mas', 'cliente que mas compra', 'mi cliente mas frecuente',
+                        'quien compra mas', 'cliente que mas gasta', 'mis mejores clientes', 'cliente frecuente',
+                        'quien es mi mejor cliente', 'cual cliente compra mas'],
+    venta_mayor:       ['venta mas grande', 'mi venta mas alta', 'venta mayor', 'ticket mas alto', 'la venta mas cara',
+                        'mi mejor venta', 'cual fue la venta mas grande', 'venta mas alta', 'nota mas grande'],
+    peor_hora:         ['peor hora', 'hora mas floja', 'a que hora vendo menos', 'hora que menos vendo',
+                        'cuando vendo menos', 'hora muerta', 'horas flojas'],
+    dia_semana:        ['dia de la semana', 'que dia de la semana', 'dia de la semana vendo mas', 'los lunes vendo',
+                        'que dias vendo mas', 'dia de la semana mas fuerte', 'por dia de la semana',
+                        'que dia conviene abrir', 'que dia me va mejor'],
+    cuantos_productos: ['cuantos productos tengo', 'cuantos productos hay', 'cuantos articulos tengo', 'cuantos productos en total',
+                        'tamano de mi catalogo', 'cuantos productos tengo registrados', 'cuantos productos manejo',
+                        'cuantas cosas vendo', 'cuantos productos en mi catalogo'],
+    sin_vender:        ['no se ha vendido', 'no se han vendido', 'que no se han vendido', 'productos no se han vendido',
+                        'productos sin vender', 'que no se ha vendido', 'que nunca se vende', 'nunca se venden',
+                        'productos que no salen', 'que no sale nada', 'cuales no se venden', 'cuales no he vendido',
+                        'producto muerto', 'productos muertos', 'que no he vendido', 'no he vendido nada de',
+                        'lo que no se vende nada', 'inventario parado', 'mercancia parada', 'lo que no sale',
+                        'que productos no se venden', 'productos que nunca vendo', 'sin una sola venta'],
+    promedio_diario:   ['cuanto vendo al dia', 'promedio diario', 'venta promedio por dia', 'cuanto vendo diario',
+                        'promedio por dia', 'cuanto vendo cada dia', 'mi promedio al dia', 'venta diaria promedio'],
+    margen_pct:        ['que margen tengo', 'margen de ganancia', 'porcentaje de ganancia', 'que porcentaje gano',
+                        'cuanto porciento gano', 'cuanto por ciento gano', 'mi margen', 'que tan rentable soy',
+                        'porcentaje de utilidad', 'de cada peso cuanto gano'],
+    punto_equilibrio:  ['punto de equilibrio', 'cuanto necesito vender', 'cuanto tengo que vender', 'para cubrir mis gastos',
+                        'cuanto debo vender', 'para no perder', 'para salir tablas', 'cuanto para cubrir gastos',
+                        'cuanto necesito para los gastos'],
+    menu_pedidos:      ['pedidos del menu', 'pedidos pendientes', 'menu digital', 'pedidos en linea', 'pedidos por internet',
+                        'tengo pedidos', 'hay pedidos nuevos', 'pedidos nuevos', 'cuantos pedidos del menu',
+                        'pedidos sin atender', 'pedidos por cobrar'],
+    turno:             ['mi turno', 'como voy en mi turno', 'cuanto llevo en el turno', 'mi corte', 'llevo en mi turno',
+                        'cuanto he vendido en mi turno', 'como voy yo', 'cuanto llevo yo'],
+    clientes_nuevos:   ['clientes nuevos', 'cuantos clientes nuevos', 'clientes que se dieron de alta',
+                        'nuevos clientes', 'clientes de este mes', 'cuantos clientes registre'],
+
     /* ---- otros ---- */
     caja:        ['caja', 'corte', 'corte de caja', 'cuanto hay en caja', 'dinero en caja', 'efectivo en caja'],
     resumen:     ['resumen', 'como voy', 'como va el dia', 'como me fue', 'como vamos', 'dame un resumen', 'reporte', 'reporteme', 'como estuvo', 'como va el negocio', 'resumen del dia'],
@@ -403,7 +444,12 @@ if (hace) {
        producto que más vendo?" o "el que más sale". */
     var esPregunta = tiene('m_que');
     porMarcadores = true;
-    if (tiene('m_valor') && (tiene('inventario') || tiene('m_producto'))) intencion = 'valor_inventario';
+    if (tiene('producto_rentable') || tiene('mejor_cliente') || tiene('venta_mayor') ||
+        tiene('peor_hora') || tiene('dia_semana') || tiene('cuantos_productos') ||
+        tiene('sin_vender') || tiene('promedio_diario') || tiene('margen_pct') ||
+        tiene('punto_equilibrio') || tiene('menu_pedidos') || tiene('turno') ||
+        tiene('clientes_nuevos')) intencion = null;    /* lo resuelve el bloque de abajo */
+    else if (tiene('m_valor') && (tiene('inventario') || tiene('m_producto'))) intencion = 'valor_inventario';
     else if (tiene('m_producto') && tiene('m_mas')) intencion = 'producto_top';
     else if (tiene('m_producto') && tiene('m_menos')) intencion = 'producto_bajo';
     else if (tiene('m_categoria') && (tiene('m_mas') || tiene('m_mejor'))) intencion = 'categoria_top';
@@ -417,6 +463,24 @@ if (hace) {
 
     /* ¿la intención salió solo de los marcadores? (afecta la confianza) */
     porMarcadores = !!intencion;
+
+    /* --- preguntas nuevas: van PRIMERO porque son más específicas ---
+       Si no, "¿qué producto me deja más ganancia?" caería en "producto
+       más vendido" (marcadores m_producto + m_mas) y contestaría otra
+       cosa. Lo mismo con "¿a qué hora vendo menos?" y las demás. */
+    if (tiene('producto_rentable')) intencion = 'producto_rentable';
+    else if (tiene('mejor_cliente')) intencion = 'mejor_cliente';
+    else if (tiene('venta_mayor')) intencion = 'venta_mayor';
+    else if (tiene('peor_hora') || (tiene('m_hora') && tiene('m_menos'))) intencion = 'peor_hora';
+    else if (tiene('dia_semana')) intencion = 'dia_semana';
+    else if (tiene('cuantos_productos')) intencion = 'cuantos_productos';
+    else if (tiene('sin_vender')) intencion = 'sin_vender';
+    else if (tiene('promedio_diario')) intencion = 'promedio_diario';
+    else if (tiene('margen_pct')) intencion = 'margen_pct';
+    else if (tiene('punto_equilibrio')) intencion = 'punto_equilibrio';
+    else if (tiene('menu_pedidos')) intencion = 'menu_pedidos';
+    else if (tiene('turno')) intencion = 'turno';
+    else if (tiene('clientes_nuevos')) intencion = 'clientes_nuevos';
 
     /* --- cosas que no son datos --- */
     if (intencion) { /* ya resuelto arriba */ }
@@ -515,6 +579,12 @@ if (hace) {
   function periodoPorDefecto(intencion) {
     if (['mejor_dia', 'peor_dia', 'mejor_hora', 'categoria_top'].indexOf(intencion) >= 0) return 'month';
     if (['producto_top', 'producto_bajo'].indexOf(intencion) >= 0) return 'month';
+    /* Las preguntas nuevas se leen mejor con el mes: con un solo día no
+       alcanza para decir cuál producto deja más, ni qué día de la semana
+       conviene, ni cuánto se vende al día en promedio. */
+    if (['producto_rentable', 'mejor_cliente', 'venta_mayor', 'peor_hora', 'dia_semana',
+         'sin_vender', 'promedio_diario', 'margen_pct', 'punto_equilibrio',
+         'clientes_nuevos'].indexOf(intencion) >= 0) return 'month';
     return 'today';
   }
 
@@ -605,17 +675,38 @@ if (hace) {
 
     ayuda: function () {
       return {
-        texto: 'Te puedo contestar con tus datos reales. Por ejemplo:\n' +
+        texto: 'Te contesto con tus datos reales. Por ejemplo:\n\n' +
+          'DINERO\n' +
           '• ¿Cuánto vendí hoy / ayer / esta semana?\n' +
           '• ¿Cuál fue mi ganancia neta del mes?\n' +
-          '• ¿Cuántos pedidos tuve?\n' +
+          '• ¿Qué margen tengo?\n' +
+          '• ¿Cuánto necesito vender para cubrir mis gastos?\n' +
+          '• ¿Cuánto vendo al día en promedio?\n' +
+          '• ¿Cuánto vendí en efectivo / tarjeta / transferencia?\n' +
+          '• ¿Cuánto hay en caja?\n\n' +
+          'PRODUCTOS\n' +
           '• ¿Qué producto vendo más?\n' +
-          '• ¿Cuánto vendí en efectivo?\n' +
-          '• ¿Qué productos están por agotarse?\n' +
-          '• ¿Cuál fue mi mejor día del mes?\n' +
-          '• ¿Cuánto me deben?\n\n' +
+          '• ¿Qué producto me deja más ganancia?\n' +
+          '• ¿Qué productos no se han vendido?\n' +
+          '• ¿Qué está por agotarse?\n' +
+          '• ¿Cuántos productos tengo?\n' +
+          '• ¿Cuánto vale mi inventario?\n' +
+          '• ¿Cuánta Coca me queda?\n\n' +
+          'CUÁNDO Y QUIÉN\n' +
+          '• ¿Qué día de la semana vendo más?\n' +
+          '• ¿A qué hora vendo más? ¿Y a qué hora menos?\n' +
+          '• ¿Quién vendió más de mis empleados?\n' +
+          '• ¿Cómo voy en mi turno?\n\n' +
+          'CLIENTES Y PEDIDOS\n' +
+          '• ¿Quién me compra más?\n' +
+          '• ¿Cuánto me deben?\n' +
+          '• ¿Cuántos clientes nuevos tuve?\n' +
+          '• ¿Tengo pedidos del Menú Digital?\n' +
+          '• ¿Cuál fue mi venta más grande?\n\n' +
+          'Puedes decirle el periodo que quieras: hoy, ayer, antier, esta semana, ' +
+          'el mes pasado, "hace 5 días", "en marzo" o una fecha. ' +
           'Escríbelo como quieras, aunque sea con faltas de ortografía.',
-        chips: ['¿Cuánto vendí hoy?', '¿Qué vendo más?', '¿Cuánto me deben?']
+        chips: ['¿Qué producto me deja más ganancia?', '¿Qué día de la semana vendo más?', '¿Quién me compra más?']
       };
     },
 
@@ -929,6 +1020,321 @@ if (hace) {
       return { texto: 'De ' + mejor.name + ' tienes ' + (VP.fmtStock ? VP.fmtStock(mejor, st.stock) : st.stock) + '.' + (st.level === 'out' ? ' Está agotado.' : (st.level === 'low' ? ' Ya queda poco.' : '')) };
     },
 
+    /* ===================================================================
+       PREGUNTAS NUEVAS DEL NEGOCIO
+       Todas salen de los MISMOS cálculos que ya usa Vendo Plus
+       (reportData, DB, shiftTotals, mdiCounts). Cero red, cero costo.
+    =================================================================== */
+
+    /* "¿Qué producto me deja más ganancia?" — no es lo mismo que el más
+       vendido: se puede vender mucho de algo que casi no deja. */
+    producto_rentable: function (q) {
+      if (!puede('verGanancias')) return { texto: 'No tienes permiso para ver las ganancias. Pídeselo al dueño.' };
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      var lista = Object.keys(d.byProd).map(function (k) { return d.byProd[k]; })
+        .filter(function (p) { return p.profit > 0; })
+        .sort(function (a, b) { return b.profit - a.profit; });
+      if (!lista.length) {
+        return { texto: 'Todavía no puedo decirte cuál te deja más ' + q.etiqueta + '.\n' +
+          'Para saberlo necesito el precio de producción de tus productos (lo pones al editarlos).',
+          chips: ['¿Qué vendo más?', '¿Cuál fue mi ganancia?'] };
+      }
+      var top = lista[0];
+      var masVendido = Object.keys(d.byProd).map(function (k) { return d.byProd[k]; })
+        .sort(function (a, b) { return b.qty - a.qty; })[0];
+      var txt = 'El que más ganancia te deja ' + q.etiqueta + ' es ' + top.name + ': ' + dinero(top.profit) +
+        ' de ' + dinero(top.total) + ' vendidos.';
+      if (masVendido && masVendido.name !== top.name) {
+        txt += '\nOjo: el que más vendes es ' + masVendido.name + ', pero te deja menos.';
+      }
+      return {
+        texto: txt,
+        detalle: lista.slice(0, 6).map(function (p) {
+          var pct = p.total > 0 ? ' · ' + Math.round((p.profit / p.total) * 100) + '%' : '';
+          return [p.name, dinero(p.profit) + pct];
+        }),
+        chips: ['¿Qué vendo más?', '¿Qué margen tengo?']
+      };
+    },
+
+    /* "¿Quién me compra más?" */
+    mejor_cliente: function (q) {
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      var por = {};
+      d.orders.forEach(function (s) {
+        var nom = (s.customerName || '').trim();
+        if (!nom) return;
+        var k = s.customerId || ('n:' + nom.toLowerCase());
+        por[k] = por[k] || { nombre: nom, total: 0, veces: 0 };
+        por[k].total += Number(s.total) || 0;
+        por[k].veces += 1;
+      });
+      var lista = Object.keys(por).map(function (k) { return por[k]; })
+        .sort(function (a, b) { return b.total - a.total; });
+      if (!lista.length) {
+        return { texto: 'No tengo ventas con cliente anotado ' + q.etiqueta + '.\n' +
+          'Si al cobrar le pones el nombre del cliente, aquí te digo quién te compra más.',
+          chips: ['¿Cuánto me deben?', '¿Cuántos clientes tengo?'] };
+      }
+      var t = lista[0];
+      return {
+        texto: 'Quien más te compró ' + q.etiqueta + ' es ' + t.nombre + ': ' + dinero(t.total) +
+          ' en ' + t.veces + (t.veces === 1 ? ' compra' : ' compras') + '.',
+        detalle: lista.slice(0, 8).map(function (c) {
+          return [c.nombre, dinero(c.total) + ' · ' + c.veces + (c.veces === 1 ? ' compra' : ' compras')];
+        }),
+        chips: ['¿Cuánto me deben?', '¿Cuántos clientes tengo?']
+      };
+    },
+
+    /* "¿Cuál fue mi venta más grande?" */
+    venta_mayor: function (q) {
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      if (!d.orders.length) return { texto: 'No hubo ventas ' + q.etiqueta + '.' };
+      var lista = d.orders.slice().sort(function (a, b) { return Number(b.total) - Number(a.total); });
+      var v = lista[0];
+      var cuantos = (v.items || []).reduce(function (a, it) { return a + (Number(it.qty) || 0); }, 0);
+      var det = [];
+      (v.items || []).slice(0, 6).forEach(function (it) {
+        det.push([it.name, num(it.qty) + ' · ' + dinero(it.price * it.qty)]);
+      });
+      return {
+        /* La fecha ya acaba en "p.m.", así que el monto va al final:
+           si no, quedaba un punto doble ("07:15 p.m.."). */
+        texto: 'Tu venta más grande ' + q.etiqueta + ' fue el ' + fechaCorta(v.date) + ': ' + dinero(v.total) + '.' +
+          (cuantos ? '\nLlevaba ' + num(cuantos) + ' artículo(s)' + (v.customerName ? ' · ' + v.customerName : '') + '.' : ''),
+        detalle: det,
+        chips: ['¿Cuál es mi ticket promedio?', '¿Qué vendo más?']
+      };
+    },
+
+    /* "¿A qué hora vendo menos?" — para saber cuándo conviene descansar,
+       limpiar o hacer la promoción. */
+    peor_hora: function (q) {
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      var horas = [];
+      for (var h = 0; h < 24; h++) if (d.byHour[h] > 0) horas.push([h, d.byHour[h]]);
+      if (!horas.length) return { texto: 'No hay ventas ' + q.etiqueta + ' para comparar horas.' };
+      if (horas.length === 1) {
+        return { texto: 'Solo vendiste a una hora ' + q.etiqueta + ': ' + hora12(horas[0][0]) + ', ' + dinero(horas[0][1]) + '.' };
+      }
+      horas.sort(function (a, b) { return a[1] - b[1]; });
+      var floja = horas[0];
+      return {
+        texto: 'Tu hora más floja ' + q.etiqueta + ' es a las ' + hora12(floja[0]) + ': ' + dinero(floja[1]) + '.\n' +
+          'Es buen momento para surtir, limpiar o hacer una promoción.',
+        detalle: horas.slice(0, 6).map(function (x) { return [hora12(x[0]), dinero(x[1])]; }),
+        chips: ['¿A qué hora vendo más?', '¿Qué día de la semana vendo más?']
+      };
+    },
+
+    /* "¿Qué día de la semana vendo más?" — distinto del mejor día (que es
+       una fecha): aquí se juntan todos los lunes, todos los martes… */
+    dia_semana: function (q) {
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      var NOM = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      var sum = [0, 0, 0, 0, 0, 0, 0], veces = [0, 0, 0, 0, 0, 0, 0];
+      Object.keys(d.byDay).forEach(function (k) {
+        var p = k.split('-');
+        var dia = new Date(p[0], p[1] - 1, p[2]).getDay();
+        sum[dia] += d.byDay[k];
+        if (d.byDay[k] > 0) veces[dia] += 1;
+      });
+      var lista = [];
+      for (var i = 0; i < 7; i++) if (veces[i] > 0) lista.push({ i: i, total: sum[i], veces: veces[i], prom: sum[i] / veces[i] });
+      if (!lista.length) return { texto: 'No hay ventas ' + q.etiqueta + ' para comparar los días de la semana.' };
+      lista.sort(function (a, b) { return b.prom - a.prom; });
+      var mejor = lista[0], peor = lista[lista.length - 1];
+      var txt = 'Tus ' + NOM[mejor.i] + ' son los mejores ' + q.etiqueta + ': ' + dinero(mejor.prom) + ' en promedio.';
+      if (lista.length > 1 && peor.i !== mejor.i) {
+        txt += '\nLos ' + NOM[peor.i] + ' son los más flojos (' + dinero(peor.prom) + ').';
+      }
+      return {
+        texto: txt,
+        detalle: lista.map(function (x) {
+          return [NOM[x.i].charAt(0).toUpperCase() + NOM[x.i].slice(1),
+                  dinero(x.prom) + ' prom. · ' + x.veces + (x.veces === 1 ? ' día' : ' días')];
+        }),
+        chips: ['¿A qué hora vendo más?', '¿Cuál fue mi mejor día?']
+      };
+    },
+
+    /* "¿Cuántos productos tengo?" */
+    cuantos_productos: function () {
+      var prods = VP.DB.getProducts() || [];
+      var activos = prods.filter(function (p) { return p.active; });
+      var conStock = activos.filter(function (p) { return VP.stockInfo(p).control; });
+      var agotados = conStock.filter(function (p) { return VP.stockInfo(p).level === 'out'; });
+      var bajos = typeof VP.lowStock === 'function' ? VP.lowStock() : [];
+      var cats = (VP.DB.getCategories() || []).length;
+      var det = [['En tu catálogo', String(prods.length)], ['Activos', String(activos.length)]];
+      if (prods.length !== activos.length) det.push(['Desactivados', String(prods.length - activos.length)]);
+      det.push(['Con control de existencias', String(conStock.length)]);
+      if (agotados.length) det.push(['Agotados', String(agotados.length)]);
+      if (bajos.length) det.push(['Por agotarse', String(bajos.length)]);
+      det.push(['Categorías', String(cats)]);
+      return {
+        texto: 'Tienes ' + activos.length + ' producto(s) activos' +
+          (prods.length !== activos.length ? ' (y ' + (prods.length - activos.length) + ' desactivados)' : '') + '.',
+        detalle: det,
+        chips: ['¿Qué está por agotarse?', '¿Cuánto vale mi inventario?']
+      };
+    },
+
+    /* "¿Qué productos no se han vendido?" — el dinero parado en la
+       bodega. Se compara por id, no por nombre, para no equivocarse con
+       dos productos que se llamen parecido. */
+    sin_vender: function (q) {
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      var vendidos = {};
+      Object.keys(d.byProd).forEach(function (k) { vendidos[String(k).split('|')[0]] = 1; });
+      var prods = (VP.DB.getProducts() || []).filter(function (p) { return p.active && !vendidos[p.id]; });
+      if (!prods.length) return { texto: '¡Muy bien! Todos tus productos activos se vendieron al menos una vez ' + q.etiqueta + '.' };
+      /* Cuánto dinero está detenido ahí */
+      var parado = 0;
+      prods.forEach(function (p) {
+        var st = VP.stockInfo(p);
+        if (st.control && st.stock > 0) parado += st.stock * (p.cost != null ? Number(p.cost) : Number(p.price) || 0);
+      });
+      return {
+        texto: prods.length + ' producto(s) no se vendieron ni una vez ' + q.etiqueta + '.' +
+          (parado > 0 ? '\nTienes como ' + dinero(parado) + ' detenidos ahí.' : ''),
+        detalle: prods.slice(0, 10).map(function (p) {
+          var st = VP.stockInfo(p);
+          return [p.name, st.control ? (VP.fmtStock ? VP.fmtStock(p, st.stock) : st.stock) + ' en existencia' : 'sin control'];
+        }),
+        chips: ['¿Qué vendo más?', '¿Cuánto vale mi inventario?']
+      };
+    },
+
+    /* "¿Cuánto vendo al día en promedio?" */
+    promedio_diario: function (q) {
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      var conVenta = Object.keys(d.byDay).filter(function (k) { return d.byDay[k] > 0; }).length;
+      if (!conVenta) return { texto: 'No hubo ventas ' + q.etiqueta + '.' };
+      var prom = d.net / conVenta;
+      var det = [['Vendiste', dinero(d.net)], ['Días con venta', String(conVenta)], ['Promedio por día', dinero(prom)]];
+      if (d.orders.length) det.push(['Ventas por día', num(Math.round((d.orders.length / conVenta) * 10) / 10)]);
+      return {
+        texto: 'Vendes como ' + dinero(prom) + ' al día ' + q.etiqueta + '.\n' +
+          '(' + dinero(d.net) + ' entre ' + conVenta + (conVenta === 1 ? ' día' : ' días') + ' con venta.)',
+        detalle: det,
+        chips: ['¿Qué día de la semana vendo más?', '¿Cuál es mi ticket promedio?']
+      };
+    },
+
+    /* "¿Qué margen tengo?" — de cada 100 pesos vendidos, cuánto queda. */
+    margen_pct: function (q) {
+      if (!puede('verGanancias')) return { texto: 'No tienes permiso para ver las ganancias. Pídeselo al dueño.' };
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      if (!d.net) return { texto: 'No hubo ventas ' + q.etiqueta + ', así que todavía no hay margen que calcular.' };
+      var bruto = (d.prof.profit / d.net) * 100;
+      var neta = d.prof.profit - d.gastos;
+      var netoPct = (neta / d.net) * 100;
+      var txt = 'Tu margen ' + q.etiqueta + ' es del ' + Math.round(bruto) + '%.\n' +
+        'De cada ' + dinero(100) + ' que vendes, te quedan ' + dinero(Math.round(bruto)) + ' antes de gastos.';
+      if (d.gastos > 0) txt += '\nYa con los gastos, el margen neto es del ' + Math.round(netoPct) + '%.';
+      var det = [['Vendiste', dinero(d.net)], ['Costo de lo vendido', '−' + dinero(d.prof.cost)],
+                 ['Ganancia bruta', dinero(d.prof.profit) + ' · ' + Math.round(bruto) + '%']];
+      if (d.gastos > 0) det.push(['Gastos', '−' + dinero(d.gastos)], ['Ganancia neta', dinero(neta) + ' · ' + Math.round(netoPct) + '%']);
+      if (d.prof.missing > 0) det.push(['Sin costo capturado', num(d.prof.missing) + ' producto(s)']);
+      return { texto: txt, detalle: det, chips: ['¿Qué producto me deja más ganancia?', '¿Cuánto gasté?'] };
+    },
+
+    /* "¿Cuánto necesito vender para cubrir mis gastos?" */
+    punto_equilibrio: function (q) {
+      if (!puede('verGanancias')) return { texto: 'No tienes permiso para ver los gastos ni las ganancias. Pídeselo al dueño.' };
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      if (!d.gastos) {
+        return { texto: 'No registraste gastos ' + q.etiqueta + ', así que todo lo que vendes es ganancia.\n' +
+          'Si anotas tus gastos (renta, luz, sueldos), aquí te digo cuánto necesitas vender para cubrirlos.',
+          chips: ['¿Cuál fue mi ganancia?', '¿Cuánto vendí?'] };
+      }
+      if (!d.net || d.prof.profit <= 0) {
+        return { texto: 'Con lo de ' + q.etiqueta + ' no alcanzo a calcularlo: necesito ventas con ganancia para saber tu margen.\n' +
+          'Tus gastos fueron ' + dinero(d.gastos) + '.' };
+      }
+      var margen = d.prof.profit / d.net;
+      var necesita = d.gastos / margen;
+      var falta = necesita - d.net;
+      var txt = 'Para cubrir tus ' + dinero(d.gastos) + ' de gastos necesitas vender ' + dinero(necesita) + ' ' + q.etiqueta + '.\n' +
+        '(Con tu margen del ' + Math.round(margen * 100) + '%.)';
+      txt += falta > 0
+        ? '\nLlevas ' + dinero(d.net) + ': te faltan ' + dinero(falta) + '.'
+        : '\nYa llevas ' + dinero(d.net) + ': lo pasaste por ' + dinero(-falta) + '. 👏';
+      return {
+        texto: txt,
+        detalle: [['Gastos', dinero(d.gastos)], ['Tu margen', Math.round(margen * 100) + '%'],
+                  ['Necesitas vender', dinero(necesita)], ['Llevas', dinero(d.net)]],
+        chips: ['¿Cuánto gasté?', '¿Qué margen tengo?']
+      };
+    },
+
+    /* "¿Tengo pedidos del Menú Digital?" */
+    menu_pedidos: function (q) {
+      var cuenta = ref('mdiCounts');
+      if (typeof cuenta !== 'function') return { texto: 'El Menú Digital no está disponible en esta pantalla.' };
+      var c = cuenta();
+      var d = datosDe(q.periodo, q.desde, q.hasta);
+      var delMenu = d ? d.orders.filter(function (s) { return s.origin === 'menu'; }) : [];
+      var vendido = delMenu.reduce(function (a, s) { return a + (Number(s.total) || 0); }, 0);
+      var porAtender = (c.nuevo || 0) + (c.pendiente || 0);
+      var txt = porAtender
+        ? 'Tienes ' + porAtender + ' pedido(s) por atender' +
+          (c.nuevo ? ': ' + c.nuevo + ' sin revisar' : '') +
+          (c.pendiente ? (c.nuevo ? ' y ' : ': ') + c.pendiente + ' por cobrar' : '') + '.'
+        : 'No tienes pedidos pendientes del Menú Digital.';
+      if (delMenu.length) {
+        txt += '\n' + q.etiqueta.charAt(0).toUpperCase() + q.etiqueta.slice(1) + ' cobraste ' +
+          delMenu.length + ' pedido(s) del menú: ' + dinero(vendido) + '.';
+      }
+      var det = [];
+      if (c.nuevo) det.push(['Sin revisar', String(c.nuevo)]);
+      if (c.pendiente) det.push(['Aceptados, por cobrar', String(c.pendiente)]);
+      if (c.finalizado) det.push(['Terminados', String(c.finalizado)]);
+      if (delMenu.length) det.push(['Cobrado del menú ' + q.etiqueta, dinero(vendido)]);
+      return { texto: txt, detalle: det, chips: ['¿Cuánto vendí hoy?', '¿Cómo voy hoy?'] };
+    },
+
+    /* "¿Cómo voy en mi turno?" */
+    turno: function () {
+      var cs = ref('currentShift'), st = ref('shiftTotals'), sc = ref('shiftClock');
+      if (typeof cs !== 'function' || typeof st !== 'function') return null;
+      var sh = cs();
+      if (!sh) return { texto: 'Ahorita no tienes un turno abierto.', chips: ['¿Cuánto vendí hoy?', '¿Cómo voy hoy?'] };
+      var t = st(sh);
+      var desde = typeof sc === 'function' ? sc(sh.start) : fechaCorta(sh.start);
+      var prom = t.count > 0 ? t.total / t.count : 0;
+      return {
+        texto: 'En tu turno llevas ' + dinero(t.total) + ' en ' + t.count + (t.count === 1 ? ' venta' : ' ventas') + '.\n' +
+          'Empezaste a las ' + desde + '.',
+        detalle: [['Desde', desde], ['Ventas', String(t.count)], ['Total', dinero(t.total)]]
+          .concat(t.count ? [['Promedio por venta', dinero(prom)]] : []),
+        chips: ['¿Cuánto vendí hoy?', '¿Cuánto hay en caja?']
+      };
+    },
+
+    /* "¿Cuántos clientes nuevos?" */
+    clientes_nuevos: function (q) {
+      var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
+      var cli = VP.DB.getCustomers() || [];
+      var desde = d.r[0], hasta = d.r[1];
+      var nuevos = cli.filter(function (c) {
+        if (!c.createdAt) return false;
+        var f = new Date(c.createdAt);
+        return f >= desde && f < hasta;
+      });
+      if (!nuevos.length) {
+        return { texto: 'No registraste clientes nuevos ' + q.etiqueta + '.\nEn total tienes ' + cli.length + '.',
+          chips: ['¿Cuántos clientes tengo?', '¿Quién me compra más?'] };
+      }
+      return {
+        texto: 'Registraste ' + nuevos.length + ' cliente(s) nuevos ' + q.etiqueta + '.\nEn total ya tienes ' + cli.length + '.',
+        detalle: nuevos.slice(0, 8).map(function (c) { return [c.name, fechaCorta(c.createdAt)]; }),
+        chips: ['¿Quién me compra más?', '¿Cuánto me deben?']
+      };
+    },
+
     resumen: function (q) {
       var d = datosDe(q.periodo, q.desde, q.hasta); if (!d) return null;
       var det = [['Ventas', dinero(d.net)], ['Número de ventas', String(d.orders.length)]];
@@ -949,9 +1355,29 @@ if (hace) {
       empieza; en la noche, el corte. Es gratis y hace que se sienta vivo. */
   function chipsSegunHora() {
     var h = new Date().getHours();
-    if (h < 12) return ['¿Cómo voy hoy?', '¿Qué está por agotarse?', '¿Cuánto vendí ayer?'];
-    if (h < 19) return ['¿Cuánto vendí hoy?', '¿Qué vendo más?', '¿Cuánto me deben?'];
-    return ['¿Cómo me fue hoy?', '¿Cuál fue mi ganancia?', '¿Cuánto vendí en efectivo?'];
+    /* Dos fijas de la hora + una que va rotando, para que la gente vaya
+       descubriendo todo lo que se le puede preguntar. */
+    var rotan = [
+      '¿Qué producto me deja más ganancia?',
+      '¿Qué día de la semana vendo más?',
+      '¿Quién me compra más?',
+      '¿Qué margen tengo?',
+      '¿Qué productos no se han vendido?',
+      '¿Cuánto vendo al día en promedio?',
+      '¿Cuál fue mi venta más grande?',
+      '¿A qué hora vendo menos?',
+      '¿Cuánto necesito vender para cubrir mis gastos?',
+      '¿Cuántos productos tengo?',
+      '¿Tengo pedidos del Menú Digital?',
+      '¿Cómo voy en mi turno?',
+      '¿Cuántos clientes nuevos tuve?'
+    ];
+    /* Cambia cada media hora: se siente vivo sin marear */
+    var i = Math.floor(Date.now() / 1800000) % rotan.length;
+    var extra = rotan[i];
+    if (h < 12) return ['¿Cómo voy hoy?', '¿Qué está por agotarse?', extra];
+    if (h < 19) return ['¿Cuánto vendí hoy?', '¿Qué vendo más?', extra];
+    return ['¿Cómo me fue hoy?', '¿Cuál fue mi ganancia?', extra];
   }
 
   function diaExtremo(q, mejor) {
@@ -977,6 +1403,14 @@ if (hace) {
     });
     if (d.tips) det.push(['Propinas', dinero(d.tips)]);
     return det;
+  }
+
+  /** 15 -> "3 p.m." (como se dice la hora de verdad). */
+  function hora12(h) {
+    var n = Number(h) || 0;
+    var ampm = n < 12 ? 'a.m.' : 'p.m.';
+    var h12 = n % 12; if (h12 === 0) h12 = 12;
+    return h12 + ' ' + ampm;
   }
 
   function nombreMetodo(id) {
@@ -1197,7 +1631,7 @@ if (hace) {
 
   var NO_ENTENDI = {
     texto: 'Esa no la entendí todavía. Pregúntame cosas de tu negocio, por ejemplo:',
-    chips: ['¿Cuánto vendí hoy?', '¿Cuál fue mi ganancia del mes?', '¿Qué está por agotarse?', '¿Cuánto vendí en efectivo?']
+    chips: ['¿Cuánto vendí hoy?', '¿Qué producto me deja más ganancia?', '¿Qué está por agotarse?', '¿Qué puedes hacer?']
   };
   /* Para un "ok", un emoji o un toque sin querer: ahí no hubo nada que
      entender, así que decir "no te entendí" suena mal. Mejor preguntar. */
