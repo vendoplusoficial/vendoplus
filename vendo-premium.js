@@ -103,6 +103,11 @@
       ico: 'camera'
     },
     usuarios: { titulo: 'Acceso para tus empleados', texto: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.', ico: 'users' },
+    comandas: {
+      titulo: 'Comandas',
+      texto: 'Administra mesas, meseros, cocina y pedidos desde VendoPlus.',
+      ico: 'vpcTray'
+    },
   stats: {
       titulo: 'Reportes de ventas y ganancias',
       texto: 'Consulta cuánto vendes, cuánto ganas y cuáles son tus productos más vendidos.',
@@ -995,15 +1000,19 @@
         esc(ALT_FOTO[k] || '') + '" loading="lazy" decoding="async" draggable="false">';
     }
   })();
+  /* Comandas usa un dibujo propio (SVG) en vez de foto: pesa casi nada y se
+     ve igual de bien en el celular, la tablet y la computadora. */
+  IMAGENES.comandas = '<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Una comanda de mesa llegando a la cocina"><rect width="160" height="100" fill="#E5FAEC"/><rect x="14" y="20" width="52" height="64" rx="6" fill="#FFFFFF" stroke="#16213E" stroke-width="2.2"/><rect x="22" y="30" width="36" height="5" rx="2.5" fill="#25D366"/><rect x="22" y="41" width="28" height="4" rx="2" fill="#16213E" opacity=".22"/><rect x="22" y="50" width="32" height="4" rx="2" fill="#16213E" opacity=".22"/><rect x="22" y="59" width="22" height="4" rx="2" fill="#16213E" opacity=".22"/><rect x="22" y="69" width="26" height="6" rx="3" fill="#FFD666"/><path d="M72 52h14" stroke="#16213E" stroke-width="2.4" stroke-linecap="round"/><path d="M82 47l5 5-5 5" fill="none" stroke="#16213E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="94" y="44" width="52" height="28" rx="7" fill="#FFFFFF" stroke="#16213E" stroke-width="2.2"/><path d="M90 44h60" stroke="#16213E" stroke-width="2.2" stroke-linecap="round"/><rect x="102" y="54" width="36" height="7" rx="3.5" fill="#25D366"/><path d="M106 36c0-5 5-6 5-11M120 36c0-5 5-6 5-11M134 36c0-5 5-6 5-11" fill="none" stroke="#FFD666" stroke-width="2.8" stroke-linecap="round"/></svg>';
   var DESC_CORTA = {
     menu: 'Tus clientes ven tu menú y hacen su pedido desde el celular. Tú lo recibes en VendoPlus.',
     chat: 'Pregúntale a la IA cuánto vendiste, cuánto ganaste o qué productos se están agotando.',
     escaner: 'Toma una foto de tu carta y la IA carga los productos y precios por ti.',
     stats: 'Consulta cuánto vendes, cuánto ganas y cuáles son tus productos más vendidos.',
-    usuarios: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.'
+    usuarios: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.',
+    comandas: 'Administra mesas, meseros, cocina y pedidos desde VendoPlus.'
   };
   /* Esta lista es la de la pantalla "Funciones premium". */
-  var ORDEN_SECCION = ['menu', 'chat', 'escaner', 'stats', 'usuarios'];
+  var ORDEN_SECCION = ['menu', 'comandas', 'chat', 'escaner', 'stats', 'usuarios'];
 
   var cssFuncPuesto = false;
   function estilosFunciones() {
@@ -1267,6 +1276,11 @@
     if (clave === 'usuarios') {
       var u = fn('openUsersSheet');
       if (u) u(); else abrir('usuarios');
+      return;
+    }
+    if (clave === 'comandas') {
+      if (window.VPComandas && typeof VPComandas.abrir === 'function') VPComandas.abrir();
+      else if (ir) ir('comandas');
       return;
     }
   }

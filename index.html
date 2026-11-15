@@ -79,6 +79,8 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
+<!-- Comandas: hoja de estilos propia. Todas sus clases llevan el prefijo vpc-. -->
+<link rel="stylesheet" href="vendo-comandas.css?v=20261115">
 <style>
   :root{
     --bg:#F4F6FB;
@@ -27017,7 +27019,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
           : '<button class="btn primary block" onclick="closeModal(); afterSaleNew();">'+icon('plus')+' Nueva venta</button>')+
       '</div>';
   };
-  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['account','person','Mi cuenta']];
+  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['comandas','vpcTray','Comandas'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
     if(!bg){
@@ -27996,6 +27998,8 @@ function cartSanitize(){
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $199/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261030"></script>
+<!-- Comandas: mesas, meseros, cocina y cuentas. Se registra solo en EXTRA_VIEWS. -->
+<script src="vendo-comandas.js?v=20261115"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
