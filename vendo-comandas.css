@@ -143,6 +143,24 @@
   padding:3px 9px; border-radius:999px; white-space:nowrap;
 }
 .vpc-com-body{ padding:4px 0; }
+.vpc-com-pie{ padding:10px 13px; border-top:1px solid var(--border); }
+
+/* ------------------------------------------------------ total de la mesa -- */
+.vpc-total{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 16px; background:var(--surface);
+  border:1px solid var(--border); border-radius:12px;
+}
+.vpc-total b:first-child{ font-size:15px; font-weight:700; color:var(--ink); }
+.vpc-total b:last-child{ font-size:20px; font-weight:800; color:var(--ink); }
+
+/* ------------------------------------------ pantalla "¿dónde estás?" ----- */
+/* Se abre al entrar a VendoPlus cuando hay más de una sección encendida.
+   Se elige una vez y se queda guardada en el aparato. */
+.vpc-elegir{ padding-top:26px; padding-bottom:30px; }
+.vpc-elegir .page-title{ margin-bottom:4px; }
+.vpc-elegir .vpc-card{ box-shadow:0 4px 18px rgba(22,33,62,.10); }
+.vpc-elegir .vpc-card[disabled]{ cursor:default; }
 
 .vpc-prod{
   display:flex; align-items:flex-start; gap:10px;
@@ -192,12 +210,42 @@
 }
 .vpc-li:last-child{ border-bottom:0; }
 .vpc-li:active{ background:var(--surface-alt, #F0F2F8); }
+/* Fila que NO es un botón completo (trae sus propios controles adentro) */
+.vpc-li.is-plain{ cursor:default; }
+.vpc-li.is-plain:active{ background:none; }
+.vpc-li-go{
+  flex:none; border:0; background:none; padding:6px 0 6px 4px; cursor:pointer;
+  color:var(--ink-faint, #C9CEDD); -webkit-tap-highlight-color:transparent;
+  display:flex; align-items:center;
+}
+.vpc-li-go svg{ width:20px; height:20px; }
+.vpc-li-go:active{ transform:scale(.9); }
 .vpc-li-ico{
   flex:none; width:38px; height:38px; border-radius:11px;
   background:#E5FAEC; color:#0E7A3D;
   display:flex; align-items:center; justify-content:center;
 }
 .vpc-li-ico svg{ width:18px; height:18px; }
+.vpc-li-ico.is-danger{ background:var(--danger-bg, #FBEAE8); color:#C0392B; }
+
+/* ------------------------------------------------- interruptor (switch) --- */
+/* El mismo verde de VendoPlus. Cuando no se puede mover, se ve apagadito
+   pero no se esconde: asi el usuario ve que la seccion SI esta encendida. */
+.vpc-sw{
+  flex:none; position:relative; width:46px; height:28px; border-radius:999px;
+  border:0; padding:0; cursor:pointer; background:var(--ink-faint, #C9CEDD);
+  -webkit-tap-highlight-color:transparent;
+  transition:background .18s ease;
+}
+.vpc-sw i{
+  position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(22,33,62,.28);
+  transition:transform .18s ease;
+}
+.vpc-sw.is-on{ background:var(--sec-home, #25D366); }
+.vpc-sw.is-on i{ transform:translateX(18px); }
+.vpc-sw.is-off{ cursor:default; opacity:.55; }
+.vpc-sw:not(.is-off):active i{ width:26px; }
 .vpc-li-txt{ flex:1; min-width:0; }
 .vpc-li-txt b{ display:block; font-size:14.5px; font-weight:700; color:var(--ink); }
 .vpc-li-txt small{ display:block; font-size:12.5px; font-weight:500; color:var(--ink-soft); margin-top:2px; }

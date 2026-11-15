@@ -3,20 +3,29 @@
    -------------------------------------------------------------------------
    Mesas, meseros, cocina y cuentas, dentro de VendoPlus.
 
-   CÓMO ESTÁ HECHO (a propósito):
+   CÓMO FUNCIONA (en corto):
+     · La cuenta con la que entras a VendoPlus ES el dueño. Siempre.
+       No hay códigos, no hay que enlazar nada con nadie.
+     · Los meseros y cocineros son los usuarios que YA tienes en
+       Configuración → Usuarios, cada quien con su NIP. Desde la pantalla
+       de Comandas le dices a cada uno en qué área trabaja.
+     · Hay 3 secciones: Caja (siempre encendida, es el VendoPlus de
+       siempre), Mesero y Cocinero. El dueño las prende o las apaga.
+     · Si hay más de una encendida, al abrir VendoPlus se eligen las
+       pantallas. Se elige UNA VEZ y se queda guardada en ese aparato,
+       aunque cierres el navegador o la app.
+     · Solo el dueño puede modificar. Los demás usuarios pueden ver
+       quién está en cada área, pero no cambiar nada.
+
+   CÓMO ESTÁ HECHO:
      · Un solo archivo, envuelto en su propia función, igual que
        vendo-premium.js. No ensucia nada de lo que ya existe.
-     · No reemplaza ninguna función de VendoPlus. Solo ENVUELVE dos
-       (confirmarCobro y mdiConfirm) para enterarse de lo que pasó, y
-       siempre llama primero a la original.
+     · No reemplaza ninguna función de VendoPlus. Solo ENVUELVE tres
+       (confirmarCobro, mdiConfirm y openUserSession) para enterarse de
+       lo que pasó, y siempre llama primero a la original.
      · Las pantallas se registran en EXTRA_VIEWS, que es el lugar que
-       VendoPlus ya tiene para secciones nuevas (lo mismo que hacen
-       Clientes y crédito, y Caja y corte).
-     · Todo lo que se guarda pasa por funciones del servidor. El navegador
-       no escribe directo: por eso un mesero no puede cambiar precios y un
-       cocinero no puede cobrar, aunque abran la consola.
-     · El inventario NO se toca aquí. Se sigue descontando donde siempre:
-       al cobrar la venta.
+       VendoPlus ya tiene para secciones nuevas.
+     · El inventario NO se toca aquí: se sigue descontando al cobrar.
 
    Es el mismo archivo para la página web y para la app de Play Store.
 ========================================================================= */
@@ -26,11 +35,11 @@
 
   /* =======================================================================
      1.  PUENTES A LO QUE YA EXISTE
-     Se llega por nombre, pero todo va envuelto por si algo cambiara.
   ======================================================================= */
   function ref(n) { try { return eval(n); } catch (e) { return undefined; } }
   function fn(n) { var f = ref(n); return typeof f === 'function' ? f : null; }
   function esc(s) { var f = fn('escapeHtml'); var t = String(s == null ? '' : s); return f ? f(t) : t.replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function js(s) { return JSON.stringify(String(s == null ? '' : s)).replace(/"/g, '&quot;'); }
   function ico(n) { var f = fn('icon'); return f ? f(n) : ''; }
   function money(n) { var f = fn('formatMoney'); return f ? f(Number(n) || 0) : '$' + (Number(n) || 0).toFixed(2); }
   function avisar(m, o) { var f = fn('toast'); if (f) f(m, o || {}); }
@@ -39,22 +48,30 @@
   function cerrarModal() { var f = fn('closeModal'); if (f) f(); }
   function nube() { var c = window.Cloud; return (c && c.ready && c.uid && c.sb) ? c : null; }
   function llave() { var f = fn('uid'); return f ? f('c') : 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
-  /** Texto que va DENTRO de un onclick: queda seguro aunque traiga comillas. */
-  function js(s) { return JSON.stringify(String(s == null ? '' : s)).replace(/"/g, '&quot;'); }
 
-  /** Repinta la pantalla sin perder el lugar donde iba el dedo. */
   function repintar() {
     var v = ref('currentView');
     if (String(v || '').indexOf('comandas') !== 0) return;
     if (document.querySelector('#modal-layer .modal-sheet')) return;
     var y = window.scrollY;
     var f = fn('render'); if (f) f();
-    window.scrollTo(0, y);
+    try { window.scrollTo(0, y); } catch (e) { }
+  }
+
+  /* ---- Los usuarios de VendoPlus de siempre (Configuración → Usuarios) ---- */
+  function usuarios() { var DB = ref('DB'); return (DB && DB.getUsers) ? DB.getUsers() : []; }
+  function guardarUsuarios(l) { var DB = ref('DB'); if (DB && DB.saveUsers) DB.saveUsers(l); }
+  function usuarioActivo() { var f = fn('activeUser'); return f ? f() : null; }
+  function soyDueno() { var f = fn('isOwner'); return f ? !!f() : true; }
+  function nombreActor() { var u = usuarioActivo(); return (u && u.name) || 'Dueño'; }
+  /** El área en la que está clasificado un usuario. Por omisión, Caja. */
+  function areaDe(u) {
+    var a = u && u.comandaArea;
+    return (a === 'mesero' || a === 'cocina') ? a : 'caja';
   }
 
   /* =======================================================================
-     2.  ÍCONOS PROPIOS
-     Se agregan a los que ya existen, sin pisar ninguno.
+     2.  ÍCONOS Y DIBUJOS PROPIOS
   ======================================================================= */
   var T = 'fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
   var MIS_ICONOS = {
@@ -64,21 +81,18 @@
     vpcTable: '<svg viewBox="0 0 24 24" ' + T + '><path d="M3 9h18"/><path d="M5 9l1.5 10M19 9l-1.5 10"/><path d="M4.5 6h15a1.5 1.5 0 0 1 0 3h-15a1.5 1.5 0 0 1 0-3Z"/></svg>',
     vpcSend: '<svg viewBox="0 0 24 24" ' + T + '><path d="M4.5 12 20 5l-4 15-4.2-5.6L4.5 12Z"/><path d="M11.8 14.4 20 5"/></svg>',
     vpcBell: '<svg viewBox="0 0 24 24" ' + T + '><path d="M6 10a6 6 0 0 1 12 0c0 4 1.4 5.3 1.4 5.3H4.6S6 14 6 10Z"/><path d="M10.2 19a2 2 0 0 0 3.6 0"/></svg>',
-    vpcBack: '<svg viewBox="0 0 24 24" ' + T + ' stroke-width="2.2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>'
+    vpcBack: '<svg viewBox="0 0 24 24" ' + T + ' stroke-width="2.2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+    vpcLock: '<svg viewBox="0 0 24 24" ' + T + '><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.5"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/></svg>'
   };
   function ponIconos() {
     try {
-      var I = ref('ICONS');
-      if (!I) return false;
+      var I = ref('ICONS'); if (!I) return false;
       for (var k in MIS_ICONOS) if (!I[k]) I[k] = MIS_ICONOS[k];
       return true;
     } catch (e) { return false; }
   }
   function mi(n) { var I = ref('ICONS'); return (I && I[n]) || MIS_ICONOS[n] || ''; }
 
-  /* Dibujos de las tres tarjetas. Van aquí adentro a propósito: así es UN
-     solo archivo que se copia igual a la web y a la app, sin imágenes
-     sueltas que se puedan quedar sin subir. Mismos colores de VendoPlus. */
   var VERDE = '#25D366', TINTA = '#16213E', AMAR = '#FFD666', FONDO = '#E5FAEC', BLANCO = '#FFFFFF';
   var DIBUJOS = {
     caja: '<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">' +
@@ -107,33 +121,63 @@
       '<path d="M118 52h8a5 5 0 0 1 0 10h-8" fill="none" stroke="' + TINTA + '" stroke-width="2.4"/></svg>'
   };
 
-  /* =======================================================================
-     3.  ESTADO EN MEMORIA
-  ======================================================================= */
-  var S = {
-    listo: false,        /* ya preguntamos al servidor quiénes somos */
-    cargando: false,
-    negocio: null,
-    rol: null,           /* dueno | caja | mesero | cocina */
-    activo: false,       /* Premium + Comandas encendido */
-    premium: false,
-    esDueno: false,
-    areas: [],
-    tablero: null,
-    cocina: null,
-    cuenta: null,        /* la cuenta abierta en pantalla */
-    area: null,          /* filtro de la pantalla de cocina */
-    borrador: {},        /* lo que se está por agregar a una cuenta */
-    busca: '',
-    categoria: 'todos',
-    empleados: null,
-    canal: null,
-    sondeo: null,
-    ultimoAviso: 0
-  };
+  /* Las 3 secciones. Caja va primero y nunca se apaga. */
+  var SECCIONES = [
+    { id: 'caja', nombre: 'Caja', vista: 'comandas_caja', ico: 'vpcDesk', fija: true, texto: 'Mesas abiertas, cuentas y cobros. Es el VendoPlus de siempre.' },
+    { id: 'mesero', nombre: 'Mesero', vista: 'comandas_mesero', ico: 'vpcTray', fija: false, texto: 'Abre mesas, agrega productos y manda comandas a la cocina.' },
+    { id: 'cocina', nombre: 'Cocinero', vista: 'comandas_cocina', ico: 'vpcPot', fija: false, texto: 'Recibe las comandas y marca los productos como listos.' }
+  ];
+  function seccion(id) { for (var i = 0; i < SECCIONES.length; i++) if (SECCIONES[i].id === id) return SECCIONES[i]; return SECCIONES[0]; }
 
   /* =======================================================================
-     4.  HABLAR CON EL SERVIDOR
+     3.  ESTADO
+  ======================================================================= */
+  var S = {
+    listo: false, cargando: false,
+    activo: false, premium: false,
+    on: { caja: true, mesero: false, cocina: false },   /* secciones encendidas */
+    areas: [],            /* áreas de preparación: Cocina, Barra… */
+    tablero: null, cocina: null, cuenta: null,
+    area: null,           /* filtro de la pantalla de cocina */
+    borrador: {}, busca: '', categoria: 'todos',
+    canal: null, sondeo: null, ultimoAviso: 0,
+    preguntando: false
+  };
+
+  /* ---- El área en la que está trabajando este aparato ----
+     Se guarda por usuario y NO se sube a la nube (no empieza con "mesa_"),
+     así cada celular recuerda lo suyo aunque se cierre la app. */
+  function llaveArea() {
+    var u = usuarioActivo();
+    return 'vpc_area:' + ((u && u.id) || 'solo');
+  }
+  function areaGuardada() {
+    try { return localStorage.getItem(llaveArea()) || null; } catch (e) { return null; }
+  }
+  function guardarArea(a) {
+    try { if (a) localStorage.setItem(llaveArea(), a); else localStorage.removeItem(llaveArea()); } catch (e) { }
+  }
+  /** Las secciones encendidas, en orden. */
+  function encendidas() {
+    return SECCIONES.filter(function (s) { return s.id === 'caja' || S.on[s.id]; });
+  }
+  /** ¿Este usuario puede entrar a esta sección? El dueño, a todas. */
+  function puedeArea(id) {
+    if (soyDueno()) return true;
+    return areaDe(usuarioActivo()) === id;
+  }
+  /** Dónde está trabajando ahora mismo. */
+  function miArea() {
+    var g = areaGuardada();
+    if (g && puedeArea(g) && (g === 'caja' || S.on[g])) return g;
+    var a = areaDe(usuarioActivo());
+    if (a === 'caja' || S.on[a]) return a;
+    return 'caja';
+  }
+  function puedeCobrar() { return soyDueno() || miArea() === 'caja'; }
+
+  /* =======================================================================
+     4.  SERVIDOR
   ======================================================================= */
   function rpc(nombre, args) {
     var c = nube();
@@ -143,7 +187,6 @@
       return r.data;
     });
   }
-  /** Igual que rpc, pero avisa solo si algo salió mal de verdad. */
   function accion(nombre, args, alListo) {
     return rpc(nombre, args).then(function (d) {
       if (d && d.ok === false) {
@@ -161,8 +204,6 @@
   var ERRORES = {
     sin_sesion: 'Entra a tu cuenta para usar Comandas',
     sin_premium: 'Comandas es una función Premium',
-    sin_permiso: 'No tienes permiso para hacer esto',
-    solo_dueno: 'Solo el Dueño puede hacer esto',
     mesa_ocupada: 'Esa mesa ya la abrió alguien más',
     mesa_no_existe: 'Esa mesa ya no existe',
     cuenta_no_existe: 'Esa cuenta ya no existe',
@@ -171,10 +212,6 @@
     producto_no_existe: 'Hay un producto que ya no está en tu catálogo',
     linea_invalida: 'Ese producto ya no se puede pedir así',
     transicion_invalida: 'Ese cambio no se puede hacer desde aquí',
-    codigo_invalido: 'Ese código no sirve o ya venció',
-    demasiados_intentos: 'Demasiados intentos. Espera un rato',
-    ya_vinculado: 'Ya estás dado de alta en ese negocio',
-    aun_no_entra: 'El empleado todavía no usa su código',
     ya_cobrada: 'Esa cuenta ya se cobró',
     sin_venta: 'Falta la venta'
   };
@@ -183,15 +220,13 @@
   /* =======================================================================
      5.  CARGAS
   ======================================================================= */
-  function quienSoy() {
+  function estadoServidor() {
     if (!nube()) { S.listo = true; return Promise.resolve(); }
     return rpc('vp_com_estado').then(function (d) {
       d = d || {};
-      S.negocio = d.negocio || null;
-      S.rol = d.rol || null;
       S.activo = !!d.activo;
       S.premium = !!d.premium;
-      S.esDueno = !!d.es_dueno;
+      S.on = { caja: true, mesero: !!d.mesero, cocina: !!d.cocina };
       S.areas = Array.isArray(d.areas) ? d.areas : [];
       S.listo = true;
       escuchar();
@@ -200,36 +235,22 @@
       S.listo = true;
     });
   }
-
   function cargarTablero(callback) {
     if (!nube() || !S.activo) return;
     S.cargando = true;
     rpc('vp_com_tablero').then(function (d) {
-      S.cargando = false;
-      S.tablero = d || {};
+      S.cargando = false; S.tablero = d || {};
       if (d && Array.isArray(d.areas)) S.areas = d.areas;
       if (callback) callback(); else repintar();
-    }).catch(function (e) {
-      S.cargando = false;
-      console.warn('Vendo plus · comandas', e);
-      repintar();
-    });
+    }).catch(function (e) { S.cargando = false; console.warn('Vendo plus · comandas', e); repintar(); });
   }
-
   function cargarCocina() {
     if (!nube() || !S.activo) return;
     S.cargando = true;
     rpc('vp_com_cocina', { p_area: S.area || null }).then(function (d) {
-      S.cargando = false;
-      S.cocina = Array.isArray(d) ? d : [];
-      repintar();
-    }).catch(function (e) {
-      S.cargando = false;
-      console.warn('Vendo plus · comandas', e);
-      repintar();
-    });
+      S.cargando = false; S.cocina = Array.isArray(d) ? d : []; repintar();
+    }).catch(function (e) { S.cargando = false; console.warn('Vendo plus · comandas', e); repintar(); });
   }
-
   function cargarCuenta(id, callback) {
     if (!nube()) return;
     rpc('vp_com_cuenta', { p_cuenta: id }).then(function (d) {
@@ -238,19 +259,8 @@
     }).catch(function (e) { console.warn('Vendo plus · comandas', e); });
   }
 
-  function cargarEmpleados() {
-    var c = nube(); if (!c) return;
-    c.sb.from('vp_comandas_empleados').select('*').order('creado').then(function (r) {
-      S.empleados = r.error ? [] : (r.data || []);
-      repintar();
-    });
-  }
-
   /* =======================================================================
-     6.  EN VIVO (Realtime) · con sondeo de respaldo
-     Mismo patrón que ya usan los pedidos del Menú Digital: canal filtrado
-     por negocio, y si el canal se cae, una revisión cada 20 s mientras la
-     pantalla esté abierta. No se hacen consultas de más.
+     6.  EN VIVO
   ======================================================================= */
   var rebote = null;
   function refrescarLoQueSeVe() {
@@ -265,41 +275,40 @@
     clearTimeout(rebote);
     rebote = setTimeout(refrescarLoQueSeVe, 400);
   }
-  /** Los avisos que pediste: a cocina cuando llega una comanda, al mesero
-      cuando algo queda listo, y a caja cuando hay un problema o se pide la
-      cuenta. A la caja NO se le avisa de cada producto que manda un mesero. */
+  /** Los avisos: a cocina cuando llega una comanda, al mesero cuando algo
+      queda listo, y a caja cuando hay un problema o se pide la cuenta.
+      A la caja NO se le avisa de cada producto que manda un mesero. */
   function anunciar(p) {
     if (!p || !p.new) return;
-    var n = p.new, a = p.old || {}, r = S.rol;
+    var n = p.new, a = p.old || {}, r = miArea();
     var ahora = Date.now();
     if (ahora - S.ultimoAviso < 700) return;
 
     if (p.table === 'vp_comandas_detalles') {
-      if (n.comanda_num && !a.comanda_num && (r === 'cocina' || r === 'dueno')) {
+      if (n.comanda_num && !a.comanda_num && r === 'cocina') {
         S.ultimoAviso = ahora;
         avisar('Comanda nueva en ' + (n.area_nombre || 'Cocina'), { icon: mi('vpcBell'), variant: 'toast-success toast-top', subtitle: n.nombre });
-      } else if (n.estado === 'listo' && a.estado !== 'listo' && (r === 'mesero' || r === 'dueno')) {
+      } else if (n.estado === 'listo' && a.estado !== 'listo' && r === 'mesero') {
         S.ultimoAviso = ahora;
         avisar('Listo: ' + (n.nombre || 'un producto'), { icon: ico('check'), variant: 'toast-success toast-top', subtitle: 'Ya lo puedes llevar' });
-      } else if (n.estado === 'problema' && a.estado !== 'problema' && (r === 'caja' || r === 'dueno')) {
+      } else if (n.estado === 'problema' && a.estado !== 'problema' && r === 'caja') {
         S.ultimoAviso = ahora;
         avisar('Problema en cocina: ' + (n.nombre || ''), { icon: ico('alert'), variant: 'toast-danger toast-top', subtitle: 'Entra a Comandas para resolverlo' });
       }
     } else if (p.table === 'vp_comandas_cuentas') {
-      if (n.estado === 'cuenta_pedida' && a.estado !== 'cuenta_pedida' && (r === 'caja' || r === 'dueno')) {
+      if (n.estado === 'cuenta_pedida' && a.estado !== 'cuenta_pedida' && r === 'caja') {
         S.ultimoAviso = ahora;
         avisar('Cuenta pedida: ' + (n.mesa_nombre || ''), { icon: ico('cash'), variant: 'toast-success toast-top' });
       }
     }
   }
-
   function escuchar() {
     var c = nube();
-    if (!c || !S.negocio || S.canal || !S.activo) return;
+    if (!c || S.canal || !S.activo) return;
     try {
-      S.canal = c.sb.channel('vp-comandas-' + S.negocio)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'vp_comandas_detalles', filter: 'user_id=eq.' + S.negocio }, cambio)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'vp_comandas_cuentas', filter: 'user_id=eq.' + S.negocio }, cambio)
+      S.canal = c.sb.channel('vp-comandas-' + c.uid)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vp_comandas_detalles', filter: 'user_id=eq.' + c.uid }, cambio)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vp_comandas_cuentas', filter: 'user_id=eq.' + c.uid }, cambio)
         .subscribe();
     } catch (e) { console.warn('Vendo plus · comandas en vivo', e); }
   }
@@ -328,11 +337,7 @@
   function vacioHTML(icono, titulo, texto) {
     return '<div class="vpc-empty">' + icono + '<b>' + esc(titulo) + '</b><span>' + esc(texto) + '</span></div>';
   }
-  function cargandoHTML(n) {
-    var h = '';
-    for (var i = 0; i < (n || 6); i++) h += '<i></i>';
-    return '<div class="vpc-load">' + h + '</div>';
-  }
+  function cargandoHTML(n) { var h = ''; for (var i = 0; i < (n || 6); i++) h += '<i></i>'; return '<div class="vpc-load">' + h + '</div>'; }
   function notaHTML(clase, titulo, texto) {
     return '<div class="vpc-nota ' + clase + '">' + ico('alert') + '<div><b>' + esc(titulo) + '</b>' + esc(texto) + '</div></div>';
   }
@@ -341,74 +346,103 @@
     var m = Math.max(0, Math.round((Date.now() - t) / 60000));
     if (m < 1) return 'ahorita';
     if (m < 60) return 'hace ' + m + ' min';
-    var h = Math.floor(m / 60);
-    return 'hace ' + h + ' h ' + (m % 60) + ' min';
+    return 'hace ' + Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
   }
   function hora(iso) {
-    var d = new Date(iso);
-    if (isNaN(d)) return '';
+    var d = new Date(iso); if (isNaN(d)) return '';
     try { return d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
   }
 
   /* =======================================================================
-     8.  PANTALLA: ELEGIR ÁREA  (vista "comandas")
+     8.  PANTALLA PRINCIPAL DE COMANDAS  (vista "comandas")
+     Las 3 secciones con su interruptor. Solo el dueño puede moverlos.
   ======================================================================= */
-  function tarjetaHTML(clave, titulo, texto, accionJs, apagada) {
-    return '<button type="button" class="vpc-card' + (apagada ? ' is-off' : '') + '" onclick="' + accionJs + '">' +
-      '<span class="vpc-card-img">' + DIBUJOS[clave] + '</span>' +
-      '<span class="vpc-card-body"><b>' + esc(titulo) + '</b><span>' + esc(texto) + '</span></span>' +
-      '</button>';
-  }
-
   function vistaElegir() {
     if (!nube()) {
       return '<div class="vpc">' + tituloHTML('Comandas') +
         vacioHTML(mi('vpcTray'), 'Necesitas internet', 'Comandas trabaja en vivo entre el mesero, la cocina y la caja. Conéctate y vuelve a entrar.') + '</div>';
     }
-    if (!S.listo) { quienSoy().then(repintar); return '<div class="vpc">' + tituloHTML('Comandas') + cargandoHTML(3) + '</div>'; }
+    if (!S.listo) { estadoServidor().then(repintar); return '<div class="vpc">' + tituloHTML('Comandas') + cargandoHTML(3) + '</div>'; }
 
-    /* Alguien que no es de ningún negocio: aquí se da de alta con su código */
-    if (!S.negocio) return vistaVincular();
+    var dueno = soyDueno();
+    var h = '<div class="vpc">';
 
-    /* Empleado: entra directo a lo suyo, sin ver puertas que no puede abrir */
-    if (S.rol === 'mesero' && S.activo) { setTimeout(function () { irA('comandas_mesero'); }, 0); return '<div class="vpc">' + cargandoHTML(2) + '</div>'; }
-    if (S.rol === 'cocina' && S.activo) { setTimeout(function () { irA('comandas_cocina'); }, 0); return '<div class="vpc">' + cargandoHTML(2) + '</div>'; }
-    if (S.rol === 'caja' && S.activo) { setTimeout(function () { irA('comandas_caja'); }, 0); return '<div class="vpc">' + cargandoHTML(2) + '</div>'; }
-
-    var h = '<div class="vpc">' + tituloHTML('Comandas', 'Elige dónde estás trabajando.');
-
+    /* Sin Premium */
     if (!S.premium) {
-      h += notaHTML('', 'Comandas es parte de Premium', 'Ya viene incluida en tu membresía de VendoPlus. No es un pago aparte.');
-      h += '<div class="vpc-pick">' +
-        tarjetaHTML('caja', 'Caja', 'Mesas abiertas, cuentas y cobros.', 'VPComandas.verPremium()', true) +
-        tarjetaHTML('mesero', 'Mesero', 'Abre mesas y manda comandas.', 'VPComandas.verPremium()', true) +
-        tarjetaHTML('cocina', 'Cocina', 'Recibe las comandas y las marca listas.', 'VPComandas.verPremium()', true) +
-        '</div>';
+      h += tituloHTML('Comandas', 'Mesas, meseros, cocina y cuentas, dentro de VendoPlus.');
+      h += notaHTML('', 'Viene incluida en Premium', 'No es un pago aparte ni otra membresía: ya está dentro de tu VendoPlus Premium.');
+      h += '<div class="vpc-list">' + SECCIONES.map(function (s) { return seccionHTML(s, dueno, true); }).join('') + '</div>';
       h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.verPremium()">Ver qué incluye Premium</button>';
       return h + '</div>';
     }
 
+    /* Premium sí, pero Comandas apagada */
     if (!S.activo) {
-      h += notaHTML('is-ok', 'Falta encenderla', 'Comandas ya está incluida en tu Premium. Enciéndela y aparecen las tres pantallas.');
-      h += '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.encender()">Activar Comandas</button>';
+      h += tituloHTML('Comandas', 'Mesas, meseros, cocina y cuentas, dentro de VendoPlus.');
+      if (!dueno) {
+        h += vacioHTML(mi('vpcLock'), 'Comandas está apagada', 'Pídele al dueño que la encienda.');
+        return h + '</div>';
+      }
+      h += notaHTML('is-ok', 'Falta encenderla', 'Ya la tienes incluida. Enciéndela y eliges qué secciones usa tu negocio.');
+      h += '<div class="vpc-list">' + SECCIONES.map(function (s) { return seccionHTML(s, dueno, true); }).join('') + '</div>';
+      h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.encender()">Activar Comandas</button>';
       return h + '</div>';
     }
 
-    h += '<div class="vpc-pick">' +
-      tarjetaHTML('caja', 'Caja', 'Mesas abiertas, cuentas y cobros.', "VPComandas.ir('comandas_caja')") +
-      tarjetaHTML('mesero', 'Mesero', 'Abre mesas y manda comandas.', "VPComandas.ir('comandas_mesero')") +
-      tarjetaHTML('cocina', 'Cocina', 'Recibe las comandas y las marca listas.', "VPComandas.ir('comandas_cocina')") +
-      '</div>';
+    /* Encendida */
+    h += tituloHTML('Comandas', dueno
+      ? 'Enciende las secciones que usa tu negocio y di quién trabaja en cada una.'
+      : 'Estas son las secciones de tu negocio y quién trabaja en cada una.');
 
-    if (S.esDueno) {
+    if (!dueno) h += notaHTML('', 'Solo puedes ver', 'Nada más el Dueño puede encender secciones o cambiar a la gente de área.');
+
+    h += '<div class="vpc-list">' + SECCIONES.map(function (s) { return seccionHTML(s, dueno, false); }).join('') + '</div>';
+
+    /* Cambiar de área (solo si hay más de una encendida) */
+    var on = encendidas();
+    if (on.length > 1) {
+      h += '<div class="vpc-spacer"></div><div class="section-title">Dónde estás trabajando</div>';
+      h += '<div class="vpc-list">' +
+        filaHTML(mi(seccion(miArea()).ico), seccion(miArea()).nombre,
+          'Esta pantalla se abre sola al entrar a VendoPlus', 'VPComandas.cambiarArea()', '<span class="vpc-tag is-listo">Cambiar</span>') +
+        '</div>';
+    }
+
+    if (dueno) {
       h += '<div class="vpc-spacer"></div><div class="section-title">Administrar</div><div class="vpc-list">' +
         filaHTML(mi('vpcTable'), 'Mesas', 'Crear, editar o quitar mesas', 'VPComandas.verMesas()') +
         filaHTML(mi('vpcPot'), 'Áreas de preparación', 'Cocina, Barra, Postres…', 'VPComandas.verAreas()') +
-        filaHTML(ico('users'), 'Empleados', 'Dar de alta meseros, cocina y caja', 'VPComandas.verEmpleados()') +
         '</div>';
       h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-block" onclick="VPComandas.apagar()">Apagar Comandas</button>';
     }
     return h + '</div>';
+  }
+
+  /** Una sección con su interruptor y su flecha para ver a su gente. */
+  function seccionHTML(s, dueno, bloqueada) {
+    var on = s.fija ? true : !!S.on[s.id];
+    var cuantos = usuarios().filter(function (u) { return areaDe(u) === s.id; }).length;
+    var sub = s.fija
+      ? 'Siempre encendida · ' + cuantos + (cuantos === 1 ? ' usuario' : ' usuarios')
+      : (on ? 'Encendida · ' + cuantos + (cuantos === 1 ? ' usuario' : ' usuarios') : 'Apagada');
+
+    var interruptor;
+    if (bloqueada) {
+      interruptor = '<span class="vpc-sw' + (on ? ' is-on' : '') + ' is-off"><i></i></span>';
+    } else if (s.fija) {
+      interruptor = '<span class="vpc-sw is-on is-off" title="Caja siempre está encendida"><i></i></span>';
+    } else if (dueno) {
+      interruptor = '<button type="button" class="vpc-sw' + (on ? ' is-on' : '') + '" aria-label="' + esc(s.nombre) + '" onclick="event.stopPropagation(); VPComandas.toggle(' + js(s.id) + ')"><i></i></button>';
+    } else {
+      interruptor = '<span class="vpc-sw' + (on ? ' is-on' : '') + ' is-off"><i></i></span>';
+    }
+
+    return '<div class="vpc-li is-plain">' +
+      '<span class="vpc-li-ico">' + mi(s.ico) + '</span>' +
+      '<span class="vpc-li-txt"><b>' + esc(s.nombre) + '</b><small>' + esc(sub) + '</small></span>' +
+      interruptor +
+      '<button type="button" class="vpc-li-go" aria-label="Ver quién trabaja aquí" onclick="VPComandas.verUsuarios(' + js(s.id) + ')">' + ico('chevronRight') + '</button>' +
+      '</div>';
   }
 
   function filaHTML(icono, titulo, sub, accionJs, fin) {
@@ -419,24 +453,148 @@
       '</button>';
   }
 
-  /* ---- El empleado se da de alta con el código del negocio ---- */
-  function vistaVincular() {
-    return '<div class="vpc">' + tituloHTML('Comandas', 'Si trabajas en un negocio que usa VendoPlus, pide tu código al dueño.') +
-      '<div class="vpc-field"><label>Código del negocio</label>' +
-      '<input id="vpcCodigo" type="text" maxlength="6" autocapitalize="characters" autocomplete="off" placeholder="Ej. 3WQEFU" style="text-transform:uppercase;letter-spacing:3px;font-weight:800;">' +
-      '<div class="vpc-hint">Son 6 letras y números. Te lo da el dueño desde su VendoPlus.</div></div>' +
-      '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.vincular()">Entrar como empleado</button>' +
-      '<div class="vpc-spacer"></div>' +
-      notaHTML('', '¿Tú eres el dueño?', 'Entonces activa Comandas desde tu membresía Premium y aquí aparecerán las tres pantallas.') +
-      '<button type="button" class="vpc-btn is-block" onclick="VPComandas.verPremium()">Ver Premium</button>' +
-      '</div>';
+  /* ---- Quién trabaja en cada sección ---- */
+  function verUsuarios(areaId) {
+    var s = seccion(areaId), dueno = soyDueno();
+    var lista = usuarios();
+    var dentro = lista.filter(function (u) { return areaDe(u) === areaId; });
+    var fuera = lista.filter(function (u) { return areaDe(u) !== areaId; });
+
+    var h = '<div class="modal-sheet"><div class="sheet-header"><h2>' + esc(s.nombre) + '</h2>' +
+      '<button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div><div class="vpc">' +
+      '<p class="vpc-sub">' + esc(s.texto) + '</p>';
+
+    if (!dueno) h += notaHTML('', 'Solo puedes ver', 'Nada más el Dueño puede mover a la gente de área.');
+
+    h += '<div class="section-title">En esta sección</div>';
+    h += dentro.length
+      ? '<div class="vpc-list">' + dentro.map(function (u) { return usuarioHTML(u, areaId, dueno, true); }).join('') + '</div>'
+      : vacioHTML(ico('users'), 'Nadie todavía', dueno ? 'Toca a alguien de la lista de abajo para ponerlo aquí.' : 'El dueño aún no asigna a nadie.');
+
+    if (dueno && fuera.length) {
+      h += '<div class="vpc-spacer"></div><div class="section-title">Pasar a ' + esc(s.nombre) + '</div>' +
+        '<div class="vpc-list">' + fuera.map(function (u) { return usuarioHTML(u, areaId, dueno, false); }).join('') + '</div>';
+    }
+
+    if (dueno) {
+      h += '<div class="vpc-spacer"></div>' +
+        notaHTML('', '¿Te falta gente?', 'Los usuarios se crean donde siempre: Mi cuenta → Usuarios. Aquí nada más les dices en qué área trabajan.') +
+        '<button type="button" class="vpc-btn is-block" onclick="VPComandas.irAUsuarios()">Ir a Usuarios</button>';
+    }
+    abrirModal(h + '</div></div>', { dismissible: true });
+  }
+
+  function usuarioHTML(u, areaId, dueno, dentro) {
+    var suArea = seccion(areaDe(u));
+    var sub = (u.role === 'dueno' ? 'Dueño' : u.role === 'admin' ? 'Administrador' : 'Empleado') +
+      (dentro ? '' : ' · hoy en ' + suArea.nombre);
+    var fin = dentro
+      ? (dueno && u.role !== 'dueno'
+        ? '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.asignar(' + js(u.id) + ',' + js('caja') + ',' + js(areaId) + ')">Quitar</button>'
+        : '<span class="vpc-tag is-listo">Aquí</span>')
+      : '<button type="button" class="vpc-mini is-main" onclick="VPComandas.asignar(' + js(u.id) + ',' + js(areaId) + ',' + js(areaId) + ')">Poner aquí</button>';
+    return '<div class="vpc-li is-plain"><span class="vpc-li-ico">' + ico('users') + '</span>' +
+      '<span class="vpc-li-txt"><b>' + esc(u.name || 'Usuario') + '</b><small>' + esc(sub) + '</small></span>' + fin + '</div>';
+  }
+
+  function asignar(userId, areaNueva, volverA) {
+    if (!soyDueno()) { avisar('Solo el Dueño puede cambiar esto', { icon: ico('alert') }); return; }
+    var lista = usuarios();
+    var u = null;
+    for (var i = 0; i < lista.length; i++) if (lista[i].id === userId) u = lista[i];
+    if (!u) return;
+    u.comandaArea = (areaNueva === 'mesero' || areaNueva === 'cocina') ? areaNueva : 'caja';
+    guardarUsuarios(lista);
+    avisar(esc(u.name) + ' → ' + seccion(u.comandaArea).nombre, { icon: ico('check'), variant: 'toast-success' });
+    verUsuarios(volverA);
+  }
+
+  function irAUsuarios() {
+    cerrarModal();
+    var f = fn('openUsersSheet');
+    if (f) f(); else irA('account');
+  }
+
+  function toggle(id) {
+    if (!soyDueno()) { avisar('Solo el Dueño puede encender secciones', { icon: ico('alert') }); return; }
+    if (id === 'caja') { avisar('Caja siempre está encendida', { icon: ico('alert'), subtitle: 'Es el VendoPlus de siempre' }); return; }
+    var nuevo = { mesero: !!S.on.mesero, cocina: !!S.on.cocina };
+    nuevo[id] = !nuevo[id];
+    accion('vp_com_secciones', { p_mesero: nuevo.mesero, p_cocina: nuevo.cocina }, function () {
+      S.on.mesero = nuevo.mesero; S.on.cocina = nuevo.cocina;
+      avisar(seccion(id).nombre + (nuevo[id] ? ' encendido' : ' apagado'), { icon: ico('check'), variant: 'toast-success' });
+      /* Si se apagó donde estaba este aparato, se regresa a Caja */
+      var g = areaGuardada();
+      if (g && g !== 'caja' && !S.on[g]) guardarArea('caja');
+      repintar();
+    });
   }
 
   /* =======================================================================
-     9.  PANTALLA: MESERO
+     9.  ELEGIR DÓNDE ESTÁS  (al abrir VendoPlus, y solo entonces)
+  ======================================================================= */
+  function tarjetaAreaHTML(s, permitida) {
+    return '<button type="button" class="vpc-card' + (permitida ? '' : ' is-off') + '"' +
+      (permitida ? ' onclick="VPComandas.entrarA(' + js(s.id) + ')"' : ' disabled') + '>' +
+      '<span class="vpc-card-img">' + DIBUJOS[s.id] + '</span>' +
+      '<span class="vpc-card-body"><b>' + esc(s.nombre) + '</b><span>' +
+      esc(permitida ? s.texto : 'Tu usuario no trabaja en esta sección.') + '</span></span></button>';
+  }
+
+  /** Se pregunta UNA VEZ por usuario. Después se queda guardado. */
+  function quizaElegirArea() {
+    if (!S.activo || S.preguntando) return;
+    if (document.body.classList.contains('auth-open')) return;
+    if (document.querySelector('#modal-layer .modal-sheet')) return;
+
+    var on = encendidas();
+    if (on.length < 2) return;                       /* solo Caja: no se pregunta nada */
+
+    var puede = on.filter(function (s) { return puedeArea(s.id); });
+    if (puede.length < 2) {                          /* solo una le toca: entra directo */
+      if (puede.length === 1 && areaGuardada() !== puede[0].id) {
+        guardarArea(puede[0].id);
+        if (puede[0].id !== 'caja') irA(puede[0].vista);
+      }
+      return;
+    }
+    var g = areaGuardada();
+    if (g && puedeArea(g) && (g === 'caja' || S.on[g])) return;   /* ya eligió antes */
+
+    preguntarArea();
+  }
+
+  function preguntarArea() {
+    var on = encendidas();
+    S.preguntando = true;
+    var h = '<i class="fs-marker" hidden></i><div class="modal-sheet vpc-elegir"><div class="vpc">' +
+      '<h1 class="page-title">¿Dónde estás?</h1>' +
+      '<p class="vpc-sub">Elige tu pantalla. Se queda guardada en este aparato; la puedes cambiar desde Comandas.</p>' +
+      '<div class="vpc-pick">' + on.map(function (s) { return tarjetaAreaHTML(s, puedeArea(s.id)); }).join('') + '</div>' +
+      '</div></div>';
+    abrirModal(h, { dismissible: false, grip: false });
+  }
+
+  function entrarA(id) {
+    guardarArea(id);
+    S.preguntando = false;
+    cerrarModal();
+    S.cuenta = null; S.tablero = null; S.cocina = null;
+    var s = seccion(id);
+    if (id === 'caja') { irA('sale'); avisar('Estás en Caja', { icon: mi('vpcDesk'), variant: 'toast-success' }); }
+    else { irA(s.vista); setTimeout(refrescarLoQueSeVe, 0); }
+  }
+  function cambiarArea() {
+    if (encendidas().length < 2) { avisar('Solo tienes la sección de Caja encendida', { icon: ico('alert') }); return; }
+    preguntarArea();
+  }
+
+  /* =======================================================================
+     10.  PANTALLA: MESERO
   ======================================================================= */
   function vistaMesero() {
-    if (!puedeEntrar(['dueno', 'mesero', 'caja'])) return sinPermisoHTML();
+    if (!listoParaPintar()) return esperandoHTML();
+    if (!puedeArea('mesero') && !soyDueno()) return sinPermisoHTML();
     if (S.cuenta) return vistaCuenta('comandas_mesero');
 
     if (!S.tablero) { cargarTablero(); return envoltura('Mesas', 'Toca una mesa para abrirla o para seguir atendiéndola.', cargandoHTML(6)); }
@@ -445,18 +603,17 @@
     var cuerpo;
     if (!mesas.length) {
       cuerpo = vacioHTML(mi('vpcTable'), 'Todavía no hay mesas',
-        S.esDueno ? 'Crea tus mesas desde Comandas → Mesas y aquí aparecen.' : 'Pídele al dueño que registre las mesas del negocio.');
-      if (S.esDueno) cuerpo += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.verMesas()">Crear mesas</button>';
+        soyDueno() ? 'Créalas desde Comandas → Mesas y aquí aparecen.' : 'Pídele al dueño que registre las mesas del negocio.');
+      if (soyDueno()) cuerpo += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.verMesas()">Crear mesas</button>';
     } else {
       cuerpo = '<div class="vpc-mesas">' + mesas.map(mesaHTML).join('') + '</div>';
     }
-
     var menu = S.tablero.menu || [];
     if (menu.length) {
       cuerpo += '<div class="vpc-spacer"></div><div class="section-title">Pedidos del Menú Digital</div><div class="vpc-list">' +
         menu.map(function (m) {
           return filaHTML(ico('mobile'), m.nombre, (m.cliente || 'Cliente') + ' · ' + desdeHace(m.abierta_en),
-            "VPComandas.abrirCuenta('" + m.id + "')", money(m.total));
+            'VPComandas.abrirCuenta(' + js(m.id) + ')', money(m.total));
         }).join('') + '</div>';
     }
     return envoltura('Mesas', 'Toca una mesa para abrirla o para seguir atendiéndola.', cuerpo);
@@ -466,7 +623,7 @@
     var c = m.cuenta;
     var clase = 'is-libre', accion = 'VPComandas.abrirMesa(' + js(m.id) + ',' + js(m.nombre) + ')';
     if (c) {
-      accion = "VPComandas.abrirCuenta('" + c.id + "')";
+      accion = 'VPComandas.abrirCuenta(' + js(c.id) + ')';
       clase = c.problemas > 0 ? 'is-problema' : (c.estado === 'cuenta_pedida' ? 'is-pedida' : 'is-ocupada');
     }
     var tags = '';
@@ -479,15 +636,16 @@
     }
     return '<button type="button" class="vpc-mesa ' + clase + '" onclick="' + accion + '">' +
       '<b>' + esc(m.nombre) + '</b>' +
-      '<small>' + (c ? (c.personas + (c.personas === 1 ? ' persona' : ' personas') + ' · ' + desdeHace(c.abierta_en)) : 'Disponible · ' + m.capacidad + ' lugares') + '</small>' +
+      '<small>' + (c ? (c.personas + (c.personas === 1 ? ' persona' : ' personas') + ' · ' + esc(c.mesero || '') + ' · ' + desdeHace(c.abierta_en)) : 'Disponible · ' + m.capacidad + ' lugares') + '</small>' +
       (tags ? '<div class="vpc-tags">' + tags + '</div>' : '') +
       '<span class="vpc-mesa-total">' + (c ? money(c.total) : '') + '</span>' +
       '</button>';
   }
 
-  function envoltura(titulo, sub, cuerpo, volverA) {
+  function envoltura(titulo, sub, cuerpo) {
+    var on = encendidas();
     return '<div class="vpc">' +
-      (volverA ? volverHTML(volverA) : (S.esDueno ? volverHTML("VPComandas.ir('comandas')", 'Comandas') : '')) +
+      ((soyDueno() || on.length > 1) ? volverHTML("VPComandas.ir('comandas')", 'Comandas') : '') +
       tituloHTML(titulo, sub) + cuerpo + '</div>';
   }
 
@@ -497,21 +655,19 @@
     var ps = (c.productos || []).filter(function (p) { return p.estado !== 'cancelado'; });
     var porEnviar = ps.filter(function (p) { return !p.comanda; });
     var enviados = ps.filter(function (p) { return p.comanda; });
-    var soyCaja = (S.rol === 'caja' || S.rol === 'dueno');
+    var cobra = puedeCobrar();
 
-    var h = '<div class="vpc">' + volverHTML("VPComandas.cerrarCuenta('" + volverVista + "')", 'Mesas');
+    var h = '<div class="vpc">' + volverHTML('VPComandas.cerrarCuenta(' + js(volverVista) + ')', 'Mesas');
     h += tituloHTML(c.mesa, (c.personas || 1) + (c.personas === 1 ? ' persona' : ' personas') + ' · ' + (c.mesero || '') + ' · abierta ' + desdeHace(c.abierta_en));
 
-    if (c.estado === 'cuenta_pedida') h += notaHTML('is-ok', 'Cuenta pedida', soyCaja ? 'Ya puedes cobrarla desde aquí.' : 'La caja ya la tiene.');
+    if (c.estado === 'cuenta_pedida') h += notaHTML('is-ok', 'Cuenta pedida', cobra ? 'Ya puedes cobrarla desde aquí.' : 'La caja ya la tiene.');
 
-    /* Lo que falta mandar a la cocina */
     if (porEnviar.length) {
       h += '<div class="section-title">Por enviar</div><div class="vpc-com"><div class="vpc-com-body">' +
         porEnviar.map(function (p) { return prodHTML(p, 'cuenta'); }).join('') + '</div></div>';
       h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.enviar()">' + mi('vpcSend') + ' Enviar comanda (' + porEnviar.length + ')</button>';
     }
 
-    /* Lo que ya se mandó, agrupado por comanda */
     if (enviados.length) {
       var porNum = {};
       enviados.forEach(function (p) { (porNum[p.comanda] = porNum[p.comanda] || []).push(p); });
@@ -527,19 +683,18 @@
 
     if (!ps.length) h += vacioHTML(mi('vpcTray'), 'La mesa está vacía', 'Agrega los productos que pidió el cliente y manda la comanda a la cocina.');
 
-    h += '<div class="vpc-spacer"></div>';
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;">' +
-      '<b style="font-size:15px;">Total de la mesa</b><b style="font-size:20px;">' + money(c.total) + '</b></div>';
+    h += '<div class="vpc-spacer"></div>' +
+      '<div class="vpc-total"><b>Total de la mesa</b><b>' + money(c.total) + '</b></div>';
 
     h += '<div class="vpc-pie">';
     if (c.estado !== 'cobrada') {
       h += '<button type="button" class="vpc-btn is-soft" onclick="VPComandas.elegirProductos()">' + ico('plus') + ' Agregar</button>';
       if (c.estado === 'abierta') h += '<button type="button" class="vpc-btn" onclick="VPComandas.pedirCuenta()">Pedir la cuenta</button>';
-      if (soyCaja) h += '<button type="button" class="vpc-btn is-main" onclick="VPComandas.cobrar()">' + ico('cash') + ' Cobrar</button>';
+      if (cobra) h += '<button type="button" class="vpc-btn is-main" onclick="VPComandas.cobrar()">' + ico('cash') + ' Cobrar</button>';
     }
     h += '</div>';
 
-    if (soyCaja && c.estado !== 'cobrada') {
+    if (cobra && c.estado !== 'cobrada') {
       h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-danger is-block" onclick="VPComandas.cancelarCuenta()">Cancelar esta cuenta</button>';
     }
     return h + '</div>';
@@ -559,15 +714,15 @@
 
     if (donde === 'cocina') {
       h += '<span class="vpc-prod-act">';
-      if (p.estado === 'pendiente') h += '<button type="button" class="vpc-mini" onclick="VPComandas.marcar(\'' + p.id + '\',\'preparando\')">Preparando</button>';
-      if (p.estado === 'preparando') h += '<button type="button" class="vpc-mini is-main" onclick="VPComandas.marcar(\'' + p.id + '\',\'listo\')">Listo</button>';
+      if (p.estado === 'pendiente') h += '<button type="button" class="vpc-mini" onclick="VPComandas.marcar(' + js(p.id) + ',\'preparando\')">Preparando</button>';
+      if (p.estado === 'preparando') h += '<button type="button" class="vpc-mini is-main" onclick="VPComandas.marcar(' + js(p.id) + ',\'listo\')">Listo</button>';
       if (p.estado !== 'problema') h += '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.reportar(' + js(p.id) + ',' + js(p.nombre) + ')">Problema</button>';
       else h += '<span class="vpc-tag is-problema">Esperando a caja</span>';
       h += '</span>';
     } else if (donde === 'resolver') {
       h += '<span class="vpc-prod-act">' +
-        '<button type="button" class="vpc-mini is-main" onclick="VPComandas.resolver(\'' + p.id + '\',\'autorizar\')">Que siga</button>' +
-        '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.resolver(\'' + p.id + '\',\'cancelar\')">Quitar</button>' +
+        '<button type="button" class="vpc-mini is-main" onclick="VPComandas.resolver(' + js(p.id) + ',\'autorizar\')">Que siga</button>' +
+        '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.resolver(' + js(p.id) + ',\'cancelar\')">Quitar</button>' +
         '</span>';
     } else if (donde === 'cuenta' && p.comanda) {
       h += '<span class="vpc-prod-act"><span class="vpc-tag is-' + esc(p.estado) + '">' +
@@ -578,18 +733,20 @@
   }
 
   /* =======================================================================
-     10.  PANTALLA: COCINA
+     11.  PANTALLA: COCINA
   ======================================================================= */
   function vistaCocina() {
-    if (!puedeEntrar(['dueno', 'cocina', 'caja'])) return sinPermisoHTML();
+    if (!listoParaPintar()) return esperandoHTML();
+    if (!puedeArea('cocina') && !soyDueno()) return sinPermisoHTML();
 
-    var h = '<div class="vpc">' + (S.esDueno ? volverHTML("VPComandas.ir('comandas')", 'Comandas') : '');
+    var on = encendidas();
+    var h = '<div class="vpc">' + ((soyDueno() || on.length > 1) ? volverHTML("VPComandas.ir('comandas')", 'Comandas') : '');
     h += tituloHTML('Cocina', 'Lo que falta por preparar. Se actualiza solo.');
 
     if (S.areas.length > 1) {
       h += '<div class="vpc-chips"><button type="button" class="vpc-chip' + (!S.area ? ' is-on' : '') + '" onclick="VPComandas.filtrarArea(null)">Todas</button>' +
         S.areas.map(function (a) {
-          return '<button type="button" class="vpc-chip' + (S.area === a.id ? ' is-on' : '') + '" onclick="VPComandas.filtrarArea(\'' + a.id + '\')">' + esc(a.nombre) + '</button>';
+          return '<button type="button" class="vpc-chip' + (S.area === a.id ? ' is-on' : '') + '" onclick="VPComandas.filtrarArea(' + js(a.id) + ')">' + esc(a.nombre) + '</button>';
         }).join('') + '</div>';
     }
 
@@ -601,18 +758,19 @@
         '<div class="vpc-com-top"><div><b>' + esc(c.mesa) + '</b><small>' + esc(c.mesero || '') + ' · ' + hora(c.enviado_en) + ' · ' + desdeHace(c.enviado_en) + '</small></div>' +
         '<span class="vpc-com-num">#' + esc(c.comanda) + '</span></div>' +
         '<div class="vpc-com-body">' + (c.productos || []).map(function (p) { return prodHTML(p, 'cocina'); }).join('') + '</div>' +
-        '<div style="padding:10px 13px;border-top:1px solid var(--border);">' +
-        '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.todoListo(\'' + c.comanda + '\',\'' + (c.cuenta) + '\')">Marcar toda la comanda lista</button></div>' +
+        '<div class="vpc-com-pie">' +
+        '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.todoListo(' + js(String(c.comanda)) + ',' + js(String(c.cuenta)) + ')">Marcar toda la comanda lista</button></div>' +
         '</div>';
     }).join('') + '</div>';
     return h + '</div>';
   }
 
   /* =======================================================================
-     11.  PANTALLA: CAJA
+     12.  PANTALLA: CAJA
   ======================================================================= */
   function vistaCaja() {
-    if (!puedeEntrar(['dueno', 'caja'])) return sinPermisoHTML();
+    if (!listoParaPintar()) return esperandoHTML();
+    if (!puedeCobrar()) return sinPermisoHTML();
     if (S.cuenta) return vistaCuenta('comandas_caja');
     if (!S.tablero) { cargarTablero(); return envoltura('Caja', 'Mesas abiertas, cuentas por cobrar y avisos de cocina.', cargandoHTML(6)); }
 
@@ -634,14 +792,12 @@
     if (!mesas.length && !menu.length) {
       cuerpo += vacioHTML(ico('cashbox'), 'No hay mesas abiertas', 'Cuando un mesero abra una mesa, la vas a ver aquí con su consumo.');
     } else {
-      if (mesas.length) {
-        cuerpo += '<div class="section-title">Mesas abiertas</div><div class="vpc-mesas">' + mesas.map(mesaHTML).join('') + '</div>';
-      }
+      if (mesas.length) cuerpo += '<div class="section-title">Mesas abiertas</div><div class="vpc-mesas">' + mesas.map(mesaHTML).join('') + '</div>';
       if (menu.length) {
         cuerpo += '<div class="vpc-spacer"></div><div class="section-title">Pedidos del Menú Digital</div><div class="vpc-list">' +
           menu.map(function (m) {
             return filaHTML(ico('mobile'), m.nombre, (m.cliente || 'Cliente') + ' · ' + desdeHace(m.abierta_en),
-              "VPComandas.abrirCuenta('" + m.id + "')", money(m.total));
+              'VPComandas.abrirCuenta(' + js(m.id) + ')', money(m.total));
           }).join('') + '</div>';
       }
     }
@@ -655,54 +811,49 @@
   }
 
   /* =======================================================================
-     12.  PERMISOS DE PANTALLA
+     13.  GUARDIAS DE PANTALLA
   ======================================================================= */
-  function puedeEntrar(roles) {
-    if (!nube() || !S.listo) { quienSoy().then(repintar); return false; }
-    if (!S.activo) return false;
-    return roles.indexOf(S.rol) >= 0;
+  function listoParaPintar() {
+    if (!nube()) return false;
+    if (!S.listo) { estadoServidor().then(repintar); return false; }
+    return S.activo;
+  }
+  function esperandoHTML() {
+    if (!nube()) {
+      return '<div class="vpc">' + tituloHTML('Comandas') +
+        vacioHTML(mi('vpcTray'), 'Necesitas internet', 'Comandas trabaja en vivo. Conéctate y vuelve a entrar.') + '</div>';
+    }
+    if (S.listo && !S.activo) { setTimeout(function () { irA('comandas'); }, 0); }
+    return '<div class="vpc">' + cargandoHTML(3) + '</div>';
   }
   function sinPermisoHTML() {
-    if (!S.listo) return '<div class="vpc">' + cargandoHTML(2) + '</div>';
-    if (!S.activo) { setTimeout(function () { irA('comandas'); }, 0); return '<div class="vpc">' + cargandoHTML(2) + '</div>'; }
     return '<div class="vpc">' + volverHTML("VPComandas.ir('comandas')", 'Comandas') + tituloHTML('Comandas') +
-      vacioHTML(ico('alert'), 'Esta área no es la tuya', 'Tu usuario solo puede entrar al área que te autorizó el dueño.') + '</div>';
+      vacioHTML(mi('vpcLock'), 'Esta sección no es la tuya', 'Tu usuario trabaja en ' + seccion(areaDe(usuarioActivo())).nombre + '. El dueño puede cambiarlo desde Comandas.') + '</div>';
   }
 
   /* =======================================================================
-     13.  ACCIONES
+     14.  ACCIONES
   ======================================================================= */
   function encender() {
+    if (!soyDueno()) { avisar('Solo el Dueño puede activarla', { icon: ico('alert') }); return; }
     accion('vp_com_encender', { p_activo: true }, function () {
-      avisar('Comandas activada', { icon: ico('check'), variant: 'toast-success' });
+      avisar('Comandas activada', { icon: ico('check'), variant: 'toast-success', subtitle: 'Ahora enciende las secciones que uses' });
       S.listo = false; S.tablero = null;
-      quienSoy().then(repintar);
+      estadoServidor().then(repintar);
     });
   }
   function apagar() {
+    if (!soyDueno()) return;
     var preguntar = fn('askConfirm');
     var hacer = function () {
       accion('vp_com_encender', { p_activo: false }, function () {
         avisar('Comandas apagada');
         S.listo = false; S.tablero = null;
-        quienSoy().then(function () { irA('sale'); });
+        estadoServidor().then(function () { irA('sale'); });
       });
     };
     if (preguntar) preguntar({ title: 'Apagar Comandas', text: 'Las mesas y las cuentas no se borran: dejan de verse hasta que la vuelvas a encender.', ok: 'Apagar' }, hacer);
     else hacer();
-  }
-
-  function vincular() {
-    var i = document.getElementById('vpcCodigo');
-    var cod = (i && i.value || '').trim().toUpperCase();
-    if (cod.length < 4) { avisar('Escribe el código que te dio el dueño', { icon: ico('alert') }); return; }
-    accion('vp_com_vincular', { p_codigo: cod }, function (d) {
-      if (d && d.ok) {
-        avisar('Listo, ya quedaste registrado', { icon: ico('check'), variant: 'toast-success', subtitle: 'Falta que el dueño te acepte' });
-        S.listo = false;
-        quienSoy().then(repintar);
-      }
-    });
   }
 
   function abrirMesa(mesaId, nombre) {
@@ -710,15 +861,19 @@
       '<button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div>' +
       '<div class="vpc"><div class="vpc-field"><label>¿Cuántas personas?</label>' +
       '<input id="vpcPersonas" type="number" inputmode="numeric" min="1" max="99" value="2"></div>' +
-      '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.confirmarMesa(\'' + mesaId + '\')">Abrir la mesa</button></div></div>';
+      '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.confirmarMesa(' + js(mesaId) + ')">Abrir la mesa</button></div></div>';
     abrirModal(h, { dismissible: true });
-    setTimeout(function () { var i = document.getElementById('vpcPersonas'); if (i) i.select(); }, 150);
+    setTimeout(function () { var i = document.getElementById('vpcPersonas'); if (i && i.select) i.select(); }, 150);
   }
   function confirmarMesa(mesaId) {
     var i = document.getElementById('vpcPersonas');
     var n = Math.max(1, Math.min(99, parseInt((i && i.value) || '1', 10) || 1));
+    var u = usuarioActivo();
     var btn = document.querySelector('#modal-layer .vpc-btn.is-main'); if (btn) btn.disabled = true;
-    accion('vp_com_mesa_abrir', { p_mesa: mesaId, p_personas: n, p_idem: llave() }, function (d) {
+    accion('vp_com_mesa_abrir', {
+      p_mesa: mesaId, p_personas: n,
+      p_mesero_id: (u && u.id) || '', p_mesero: nombreActor(), p_idem: llave()
+    }, function (d) {
       cerrarModal();
       if (d && d.cuenta) cargarCuenta(d.cuenta);
     }).then(function () { if (btn) btn.disabled = false; });
@@ -730,29 +885,27 @@
   function enviar() {
     if (!S.cuenta) return;
     var id = S.cuenta.id;
-    accion('vp_com_enviar', { p_cuenta: id, p_idem: llave() }, function (d) {
+    accion('vp_com_enviar', { p_cuenta: id, p_actor: nombreActor(), p_idem: llave() }, function (d) {
       avisar('Comanda ' + (d && d.comanda) + ' enviada', { icon: mi('vpcSend'), variant: 'toast-success', subtitle: 'A ' + (((d && d.areas) || ['Cocina']).join(' y ')) });
       cargarCuenta(id);
     });
   }
-
   function pedirCuenta() {
     if (!S.cuenta) return;
     var id = S.cuenta.id;
-    accion('vp_com_cuenta_pedir', { p_cuenta: id }, function (d) {
+    accion('vp_com_cuenta_pedir', { p_cuenta: id, p_actor: nombreActor() }, function (d) {
       avisar('La caja ya tiene la cuenta', { icon: ico('check'), variant: 'toast-success', subtitle: money(d && d.total) });
       cargarCuenta(id);
     });
   }
-
   function cancelarCuenta() {
     if (!S.cuenta) return;
     var id = S.cuenta.id;
     var preguntar = fn('askConfirm');
     var hacer = function () {
-      accion('vp_com_cancelar', { p_cuenta: id, p_motivo: '' }, function () {
+      accion('vp_com_cancelar', { p_cuenta: id, p_motivo: '', p_actor: nombreActor() }, function () {
         avisar('Cuenta cancelada');
-        cerrarCuenta(S.rol === 'caja' ? 'comandas_caja' : 'comandas_mesero');
+        cerrarCuenta(miArea() === 'caja' ? 'comandas_caja' : 'comandas_mesero');
       });
     };
     if (preguntar) preguntar({ title: '¿Cancelar la cuenta?', text: 'La mesa queda libre y nada se cobra. Queda registrado quién la canceló.', ok: 'Cancelar la cuenta', danger: true }, hacer);
@@ -760,19 +913,20 @@
   }
 
   function marcar(detalleId, estado) {
-    accion('vp_com_estado_producto', { p_detalle: detalleId, p_estado: estado }, function () { cargarCocina(); });
+    accion('vp_com_estado_producto', { p_detalle: detalleId, p_estado: estado, p_actor: nombreActor() }, function () { cargarCocina(); });
   }
   function todoListo(num, cuentaId) {
     var com = (S.cocina || []).filter(function (c) { return String(c.comanda) === String(num) && String(c.cuenta) === String(cuentaId); })[0];
     if (!com) return;
     var ps = (com.productos || []).filter(function (p) { return p.estado === 'pendiente' || p.estado === 'preparando'; });
     if (!ps.length) return;
+    var actor = nombreActor();
     var cola = Promise.resolve();
     ps.forEach(function (p) {
       cola = cola.then(function () {
-        if (p.estado === 'pendiente') return rpc('vp_com_estado_producto', { p_detalle: p.id, p_estado: 'preparando' });
+        if (p.estado === 'pendiente') return rpc('vp_com_estado_producto', { p_detalle: p.id, p_estado: 'preparando', p_actor: actor });
       }).then(function () {
-        return rpc('vp_com_estado_producto', { p_detalle: p.id, p_estado: 'listo' });
+        return rpc('vp_com_estado_producto', { p_detalle: p.id, p_estado: 'listo', p_actor: actor });
       });
     });
     cola.then(function () {
@@ -787,8 +941,8 @@
       '<button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div>' +
       '<div class="vpc"><p class="vpc-sub">' + esc(nombre) + '. La caja decide qué hacer; tú no cambias lo que pidió el cliente.</p>' +
       '<div class="vpc-list">' + ops.map(function (o) {
-        return '<button type="button" class="vpc-li" onclick="VPComandas.mandarProblema(\'' + detalleId + '\',\'' + o[0] + '\')">' +
-          '<span class="vpc-li-ico" style="background:var(--danger-bg);color:#C0392B;">' + ico('alert') + '</span>' +
+        return '<button type="button" class="vpc-li" onclick="VPComandas.mandarProblema(' + js(detalleId) + ',' + js(o[0]) + ')">' +
+          '<span class="vpc-li-ico is-danger">' + ico('alert') + '</span>' +
           '<span class="vpc-li-txt"><b>' + esc(o[1]) + '</b></span>' + ico('chevronRight') + '</button>';
       }).join('') + '</div>' +
       '<div class="vpc-spacer"></div><div class="vpc-field"><label>Nota para la caja (opcional)</label>' +
@@ -797,7 +951,7 @@
   }
   function mandarProblema(detalleId, tipo) {
     var i = document.getElementById('vpcNotaProb');
-    accion('vp_com_problema', { p_detalle: detalleId, p_tipo: tipo, p_nota: (i && i.value) || '' }, function () {
+    accion('vp_com_problema', { p_detalle: detalleId, p_tipo: tipo, p_nota: (i && i.value) || '', p_actor: nombreActor() }, function () {
       cerrarModal();
       avisar('Avisado a caja', { icon: ico('check'), variant: 'toast-success' });
       cargarCocina();
@@ -821,7 +975,7 @@
     });
   }
   function resolver(detalleId, accionTipo) {
-    accion('vp_com_resolver', { p_detalle: detalleId, p_accion: accionTipo, p_cantidad: null, p_nota: '' }, function () {
+    accion('vp_com_resolver', { p_detalle: detalleId, p_accion: accionTipo, p_cantidad: null, p_nota: '', p_actor: nombreActor() }, function () {
       avisar(accionTipo === 'cancelar' ? 'Producto quitado' : 'Autorizado, cocina ya lo sabe', { icon: ico('check'), variant: 'toast-success' });
       cerrarModal();
       cargarTablero();
@@ -829,7 +983,7 @@
   }
 
   /* =======================================================================
-     14.  ELEGIR PRODUCTOS  (usa el catálogo que ya tienes, sin duplicarlo)
+     15.  ELEGIR PRODUCTOS (del catálogo que ya tienes)
   ======================================================================= */
   function productos() {
     var DB = ref('DB');
@@ -942,7 +1096,7 @@
     if (!lineas.length) return;
     var id = S.cuenta.id;
     var btn = document.querySelector('#modal-layer .vpc-btn.is-main'); if (btn) btn.disabled = true;
-    accion('vp_com_agregar', { p_cuenta: id, p_lineas: lineas, p_idem: llave() }, function () {
+    accion('vp_com_agregar', { p_cuenta: id, p_lineas: lineas, p_actor: nombreActor(), p_idem: llave() }, function () {
       S.borrador = {};
       cerrarModal();
       cargarCuenta(id, function () {
@@ -953,18 +1107,17 @@
   }
 
   /* =======================================================================
-     15.  COBRO · se usa el cobro de siempre, no uno nuevo
-     Los productos de la mesa pasan al carrito y se cobra en la misma hoja
-     de siempre. Al confirmarse el pago, la cuenta se cierra sola.
+     16.  COBRO · se usa el cobro de siempre, no uno nuevo
   ======================================================================= */
   function cobrar() {
     var c = S.cuenta; if (!c) return;
-    if (S.rol !== 'caja' && S.rol !== 'dueno') { avisar('Solo la caja puede cobrar', { icon: ico('alert') }); return; }
+    if (!puedeCobrar()) { avisar('Solo la caja puede cobrar', { icon: ico('alert') }); return; }
 
     var ps = (c.productos || []).filter(function (p) { return p.estado !== 'cancelado'; });
     if (!ps.length) { avisar('Esta mesa no tiene nada que cobrar', { icon: ico('alert') }); return; }
-    var pendientes = ps.filter(function (p) { return p.estado === 'problema'; });
-    if (pendientes.length) { avisar('Hay un problema sin resolver', { icon: ico('alert'), variant: 'toast-danger', subtitle: 'Resuélvelo antes de cobrar' }); return; }
+    if (ps.filter(function (p) { return p.estado === 'problema'; }).length) {
+      avisar('Hay un problema sin resolver', { icon: ico('alert'), variant: 'toast-danger', subtitle: 'Resuélvelo antes de cobrar' }); return;
+    }
 
     var cart = ref('cart'), checkout = ref('checkout'), customItems = ref('customItems');
     var nuevo = fn('newCheckout');
@@ -974,7 +1127,6 @@
     if (puerta && !puerta(function () { cobrar(); }, { ok: 'Abrir caja y cobrar', what: 'cobrar' })) return;
 
     var seguir = function () {
-      /* Se vacía el carrito SIN cambiar la variable (es la misma de siempre) */
       cart.length = 0;
       for (var k in customItems) delete customItems[k];
       var base = nuevo();
@@ -985,7 +1137,7 @@
 
       ps.forEach(function (p) {
         var l = { productId: p.producto_id, qty: Number(p.cantidad), unitPrice: Number(p.precio) };
-        if (p.size) { l.sizeLabel = p.size; }
+        if (p.size) l.sizeLabel = p.size;
         if (p.nota) l.note = p.nota;
         cart.push(l);
       });
@@ -1003,37 +1155,34 @@
     seguir();
   }
 
-  /** Cuando la venta ya quedó guardada, se cierra la cuenta y la mesa se libera. */
   function cerrarPorVenta(cuentaId, venta) {
     accion('vp_com_cerrar', {
       p_cuenta: cuentaId,
       p_venta_id: String(venta.id),
       p_venta_numero: Number(venta.number) || null,
-      p_total: Number(venta.total) || 0
-    }, function () {
-      S.cuenta = null;
-      cargarTablero();
-    });
+      p_total: Number(venta.total) || 0,
+      p_actor: nombreActor()
+    }, function () { S.cuenta = null; cargarTablero(); });
   }
 
   /* =======================================================================
-     16.  ADMINISTRACIÓN (solo el dueño)
+     17.  ADMINISTRACIÓN (solo el dueño)
   ======================================================================= */
   function verMesas() {
-    var c = nube(); if (!c) return;
+    var c = nube(); if (!c || !soyDueno()) return;
     c.sb.from('vp_comandas_mesas').select('*').order('orden').then(function (r) {
-      var ms = r.error ? [] : (r.data || []);
+      var ms = (r.error ? [] : (r.data || [])).filter(function (m) { return m.activa; });
       var h = '<div class="modal-sheet"><div class="sheet-header"><h2>Mesas</h2>' +
         '<button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div><div class="vpc">' +
         '<div class="vpc-field"><label>Agregar mesas</label>' +
-        '<input id="vpcMesaNom" type="text" maxlength="40" placeholder="Ej. Mesa 1, Terraza 2, Barra 3">' +
+        '<input id="vpcMesaNom" type="text" maxlength="120" placeholder="Ej. Mesa 1, Mesa 2, Terraza 1">' +
         '<div class="vpc-hint">Puedes escribir varias separadas por coma.</div></div>' +
         '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.crearMesas()">Agregar</button>' +
         '<div class="vpc-spacer"></div>' +
         (ms.length ? '<div class="vpc-list">' + ms.map(function (m) {
-          return '<div class="vpc-li"><span class="vpc-li-ico">' + mi('vpcTable') + '</span>' +
+          return '<div class="vpc-li is-plain"><span class="vpc-li-ico">' + mi('vpcTable') + '</span>' +
             '<span class="vpc-li-txt"><b>' + esc(m.nombre) + '</b><small>' + (m.capacidad || 4) + ' lugares</small></span>' +
-            '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.borrarMesa(\'' + m.id + '\')">Quitar</button></div>';
+            '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.borrarMesa(' + js(m.id) + ')">Quitar</button></div>';
         }).join('') + '</div>' : vacioHTML(mi('vpcTable'), 'Sin mesas todavía', 'Escribe los nombres de tus mesas arriba.')) +
         '</div></div>';
       abrirModal(h, { dismissible: true });
@@ -1057,23 +1206,22 @@
     var c = nube(); if (!c) return;
     c.sb.from('vp_comandas_mesas').update({ activa: false }).eq('id', id).then(function (r) {
       if (r.error) { avisar('No se pudo quitar', { variant: 'toast-danger' }); return; }
-      S.tablero = null;
-      verMesas();
+      S.tablero = null; verMesas();
     });
   }
 
   function verAreas() {
-    var c = nube(); if (!c) return;
+    var c = nube(); if (!c || !soyDueno()) return;
     c.sb.from('vp_comandas_areas').select('*').order('orden').then(function (r) {
-      var as = r.error ? [] : (r.data || []);
+      var as = (r.error ? [] : (r.data || [])).filter(function (a) { return a.activa; });
       var h = '<div class="modal-sheet"><div class="sheet-header"><h2>Áreas de preparación</h2>' +
         '<button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div><div class="vpc">' +
-        '<p class="vpc-sub">Si no agregas ninguna, todo se manda a Cocina. No tienes que configurar nada para empezar.</p>' +
+        '<p class="vpc-sub">Aquí decides a qué lugar del negocio llega cada producto. Si no agregas ninguna, todo se manda a Cocina.</p>' +
         '<div class="vpc-field"><label>Nueva área</label>' +
         '<input id="vpcAreaNom" type="text" maxlength="40" placeholder="Ej. Barra"></div>' +
         '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.crearArea()">Agregar área</button>' +
         '<div class="vpc-spacer"></div><div class="vpc-list">' + as.map(function (a) {
-          return '<div class="vpc-li"><span class="vpc-li-ico">' + mi('vpcPot') + '</span>' +
+          return '<div class="vpc-li is-plain"><span class="vpc-li-ico">' + mi('vpcPot') + '</span>' +
             '<span class="vpc-li-txt"><b>' + esc(a.nombre) + '</b></span>' +
             '<button type="button" class="vpc-mini" onclick="VPComandas.verRuteo(' + js(a.id) + ',' + js(a.nombre) + ')">Productos</button></div>';
         }).join('') + '</div></div></div>';
@@ -1087,7 +1235,7 @@
     if (!n) return;
     c.sb.from('vp_comandas_areas').insert({ user_id: c.uid, nombre: n, orden: 99 }).then(function (r) {
       if (r.error) { avisar('Esa área ya existe', { icon: ico('alert') }); return; }
-      S.listo = false; quienSoy();
+      S.listo = false; estadoServidor();
       verAreas();
     });
   }
@@ -1102,7 +1250,7 @@
         '<p class="vpc-sub">Marca las categorías que se preparan en ' + esc(nombre) + '. Lo que no marques se va a Cocina.</p>' +
         '<div class="vpc-list">' + cats.map(function (cat) {
           var k = 'categoria:' + cat, on = !!ya[k];
-          return '<div class="vpc-li"><span class="vpc-li-txt"><b>' + esc(cat) + '</b></span>' +
+          return '<div class="vpc-li is-plain"><span class="vpc-li-txt"><b>' + esc(cat) + '</b></span>' +
             '<button type="button" class="vpc-mini' + (on ? ' is-main' : '') + '" onclick="VPComandas.ruteo(' + js(areaId) + ',' + js(cat) + ',' + (on ? js(ya[k]) : 'null') + ',' + js(nombre) + ')">' + (on ? 'Sí' : 'No') + '</button></div>';
         }).join('') + '</div></div></div>';
       abrirModal(h, { dismissible: true });
@@ -1116,56 +1264,8 @@
     p.then(function () { verRuteo(areaId, nombre); });
   }
 
-  function verEmpleados() {
-    var c = nube(); if (!c) return;
-    c.sb.from('vp_comandas_empleados').select('*').order('creado').then(function (r) {
-      var es = r.error ? [] : (r.data || []);
-      var nombreRol = { caja: 'Caja', mesero: 'Mesero', cocina: 'Cocinero' };
-      var h = '<div class="modal-sheet"><div class="sheet-header"><h2>Empleados</h2>' +
-        '<button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div><div class="vpc">' +
-        '<p class="vpc-sub">Cada empleado entra con su propia cuenta y contraseña, desde su celular, y solo ve el área que le autorices.</p>' +
-        '<div class="vpc-row">' +
-        '<button type="button" class="vpc-btn is-main" onclick="VPComandas.invitar(\'caja\')">+ Caja</button>' +
-        '<button type="button" class="vpc-btn is-main" onclick="VPComandas.invitar(\'mesero\')">+ Mesero</button>' +
-        '<button type="button" class="vpc-btn is-main" onclick="VPComandas.invitar(\'cocina\')">+ Cocinero</button>' +
-        '</div><div class="vpc-spacer"></div>' +
-        (es.length ? '<div class="vpc-list">' + es.map(function (e) {
-          var est = e.estado === 'activo' ? 'Activo' : e.estado === 'pendiente' ? 'Esperando que lo aceptes' : e.estado === 'invitado' ? ('Código ' + (e.codigo || '')) : 'Revocado';
-          var btn = e.estado === 'pendiente'
-            ? '<button type="button" class="vpc-mini is-main" onclick="VPComandas.empleado(\'' + e.id + '\',\'aceptar\')">Aceptar</button>'
-            : (e.estado === 'revocado'
-              ? '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.empleado(\'' + e.id + '\',\'borrar\')">Borrar</button>'
-              : '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.empleado(\'' + e.id + '\',\'revocar\')">Quitar</button>');
-          return '<div class="vpc-li"><span class="vpc-li-ico">' + ico('users') + '</span>' +
-            '<span class="vpc-li-txt"><b>' + esc(e.nombre || nombreRol[e.rol] || '') + '</b><small>' + esc(nombreRol[e.rol] || e.rol) + ' · ' + esc(est) + '</small></span>' + btn + '</div>';
-        }).join('') + '</div>' : vacioHTML(ico('users'), 'Todavía no agregas empleados', 'Agrega uno y dale el código que aparece.')) +
-        '</div></div>';
-      abrirModal(h, { dismissible: true });
-    });
-  }
-  function invitar(rol) {
-    accion('vp_com_codigo', { p_rol: rol, p_nombre: '' }, function (d) {
-      if (!d || !d.codigo) return;
-      var h = '<div class="modal-sheet"><div class="sheet-header"><h2>Código del empleado</h2>' +
-        '<button class="sheet-close" onclick="VPComandas.verEmpleados()">' + ico('close') + '</button></div><div class="vpc">' +
-        '<div class="vpc-codigo">' + esc(d.codigo) + '</div>' +
-        '<p class="vpc-sub">Dáselo a tu empleado. Él abre VendoPlus en su celular, crea su cuenta, entra a Comandas y escribe este código. Después tú lo aceptas aquí. Vence en 7 días.</p>' +
-        '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.verEmpleados()">Listo</button></div></div>';
-      abrirModal(h, { dismissible: true });
-    });
-  }
-  function empleado(id, acc) {
-    accion('vp_com_empleado', { p_id: id, p_accion: acc, p_rol: null, p_areas: null }, function () {
-      avisar(acc === 'aceptar' ? 'Empleado activo' : 'Listo', { icon: ico('check'), variant: 'toast-success' });
-      verEmpleados();
-    });
-  }
-
   /* =======================================================================
-     17.  MENÚ DIGITAL · aceptar un pedido manda la comanda sola
-     No se cambia nada del Menú Digital: se envuelve mdiConfirm para
-     enterarse de que el pedido pasó a "Aceptado", y entonces se manda a
-     preparar. No cobra, no toca inventario, no duplica la venta.
+     18.  MENÚ DIGITAL · aceptar un pedido manda la comanda sola
   ======================================================================= */
   function pedidoACocina(o) {
     if (!S.activo || !o || !Array.isArray(o.lines)) return;
@@ -1177,6 +1277,7 @@
       p_code: String(o.code || ''),
       p_cliente: String((o.customer && o.customer.name) || 'Cliente'),
       p_lineas: lineas,
+      p_actor: nombreActor(),
       p_idem: 'md:' + o.id
     }).then(function (d) {
       if (d && d.ok && !d.repetida) {
@@ -1186,7 +1287,7 @@
   }
 
   /* =======================================================================
-     18.  ENGANCHES (siempre llaman primero a la función original)
+     19.  ENGANCHES (siempre llaman primero a la función original)
   ======================================================================= */
   function engancharCobro() {
     var original = window.confirmarCobro;
@@ -1196,9 +1297,7 @@
       var cuenta = checkout && checkout.vpcCuenta;
       var DB = ref('DB');
       var antes = (DB && DB.getSales) ? DB.getSales().length : -1;
-
       var r = original.apply(this, arguments);
-
       if (cuenta && DB && antes >= 0) {
         var ventas = DB.getSales();
         if (ventas.length > antes) {
@@ -1233,8 +1332,29 @@
     window.mdiConfirm = envuelta;
   }
 
+  /** Al entrar un usuario (NIP) se vuelve a preguntar dónde está. */
+  function engancharSesion() {
+    var original = window.openUserSession;
+    if (typeof original === 'function' && !original.vpcEnvuelta) {
+      var envuelta = function () {
+        var r = original.apply(this, arguments);
+        S.preguntando = false;
+        setTimeout(quizaElegirArea, 700);
+        return r;
+      };
+      envuelta.vpcEnvuelta = true;
+      window.openUserSession = envuelta;
+    }
+    var cerrar = window.closeUserSession;
+    if (typeof cerrar === 'function' && !cerrar.vpcEnvuelta) {
+      var env2 = function () { S.preguntando = false; return cerrar.apply(this, arguments); };
+      env2.vpcEnvuelta = true;
+      window.closeUserSession = env2;
+    }
+  }
+
   /* =======================================================================
-     19.  REGISTRO DE LAS PANTALLAS
+     20.  REGISTRO
   ======================================================================= */
   function registrar() {
     try {
@@ -1262,20 +1382,20 @@
   function filtrarArea(id) { S.area = id; S.cocina = null; repintar(); cargarCocina(); }
 
   /* =======================================================================
-     20.  ARRANQUE
+     21.  ARRANQUE
   ======================================================================= */
   function arrancar() {
     ponIconos();
     if (!registrar()) { setTimeout(arrancar, 300); return; }
     engancharCobro();
     engancharMenu();
+    engancharSesion();
     sondear();
-    /* Se pregunta quiénes somos una sola vez, sin estorbar el arranque. */
     setTimeout(function () {
-      if (nube()) quienSoy();
+      if (nube()) estadoServidor().then(function () { setTimeout(quizaElegirArea, 400); });
       else {
         var t = setInterval(function () {
-          if (nube()) { clearInterval(t); quienSoy(); }
+          if (nube()) { clearInterval(t); estadoServidor().then(function () { setTimeout(quizaElegirArea, 400); }); }
         }, 1500);
         setTimeout(function () { clearInterval(t); }, 30000);
       }
@@ -1283,50 +1403,27 @@
   }
 
   /* =======================================================================
-     21.  LO QUE QUEDA DISPONIBLE PARA EL RESTO DE VENDO PLUS
+     22.  LO QUE QUEDA DISPONIBLE PARA EL RESTO DE VENDO PLUS
   ======================================================================= */
   window.VPComandas = {
-    abrir: abrir,
-    ir: ir,
+    abrir: abrir, ir: ir,
     activo: function () { return S.activo; },
-    rol: function () { return S.rol; },
+    area: miArea,
     verPremium: verPremium,
-    encender: encender,
-    apagar: apagar,
-    vincular: vincular,
-    abrirMesa: abrirMesa,
-    confirmarMesa: confirmarMesa,
-    abrirCuenta: abrirCuenta,
-    cerrarCuenta: cerrarCuenta,
-    enviar: enviar,
-    pedirCuenta: pedirCuenta,
-    cancelarCuenta: cancelarCuenta,
-    cobrar: cobrar,
-    marcar: marcar,
-    todoListo: todoListo,
-    reportar: reportar,
-    mandarProblema: mandarProblema,
-    verProblemas: verProblemas,
-    resolver: resolver,
-    elegirProductos: elegirProductos,
-    verTamanos: verTamanos,
-    volverProductos: volverProductos,
-    mas: mas,
-    menos: menos,
-    buscar: buscar,
-    filtrarCat: filtrarCat,
-    guardarBorrador: guardarBorrador,
+    encender: encender, apagar: apagar,
+    toggle: toggle, verUsuarios: verUsuarios, asignar: asignar, irAUsuarios: irAUsuarios,
+    cambiarArea: cambiarArea, entrarA: entrarA,
+    abrirMesa: abrirMesa, confirmarMesa: confirmarMesa,
+    abrirCuenta: abrirCuenta, cerrarCuenta: cerrarCuenta,
+    enviar: enviar, pedirCuenta: pedirCuenta, cancelarCuenta: cancelarCuenta,
+    cobrar: cobrar, marcar: marcar, todoListo: todoListo,
+    reportar: reportar, mandarProblema: mandarProblema,
+    verProblemas: verProblemas, resolver: resolver,
+    elegirProductos: elegirProductos, verTamanos: verTamanos, volverProductos: volverProductos,
+    mas: mas, menos: menos, buscar: buscar, filtrarCat: filtrarCat, guardarBorrador: guardarBorrador,
     filtrarArea: filtrarArea,
-    verMesas: verMesas,
-    crearMesas: crearMesas,
-    borrarMesa: borrarMesa,
-    verAreas: verAreas,
-    crearArea: crearArea,
-    verRuteo: verRuteo,
-    ruteo: ruteo,
-    verEmpleados: verEmpleados,
-    invitar: invitar,
-    empleado: empleado
+    verMesas: verMesas, crearMesas: crearMesas, borrarMesa: borrarMesa,
+    verAreas: verAreas, crearArea: crearArea, verRuteo: verRuteo, ruteo: ruteo
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar);
