@@ -563,7 +563,7 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 
 /* --- Pantalla grande: el mismo tamaño de letra, las dos tarjetas a la par --- */
 @media (min-width:860px){
-  .wrap.pri-pag{ max-width:none; }
+  .wrap.pri-pag, .wrap.com-pag{ max-width:none; }
   .top.pri{ background:var(--surface); }
   .top.pri{
     background:var(--surface); border-bottom:1px solid var(--border);
@@ -573,6 +573,132 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
   .pri-rejilla{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .pri-rejilla > .pri-card{ margin-top:0; }
   .fab{ right:max(24px, clamp(20px, 4vw, 64px)); }
+}
+
+/* =====================================================================
+   COMISIONES GANADAS
+   Medidas tomadas de las imágenes de referencia.
+   ===================================================================== */
+.wrap.com-pag{ background:#FEFEFE; }
+.top.com-top{
+  background:#FEFEFE; border-bottom:none; gap:0;
+  padding:calc(env(safe-area-inset-top) + 20px) 14px 14px;
+}
+.top.com-top .icon-btn{ width:40px; height:40px; border-radius:12px; background:#F4F5F9; color:var(--ink); }
+.top.com-top .icon-btn svg{ width:20px; height:20px; }
+.top.com-top h1{ font-size:18.2px; font-weight:700; letter-spacing:-.3px; margin:0 0 0 24px; flex:1; }
+
+.body.com{ padding:11px 14px calc(env(safe-area-inset-bottom) + 90px); }
+
+.com-cab{
+  background:var(--surface); border:1px solid #F0F1F6; border-radius:16px;
+  box-shadow:0 1px 3px rgba(17,31,67,.045); overflow:hidden;
+}
+.com-verde{ background:#F5FAF6; display:flex; align-items:center; gap:16px; padding:16px; }
+.com-ico{
+  width:50px; height:50px; border-radius:14px; flex:none;
+  background:#E3F5E5; color:#19A33F; display:grid; place-items:center;
+}
+.com-ico svg{ width:26px; height:26px; }
+.com-saldo{ flex:1; min-width:0; display:block; }
+.com-et{ display:block; font-size:14.5px; font-weight:400; color:var(--ink-soft); line-height:1.35; }
+.com-num{ display:block; font-size:30px; font-weight:700; letter-spacing:-1.1px; line-height:1.3; color:var(--ink); }
+.com-num i{ font-style:normal; font-size:15px; font-weight:500; color:var(--ink-soft); margin-left:8px; letter-spacing:0; }
+
+.com-accion{ padding:14px 17px 17px; }
+.com-btn{
+  width:100%; height:43px; border:none; border-radius:12px;
+  background:#EEEFF4; color:#6B7183; font-size:15.5px; font-weight:700;
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+}
+.com-btn svg{ width:17px; height:17px; }
+.com-btn.ok{ background:#CBF4C8; color:#0E8A28; }
+.com-btn.ok:active{ transform:scale(.99); }
+
+.com-info{
+  background:var(--surface); border:1px solid #F0F1F6; border-radius:16px;
+  box-shadow:0 1px 3px rgba(17,31,67,.045);
+  padding:0 14px; margin-top:28px;
+}
+.com-dato{ display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); }
+.com-dato:last-child{ border-bottom:none; }
+.com-tile{
+  width:32px; height:32px; border-radius:10px; flex:none;
+  background:#F5F4F9; color:var(--ink); display:grid; place-items:center;
+}
+.com-tile svg{ width:18px; height:18px; }
+.com-dato-t{
+  flex:1; min-width:0; font-weight:600; color:var(--ink); line-height:1.3;
+  /* En pantallas angostas encoge un poco para no partirse en dos renglones. */
+  font-size:clamp(12.2px, 3.45vw, 14px);
+}
+.com-dato-n{ flex:none; font-size:15px; font-weight:700; color:var(--ink); white-space:nowrap; }
+.com-dato-n i{ font-style:normal; font-size:13px; font-weight:500; color:var(--ink-soft); margin-left:5px; }
+
+.com-h2{ font-size:19px; font-weight:700; letter-spacing:-.4px; color:var(--ink); margin:26px 0 10px; }
+
+.com-hist{
+  background:var(--surface); border:1px solid #F0F1F6; border-radius:16px;
+  box-shadow:0 1px 3px rgba(17,31,67,.045); padding:10px;
+}
+.com-mes{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background:#F4F5F9; border-radius:10px; padding:10px 14px; margin-top:14px;
+}
+.com-mes:first-child{ margin-top:0; }
+.com-mes b{ font-size:15.3px; font-weight:700; letter-spacing:-.2px; color:var(--ink); }
+.com-mes span{ font-size:13px; font-weight:400; color:var(--ink-soft); white-space:nowrap; }
+.com-fila{
+  display:flex; align-items:center; gap:12px;
+  padding:11px 6px; border-bottom:1px solid var(--border);
+}
+.com-fila:last-child{ border-bottom:none; }
+.com-mes + .com-fila{ border-top:none; }
+.com-av{
+  width:30px; height:30px; border-radius:9px; flex:none;
+  background:#F5F4F9; color:var(--ink-soft); display:grid; place-items:center;
+}
+.com-av svg{ width:17px; height:17px; }
+.com-correo{
+  flex:1; min-width:0; font-size:14.5px; font-weight:400; color:var(--ink);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.com-mas{ flex:none; font-size:15px; font-weight:700; color:#0E8A28; white-space:nowrap; }
+
+.com-vacio{ text-align:center; padding:48px 20px 20px; }
+.com-vacio-ico{
+  width:68px; height:68px; border-radius:50%; margin:0 auto 18px;
+  background:#E9F6EC; display:grid; place-items:center;
+}
+.com-vacio-ico svg{ width:54px; height:54px; }
+.com-vacio-ico svg circle{ display:none; }
+.com-vacio h2{ font-size:19px; font-weight:700; letter-spacing:-.4px; color:var(--ink); margin:0 0 8px; }
+.com-vacio p{ font-size:15px; font-weight:400; color:var(--ink-soft); line-height:1.5; margin:0; }
+
+/* --- Pantalla grande: mismo tamaño de letra, acomodo de la segunda imagen --- */
+@media (min-width:860px){
+  .top.com-top{
+    position:relative; background:var(--surface); border-bottom:1px solid var(--border);
+    padding:16px 24px;
+  }
+  .top.com-top h1{
+    position:absolute; left:50%; transform:translateX(-50%);
+    margin:0; flex:none; white-space:nowrap;
+  }
+  .body.com{ max-width:940px; margin:0 auto; width:100%; padding:22px 24px 90px; }
+
+  .com-cab{ background:#F5FAF6; border-color:#EAF3EC; display:flex; align-items:stretch; }
+  .com-verde{ flex:1; min-width:0; padding:18px 22px; }
+  .com-accion{
+    flex:none; width:40%; max-width:380px; display:grid; place-items:center;
+    padding:18px 22px; border-left:1px solid #E4EFE7;
+  }
+  .com-btn{ max-width:340px; }
+
+  .com-info{ display:flex; padding:0; margin-top:14px; }
+  .com-dato{ flex:1; min-width:0; padding:13px 20px; border-bottom:none; }
+  .com-dato + .com-dato{ border-left:1px solid var(--border); }
+  .com-vacio{ padding:62px 20px 30px; }
 }
 
 @media (prefers-reduced-motion: reduce){
@@ -616,7 +742,7 @@ const ICO = {
   rayo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>',
   enlace:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
   copiar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
-  cartera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="3"/><path d="M2.5 10h19"/><circle cx="17" cy="14.5" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  cartera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 9.2V7.4a2.4 2.4 0 0 0-2.4-2.4H5.9A2.4 2.4 0 0 0 3.5 7.4v9.2A2.4 2.4 0 0 0 5.9 19h12.2a2.4 2.4 0 0 0 2.4-2.4v-1.8"/><path d="M21.2 9.2h-4.1a2.8 2.8 0 0 0 0 5.6h4.1a1 1 0 0 0 1-1v-3.6a1 1 0 0 0-1-1z"/><circle cx="17.4" cy="12" r=".9" fill="currentColor" stroke="none"/></svg>',
   lista:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1.3" fill="currentColor" stroke="none"/></svg>',
   ayuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"/><path d="M9.3 9.2a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.9v.4"/><circle cx="12" cy="17.4" r="1.1" fill="currentColor" stroke="none"/></svg>',
   correo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="3"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>',
@@ -634,6 +760,8 @@ const ICO = {
   semilla:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><path d="M50 72V44" stroke="#0E7A3D" stroke-width="5" stroke-linecap="round"/><path d="M50 46c0-9 7-16 16-16 0 9-7 16-16 16Z" fill="#25D366"/><path d="M50 52c0-9-7-16-16-16 0 9 7 16 16 16Z" fill="#1DAF5A"/></svg>',
   carta:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><rect x="27" y="36" width="46" height="31" rx="5" fill="#fff" stroke="#25D366" stroke-width="4"/><path d="m29 39 21 15 21-15" stroke="#0E7A3D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   llave:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><rect x="31" y="46" width="38" height="26" rx="6" fill="#fff" stroke="#25D366" stroke-width="4"/><path d="M39 46v-6a11 11 0 0 1 22 0v6" stroke="#0E7A3D" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="59" r="4" fill="#0E7A3D"/></svg>',
+  capas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 2.8 7 12 11.4 21.2 7 12 2.6z"/><path d="m3 12 9 4.3 9-4.3"/><path d="m3 16.8 9 4.3 9-4.3"/></svg>',
+  persona:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 20.5a6.5 6.5 0 0 1 13 0"/></svg>',
   regalo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 11.5V19a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-7.5"/><rect x="2.5" y="7" width="19" height="4.8" rx="1.6"/><path d="M12 21V7"/><path d="M12 7H8.1a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h3.9a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg>',
   cofre:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#FFF0C2"/><rect x="26" y="44" width="48" height="26" rx="5" fill="#fff" stroke="#F5BF3C" stroke-width="4"/><path d="M26 54h48" stroke="#F5BF3C" stroke-width="4"/><path d="M28 44c0-10 10-16 22-16s22 6 22 16" stroke="#8A6440" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="59" r="3.5" fill="#8A6440"/></svg>'
 };
@@ -1862,86 +1990,105 @@ function pantallaComisiones(){
   const filas = d.filas || [];
   const recl = d.reclamaciones || [];
   const puede = (c.disponible_cents || 0) > 0;
+  const meses = agruparPorMes(filas);
 
   return `
-    <div class="top">
+    <div class="top com-top">
       <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
       <h1>Comisiones ganadas</h1>
     </div>
 
-    <div class="body vista">
-      <div class="card">
-        <div class="card-top">
-          <span class="card-ico amar">${ic('tienda')}</span>
-          <h2 class="card-title">Negocios nuevos</h2>
+    <div class="body com vista">
+      <div class="com-cab">
+        <div class="com-verde">
+          <span class="com-ico">${ic('cartera')}</span>
+          <span class="com-saldo">
+            <span class="com-et">Disponible para reclamar</span>
+            <span class="com-num">${pesosC(c.disponible_cents)}<i>MXN</i></span>
+          </span>
         </div>
-
-        <p class="saldo-et">Disponible para reclamar</p>
-        <div class="saldo">
-          <span class="saldo-num">${pesosC(c.disponible_cents)}</span>
-          <span class="saldo-mon">MXN</span>
+        <div class="com-accion">
+          <button class="com-btn ${puede ? 'ok' : ''}" id="bReclamarComis" ${puede ? '' : 'disabled'}>
+            ${puede ? '' : ic('candado')}Reclamar dinero
+          </button>
         </div>
-        <p class="card-note" style="margin-top:6px;">
-          ${c.negocios || 0} ${(c.negocios === 1) ? 'negocio contrató' : 'negocios contrataron'} su membresía ·
-          ${pesosC(c.por_negocio_cents)} cada uno
-        </p>
-
-        ${(c.reclamado_cents || 0) > 0 ? `
-        <div class="fila" style="margin-top:14px; border-top:1px solid var(--border); padding-top:16px;">
-          <div class="fila-txt"><p class="fila-t">Ya reclamado</p></div>
-          <span class="fila-n gris">${pesosC(c.reclamado_cents)}</span>
-        </div>` : ''}
-
-        <button class="btn ${puede ? 'primary' : 'bloq'} block xl" id="bReclamarComis"
-                style="margin-top:16px;" ${puede ? '' : 'disabled'}>
-          ${puede ? '' : ic('candado')} RECLAMAR DINERO
-        </button>
-        ${puede ? '' : `<p class="card-note" style="margin-top:9px; text-align:center;">
-          Cada negocio nuevo que contrate su membresía te deja ${pesosC(c.por_negocio_cents)}.</p>`}
       </div>
 
-      ${filas.length ? `
-        <div class="card">
-          <div class="card-top">
-            <span class="card-ico">${ic('lista')}</span>
-            <h2 class="card-title">Historial</h2>
-          </div>
-          ${filas.map(f => `
-            <div class="fila">
-              <div class="fila-txt">
-                <p class="fila-t" style="word-break:break-all;">${esc(f.correo || '')}</p>
-                <p class="fila-s">Membresía contratada · ${fechaHora(f.pagado_en)}</p>
-              </div>
-              <span class="fila-n verde">+${pesosC(f.importe_cents)}</span>
-            </div>`).join('')}
+      <div class="com-info">
+        <div class="com-dato">
+          <span class="com-tile">${ic('tienda')}</span>
+          <span class="com-dato-t">Membresías compradas</span>
+          <span class="com-dato-n">${c.negocios || 0}</span>
+        </div>
+        <div class="com-dato">
+          <span class="com-tile">${ic('capas')}</span>
+          <span class="com-dato-t">Comisión por membresía</span>
+          <span class="com-dato-n">${pesosC(c.por_negocio_cents)}<i>MXN</i></span>
+        </div>
+      </div>
+
+      ${meses.length ? `
+        <h2 class="com-h2">Historial de comisiones</h2>
+        <div class="com-hist">
+          ${meses.map(m => `
+            <div class="com-mes">
+              <b>${esc(m.etiqueta)}</b>
+              <span>${m.filas.length} ${m.filas.length === 1 ? 'membresía' : 'membresías'}</span>
+            </div>
+            ${m.filas.map(f => `
+              <div class="com-fila">
+                <span class="com-av">${ic('persona')}</span>
+                <span class="com-correo">${esc(f.correo || '')}</span>
+                <span class="com-mas">+${pesosC(f.importe_cents)}</span>
+              </div>`).join('')}`).join('')}
         </div>` : `
-        <div class="card">
-          <div class="vacio">
-            ${ic('semilla')}
-            <p>Todavía no tienes comisiones.<br>
-               Comparte tu enlace: cada negocio nuevo que contrate<br>
-               su membresía te deja ${pesosC(c.por_negocio_cents)}.</p>
-          </div>
+        <div class="com-vacio">
+          <span class="com-vacio-ico">${ic('semilla')}</span>
+          <h2>Aún no tienes comisiones</h2>
+          <p>Comparte tu enlace y gana ${pesosC(c.por_negocio_cents)} MXN<br>por cada membresía comprada.</p>
         </div>`}
 
       ${recl.length ? `
-        <div class="card">
-          <div class="card-top">
-            <span class="card-ico">${ic('lista')}</span>
-            <h2 class="card-title">Mis reclamaciones</h2>
-          </div>
+        <h2 class="com-h2">Mis reclamaciones</h2>
+        <div class="com-hist">
           ${recl.map(r => `
-            <div class="fila">
-              <div class="fila-txt">
-                <p class="fila-t">${pesosC(r.importe_cents)}</p>
-                <p class="fila-s">${fechaHora(r.creado_en)}</p>
-              </div>
+            <div class="com-fila">
+              <span class="com-av">${ic('dinero')}</span>
+              <span class="com-correo">${pesosC(r.importe_cents)} · ${fechaHora(r.creado_en)}</span>
               <span class="tag ${r.estado === 'pagado' ? 'disp' : (r.estado === 'rechazado' ? 'canc' : 'gen')}">
                 ${r.estado === 'pagado' ? 'Pagado' : (r.estado === 'rechazado' ? 'Rechazado' : 'En revisión')}
               </span>
             </div>`).join('')}
         </div>` : ''}
     </div>`;
+}
+
+/** Agrupa movimientos por mes, del más reciente al más viejo.
+    El mes se calcula en hora del centro de México, igual que las fechas. */
+function agruparPorMes(filas){
+  const fmtMes = new Intl.DateTimeFormat('es-MX', { month:'long', timeZone:'America/Mexico_City' });
+  const fmtAno = new Intl.DateTimeFormat('es-MX', { year:'numeric', timeZone:'America/Mexico_City' });
+  const anoHoy = fmtAno.format(new Date());
+  const mapa = new Map();
+  (filas || []).slice()
+    .sort((a, b) => new Date(b.pagado_en || 0) - new Date(a.pagado_en || 0))
+    .forEach(f => {
+      const t = new Date(f.pagado_en || 0);
+      const ano = fmtAno.format(t);
+      const clave = ano + '-' + fmtMes.format(t);
+      let mes = mapa.get(clave);
+      if(!mes){
+        const nom = fmtMes.format(t);
+        mes = {
+          clave,
+          etiqueta: nom.charAt(0).toUpperCase() + nom.slice(1) + (ano === anoHoy ? '' : ' ' + ano),
+          filas: []
+        };
+        mapa.set(clave, mes);
+      }
+      mes.filas.push(f);
+    });
+  return [...mapa.values()];
 }
 
 /* =====================================================================
@@ -2127,7 +2274,7 @@ function pintar(){
     return;
   }
 
-  app.className = p === 'inicio' ? 'wrap pri-pag' : 'wrap';
+  app.className = 'wrap' + (p === 'inicio' ? ' pri-pag' : p === 'comisiones' ? ' com-pag' : '');
   app.innerHTML = p === 'inicio'     ? pantallaInicio()
                 : p === 'bonos'      ? pantallaBonos()
                 : p === 'comisiones' ? pantallaComisiones()
