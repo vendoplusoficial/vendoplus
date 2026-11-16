@@ -1880,6 +1880,268 @@ function pintar(){
   cablearPortal();
 }
 
+/* ---------- Eventos de las pantallas de acceso ---------- */
+function cablearAcceso(){
+  const p = S.pantalla;
+
+  if(p === 'acceso'){
+    const cor = $('aCorreo');
+    cor.oninput = () => { S.correo = cor.value.trim(); };
+    cor.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); accionAcceso(); } };
+    $('aBtn').onclick = accionAcceso;
+    $('bCambia').onclick = () => { S.modo = S.modo === 'login' ? 'signup' : 'login'; S.pw = ''; pintar(); };
+    if($('bOlvide')) $('bOlvide').onclick = () => { S.fpaso = 1; S.fverificado = false; irA('olvide'); };
+    if($('aPw')){
+      $('aPw').oninput = e => { S.pw = e.target.value; };
+      $('aPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); accionAcceso(); } };
+      ojo('aOjo', 'aPw');
+    }
+    setTimeout(() => cor.focus(), 160);
+  }
+
+  if(p === 'codigo'){
+    $('bAtras').onclick = async () => { await sb.auth.signOut().catch(() => {}); clearInterval(S.timer); irA('acceso'); };
+    cablearOtp();
+    $('oBtn').onclick = verificarCodigo;
+    cablearReenvio();
+  }
+
+  if(p === 'clave'){
+    const pw = $('pPw');
+    pw.oninput = () => { S.pw = pw.value; $('pBtn').disabled = pw.value.length < 8; };
+    pw.onkeydown = ev => { if(ev.key === 'Enter' && pw.value.length >= 8){ ev.preventDefault(); guardarClave(); } };
+    ojo('pOjo', 'pPw');
+    $('pBtn').onclick = guardarClave;
+    setTimeout(() => pw.focus(), 160);
+  }
+
+  if(p === 'olvide'){
+    $('bAtras').onclick = () => {
+      clearInterval(S.timer);
+      if(S.fpaso === 2){ S.fpaso = 1; pintar(); } else { S.modo = 'login'; irA('acceso'); }
+    };
+    if(S.fpaso === 2){
+      ojo('fOjo', 'fPw');
+      $('fBtn').onclick = confirmarOlvide;
+      $('fPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); confirmarOlvide(); } };
+      cablearReenvio();
+      setTimeout(() => $('fCod').focus(), 160);
+    }else{
+      const c = $('fCorreo');
+      c.oninput = () => { S.correo = c.value.trim(); };
+      c.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); enviarOlvide(); } };
+      $('fBtn').onclick = enviarOlvide;
+      setTimeout(() => c.focus(), 160);
+    }
+  }
+
+  if(p === 'nombre'){
+    const n = $('nNom');
+    n.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); crearPromotor(); } };
+    $('nBtn').onclick = crearPromotor;
+    setTimeout(() => n.focus(), 160);
+  }
+}
+
+function ojo(idBtn, idPw){
+  const b = $(idBtn); if(!b) return;
+  b.onclick = () => {
+    const i = $(idPw);
+    const ver = i.type === 'password';
+    i.type = ver ? 'text' : 'password';
+    b.innerHTML = ver ? ic('ojoNo') : ic('ojo');
+    i.focus();
+  };
+}
+
+function cablearReenvio(){
+  const area = $('reenvio'); if(!area) return;
+  const b = $('bReenviar');
+  if(b) b.onclick = () => { if(S.pantalla === 'olvide') enviarOlvide(); else accionAcceso(); };
+}
+
+/* ---------- Celdas del código ---------- */
+function cablearOtp(alCompletar){
+  const n = CONFIG.CODIGO_DIGITOS;
+  const celdas = [];
+  for(let i = 0; i < n; i++) celdas.push($('c' + i));
+
+  const revisar = () => {
+    const v = celdas.map(c => c.value).join('');
+    $('oBtn').disabled = v.length !== n;
+    celdas.forEach(c => c.classList.toggle('filled', !!c.value));
+    if(v.length === n) (alCompletar || verificarCodigo)();
+  };
+
+  celdas.forEach((c, i) => {
+    c.oninput = () => {
+      c.value = c.value.replace(/\D/g, '').slice(0, 1);
+      if(c.value && i < n - 1) celdas[i + 1].focus();
+      revisar();
+    };
+    c.onkeydown = ev => {
+      if(ev.key === 'Backspace' && !c.value && i > 0){ celdas[i - 1].focus(); celdas[i - 1].value = ''; revisar(); }
+    };
+    c.onpaste = ev => {
+      ev.preventDefault();
+      const t = (ev.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, n);
+      for(let k = 0; k < n; k++) celdas[k].value = t[k] || '';
+      celdas[Math.min(t.length, n - 1)].focus();
+      revisar();
+    };
+  });
+  setTimeout(() => celdas[0].focus(), 180);
+}
+const valorOtp = () => {
+  let v = '';
+  for(let i = 0; i < CONFIG.CODIGO_DIGITOS; i++) v += ($('c' + i) || {}).value || '';
+  return v;
+};
+function fallaOtp(msg){
+  const r = $('otpRow');
+  if(r){ r.classList.add('error'); setTimeout(() => r.classList.remove('error'), 400); }
+  for(let i = 0; i < CONFIG.CODIGO_DIGITOS; i++){ const c = $('c' + i); if(c){ c.value = ''; c.classList.remove('filled'); } }
+  const p = $('c0'); if(p) p.focus();
+  $('oBtn').disabled = true;
+  vibra([18, 60, 18]);
+  toast(msg, true);
+}
+
+/* ---------- Acciones de acceso ---------- */
+function accionAcceso(){
+  const correo = normCorreo(S.correo);
+  if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
+
+  const login = S.modo === 'login';
+  const reenvio = S.pantalla === 'codigo';
+  if(reenvio && S.reenvio > 0) return;
+  vibra(12);
+
+  return conBoton(reenvio ? null : 'aBtn', login ? 'Entrando…' : 'Enviando…', async () => {
+    if(login){
+      if((S.pw || '').length < 1) return toast('Escribe tu contraseña', true);
+      const { error } = await sb.auth.signInWithPassword({ email:correo, password:S.pw });
+      if(error) return toast(errLegible(error), true);
+      S.pw = '';
+      return await despuesDeEntrar();
+    }
+    const { error } = await mandarCodigo(correo, true);
+    if(error) return toast(errLegible(error), true);
+    S.reenvio = 60;
+    if(reenvio){
+      const el = $('reenvio'); if(el){ el.innerHTML = htmlReenvio(); cablearReenvio(); }
+      toast('Te mandamos otro código');
+    }else irA('codigo');
+    tiempoReenvio();
+  });
+}
+
+function verificarCodigo(){
+  const token = valorOtp();
+  if(token.length !== CONFIG.CODIGO_DIGITOS) return;
+  const correo = normCorreo(S.correo);
+
+  return conBoton('oBtn', 'Verificando…', async () => {
+    const { error } = await revisarCodigo(correo, token);
+    if(error) return fallaOtp(errLegible(error));
+    clearInterval(S.timer);
+    vibra(20);
+
+    // ¿Ya era promotor? Entonces entra directo.
+    const t = await sb.rpc('ref_mi_tablero');
+    if(t.data && t.data.ok){
+      S.promotor = t.data;
+      return await abrirPortal();
+    }
+    S.pw = '';
+    irA('clave');
+  });
+}
+
+function guardarClave(){
+  const pw = S.pw || '';
+  if(pw.length < 8) return toast('La contraseña debe tener mínimo 8 caracteres', true);
+
+  return conBoton('pBtn', 'Guardando…', async () => {
+    const { error } = await sb.auth.updateUser({ password:pw, data:{ vp_promotor:true } });
+    if(error) return toast(errLegible(error), true);
+    S.pw = '';
+    irA('nombre');
+  });
+}
+
+function crearPromotor(){
+  const nombre = ($('nNom').value || '').trim();
+  if(nombre.length < 2) return toast('Escribe tu nombre', true);
+
+  return conBoton('nBtn', 'Creando…', async () => {
+    const r = await sb.rpc('ref_alta_promotor', { p_nombre: nombre });
+    if(r.error) return toast(errLegible(r.error), true);
+    if(!r.data || !r.data.ok) return toast(r.data?.mensaje || 'No se pudo crear tu cuenta de promotor.', true);
+    vibra([15, 60, 15]);
+    await abrirPortal();
+    toast('Listo, tu enlace ya está activo');
+  });
+}
+
+function enviarOlvide(){
+  const correo = normCorreo(S.correo);
+  if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
+  const reenvio = S.fpaso === 2;
+  if(reenvio && S.reenvio > 0) return;
+
+  return conBoton(reenvio ? null : 'fBtn', 'Enviando…', async () => {
+    const { error } = await mandarCodigo(correo, false);
+    if(error) return toast(errLegible(error), true);
+    S.reenvio = 60; S.fverificado = false;
+    if(reenvio){ const el = $('reenvio'); if(el){ el.innerHTML = htmlReenvio(); cablearReenvio(); } }
+    else{ S.fpaso = 2; pintar(); }
+    tiempoReenvio();
+    toast('Te mandamos un código a tu correo');
+  });
+}
+
+function confirmarOlvide(){
+  const correo = normCorreo(S.correo);
+  const token = (($('fCod') || {}).value || '').replace(/\D/g, '');
+  const pw = ($('fPw') || {}).value || '';
+  if(!S.fverificado && token.length !== CONFIG.CODIGO_DIGITOS)
+    return toast('Escribe el código de ' + CONFIG.CODIGO_DIGITOS + ' dígitos', true);
+  if(pw.length < 8) return toast('La contraseña debe tener mínimo 8 caracteres', true);
+
+  return conBoton('fBtn', 'Cambiando…', async () => {
+    if(!S.fverificado){
+      const v = await revisarCodigo(correo, token);
+      if(v.error) return toast(errLegible(v.error), true);
+      S.fverificado = true;   // el código ya se usó: si falla la contraseña no se pide otra vez
+    }
+    const u = await sb.auth.updateUser({ password:pw });
+    if(u.error) return toast(errLegible(u.error), true);
+    clearInterval(S.timer);
+    S.fverificado = false; S.fpaso = 1;
+    await despuesDeEntrar();
+    toast('Contraseña actualizada');
+  });
+}
+
+/* ---------- Después de entrar ---------- */
+async function despuesDeEntrar(){
+  const t = await sb.rpc('ref_mi_tablero');
+  if(t.error){ toast(errLegible(t.error), true); return irA('acceso'); }
+  if(t.data && t.data.ok){
+    S.promotor = t.data;
+    return await abrirPortal();
+  }
+  // Tiene sesión pero todavía no es promotor: le pedimos su nombre.
+  irA('nombre');
+}
+
+async function abrirPortal(){
+  irA('inicio');
+  escuchar();
+  refrescar();
+}
+
 /* ---------- Eventos del portal ---------- */
 function cablearPortal(){
   const p = S.pantalla;
