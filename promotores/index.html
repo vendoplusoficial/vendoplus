@@ -11,26 +11,49 @@
 <style>
 /* =====================================================================
    PORTAL DE PROMOTORES · VENDOPLUS
-   Misma identidad que la app: verde de marca, tarjetas limpias, bordes
-   suaves, letra fuerte. Los colores y medidas se copiaron tal cual del
-   index.html de VendoPlus para que se sienta la misma casa.
+   Tipografía delgada y paleta sobria. La tinta, los grises y los verdes
+   se tomaron de la referencia aprobada.
+
+   Escala de peso (a propósito corta):
+     400  texto corrido
+     500  etiquetas y campos
+     600  títulos y botones
+     700  solo la cifra del saldo
    ===================================================================== */
 :root{
-  --brand:#25D366;  --brand-2:#1DAF5A;  --brand-soft:#E5FAEC;  --brand-ink:#0E7A3D;
-  --brand-deep:#0E7A3D; --brand-deeper:#0A5A2D; --brand-deepest:#063D1F;
-  --teal:#128C7E; --teal-soft:#DDF3EF; --teal-ink:#0B6B61;
+  /* Tinta: un solo azul marino en tres pasos */
+  --ink:#111F43;
+  --ink-soft:#64739B;
+  --ink-faint:#8A97BB;
 
-  --bg:#F3F4FA; --surface:#FFFFFF; --surface-alt:#EEF0F7;
-  --ink:#16213E; --ink-soft:#8A93AC; --ink-faint:#C9CEDD;
-  --border:#E4E7F1;
+  /* Superficies planas: tarjeta blanca sobre gris casi blanco */
+  --bg:#FAFAFB;
+  --surface:#FFFFFF;
+  --surface-alt:#F2F4F8;
+  --border:#EDEFF5;
+  --border-fuerte:#DFE3EC;
 
-  --accent:#FFD666; --accent-strong:#F5BF3C; --accent-soft:#FFF0C2;
-  --accent-2:#E1594C; --danger-bg:#FBEAE8;
-  --success:#33A873; --success-bg:#E7F7EF;
+  /* Verde de marca, más apagado que el de la app */
+  --brand:#4FBF62;
+  --brand-2:#3BA94F;
+  --brand-soft:#E6F6EB;
+  --brand-ink:#0C7A2F;
 
-  --radius-card:18px; --radius-btn:13px; --radius-chip:999px;
-  --shadow-card:0 1px 2px rgba(22,33,62,.04), 0 6px 18px rgba(22,33,62,.05);
-  --shadow-pop:0 10px 26px rgba(22,33,62,.14);
+  /* Ámbar para transacciones */
+  --amar-soft:#FDF2DA;
+  --amar-ink:#7A4D10;
+
+  /* Avisos */
+  --rojo:#C0453A;
+  --rojo-soft:#FBEDEB;
+  --exito:#0C7A2F;
+  --exito-soft:#E6F6EB;
+
+  --radius-card:16px;
+  --radius-btn:11px;
+  --radius-chip:999px;
+  --shadow-card:0 1px 2px rgba(17,31,67,.04);
+  --shadow-pop:0 8px 24px rgba(17,31,67,.10);
   --sans:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --mono:'SFMono-Regular', ui-monospace, 'Courier New', Courier, monospace;
 }
@@ -39,10 +62,12 @@
 html,body{ margin:0; padding:0; }
 body{
   font-family:var(--sans); background:var(--bg); color:var(--ink);
-  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  font-size:15px; font-weight:400; line-height:1.55;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
   overscroll-behavior-y:none;
 }
-button{ font-family:inherit; cursor:pointer; }
+/* Sin esto, iOS pinta el texto de los <button> en azul de sistema. */
+button{ font-family:inherit; color:inherit; cursor:pointer; -webkit-appearance:none; appearance:none; }
 a{ color:var(--brand-ink); }
 
 .wrap{ max-width:560px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; }
@@ -50,20 +75,20 @@ a{ color:var(--brand-ink); }
 /* ---------- Encabezado ---------- */
 .top{
   display:flex; align-items:center; gap:12px;
-  padding:calc(env(safe-area-inset-top) + 16px) 18px 14px;
+  padding:calc(env(safe-area-inset-top) + 15px) 18px 14px;
   background:var(--surface); border-bottom:1px solid var(--border);
   position:sticky; top:0; z-index:20;
 }
-.top h1{ font-size:17px; font-weight:800; margin:0; flex:1; letter-spacing:-.2px; }
-.top .marca{ display:flex; align-items:center; gap:9px; flex:1; min-width:0; }
+.top h1{ font-size:19px; font-weight:600; margin:0; flex:1; letter-spacing:-.2px; }
+.top .marca{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
 .logo{
-  width:30px; height:30px; border-radius:9px; flex:none;
+  width:32px; height:32px; border-radius:10px; flex:none;
   background:linear-gradient(145deg, var(--brand), var(--brand-2));
   display:grid; place-items:center; color:#fff;
 }
 .logo svg{ width:17px; height:17px; }
 .icon-btn{
-  width:38px; height:38px; border-radius:11px; border:none; flex:none;
+  width:38px; height:38px; border-radius:10px; border:none; flex:none;
   background:var(--surface-alt); color:var(--ink-soft); display:grid; place-items:center;
 }
 .icon-btn:active{ transform:scale(.94); }
@@ -71,54 +96,57 @@ a{ color:var(--brand-ink); }
 .back{ background:var(--surface-alt); color:var(--ink); }
 
 /* ---------- Cuerpo ---------- */
-.body{ flex:1; padding:18px 16px calc(env(safe-area-inset-bottom) + 90px); }
-.vista{ animation:entra .26s cubic-bezier(.22,.9,.3,1); }
-@keyframes entra{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+.body{ flex:1; padding:18px 16px calc(env(safe-area-inset-bottom) + 92px); }
+.vista{ animation:entra .24s cubic-bezier(.22,.9,.3,1); }
+@keyframes entra{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
 
 /* ---------- Tarjetas ---------- */
 .card{
   background:var(--surface); border:1px solid var(--border);
   border-radius:var(--radius-card); box-shadow:var(--shadow-card);
-  padding:18px; margin-bottom:14px;
+  padding:18px 17px; margin-bottom:12px;
 }
-.card.tap{ width:100%; text-align:left; display:block; border-color:var(--border); }
-.card.tap:active{ transform:scale(.99); background:#FCFDFF; }
-.card-top{ display:flex; align-items:center; gap:11px; margin-bottom:13px; }
+.card.tap{
+  width:100%; text-align:left; display:block;
+  color:var(--ink); font-size:15px;      /* el botón hereda la tinta, no el azul de iOS */
+}
+.card.tap:active{ background:#FCFCFD; }
+.card-top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
 .card-ico{
-  width:34px; height:34px; border-radius:10px; flex:none; display:grid; place-items:center;
+  width:36px; height:36px; border-radius:10px; flex:none; display:grid; place-items:center;
   background:var(--brand-soft); color:var(--brand-ink);
 }
-.card-ico.teal{ background:var(--teal-soft); color:var(--teal-ink); }
-.card-ico.amar{ background:var(--accent-soft); color:#8A6440; }
+.card-ico.teal{ background:var(--brand-soft); color:var(--brand-ink); }
+.card-ico.amar{ background:var(--amar-soft); color:var(--amar-ink); }
 .card-ico svg{ width:18px; height:18px; }
-.card-title{ font-size:14.5px; font-weight:800; margin:0; letter-spacing:-.1px; }
-.card-note{ font-size:13px; font-weight:500; color:var(--ink-soft); margin:0; line-height:1.55; }
+.card-title{ font-size:16px; font-weight:600; margin:0; letter-spacing:-.15px; color:var(--ink); }
+.card-note{ font-size:14px; font-weight:400; color:var(--ink-soft); margin:0; line-height:1.55; }
 .chev{ margin-left:auto; color:var(--ink-faint); display:grid; place-items:center; }
-.chev svg{ width:18px; height:18px; }
+.chev svg{ width:17px; height:17px; }
 
 /* ---------- Enlace de invitación ---------- */
 .enlace-caja{
   display:flex; align-items:center; gap:10px;
-  background:var(--surface-alt); border:1px dashed var(--ink-faint);
-  border-radius:12px; padding:12px 13px; margin-bottom:11px;
+  background:var(--surface-alt); border:1px dashed var(--border-fuerte);
+  border-radius:12px; padding:10px 11px; margin-bottom:12px;
 }
 .enlace-txt{
-  flex:1; min-width:0; font-family:var(--mono); font-size:12.5px; font-weight:700;
+  flex:1; min-width:0; font-family:var(--mono); font-size:13px; font-weight:500;
   color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .btn-copiar{
-  flex:none; border:none; border-radius:10px; padding:9px 12px;
-  background:var(--ink); color:#fff; font-size:12.5px; font-weight:800;
-  display:inline-flex; align-items:center; gap:6px;
+  flex:none; border:none; border-radius:9px; padding:10px 14px;
+  background:var(--ink); color:#fff; font-size:13.5px; font-weight:600;
+  display:inline-flex; align-items:center; gap:7px;
 }
-.btn-copiar svg{ width:14px; height:14px; }
-.btn-copiar.ok{ background:var(--success); }
+.btn-copiar svg{ width:15px; height:15px; }
+.btn-copiar.ok{ background:var(--exito); }
 
 /* ---------- Cartera ---------- */
-.saldo{ display:flex; align-items:baseline; gap:7px; margin:2px 0 4px; }
-.saldo-num{ font-size:38px; font-weight:800; letter-spacing:-1.4px; line-height:1; }
-.saldo-mon{ font-size:14px; font-weight:800; color:var(--ink-soft); }
-.saldo-et{ font-size:12.5px; font-weight:700; color:var(--ink-soft); margin:0 0 2px; }
+.saldo{ display:flex; align-items:baseline; gap:8px; margin:3px 0 2px; }
+.saldo-num{ font-size:36px; font-weight:700; letter-spacing:-1.1px; line-height:1.05; color:var(--ink); }
+.saldo-mon{ font-size:14px; font-weight:500; color:var(--ink-soft); }
+.saldo-et{ font-size:13.5px; font-weight:500; color:var(--ink-soft); margin:0 0 3px; }
 
 /* ---------- Desglose ---------- */
 .fila{
@@ -127,58 +155,59 @@ a{ color:var(--brand-ink); }
 }
 .fila:last-child{ border-bottom:none; }
 .fila-txt{ flex:1; min-width:0; }
-.fila-t{ font-size:14px; font-weight:700; margin:0; }
-.fila-s{ font-size:12.5px; font-weight:500; color:var(--ink-soft); margin:2px 0 0; line-height:1.5; }
-.fila-n{ font-size:15.5px; font-weight:800; flex:none; white-space:nowrap; }
+.fila-t{ font-size:15px; font-weight:500; margin:0; color:var(--ink); }
+.fila-s{ font-size:13px; font-weight:400; color:var(--ink-soft); margin:2px 0 0; line-height:1.5; }
+.fila-n{ font-size:15px; font-weight:600; flex:none; white-space:nowrap; color:var(--ink); }
 .fila-n.verde{ color:var(--brand-ink); }
 .fila-n.gris{ color:var(--ink-soft); }
-.fila-n.roja{ color:var(--accent-2); }
+.fila-n.roja{ color:var(--rojo); }
 
 /* ---------- Etiquetas de estado ---------- */
 .tag{
   display:inline-flex; align-items:center; gap:5px;
-  font-size:11px; font-weight:800; padding:4px 9px; border-radius:var(--radius-chip);
+  font-size:11.5px; font-weight:500; padding:4px 10px; border-radius:var(--radius-chip);
   background:var(--surface-alt); color:var(--ink-soft); white-space:nowrap;
 }
-.tag.disp{ background:var(--success-bg); color:var(--brand-ink); }
-.tag.gen{ background:var(--accent-soft); color:#8A6440; }
-.tag.proc{ background:var(--teal-soft); color:var(--teal-ink); }
-.tag.canc{ background:var(--danger-bg); color:var(--accent-2); }
+.tag.disp{ background:var(--exito-soft); color:var(--brand-ink); }
+.tag.gen{ background:var(--amar-soft); color:var(--amar-ink); }
+.tag.proc{ background:var(--surface-alt); color:var(--ink-soft); }
+.tag.canc{ background:var(--rojo-soft); color:var(--rojo); }
 
 /* ---------- Barra de progreso ---------- */
-.barra{ height:7px; border-radius:99px; background:var(--surface-alt); overflow:hidden; margin-top:9px; }
-.barra i{ display:block; height:100%; border-radius:99px; background:linear-gradient(90deg, var(--brand), var(--brand-2)); }
+.barra{ height:6px; border-radius:99px; background:var(--surface-alt); overflow:hidden; margin-top:10px; }
+.barra i{ display:block; height:100%; border-radius:99px; background:var(--brand-ink); }
 
 /* ---------- Botones ---------- */
 .btn{
-  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
   border:none; border-radius:var(--radius-btn);
-  padding:14px 18px; font-size:15px; font-weight:700;
+  padding:14px 18px; font-size:15px; font-weight:600;
   background:var(--surface-alt); color:var(--ink);
 }
 .btn svg{ width:17px; height:17px; }
 .btn.dark{ background:var(--ink); color:#fff; }
-.btn.primary{ background:var(--brand); color:#fff; }
-.btn.ghost{ background:var(--surface); border:1.6px solid var(--border); color:var(--ink); }
+.btn.primary{ background:var(--ink); color:#fff; }
+.btn.ghost{ background:var(--surface); border:1px solid var(--border-fuerte); color:var(--ink); }
 .btn.block{ width:100%; }
-.btn.xl{ padding:17px 20px; font-size:16.5px; border-radius:16px; }
-.btn:disabled{ opacity:.5; }
+.btn.xl{ padding:16px 20px; font-size:16px; border-radius:13px; }
+.btn:disabled{ opacity:.55; }
 .btn:not(:disabled):active{ transform:scale(.985); }
 .btn.bloq{ background:var(--surface-alt); color:var(--ink-faint); }
 
 /* ---------- Formularios ---------- */
 .field{ margin-bottom:16px; text-align:left; }
-.field label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px; }
+.field label{ display:block; font-size:13px; font-weight:500; color:var(--ink-soft); margin-bottom:8px; }
 .entrada{
-  width:100%; border:1.6px solid var(--border); border-radius:14px;
-  padding:15px 16px; font-size:16px; font-weight:700;
+  width:100%; border:1px solid var(--border-fuerte); border-radius:12px;
+  padding:14px 15px; font-size:16px; font-weight:500;
   color:var(--ink); background:var(--surface); font-family:inherit;
 }
-.entrada:focus{ outline:none; border-color:var(--brand); }
+.entrada::placeholder{ color:var(--ink-faint); font-weight:400; }
+.entrada:focus{ outline:none; border-color:var(--ink-faint); }
 .pw-caja{ position:relative; }
 .pw-ojo{
   position:absolute; right:6px; top:50%; transform:translateY(-50%);
-  width:40px; height:40px; border:none; background:none; color:var(--ink-soft);
+  width:40px; height:40px; border:none; background:none; color:var(--ink-faint);
   display:grid; place-items:center; border-radius:10px;
 }
 .pw-ojo svg{ width:19px; height:19px; }
@@ -186,97 +215,131 @@ a{ color:var(--brand-ink); }
 .otp-row{ display:flex; gap:9px; justify-content:space-between; margin:6px 0 18px; }
 .otp-cell{
   flex:1; min-width:0; aspect-ratio:1 / 1.18;
-  border:1.8px solid var(--border); border-radius:15px;
-  background:var(--surface-alt); font-family:inherit;
-  font-size:24px; font-weight:800; text-align:center; color:var(--ink);
+  border:1px solid var(--border-fuerte); border-radius:13px;
+  background:var(--surface); font-family:inherit;
+  font-size:23px; font-weight:600; text-align:center; color:var(--ink);
   padding:0; -moz-appearance:textfield;
 }
 .otp-cell::-webkit-outer-spin-button, .otp-cell::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
-.otp-cell:focus{ border-color:var(--brand); background:var(--surface); outline:none; }
-.otp-cell.filled{ background:var(--surface); border-color:var(--ink-faint); }
-.otp-row.error .otp-cell{ border-color:var(--accent-2); animation:shake .32s ease; }
+.otp-cell:focus{ border-color:var(--ink); outline:none; }
+.otp-cell.filled{ border-color:var(--ink-faint); }
+.otp-row.error .otp-cell{ border-color:var(--rojo); animation:shake .32s ease; }
 @keyframes shake{ 10%,90%{transform:translateX(-2px)} 30%,70%{transform:translateX(3px)} 50%{transform:translateX(-3px)} }
-.otp-help{ font-size:13.5px; font-weight:600; color:var(--ink-soft); text-align:center; margin:0; }
-.otp-help button{ border:none; background:none; color:var(--brand-ink); font-weight:800; text-decoration:underline; padding:0; font-size:13.5px; }
+.otp-help{ font-size:13.5px; font-weight:400; color:var(--ink-soft); text-align:center; margin:0; }
+.otp-help button{ border:none; background:none; color:var(--ink); font-weight:600; text-decoration:underline; padding:0; font-size:13.5px; }
 .otp-help button:disabled{ color:var(--ink-faint); text-decoration:none; }
 
 /* ---------- Pantallas de acceso ---------- */
 .acceso{ background:var(--surface); min-height:100dvh; display:flex; flex-direction:column; }
-.acceso-in{ padding:calc(env(safe-area-inset-top) + 22px) 22px 32px; max-width:460px; margin:0 auto; width:100%; }
+.acceso-in{ padding:calc(env(safe-area-inset-top) + 22px) 22px 32px; max-width:440px; margin:0 auto; width:100%; }
 .acceso-ilu{ display:grid; place-items:center; margin:10px 0 20px; }
-.acceso-ilu svg{ width:118px; height:118px; }
-.tit{ font-size:25px; font-weight:800; letter-spacing:-.7px; margin:4px 0 8px; text-align:center; }
-.sub{ font-size:14px; font-weight:500; color:var(--ink-soft); line-height:1.6; margin:0 0 20px; text-align:center; }
-.cambia{ text-align:center; font-size:13.5px; font-weight:600; color:var(--ink-soft); margin:16px 0 0; }
-.cambia button{ border:none; background:none; color:var(--brand-ink); font-weight:800; font-size:13.5px; padding:0; text-decoration:underline; }
-.aviso-correo{ font-size:12.5px; font-weight:600; color:var(--ink-soft); text-align:center; margin:-6px 0 14px; }
+.acceso-ilu svg{ width:104px; height:104px; }
+.tit{ font-size:24px; font-weight:600; letter-spacing:-.5px; margin:4px 0 9px; text-align:center; color:var(--ink); }
+.sub{ font-size:15px; font-weight:400; color:var(--ink-soft); line-height:1.6; margin:0 0 22px; text-align:center; }
+.cambia{ text-align:center; font-size:14px; font-weight:400; color:var(--ink-soft); margin:16px 0 0; }
+.cambia button{ border:none; background:none; color:var(--ink); font-weight:600; font-size:14px; padding:0; text-decoration:underline; }
+.aviso-correo{ font-size:13px; font-weight:400; color:var(--ink-soft); text-align:center; margin:-8px 0 14px; }
 
 /* ---------- Ayuda ---------- */
 .fab{
   position:fixed; right:max(16px, calc(50% - 280px + 16px));
   bottom:calc(env(safe-area-inset-bottom) + 20px);
-  width:52px; height:52px; border-radius:50%; border:none; z-index:30;
+  width:50px; height:50px; border-radius:50%; z-index:30;
   background:var(--surface); color:var(--brand-ink);
   box-shadow:var(--shadow-pop); display:grid; place-items:center;
   border:1px solid var(--border);
 }
 .fab:active{ transform:scale(.93); }
-.fab svg{ width:24px; height:24px; }
+.fab svg{ width:23px; height:23px; }
 
-.ay-h{ font-size:15px; font-weight:800; margin:22px 0 7px; letter-spacing:-.1px; }
+.ay-h{ font-size:16px; font-weight:600; margin:24px 0 8px; letter-spacing:-.15px; color:var(--ink); }
 .ay-h:first-child{ margin-top:0; }
-.ay-p{ font-size:14px; font-weight:500; color:#4A5370; line-height:1.65; margin:0 0 9px; }
-.ay-p b{ color:var(--ink); font-weight:800; }
+.ay-p{ font-size:14.5px; font-weight:400; color:var(--ink-soft); line-height:1.65; margin:0 0 10px; }
+.ay-p b{ color:var(--ink); font-weight:600; }
 .ay-ej{
   background:var(--surface-alt); border-radius:12px; padding:13px 14px; margin:10px 0 4px;
-  font-size:13.5px; font-weight:600; color:#4A5370; line-height:1.7;
+  font-size:13.5px; font-weight:400; color:var(--ink-soft); line-height:1.7;
 }
-.ay-ej b{ color:var(--ink); }
+.ay-ej b{ color:var(--ink); font-weight:600; }
 
 /* ---------- Avisos ---------- */
 .vacio{ text-align:center; padding:34px 18px; }
-.vacio svg{ width:78px; height:78px; margin-bottom:12px; }
-.vacio p{ font-size:14px; font-weight:600; color:var(--ink-soft); margin:0; line-height:1.6; }
+.vacio svg{ width:72px; height:72px; margin-bottom:12px; }
+.vacio p{ font-size:14.5px; font-weight:400; color:var(--ink-soft); margin:0; line-height:1.6; }
 
 .aviso{
   display:flex; gap:11px; align-items:flex-start;
-  background:var(--accent-soft); border-radius:12px; padding:13px 14px; margin-bottom:14px;
+  background:var(--amar-soft); border-radius:12px; padding:13px 14px; margin-bottom:13px;
 }
-.aviso svg{ width:18px; height:18px; flex:none; color:#8A6440; margin-top:1px; }
-.aviso p{ margin:0; font-size:13px; font-weight:600; color:#6B4E2E; line-height:1.55; }
+.aviso svg{ width:18px; height:18px; flex:none; color:var(--amar-ink); margin-top:1px; }
+.aviso p{ margin:0; font-size:13.5px; font-weight:400; color:var(--amar-ink); line-height:1.55; }
 
 .toast{
   position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 86px);
   transform:translateX(-50%) translateY(14px); z-index:60;
-  background:var(--ink); color:#fff; border-radius:13px;
-  padding:13px 17px; font-size:13.5px; font-weight:700;
+  background:var(--ink); color:#fff; border-radius:12px;
+  padding:13px 17px; font-size:14px; font-weight:500;
   box-shadow:var(--shadow-pop); max-width:calc(100% - 32px);
   opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s ease;
   display:flex; align-items:center; gap:9px;
 }
 .toast.ver{ opacity:1; transform:translateX(-50%) translateY(0); }
 .toast svg{ width:17px; height:17px; flex:none; }
-.toast.mal{ background:var(--accent-2); }
+.toast.mal{ background:var(--rojo); }
 
 .cargando{ display:grid; place-items:center; min-height:100dvh; }
 .spin{
-  width:30px; height:30px; border-radius:50%;
-  border:3px solid var(--surface-alt); border-top-color:var(--brand);
+  width:28px; height:28px; border-radius:50%;
+  border:2.5px solid var(--border); border-top-color:var(--ink-faint);
   animation:gira .8s linear infinite;
 }
 @keyframes gira{ to{ transform:rotate(360deg); } }
 
 .vivo{
   display:inline-flex; align-items:center; gap:6px;
-  font-size:11px; font-weight:800; color:var(--ink-soft);
+  font-size:11.5px; font-weight:500; color:var(--ink-faint);
 }
-.vivo i{ width:7px; height:7px; border-radius:50%; background:var(--ink-faint); }
-.vivo.on i{ background:var(--brand); animation:late 2s ease-in-out infinite; }
+.vivo i{ width:6px; height:6px; border-radius:50%; background:var(--ink-faint); }
+.vivo.on i{ background:var(--brand-ink); animation:late 2s ease-in-out infinite; }
 @keyframes late{ 50%{ opacity:.35; } }
+
+/* ---------- Invitación del promotor ---------- */
+.inv{ padding:calc(env(safe-area-inset-top) + 18px) 20px 36px; max-width:460px; margin:0 auto; width:100%; }
+.inv-top{ margin-bottom:14px; }
+.inv-de{ font-size:13.5px; font-weight:400; color:var(--ink-soft); }
+.inv-de b{ color:var(--ink); font-weight:600; }
+.inv-vuelta{ margin:0 0 12px; }
+.inv-ilu{ margin:6px 0 20px; }
+.inv-ilu svg{ width:100%; height:auto; display:block; }
+.inv-tit{ font-size:23px; font-weight:600; letter-spacing:-.5px; margin:0 0 9px; color:var(--ink); text-align:center; }
+.inv-sub{ font-size:15px; font-weight:400; color:var(--ink-soft); line-height:1.6; margin:0 0 13px; text-align:center; }
+.inv-nota{
+  font-size:13px; font-weight:400; color:var(--ink-soft); line-height:1.5; text-align:center;
+  background:var(--surface-alt); border-radius:10px; padding:11px 13px; margin:0 0 22px;
+}
+.inv-acciones{ display:grid; gap:10px; }
+.inv-pie{
+  margin:26px 0 0; font-size:12.5px; font-weight:400; color:var(--ink-faint);
+  display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+}
+.inv-pie a{ color:var(--ink-soft); text-decoration:underline; }
+.inv-pie i{ width:3px; height:3px; border-radius:50%; background:var(--ink-faint); display:inline-block; }
+
+/* ---------- Precios de la membresía ---------- */
+.precio{ display:flex; align-items:center; gap:10px; margin-bottom:3px; }
+.precio-antes{ font-size:15px; font-weight:400; color:var(--ink-faint); text-decoration:line-through; }
+.precio-chip{
+  font-size:11.5px; font-weight:600; color:#fff; background:var(--brand-ink);
+  border-radius:var(--radius-chip); padding:3px 9px;
+}
+.precio-ahora{ display:flex; align-items:baseline; gap:8px; }
+.precio-num{ font-size:32px; font-weight:700; letter-spacing:-1px; color:var(--ink); line-height:1.1; }
+.precio-et{ font-size:13.5px; font-weight:500; color:var(--ink-soft); }
 
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
+
 </style>
 </head>
 <body>
@@ -474,10 +537,38 @@ function enderezarUrl(codigo){
 
 /* =====================================================================
    ===================  LADO DEL NEGOCIO (INVITACIÓN)  =================
-   El negocio deja su correo aquí. A partir de ese momento la atribución
-   vive en el servidor, atada al correo: aguanta que cambie de celular,
-   que cierre el navegador o que termine su registro días después.
+
+   Flujo completo del enlace de un promotor:
+
+     1. Promoción   · de quién es el enlace y el 25% del primer mes
+     2. Acceso      · crear cuenta o entrar, con la MISMA autenticación
+                      de VendoPlus (signInWithOtp → verifyOtp → updateUser)
+     3. Bienvenida  · precio real, descuento y pago por Stripe
+
+   La atribución se guarda en el servidor atada al correo, así que no se
+   pierde al cambiar de pantalla, al entrar, al crear cuenta ni al ir a
+   Stripe. El descuento lo decide la base de datos, nunca el navegador.
    ===================================================================== */
+
+/* Sesión aparte de la del promotor: mismo proyecto y misma autenticación,
+   pero con su propio almacenamiento, para que un promotor y un negocio
+   puedan usar el mismo navegador sin pisarse la sesión. */
+const sbNeg = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession:true, autoRefreshToken:true, detectSessionInUrl:false,
+    storageKey:'vp-negocio-auth'
+  }
+});
+
+const INV = {
+  codigo:null, promotor:null, pantalla:'promo',
+  correo:'', pw:'', reenvio:0, timer:null, fpaso:1, fverificado:false,
+  oferta:null, pago:null
+};
+
+/* ---------------------------------------------------------------------
+   Llamadas al servidor
+   --------------------------------------------------------------------- */
 async function apiAtribuir(cuerpo){
   const r = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/ref-atribuir', {
     method:'POST',
@@ -487,84 +578,611 @@ async function apiAtribuir(cuerpo){
   return await r.json().catch(() => ({ ok:false, mensaje:'No se pudo conectar.' }));
 }
 
-async function arrancarInvitacion(codigo){
-  S.codigo = codigo;
-  enderezarUrl(codigo);
-  const r = await apiAtribuir({ accion:'ver', codigo });
-  S.invita = r && r.ok ? r : null;
-  pintarInvitacion();
+async function apiCheckout(accion){
+  const { data } = await sbNeg.auth.getSession();
+  const jwt = data && data.session && data.session.access_token;
+  if(!jwt) return { ok:false, mensaje:'Inicia sesión otra vez.' };
+  const r = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/ref-checkout', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', apikey:CONFIG.SUPABASE_ANON_KEY,
+              Authorization:'Bearer ' + jwt },
+    body: JSON.stringify({ accion })
+  });
+  return await r.json().catch(() => ({ ok:false, mensaje:'No se pudo conectar.' }));
 }
 
-function pintarInvitacion(){
+/** Guardar la atribución con el correo que escribió el negocio.
+    Nunca detiene el acceso: si falla, el visitante sigue su camino. */
+async function guardarAtribucion(correo){
+  try{
+    const r = await apiAtribuir({ accion:'capturar', codigo:INV.codigo, correo });
+    if(!r.ok && r.motivo === 'ya_tuvo_membresia') toast(r.mensaje, true);
+    return r;
+  }catch(e){ console.warn('atribucion', e); return { ok:false }; }
+}
+
+/* ---------------------------------------------------------------------
+   Dinero y textos
+   --------------------------------------------------------------------- */
+function dinero(cents, moneda){
+  try{
+    return new Intl.NumberFormat('es-MX', {
+      style:'currency', currency: moneda || 'MXN'
+    }).format((Number(cents) || 0) / 100);
+  }catch(e){ return pesosC(cents); }
+}
+const cadaCuanto = i => (i === 'year' ? 'al año' : i === 'week' ? 'a la semana' : 'al mes');
+
+/* ---------------------------------------------------------------------
+   Ilustración de la promoción (dibujo propio, en los colores de la app)
+   --------------------------------------------------------------------- */
+function iluPromo(pct){
+  return `
+  <svg viewBox="0 0 340 190" fill="none" xmlns="http://www.w3.org/2000/svg" role="img"
+       aria-label="VendoPlus con ${pct}% de descuento">
+    <rect x="0" y="0" width="340" height="190" rx="18" fill="var(--brand-soft)"/>
+    <!-- mostrador -->
+    <rect x="34" y="138" width="200" height="7" rx="3.5" fill="#FFFFFF"/>
+    <!-- celular -->
+    <rect x="96" y="28" width="86" height="112" rx="13" fill="#FFFFFF"
+          stroke="var(--ink)" stroke-width="2.4"/>
+    <rect x="126" y="36" width="26" height="4" rx="2" fill="var(--ink-faint)"/>
+    <!-- barras de ventas -->
+    <rect x="110" y="98" width="13" height="26" rx="3.5" fill="var(--brand)"/>
+    <rect x="130" y="82" width="13" height="42" rx="3.5" fill="var(--brand-2)"/>
+    <rect x="150" y="64" width="13" height="60" rx="3.5" fill="var(--brand-ink)"/>
+    <!-- flecha de crecimiento -->
+    <path d="M110 76 L133 60 L155 48" stroke="var(--ink)" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="155" cy="48" r="3.6" fill="var(--ink)"/>
+    <!-- cajas de inventario -->
+    <rect x="42" y="104" width="34" height="34" rx="6" fill="#FFFFFF"
+          stroke="var(--ink)" stroke-width="2.2"/>
+    <path d="M42 116h34M59 104v34" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"/>
+    <rect x="52" y="74" width="26" height="26" rx="5" fill="#FFFFFF"
+          stroke="var(--ink-faint)" stroke-width="2"/>
+    <!-- sello del descuento -->
+    <circle cx="258" cy="72" r="46" fill="var(--ink)"/>
+    <text x="258" y="68" text-anchor="middle" fill="#FFFFFF"
+          font-family="-apple-system, Segoe UI, Roboto, sans-serif"
+          font-size="30" font-weight="700" letter-spacing="-1">${pct}%</text>
+    <text x="258" y="90" text-anchor="middle" fill="#FFFFFF"
+          font-family="-apple-system, Segoe UI, Roboto, sans-serif"
+          font-size="12.5" font-weight="500" letter-spacing=".4">DE DESCUENTO</text>
+  </svg>`;
+}
+
+function pieLegal(){
+  const c = INV.promotor || {};
+  const uno = (u, txt) => u
+    ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${txt}</a>`
+    : `<span>${txt}</span>`;
+  return `<p class="inv-pie">
+            ${uno(c.url_terminos, 'Términos y condiciones')}
+            <i></i>
+            ${uno(c.url_privacidad, 'Aviso de privacidad')}
+          </p>`;
+}
+
+function encabezadoEnlace(){
+  const p = INV.promotor || {};
+  return `<div class="inv-top"><span class="inv-de">Enlace de <b>${esc(p.nombre || '')}</b></span></div>`;
+}
+
+/* =====================================================================
+   PANTALLA 1 · La promoción
+   ===================================================================== */
+function pantallaPromo(){
+  const p = INV.promotor || {};
+  const pct = p.descuento_pct || 25;
+  return `
+    <div class="inv vista">
+      ${encabezadoEnlace()}
+      <div class="inv-ilu">${iluPromo(pct)}</div>
+      <h1 class="inv-tit">¡VendoPlus con ${pct}% de descuento!</h1>
+      <p class="inv-sub">Controla tus ventas, inventarios y negocio desde tu celular.
+         Aprovecha el ${pct}% de descuento en tu primer mes de membresía.</p>
+      <p class="inv-nota">Promoción válida únicamente durante el primer mes y pagando mediante Stripe.</p>
+      <div class="inv-acciones">
+        <button class="btn primary xl block" id="bCrear">Crear cuenta</button>
+        <button class="btn ghost xl block" id="bEntrar">Iniciar sesión</button>
+      </div>
+      ${pieLegal()}
+    </div>`;
+}
+
+/* =====================================================================
+   PANTALLAS DE ACCESO · la misma autenticación de VendoPlus
+   ===================================================================== */
+function invHtmlReenvio(){
+  return INV.reenvio > 0
+    ? `Puedes pedir otro código en <b>${INV.reenvio}s</b>`
+    : `¿No te llegó? <button id="bReenviarNeg">Enviar de nuevo</button>`;
+}
+function invTiempoReenvio(){
+  clearInterval(INV.timer);
+  INV.timer = setInterval(() => {
+    INV.reenvio -= 1;
+    const el = $('reenvioNeg');
+    if(!el || INV.reenvio <= 0){
+      clearInterval(INV.timer);
+      if(el){ el.innerHTML = invHtmlReenvio(); invCablearReenvio(); }
+      return;
+    }
+    el.innerHTML = invHtmlReenvio();
+  }, 1000);
+}
+function invCablearReenvio(){
+  const b = $('bReenviarNeg');
+  if(b) b.onclick = () => { if(INV.pantalla === 'olvide') invOlvideEnviar(); else invAcceder(); };
+}
+
+function pantallaInvAcceso(){
+  const login = INV.pantalla === 'login';
+  return `
+    <div class="inv vista">
+      ${encabezadoEnlace()}
+      <div class="inv-vuelta"><button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button></div>
+      <h1 class="tit">${login ? 'Entra a tu cuenta' : 'Crea tu cuenta'}</h1>
+      <p class="sub">${login
+        ? 'Usa el correo y la contraseña de tu cuenta de VendoPlus.'
+        : 'Te mandamos un código a tu correo para confirmar que es tuyo.'}</p>
+
+      <div class="field">
+        <label for="nCorreo">Correo electrónico</label>
+        <input id="nCorreo" class="entrada" type="email" inputmode="email" autocomplete="email"
+               autocapitalize="none" spellcheck="false" maxlength="120"
+               placeholder="tucorreo@gmail.com" value="${esc(INV.correo)}">
+      </div>
+
+      ${login ? `
+        <div class="field">
+          <label for="nPw">Contraseña</label>
+          <div class="pw-caja">
+            <input id="nPw" class="entrada" type="password" autocomplete="current-password"
+                   style="padding-right:50px;" placeholder="••••••••">
+            <button class="pw-ojo" id="nOjo" type="button" aria-label="Ver contraseña">${ic('ojo')}</button>
+          </div>
+        </div>` : ''}
+
+      <button class="btn primary xl block" id="nBtn">
+        ${login ? 'Entrar' : ic('correo') + ' Enviar código a mi correo'}
+      </button>
+
+      ${login ? `<p class="cambia"><button id="bOlvideNeg">¿Olvidaste tu contraseña?</button></p>` : ''}
+      <p class="cambia">${login
+        ? '¿Eres nuevo? <button id="bCambiaNeg">Crea tu cuenta</button>'
+        : '¿Ya tienes cuenta? <button id="bCambiaNeg">Entrar</button>'}</p>
+      ${pieLegal()}
+    </div>`;
+}
+
+function pantallaInvCodigo(){
+  let celdas = '';
+  for(let i = 0; i < CONFIG.CODIGO_DIGITOS; i++){
+    celdas += `<input class="otp-cell" id="c${i}" type="tel" inputmode="numeric" maxlength="1"
+                 autocomplete="${i === 0 ? 'one-time-code' : 'off'}" aria-label="Dígito ${i + 1}">`;
+  }
+  return `
+    <div class="inv vista">
+      ${encabezadoEnlace()}
+      <div class="inv-vuelta"><button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button></div>
+      <div class="acceso-ilu">${ic('carta')}</div>
+      <h1 class="tit">Escribe tu código</h1>
+      <p class="sub">Te lo mandamos a <b style="color:var(--ink); word-break:break-all;">${esc(INV.correo)}</b>.</p>
+      <p class="aviso-correo">¿No lo ves? Busca en <b>Spam</b> o en <b>Promociones</b>.</p>
+      <div class="otp-row" id="otpRow">${celdas}</div>
+      <button class="btn primary xl block" id="oBtn" disabled>Verificar</button>
+      <p class="otp-help" id="reenvioNeg" style="margin-top:14px;">${invHtmlReenvio()}</p>
+    </div>`;
+}
+
+function pantallaInvClave(){
+  return `
+    <div class="inv vista">
+      ${encabezadoEnlace()}
+      <div class="acceso-ilu">${ic('llave')}</div>
+      <h1 class="tit">Elige tu contraseña</h1>
+      <p class="sub">Tu correo <b style="color:var(--ink); word-break:break-all;">${esc(INV.correo)}</b>
+         ya quedó confirmado. Con esta contraseña vas a entrar la próxima vez.</p>
+      <div class="field">
+        <label for="nPw2">Contraseña <span style="font-weight:500;">(mínimo 8 caracteres)</span></label>
+        <div class="pw-caja">
+          <input id="nPw2" class="entrada" type="password" autocomplete="new-password"
+                 style="padding-right:50px;" placeholder="••••••••">
+          <button class="pw-ojo" id="nOjo2" type="button" aria-label="Ver contraseña">${ic('ojo')}</button>
+        </div>
+      </div>
+      <button class="btn primary xl block" id="nBtn2" disabled>Crear mi cuenta</button>
+    </div>`;
+}
+
+function pantallaInvOlvide(){
+  const paso2 = INV.fpaso === 2;
+  return `
+    <div class="inv vista">
+      ${encabezadoEnlace()}
+      <div class="inv-vuelta"><button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button></div>
+      <div class="acceso-ilu">${paso2 ? ic('llave') : ic('carta')}</div>
+      <h1 class="tit">Recupera tu contraseña</h1>
+      <p class="sub">${paso2
+        ? 'Escribe el código que mandamos a tu correo y elige tu contraseña nueva.'
+        : 'Te mandamos un código a tu correo para que elijas una contraseña nueva.'}</p>
+      ${paso2 ? `
+        <div class="field">
+          <label for="nfCod">Código de ${CONFIG.CODIGO_DIGITOS} dígitos</label>
+          <input id="nfCod" class="entrada" type="tel" inputmode="numeric" autocomplete="one-time-code"
+                 maxlength="${CONFIG.CODIGO_DIGITOS}" placeholder="${'0'.repeat(CONFIG.CODIGO_DIGITOS)}"
+                 style="letter-spacing:6px; text-align:center;">
+        </div>
+        <div class="field">
+          <label for="nfPw">Contraseña nueva <span style="font-weight:500;">(mínimo 8 caracteres)</span></label>
+          <div class="pw-caja">
+            <input id="nfPw" class="entrada" type="password" autocomplete="new-password"
+                   style="padding-right:50px;" placeholder="••••••••">
+            <button class="pw-ojo" id="nfOjo" type="button" aria-label="Ver contraseña">${ic('ojo')}</button>
+          </div>
+        </div>
+        <button class="btn primary xl block" id="nfBtn">Cambiar contraseña</button>
+        <p class="otp-help" id="reenvioNeg" style="margin-top:14px;">${invHtmlReenvio()}</p>
+      ` : `
+        <div class="field">
+          <label for="nfCorreo">Correo electrónico</label>
+          <input id="nfCorreo" class="entrada" type="email" inputmode="email" autocomplete="email"
+                 autocapitalize="none" spellcheck="false" maxlength="120"
+                 placeholder="tucorreo@gmail.com" value="${esc(INV.correo)}">
+        </div>
+        <button class="btn primary xl block" id="nfBtn">${ic('correo')} Enviar código a mi correo</button>
+      `}
+    </div>`;
+}
+
+/* =====================================================================
+   PANTALLA 2 · Bienvenida y membresía
+   ===================================================================== */
+function pantallaBienvenido(){
+  const o = INV.oferta;
+  if(!o) return `<div class="inv"><div class="cargando" style="min-height:60vh;"><div class="spin"></div></div></div>`;
+
+  const pct = o.descuento_pct || 25;
+  const conDesc = o.elegible === true;
+  const normal  = dinero(o.precio_cents, o.moneda);
+  const primero = dinero(o.precio_con_descuento_cents, o.moneda);
+  const ahorro  = dinero(o.ahorro_cents, o.moneda);
+  const cada    = cadaCuanto(o.intervalo);
+
+  return `
+    <div class="inv vista">
+      ${encabezadoEnlace()}
+
+      <h1 class="inv-tit" style="text-align:left; margin-top:6px;">¡Bienvenido, ${esc(o.nombre || '')}!</h1>
+      <p class="inv-sub" style="text-align:left;">Tu negocio está a un paso de crecer con VendoPlus.</p>
+
+      <div class="card" style="margin-top:18px;">
+        <div class="card-top">
+          <span class="card-ico">${ic('rayo')}</span>
+          <h2 class="card-title">${conDesc
+            ? `Activa tu membresía con ${pct}% de descuento`
+            : 'Activa tu membresía'}</h2>
+        </div>
+
+        ${conDesc ? `
+          <div class="precio">
+            <span class="precio-antes">${normal}</span>
+            <span class="precio-chip">−${pct}%</span>
+          </div>
+          <div class="precio-ahora">
+            <span class="precio-num">${primero}</span>
+            <span class="precio-et">tu primer mes</span>
+          </div>
+          <p class="card-note" style="margin-top:10px;">
+            Te ahorras ${ahorro} en tu primer mes. Después se cobra el precio normal
+            de ${normal} ${cada}, y puedes cancelar cuando quieras.
+          </p>
+        ` : `
+          <div class="precio-ahora">
+            <span class="precio-num">${normal}</span>
+            <span class="precio-et">${cada}</span>
+          </div>
+          ${o.mensaje ? `<div class="aviso" style="margin-top:12px;">${ic('alerta')}<p>${esc(o.mensaje)}</p></div>` : ''}
+        `}
+
+        <button class="btn primary xl block" id="bPagar" style="margin-top:16px;">
+          ${conDesc ? `Contratar membresía con ${pct}% de descuento` : 'Contratar membresía'}
+        </button>
+        <p class="card-note" style="margin-top:10px; text-align:center;">
+          El pago es por Stripe. No guardamos los datos de tu tarjeta.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ico amar">${ic('tienda')}</span>
+          <h2 class="card-title">¿Prefieres comenzar gratis?</h2>
+        </div>
+        <p class="card-note" style="margin-bottom:14px;">
+          Puedes usar VendoPlus desde tu navegador e instalarlo en tu celular
+          desde ahí. El ${pct}% de descuento solo aplica contratando por Stripe.
+        </p>
+        <a class="btn ghost block" id="bGratis" href="${esc(o.url_vendoplus || '')}"
+           target="_blank" rel="noopener" style="text-decoration:none;">
+          Usar VendoPlus gratis
+        </a>
+      </div>
+
+      <p class="cambia"><button id="bSalirNeg">Cerrar sesión</button></p>
+      ${pieLegal()}
+    </div>`;
+}
+
+function pantallaPagado(){
+  const o = INV.oferta || {};
+  return `
+    <div class="inv vista">
+      ${encabezadoEnlace()}
+      <div class="acceso-ilu">${ic('semilla')}</div>
+      <h1 class="tit">¡Listo! Tu membresía quedó activa</h1>
+      <p class="sub">Gracias por confiar en VendoPlus. Ya puedes entrar y empezar a
+         controlar tus ventas e inventarios.</p>
+      <a class="btn primary xl block" href="${esc(o.url_vendoplus || CONFIG.URL_VENDOPLUS)}"
+         style="text-decoration:none;">Entrar a VendoPlus</a>
+      ${pieLegal()}
+    </div>`;
+}
+
+/* =====================================================================
+   PINTAR Y CABLEAR
+   ===================================================================== */
+function pintarInv(){
   const app = $('app');
   app.className = 'acceso';
 
-  if(!S.invita){
+  if(!INV.promotor){
     app.innerHTML = `
-      <div class="acceso-in vista">
+      <div class="inv vista">
         <div class="acceso-ilu">${ic('alerta')}</div>
         <h1 class="tit">Este enlace no es válido</h1>
         <p class="sub">Puede estar mal copiado o el promotor ya no está activo.
            Pídele a quien te invitó que te lo mande otra vez.</p>
-        <a class="btn primary xl block" href="${esc(CONFIG.URL_VENDOPLUS)}" style="text-decoration:none;">
-          Ir a VendoPlus
-        </a>
+        <a class="btn primary xl block" href="${esc(CONFIG.URL_VENDOPLUS)}"
+           style="text-decoration:none;">Ir a VendoPlus</a>
       </div>`;
     return;
   }
 
-  app.innerHTML = `
-    <div class="acceso-in vista">
-      <div style="display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:6px;">
-        <span class="logo">${ic('rayo')}</span>
-        <b style="font-size:16px; letter-spacing:-.3px;">VendoPlus</b>
-      </div>
-      <div class="acceso-ilu">${ic('tienda')}</div>
-      <h1 class="tit">${esc(S.invita.nombre)} te invitó a VendoPlus</h1>
-      <p class="sub">Deja tu correo para empezar. Es el mismo con el que vas a crear tu
-         cuenta de VendoPlus, y así tu registro queda ligado a esta invitación
-         aunque lo termines después o desde otro celular.</p>
-
-      <div class="field">
-        <label for="iCorreo">Tu correo electrónico</label>
-        <input id="iCorreo" class="entrada" type="email" inputmode="email" autocomplete="email"
-               autocapitalize="none" spellcheck="false" maxlength="120" placeholder="tucorreo@gmail.com">
-      </div>
-
-      <button class="btn primary xl block" id="iBtn">${ic('der')} Continuar</button>
-      <p class="cambia" style="margin-top:14px;">Si ya tienes cuenta de VendoPlus,
-         esta invitación no aplica: solo cuenta para negocios nuevos.</p>
-    </div>`;
-
-  $('iBtn').onclick = enviarInvitacion;
-  $('iCorreo').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); enviarInvitacion(); } };
-  setTimeout(() => $('iCorreo').focus(), 160);
+  const p = INV.pantalla;
+  app.innerHTML = p === 'promo'      ? pantallaPromo()
+                : p === 'login'      ? pantallaInvAcceso()
+                : p === 'signup'     ? pantallaInvAcceso()
+                : p === 'codigo'     ? pantallaInvCodigo()
+                : p === 'clave'      ? pantallaInvClave()
+                : p === 'olvide'     ? pantallaInvOlvide()
+                : p === 'pagado'     ? pantallaPagado()
+                : pantallaBienvenido();
+  cablearInv();
 }
 
-function enviarInvitacion(){
-  const correo = normCorreo($('iCorreo').value);
+function irInv(p){ INV.pantalla = p; pintarInv(); }
+
+function cablearInv(){
+  const p = INV.pantalla;
+
+  if(p === 'promo'){
+    $('bCrear').onclick  = () => { INV.pw = ''; irInv('signup'); };
+    $('bEntrar').onclick = () => { INV.pw = ''; irInv('login'); };
+  }
+
+  if(p === 'login' || p === 'signup'){
+    const c = $('nCorreo');
+    c.oninput = () => { INV.correo = c.value.trim(); };
+    c.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); invAcceder(); } };
+    $('nBtn').onclick = invAcceder;
+    $('bAtras').onclick = () => irInv('promo');
+    $('bCambiaNeg').onclick = () => { INV.pw = ''; irInv(p === 'login' ? 'signup' : 'login'); };
+    if($('bOlvideNeg')) $('bOlvideNeg').onclick = () => { INV.fpaso = 1; INV.fverificado = false; irInv('olvide'); };
+    if($('nPw')){
+      $('nPw').oninput = e => { INV.pw = e.target.value; };
+      $('nPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); invAcceder(); } };
+      ojo('nOjo', 'nPw');
+    }
+    setTimeout(() => c.focus(), 160);
+  }
+
+  if(p === 'codigo'){
+    $('bAtras').onclick = async () => {
+      await sbNeg.auth.signOut().catch(() => {});
+      clearInterval(INV.timer); irInv('signup');
+    };
+    cablearOtp(invVerificarCodigo);
+    $('oBtn').onclick = invVerificarCodigo;
+    invCablearReenvio();
+  }
+
+  if(p === 'clave'){
+    const pw = $('nPw2');
+    pw.oninput = () => { INV.pw = pw.value; $('nBtn2').disabled = pw.value.length < 8; };
+    pw.onkeydown = ev => { if(ev.key === 'Enter' && pw.value.length >= 8){ ev.preventDefault(); invGuardarClave(); } };
+    ojo('nOjo2', 'nPw2');
+    $('nBtn2').onclick = invGuardarClave;
+    setTimeout(() => pw.focus(), 160);
+  }
+
+  if(p === 'olvide'){
+    $('bAtras').onclick = () => {
+      clearInterval(INV.timer);
+      if(INV.fpaso === 2){ INV.fpaso = 1; pintarInv(); } else irInv('login');
+    };
+    if(INV.fpaso === 2){
+      ojo('nfOjo', 'nfPw');
+      $('nfBtn').onclick = invOlvideConfirmar;
+      $('nfPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); invOlvideConfirmar(); } };
+      invCablearReenvio();
+      setTimeout(() => $('nfCod').focus(), 160);
+    }else{
+      const c = $('nfCorreo');
+      c.oninput = () => { INV.correo = c.value.trim(); };
+      c.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); invOlvideEnviar(); } };
+      $('nfBtn').onclick = invOlvideEnviar;
+      setTimeout(() => c.focus(), 160);
+    }
+  }
+
+  if(p === 'bienvenido' && $('bPagar')){
+    $('bPagar').onclick = invPagar;
+    $('bSalirNeg').onclick = async () => {
+      await sbNeg.auth.signOut().catch(() => {});
+      INV.oferta = null; INV.pw = ''; irInv('promo');
+    };
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Acciones
+   --------------------------------------------------------------------- */
+function invAcceder(){
+  const correo = normCorreo(INV.correo);
   if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
 
-  return conBoton('iBtn', 'Guardando…', async () => {
-    const r = await apiAtribuir({ accion:'capturar', codigo:S.codigo, correo });
-    if(!r.ok){ return toast(r.mensaje || 'No se pudo guardar.', true); }
+  const login = INV.pantalla === 'login';
+  const reenvio = INV.pantalla === 'codigo';
+  if(reenvio && INV.reenvio > 0) return;
+  vibra(12);
 
-    vibra(20);
-    const destino = r.siguiente || CONFIG.URL_VENDOPLUS;
-    $('app').innerHTML = `
-      <div class="acceso-in vista">
-        <div class="acceso-ilu">${ic('semilla')}</div>
-        <h1 class="tit">Listo, ya quedó</h1>
-        <p class="sub">Tu invitación quedó guardada con el correo
-           <b style="color:var(--ink); word-break:break-all;">${esc(correo)}</b>.
-           Ahora crea tu cuenta de VendoPlus con <b>ese mismo correo</b>.</p>
-        <a class="btn primary xl block" id="iIr" href="${esc(destino)}" style="text-decoration:none;">
-          Crear mi cuenta en VendoPlus
-        </a>
-        <p class="cambia" style="margin-top:16px;">Si cierras esta página no pasa nada:
-           tu invitación ya está guardada.</p>
-      </div>`;
+  return conBoton(reenvio ? null : 'nBtn', login ? 'Entrando…' : 'Enviando…', async () => {
+    // La atribución se guarda ANTES de entrar: así queda del lado del
+    // servidor aunque el visitante abandone a medio camino.
+    await guardarAtribucion(correo);
+
+    if(login){
+      if((INV.pw || '').length < 1) return toast('Escribe tu contraseña', true);
+      const { error } = await sbNeg.auth.signInWithPassword({ email:correo, password:INV.pw });
+      if(error) return toast(errLegible(error), true);
+      INV.pw = '';
+      return await invDespuesDeEntrar();
+    }
+
+    const { error } = await sbNeg.auth.signInWithOtp({ email:correo, options:{ shouldCreateUser:true } });
+    if(error) return toast(errLegible(error), true);
+    INV.reenvio = 60;
+    if(reenvio){
+      const el = $('reenvioNeg'); if(el){ el.innerHTML = invHtmlReenvio(); invCablearReenvio(); }
+      toast('Te mandamos otro código');
+    }else irInv('codigo');
+    invTiempoReenvio();
   });
+}
+
+function invVerificarCodigo(){
+  const token = valorOtp();
+  if(token.length !== CONFIG.CODIGO_DIGITOS) return;
+  const correo = normCorreo(INV.correo);
+
+  return conBoton('oBtn', 'Verificando…', async () => {
+    const { error } = await sbNeg.auth.verifyOtp({ email:correo, token, type:'email' });
+    if(error) return fallaOtp(errLegible(error));
+    clearInterval(INV.timer); vibra(20);
+    INV.pw = '';
+    irInv('clave');
+  });
+}
+
+function invGuardarClave(){
+  const pw = INV.pw || '';
+  if(pw.length < 8) return toast('La contraseña debe tener mínimo 8 caracteres', true);
+
+  return conBoton('nBtn2', 'Creando…', async () => {
+    const { error } = await sbNeg.auth.updateUser({ password:pw, data:{ vendo_pw:true } });
+    if(error) return toast(errLegible(error), true);
+    INV.pw = '';
+    vibra([15, 60, 15]);
+    await invDespuesDeEntrar();
+  });
+}
+
+function invOlvideEnviar(){
+  const correo = normCorreo(INV.correo);
+  if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
+  const reenvio = INV.fpaso === 2;
+  if(reenvio && INV.reenvio > 0) return;
+
+  return conBoton(reenvio ? null : 'nfBtn', 'Enviando…', async () => {
+    const { error } = await sbNeg.auth.signInWithOtp({ email:correo, options:{ shouldCreateUser:false } });
+    if(error) return toast(errLegible(error), true);
+    INV.reenvio = 60; INV.fverificado = false;
+    if(reenvio){ const el = $('reenvioNeg'); if(el){ el.innerHTML = invHtmlReenvio(); invCablearReenvio(); } }
+    else{ INV.fpaso = 2; pintarInv(); }
+    invTiempoReenvio();
+    toast('Te mandamos un código a tu correo');
+  });
+}
+
+function invOlvideConfirmar(){
+  const correo = normCorreo(INV.correo);
+  const token = (($('nfCod') || {}).value || '').replace(/\D/g, '');
+  const pw = ($('nfPw') || {}).value || '';
+  if(!INV.fverificado && token.length !== CONFIG.CODIGO_DIGITOS)
+    return toast('Escribe el código de ' + CONFIG.CODIGO_DIGITOS + ' dígitos', true);
+  if(pw.length < 8) return toast('La contraseña debe tener mínimo 8 caracteres', true);
+
+  return conBoton('nfBtn', 'Cambiando…', async () => {
+    if(!INV.fverificado){
+      const v = await sbNeg.auth.verifyOtp({ email:correo, token, type:'email' });
+      if(v.error) return toast(errLegible(v.error), true);
+      INV.fverificado = true;
+    }
+    const u = await sbNeg.auth.updateUser({ password:pw });
+    if(u.error) return toast(errLegible(u.error), true);
+    clearInterval(INV.timer);
+    INV.fverificado = false; INV.fpaso = 1;
+    await invDespuesDeEntrar();
+    toast('Contraseña actualizada');
+  });
+}
+
+/** Ya hay sesión: se pide al servidor el precio real y la elegibilidad. */
+async function invDespuesDeEntrar(){
+  irInv('bienvenido');
+  const o = await apiCheckout('estado');
+  if(!o.ok){ toast(o.mensaje || 'No se pudo cargar tu promoción.', true); return; }
+  INV.oferta = o;
+  pintarInv();
+}
+
+function invPagar(){
+  return conBoton('bPagar', 'Abriendo pago…', async () => {
+    const r = await apiCheckout('crear');
+    if(!r.ok || !r.url) return toast(r.mensaje || 'No se pudo abrir el pago.', true);
+    if(!r.con_descuento && r.mensaje) toast(r.mensaje, true);
+    location.href = r.url;     // a Stripe Checkout
+  });
+}
+
+/* =====================================================================
+   ARRANQUE DE LA INVITACIÓN
+   ===================================================================== */
+async function arrancarInvitacion(codigo){
+  INV.codigo = codigo;
+  enderezarUrl(codigo);
+
+  const q = new URLSearchParams(location.search);
+  INV.pago = q.get('pago');
+
+  const r = await apiAtribuir({ accion:'ver', codigo });
+  INV.promotor = r && r.ok ? r : null;
+  if(!INV.promotor) return pintarInv();
+
+  const { data } = await sbNeg.auth.getSession();
+  if(data && data.session){
+    if(INV.pago === 'ok'){
+      irInv('pagado');
+      apiCheckout('estado').then(o => { if(o.ok){ INV.oferta = o; if(INV.pantalla === 'pagado') pintarInv(); } });
+      return;
+    }
+    if(INV.pago === 'cancel') toast('No se completó el pago. Puedes intentarlo otra vez.', true);
+    return await invDespuesDeEntrar();
+  }
+
+  irInv('promo');
 }
 
 /* =====================================================================
@@ -609,7 +1227,7 @@ function pantallaAcceso(){
     <div class="acceso-in vista">
       <div style="display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:4px;">
         <span class="logo">${ic('rayo')}</span>
-        <b style="font-size:16px; letter-spacing:-.3px;">VendoPlus</b>
+        <b style="font-size:17px; font-weight:600; letter-spacing:-.3px;">VendoPlus</b>
       </div>
       <div class="acceso-ilu">${ic('cofre')}</div>
       <h1 class="tit">${login ? 'Entra a tu portal' : 'Programa de promotores'}</h1>
@@ -770,7 +1388,7 @@ function pantallaInicio(){
     </div>
 
     <div class="body vista">
-      <p style="font-size:13px; font-weight:700; color:var(--ink-soft); margin:0 0 14px;">
+      <p style="font-size:15px; font-weight:500; color:var(--ink-soft); margin:0 0 15px;">
         Hola, ${esc(nombre)}
       </p>
 
@@ -862,7 +1480,7 @@ function pantallaSaldo(){
         </div>
 
         <div class="fila">
-          <span class="card-ico" style="background:var(--success-bg); color:var(--brand-ink);">${ic('check')}</span>
+          <span class="card-ico" style="background:var(--exito-soft); color:var(--brand-ink);">${ic('check')}</span>
           <div class="fila-txt">
             <p class="fila-t">Disponible</p>
             <p class="fila-s">Ya cumplió todo y está a tu nombre</p>
@@ -900,7 +1518,7 @@ function pantallaSaldo(){
 
         ${Number(c.cancelado_cents) > 0 ? `
         <div class="fila">
-          <span class="card-ico" style="background:var(--danger-bg); color:var(--accent-2);">${ic('alerta')}</span>
+          <span class="card-ico" style="background:var(--rojo-soft); color:var(--rojo);">${ic('alerta')}</span>
           <div class="fila-txt">
             <p class="fila-t">Cancelado</p>
             <p class="fila-s">Periodos que se rompieron por reembolso o falta de pagos</p>
@@ -1074,7 +1692,7 @@ function pantallaTransacciones(){
       ${rechazados.length ? `
         <div class="card">
           <div class="card-top">
-            <span class="card-ico" style="background:var(--danger-bg); color:var(--accent-2);">${ic('alerta')}</span>
+            <span class="card-ico" style="background:var(--rojo-soft); color:var(--rojo);">${ic('alerta')}</span>
             <h2 class="card-title">Negocios que no califican</h2>
           </div>
           <p class="card-note" style="margin-bottom:4px;">
@@ -1346,7 +1964,7 @@ function cablearReenvio(){
 }
 
 /* ---------- Celdas del código ---------- */
-function cablearOtp(){
+function cablearOtp(alCompletar){
   const n = CONFIG.CODIGO_DIGITOS;
   const celdas = [];
   for(let i = 0; i < n; i++) celdas.push($('c' + i));
@@ -1355,7 +1973,7 @@ function cablearOtp(){
     const v = celdas.map(c => c.value).join('');
     $('oBtn').disabled = v.length !== n;
     celdas.forEach(c => c.classList.toggle('filled', !!c.value));
-    if(v.length === n) verificarCodigo();
+    if(v.length === n) (alCompletar || verificarCodigo)();
   };
 
   celdas.forEach((c, i) => {
