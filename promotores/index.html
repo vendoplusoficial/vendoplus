@@ -421,6 +421,14 @@ const fmtFecha = new Intl.DateTimeFormat('es-MX', {
 });
 const fecha = s => s ? fmtFecha.format(new Date(s)) : '—';
 
+/* Fecha y hora, en hora del centro de México. */
+const fmtFechaHora = new Intl.DateTimeFormat('es-MX', {
+  day:'2-digit', month:'short', year:'numeric',
+  hour:'2-digit', minute:'2-digit', hour12:true,
+  timeZone:'America/Mexico_City'
+});
+const fechaHora = s => s ? fmtFechaHora.format(new Date(s)) : '—';
+
 let toastT = null;
 function toast(texto, mal){
   const t = $('toast');
@@ -470,7 +478,7 @@ const S = {
   // acceso
   modo:'signup', correo:'', pw:'', reenvio:0, timer:null, fverificado:false,
   // sesión
-  promotor:null, cartera:null, transacciones:null,
+  promotor:null, bonos:null, comisiones:null, inactivos:null,
   canal:null, vivo:false,
   // invitación (lado del negocio)
   codigo:null, invita:null
@@ -1369,12 +1377,15 @@ function pantallaNombre(){
 
 /* =====================================================================
    PANTALLA PRINCIPAL
-   Sencilla a propósito: el enlace, el saldo disponible y nada más de
-   dinero. Todo el detalle vive dentro de "Saldo disponible".
+   Solo dos secciones: bonos acumulados y comisiones ganadas.
    ===================================================================== */
 function pantallaInicio(){
   const p = S.promotor || {};
+  const s = p.saldos || {};
+  const b = s.bonos || {};
+  const c = s.comisiones || {};
   const nombre = (p.nombre || '').split(' ')[0] || 'Hola';
+
   return `
     <div class="top">
       <div class="marca">
@@ -1397,7 +1408,7 @@ function pantallaInicio(){
           <p>Tu cuenta de promotor está suspendida. Escríbenos para revisarla.</p>
         </div>` : ''}
 
-      <!-- A. Mi enlace de invitación -->
+      <!-- Mi enlace de invitación -->
       <div class="card">
         <div class="card-top">
           <span class="card-ico">${ic('enlace')}</span>
@@ -1410,303 +1421,330 @@ function pantallaInicio(){
         <p class="card-note">Comparte tu enlace con negocios nuevos y comienza a generar recompensas</p>
       </div>
 
-      <!-- B. Mi cartera: SOLO el saldo disponible -->
-      <button class="card tap" id="bCartera">
+      <!-- 1 · Bonos acumulados -->
+      <button class="card tap" id="bBonos">
         <div class="card-top">
-          <span class="card-ico teal">${ic('cartera')}</span>
-          <h2 class="card-title">Mi cartera</h2>
+          <span class="card-ico">${ic('reloj')}</span>
+          <h2 class="card-title">Bonos acumulados</h2>
           <span class="chev">${ic('der')}</span>
         </div>
-        <p class="saldo-et">Saldo disponible</p>
+        <p class="saldo-et">Disponible para reclamar</p>
         <div class="saldo">
-          <span class="saldo-num">${pesos(p.disponible_cents)}</span>
+          <span class="saldo-num">${pesos(b.disponible_cents)}</span>
           <span class="saldo-mon">MXN</span>
         </div>
+        <p class="card-note" style="margin-top:8px;">
+          ${b.renovaciones || 0} ${(b.renovaciones === 1) ? 'renovación' : 'renovaciones'} ·
+          ${pesosC(b.generado_cents)} acumulados
+        </p>
+        ${(b.renovaciones || 0) > 0 ? barraBonos(b, true) : ''}
       </button>
 
-      <!-- C. Mis transacciones -->
-      <button class="card tap" id="bTrans">
+      <!-- 2 · Comisiones ganadas -->
+      <button class="card tap" id="bComis">
         <div class="card-top">
-          <span class="card-ico amar">${ic('lista')}</span>
-          <h2 class="card-title">Mis transacciones</h2>
+          <span class="card-ico amar">${ic('tienda')}</span>
+          <h2 class="card-title">Comisiones ganadas</h2>
           <span class="chev">${ic('der')}</span>
         </div>
-        <p class="card-note">Tus negocios, sus fechas y cada recompensa</p>
+        <p class="saldo-et">Disponible para reclamar</p>
+        <div class="saldo">
+          <span class="saldo-num">${pesos(c.disponible_cents)}</span>
+          <span class="saldo-mon">MXN</span>
+        </div>
+        <p class="card-note" style="margin-top:8px;">
+          ${c.negocios || 0} ${(c.negocios === 1) ? 'negocio nuevo' : 'negocios nuevos'} ·
+          ${pesosC(c.por_negocio_cents)} cada uno
+        </p>
       </button>
     </div>
 
     <button class="fab" id="bAyuda" aria-label="Ayuda">${ic('ayuda')}</button>`;
 }
 
-/* =====================================================================
-   PANTALLA: SALDO DISPONIBLE (el desglose completo)
-   ===================================================================== */
-function pantallaSaldo(){
-  const c = S.cartera;
-  if(!c) return pantallaEsperando('Saldo disponible');
+/** Barra de progreso hacia el siguiente grupo de renovaciones. */
+function barraBonos(b, compacta){
+  const grupo = b.grupo || 10;
+  const en = b.en_grupo || 0;
+  const pct = Math.round((en / grupo) * 100);
+  return `
+    <div class="barra" style="margin-top:${compacta ? 10 : 14}px;"><i style="width:${pct}%"></i></div>
+    <p class="card-note" style="font-size:13px; margin-top:7px;">
+      ${en} de ${grupo} renovaciones ·
+      ${(b.faltan || 0) === 1
+        ? `falta 1 renovación para liberar ${pesosC(b.siguiente_bono_cents)}`
+        : `faltan ${b.faltan} renovaciones para liberar ${pesosC(b.siguiente_bono_cents)}`}
+    </p>`;
+}
 
-  const porTipo = c.por_tipo || {};
-  const nuevo = porTipo.nuevo || { n:0, cents:0 };
-  const perm  = porTipo.permanencia || { n:0, cents:0 };
-  const gens  = c.generaciones || [];
-  const movs  = c.movimientos || [];
+/* =====================================================================
+   BONOS ACUMULADOS
+   ===================================================================== */
+function pantallaBonos(){
+  const d = S.bonos;
+  if(!d) return pantallaEsperando('Bonos acumulados');
+  const b = d.saldos || {};
+  const meses = d.meses || [];
+  const recl = d.reclamaciones || [];
+  const puede = (b.disponible_cents || 0) > 0;
 
   return `
     <div class="top">
       <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
-      <h1>Saldo disponible</h1>
+      <h1>Bonos acumulados</h1>
     </div>
 
     <div class="body vista">
-      <div class="card" style="text-align:center;">
-        <p class="saldo-et">Saldo disponible</p>
-        <div class="saldo" style="justify-content:center;">
-          <span class="saldo-num">${pesosC(c.disponible_cents)}</span>
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ico">${ic('reloj')}</span>
+          <h2 class="card-title">Tu progreso</h2>
+        </div>
+
+        <p class="saldo-et">Acumulado en total</p>
+        <div class="saldo">
+          <span class="saldo-num">${pesosC(b.generado_cents)}</span>
           <span class="saldo-mon">MXN</span>
         </div>
-        <button class="btn bloq block xl" id="bReclamar" disabled
-                style="margin-top:16px;" aria-disabled="true">
-          ${ic('candado')} RECLAMAR DINERO
-        </button>
-        <p class="card-note" style="margin-top:10px;">
-          Los retiros todavía no están abiertos. Tu saldo se queda guardado aquí.
+        <p class="card-note" style="margin-top:6px;">
+          ${b.renovaciones || 0} ${(b.renovaciones === 1) ? 'renovación confirmada' : 'renovaciones confirmadas'} ·
+          ${pesosC(b.por_renovacion_cents)} cada una
         </p>
-      </div>
 
-      <div class="card">
-        <div class="card-top">
-          <span class="card-ico teal">${ic('dinero')}</span>
-          <h2 class="card-title">Cómo va tu dinero</h2>
-        </div>
+        ${barraBonos(b)}
 
-        <div class="fila">
-          <span class="card-ico" style="background:var(--exito-soft); color:var(--brand-ink);">${ic('check')}</span>
+        <div class="fila" style="margin-top:14px; border-top:1px solid var(--border); padding-top:16px;">
           <div class="fila-txt">
-            <p class="fila-t">Disponible</p>
-            <p class="fila-s">Ya cumplió todo y está a tu nombre</p>
+            <p class="fila-t">Disponible para reclamar</p>
+            <p class="fila-s">${b.grupos_completos || 0}
+               ${(b.grupos_completos === 1) ? 'grupo completo' : 'grupos completos'} de ${b.grupo || 10}</p>
           </div>
-          <span class="fila-n verde">${pesosC(c.disponible_cents)}</span>
+          <span class="fila-n verde">${pesosC(b.disponible_cents)}</span>
         </div>
-
         <div class="fila">
-          <span class="card-ico amar">${ic('reloj')}</span>
           <div class="fila-txt">
-            <p class="fila-t">Generado, madurando</p>
-            <p class="fila-s">El periodo ya se cumplió. Pasa a disponible
-               ${c.maduracion_dias} días después, por si hay un reembolso</p>
+            <p class="fila-t">Todavía sin liberar</p>
+            <p class="fila-s">Se libera al completar el siguiente grupo</p>
           </div>
-          <span class="fila-n gris">${pesosC(c.pendiente_maduracion_cents)}</span>
+          <span class="fila-n gris">${pesosC(b.acumulado_cents)}</span>
         </div>
-
+        ${(b.reclamado_cents || 0) > 0 ? `
         <div class="fila">
-          <span class="card-ico teal">${ic('reloj')}</span>
-          <div class="fila-txt">
-            <p class="fila-t">En proceso</p>
-            <p class="fila-s">Negocios que todavía están juntando sus 12 meses</p>
-          </div>
-          <span class="fila-n gris">${pesosC(c.en_proceso_cents)}</span>
-        </div>
-
-        <div class="fila">
-          <span class="card-ico">${ic('rayo')}</span>
-          <div class="fila-txt">
-            <p class="fila-t">Generado en total</p>
-            <p class="fila-s">Todo lo que has ganado desde que empezaste</p>
-          </div>
-          <span class="fila-n">${pesosC(c.generado_total_cents)}</span>
-        </div>
-
-        ${Number(c.cancelado_cents) > 0 ? `
-        <div class="fila">
-          <span class="card-ico" style="background:var(--rojo-soft); color:var(--rojo);">${ic('alerta')}</span>
-          <div class="fila-txt">
-            <p class="fila-t">Cancelado</p>
-            <p class="fila-s">Periodos que se rompieron por reembolso o falta de pagos</p>
-          </div>
-          <span class="fila-n roja">−${pesosC(c.cancelado_cents)}</span>
+          <div class="fila-txt"><p class="fila-t">Ya reclamado</p></div>
+          <span class="fila-n gris">${pesosC(b.reclamado_cents)}</span>
         </div>` : ''}
+
+        <button class="btn ${puede ? 'primary' : 'bloq'} block xl" id="bReclamarBonos"
+                style="margin-top:16px;" ${puede ? '' : 'disabled'}>
+          ${puede ? '' : ic('candado')} RECLAMAR DINERO
+        </button>
+        ${puede ? '' : `<p class="card-note" style="margin-top:9px; text-align:center;">
+          Junta ${b.grupo || 10} renovaciones para liberar ${pesosC(b.siguiente_bono_cents)}.</p>`}
       </div>
 
-      <div class="card">
-        <div class="card-top">
-          <span class="card-ico">${ic('tienda')}</span>
-          <h2 class="card-title">De dónde viene</h2>
+      <button class="card tap" id="bInactivos">
+        <div class="card-top" style="margin-bottom:0;">
+          <span class="card-ico" style="background:var(--rojo-soft); color:var(--rojo);">${ic('alerta')}</span>
+          <h2 class="card-title">Ver negocios que dejaron de pagar</h2>
+          <span class="chev">${ic('der')}</span>
         </div>
-        <div class="fila">
-          <div class="fila-txt">
-            <p class="fila-t">Negocios nuevos</p>
-            <p class="fila-s">${nuevo.n} ${nuevo.n === 1 ? 'negocio cumplió' : 'negocios cumplieron'}
-               sus primeros 12 meses · ${pesosC(c.recompensa_nuevo_cents)} cada uno</p>
-          </div>
-          <span class="fila-n verde">${pesosC(nuevo.cents)}</span>
-        </div>
-        <div class="fila">
-          <div class="fila-txt">
-            <p class="fila-t">Permanencia</p>
-            <p class="fila-s">${perm.n} ${perm.n === 1 ? 'año adicional cumplido' : 'años adicionales cumplidos'}
-               · ${pesosC(c.recompensa_permanencia_cents)} cada uno</p>
-          </div>
-          <span class="fila-n verde">${pesosC(perm.cents)}</span>
-        </div>
-        <div class="fila">
-          <div class="fila-txt">
-            <p class="fila-t">Negocios atribuidos</p>
-            <p class="fila-s">${c.negocios_activos} al corriente de ${c.negocios_total} en total</p>
-          </div>
-          <span class="fila-n">${c.negocios_total}</span>
-        </div>
-      </div>
+      </button>
 
-      ${gens.length ? `
-      <div class="card">
-        <div class="card-top">
-          <span class="card-ico amar">${ic('semilla')}</span>
-          <h2 class="card-title">Generaciones</h2>
-        </div>
-        <p class="card-note" style="margin-bottom:6px;">
-          Agrupadas por el año en que conseguiste cada negocio. Cada negocio cumple
-          su aniversario en su propia fecha.
-        </p>
-        ${gens.map(g => `
-          <div class="fila">
-            <div class="fila-txt">
-              <p class="fila-t">Generación ${g.generacion}${g.anio ? ' · ' + g.anio : ''}</p>
-              <p class="fila-s">${g.negocios} ${g.negocios === 1 ? 'negocio' : 'negocios'}${
-                Number(g.en_proceso_cents) > 0 ? ' · ' + pesosC(g.en_proceso_cents) + ' en proceso' : ''}</p>
-            </div>
-            <span class="fila-n verde">${pesosC(g.generado_cents)}</span>
-          </div>`).join('')}
-      </div>` : ''}
+      ${meses.length ? meses.map(m => `
+        <div class="card">
+          <div class="card-top" style="margin-bottom:6px;">
+            <h2 class="card-title" style="flex:1;">${esc(m.etiqueta)}</h2>
+            <span class="fila-n verde">${pesosC(m.total_cents)}</span>
+          </div>
+          <p class="card-note" style="margin-bottom:6px;">
+            ${m.renovaciones} ${m.renovaciones === 1 ? 'renovación' : 'renovaciones'}
+          </p>
+          ${(m.filas || []).map(f => `
+            <div class="fila">
+              <div class="fila-txt">
+                <p class="fila-t" style="word-break:break-all;">${esc(f.correo || '')}</p>
+                <p class="fila-s">Renovó su membresía · ${fechaHora(f.pagado_en)}</p>
+              </div>
+              <span class="fila-n verde">+${pesosC(f.importe_cents)}</span>
+            </div>`).join('')}
+        </div>`).join('') : `
+        <div class="card">
+          <div class="vacio">
+            ${ic('semilla')}
+            <p>Todavía no hay renovaciones.<br>
+               El primer pago de un negocio genera su comisión;<br>
+               los bonos empiezan desde la segunda mensualidad.</p>
+          </div>
+        </div>`}
 
-      <div class="card">
-        <div class="card-top">
-          <span class="card-ico">${ic('lista')}</span>
-          <h2 class="card-title">Historial de movimientos</h2>
-        </div>
-        ${movs.length ? movs.map(m => `
-          <div class="fila">
-            <div class="fila-txt">
-              <p class="fila-t">${esc(m.negocio || 'Movimiento')}</p>
-              <p class="fila-s">${esc(m.nota)} · ${fecha(m.creado_en)}</p>
-            </div>
-            <span class="fila-n ${m.tipo === 'cancelada' ? 'roja' : (m.tipo === 'disponible' ? 'verde' : 'gris')}">
-              ${m.importe_cents < 0 ? '−' : '+'}${pesosC(Math.abs(m.importe_cents))}
-            </span>
-          </div>`).join('') : `
-          <div class="vacio" style="padding:20px 8px;">
-            <p>Todavía no hay movimientos. Aquí va a aparecer cada recompensa
-               en cuanto un negocio cumpla su periodo.</p>
-          </div>`}
-      </div>
+      ${recl.length ? `
+        <div class="card">
+          <div class="card-top">
+            <span class="card-ico">${ic('lista')}</span>
+            <h2 class="card-title">Mis reclamaciones</h2>
+          </div>
+          ${recl.map(r => `
+            <div class="fila">
+              <div class="fila-txt">
+                <p class="fila-t">${pesosC(r.importe_cents)}</p>
+                <p class="fila-s">${fechaHora(r.creado_en)}${r.renovaciones ? ' · ' + r.renovaciones + ' renovaciones' : ''}</p>
+              </div>
+              <span class="tag ${r.estado === 'pagado' ? 'disp' : (r.estado === 'rechazado' ? 'canc' : 'gen')}">
+                ${r.estado === 'pagado' ? 'Pagado' : (r.estado === 'rechazado' ? 'Rechazado' : 'En revisión')}
+              </span>
+            </div>`).join('')}
+        </div>` : ''}
     </div>`;
 }
 
 /* =====================================================================
-   PANTALLA: MIS TRANSACCIONES
+   COMISIONES GANADAS
    ===================================================================== */
-const ETIQUETA = {
-  en_proceso:{ t:'En proceso', c:'proc' },
-  generada:{ t:'Generada', c:'gen' },
-  disponible:{ t:'Disponible', c:'disp' },
-  cancelada:{ t:'Cancelada', c:'canc' }
-};
-
-function pantallaTransacciones(){
-  const d = S.transacciones;
-  if(!d) return pantallaEsperando('Mis transacciones');
-
+function pantallaComisiones(){
+  const d = S.comisiones;
+  if(!d) return pantallaEsperando('Comisiones ganadas');
+  const c = d.saldos || {};
   const filas = d.filas || [];
-  const negocios = d.negocios || [];
-  const rechazados = negocios.filter(n => n.estado === 'rechazado');
+  const recl = d.reclamaciones || [];
+  const puede = (c.disponible_cents || 0) > 0;
 
   return `
     <div class="top">
       <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
-      <h1>Mis transacciones</h1>
+      <h1>Comisiones ganadas</h1>
     </div>
 
     <div class="body vista">
-      ${!filas.length ? `
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ico amar">${ic('tienda')}</span>
+          <h2 class="card-title">Negocios nuevos</h2>
+        </div>
+
+        <p class="saldo-et">Disponible para reclamar</p>
+        <div class="saldo">
+          <span class="saldo-num">${pesosC(c.disponible_cents)}</span>
+          <span class="saldo-mon">MXN</span>
+        </div>
+        <p class="card-note" style="margin-top:6px;">
+          ${c.negocios || 0} ${(c.negocios === 1) ? 'negocio contrató' : 'negocios contrataron'} su membresía ·
+          ${pesosC(c.por_negocio_cents)} cada uno
+        </p>
+
+        ${(c.reclamado_cents || 0) > 0 ? `
+        <div class="fila" style="margin-top:14px; border-top:1px solid var(--border); padding-top:16px;">
+          <div class="fila-txt"><p class="fila-t">Ya reclamado</p></div>
+          <span class="fila-n gris">${pesosC(c.reclamado_cents)}</span>
+        </div>` : ''}
+
+        <button class="btn ${puede ? 'primary' : 'bloq'} block xl" id="bReclamarComis"
+                style="margin-top:16px;" ${puede ? '' : 'disabled'}>
+          ${puede ? '' : ic('candado')} RECLAMAR DINERO
+        </button>
+        ${puede ? '' : `<p class="card-note" style="margin-top:9px; text-align:center;">
+          Cada negocio nuevo que contrate su membresía te deja ${pesosC(c.por_negocio_cents)}.</p>`}
+      </div>
+
+      ${filas.length ? `
+        <div class="card">
+          <div class="card-top">
+            <span class="card-ico">${ic('lista')}</span>
+            <h2 class="card-title">Historial</h2>
+          </div>
+          ${filas.map(f => `
+            <div class="fila">
+              <div class="fila-txt">
+                <p class="fila-t" style="word-break:break-all;">${esc(f.correo || '')}</p>
+                <p class="fila-s">Membresía contratada · ${fechaHora(f.pagado_en)}</p>
+              </div>
+              <span class="fila-n verde">+${pesosC(f.importe_cents)}</span>
+            </div>`).join('')}
+        </div>` : `
         <div class="card">
           <div class="vacio">
             ${ic('semilla')}
-            <p>Todavía no tienes recompensas.<br>
-               Comparte tu enlace de invitación y aquí vas a ver cada negocio
-               y cada periodo que cumpla.</p>
+            <p>Todavía no tienes comisiones.<br>
+               Comparte tu enlace: cada negocio nuevo que contrate<br>
+               su membresía te deja ${pesosC(c.por_negocio_cents)}.</p>
           </div>
-        </div>` : filas.map(f => {
-          const e = ETIQUETA[f.estado] || ETIQUETA.en_proceso;
-          const prog = Math.round(Number(f.progreso || 0) * 100);
-          return `
-          <div class="card">
-            <div class="card-top" style="margin-bottom:10px;">
-              <span class="card-ico ${f.tipo === 'nuevo' ? '' : 'teal'}">
-                ${f.tipo === 'nuevo' ? ic('tienda') : ic('reloj')}
-              </span>
-              <div style="flex:1; min-width:0;">
-                <h2 class="card-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                  ${esc(f.negocio)}
-                </h2>
-                <p class="card-note" style="font-size:12px;">
-                  ${f.tipo === 'nuevo' ? 'Negocio nuevo' : 'Permanencia'} ·
-                  Generación ${f.generacion}${f.anio ? ' · ' + f.anio : ''}
-                </p>
-              </div>
-              <span class="fila-n ${f.estado === 'cancelada' ? 'roja' : (f.estado === 'disponible' ? 'verde' : 'gris')}">
-                ${pesosC(f.importe_cents)}
-              </span>
-            </div>
+        </div>`}
 
-            <div class="fila" style="padding:9px 0;">
-              <div class="fila-txt">
-                <p class="fila-s" style="margin:0;">Fecha de incorporación</p>
-              </div>
-              <span class="fila-n gris" style="font-size:13px;">${fecha(f.alta_en)}</span>
-            </div>
-            <div class="fila" style="padding:9px 0;">
-              <div class="fila-txt">
-                <p class="fila-s" style="margin:0;">Periodo ${f.periodo} · cumple</p>
-              </div>
-              <span class="fila-n gris" style="font-size:13px;">${fecha(f.cumplimiento)}</span>
-            </div>
-            <div class="fila" style="padding:9px 0; border-bottom:none;">
-              <div class="fila-txt">
-                <p class="fila-s" style="margin:0;">Estado</p>
-              </div>
-              <span class="tag ${e.c}">${e.t}</span>
-            </div>
-
-            ${f.estado === 'en_proceso' ? `
-              <div class="barra"><i style="width:${prog}%"></i></div>
-              <p class="card-note" style="font-size:12px; margin-top:7px;">
-                ${prog}% del periodo cubierto · pagado hasta ${fecha(f.cubierto_hasta)}
-              </p>` : ''}
-
-            ${f.estado === 'generada' ? `
-              <p class="card-note" style="font-size:12px; margin-top:9px;">
-                Cumplió el ${fecha(f.completado_en)}. Pasa a disponible cuando termine la maduración.
-              </p>` : ''}
-          </div>`;
-        }).join('')}
-
-      ${rechazados.length ? `
+      ${recl.length ? `
         <div class="card">
           <div class="card-top">
-            <span class="card-ico" style="background:var(--rojo-soft); color:var(--rojo);">${ic('alerta')}</span>
-            <h2 class="card-title">Negocios que no califican</h2>
+            <span class="card-ico">${ic('lista')}</span>
+            <h2 class="card-title">Mis reclamaciones</h2>
           </div>
-          <p class="card-note" style="margin-bottom:4px;">
-            Llegaron por tu enlace, pero no cuentan como negocio nuevo.
-          </p>
-          ${rechazados.map(n => `
+          ${recl.map(r => `
             <div class="fila">
               <div class="fila-txt">
-                <p class="fila-t">${esc(n.negocio)}</p>
-                <p class="fila-s">${fecha(n.alta_en)}</p>
+                <p class="fila-t">${pesosC(r.importe_cents)}</p>
+                <p class="fila-s">${fechaHora(r.creado_en)}</p>
               </div>
-              <span class="tag canc">No califica</span>
+              <span class="tag ${r.estado === 'pagado' ? 'disp' : (r.estado === 'rechazado' ? 'canc' : 'gen')}">
+                ${r.estado === 'pagado' ? 'Pagado' : (r.estado === 'rechazado' ? 'Rechazado' : 'En revisión')}
+              </span>
             </div>`).join('')}
         </div>` : ''}
+    </div>`;
+}
+
+/* =====================================================================
+   NEGOCIOS QUE DEJARON DE PAGAR
+   ===================================================================== */
+function pantallaInactivos(){
+  const d = S.inactivos;
+  if(!d) return pantallaEsperando('Dejaron de pagar');
+  const filas = d.filas || [];
+
+  return `
+    <div class="top">
+      <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
+      <h1>Dejaron de pagar</h1>
+    </div>
+
+    <div class="body vista">
+      ${filas.length ? `
+        <div class="aviso">${ic('alerta')}
+          <p>Estos negocios dejaron de renovar, así que ya no generan bonos nuevos.
+             Lo que ya habías ganado con ellos se queda contigo.</p>
+        </div>
+        ${filas.map(f => `
+          <div class="card">
+            <div class="card-top" style="margin-bottom:10px;">
+              <span class="card-ico" style="background:var(--rojo-soft); color:var(--rojo);">${ic('tienda')}</span>
+              <div style="flex:1; min-width:0;">
+                <h2 class="card-title" style="word-break:break-all;">${esc(f.correo || '')}</h2>
+                <p class="card-note" style="font-size:13px;">${esc(f.negocio || '')}</p>
+              </div>
+            </div>
+            <div class="fila" style="padding:9px 0;">
+              <div class="fila-txt"><p class="fila-s" style="margin:0;">Dejó de pagar</p></div>
+              <span class="fila-n gris" style="font-size:13px;">${fechaHora(f.dejo_de_pagar)}</span>
+            </div>
+            <div class="fila" style="padding:9px 0;">
+              <div class="fila-txt"><p class="fila-s" style="margin:0;">Último pago confirmado</p></div>
+              <span class="fila-n gris" style="font-size:13px;">${fechaHora(f.ultimo_pago_en)}</span>
+            </div>
+            <div class="fila" style="padding:9px 0;">
+              <div class="fila-txt"><p class="fila-s" style="margin:0;">Pagos que hizo</p></div>
+              <span class="fila-n gris" style="font-size:13px;">${f.pagos_hechos || 0}</span>
+            </div>
+            <div class="fila" style="padding:9px 0;">
+              <div class="fila-txt"><p class="fila-s" style="margin:0;">Su membresía</p></div>
+              <span class="tag ${f.membresia === 'activa' ? 'disp' : 'canc'}">${esc(f.membresia || '')}</span>
+            </div>
+            <div class="fila" style="padding:9px 0; border-bottom:none;">
+              <div class="fila-txt"><p class="fila-s" style="margin:0;">Te generó en total</p></div>
+              <span class="fila-n verde" style="font-size:13px;">${pesosC(f.ganado_cents)}</span>
+            </div>
+          </div>`).join('')}`
+      : `<div class="card">
+           <div class="vacio">
+             ${ic('check')}
+             <p>Ningún negocio tuyo ha dejado de pagar.<br>Todos siguen al corriente.</p>
+           </div>
+         </div>`}
     </div>`;
 }
 
@@ -1720,13 +1758,16 @@ function pantallaEsperando(titulo){
 }
 
 /* =====================================================================
-   PANTALLA: AYUDA
+   AYUDA
    ===================================================================== */
 function pantallaAyuda(){
-  const c = S.cartera || {};
-  const n500 = pesosC(c.recompensa_nuevo_cents ?? 50000);
-  const n200 = pesosC(c.recompensa_permanencia_cents ?? 20000);
-  const mad = c.maduracion_dias ?? 30;
+  const s = (S.promotor || {}).saldos || {};
+  const b = s.bonos || {};
+  const c = s.comisiones || {};
+  const com = pesosC(c.por_negocio_cents ?? 10000);
+  const bon = pesosC(b.por_renovacion_cents ?? 4000);
+  const grupo = b.grupo || 10;
+  const premio = pesosC(b.siguiente_bono_cents ?? 40000);
 
   return `
     <div class="top">
@@ -1738,113 +1779,70 @@ function pantallaAyuda(){
       <div class="card">
         <h3 class="ay-h">En pocas palabras</h3>
         <p class="ay-p">Compartes tu enlace con negocios que todavía no usan VendoPlus.
-          Cuando uno de ellos se registra por tu enlace y <b>se queda pagando 12 meses
-          seguidos</b>, ganas <b>${n500}</b>. Por cada año adicional que siga pagando,
-          ganas <b>${n200}</b> más.</p>
+          Ganas de dos maneras: <b>${com}</b> cuando un negocio contrata su membresía por
+          primera vez, y <b>${bon}</b> cada vez que la renueva después.</p>
 
-        <h3 class="ay-h">Cómo comparto mi enlace</h3>
-        <p class="ay-p">En la pantalla principal toca <b>Copiar</b> en la tarjeta
-          “Mi enlace de invitación” y mándalo por WhatsApp, mensaje o como quieras.
-          Tu enlace es tuyo y nunca cambia.</p>
+        <h3 class="ay-h">1 · Comisiones ganadas</h3>
+        <p class="ay-p">Cada negocio nuevo que llegue por tu enlace y pague su
+          <b>primer mes</b> de membresía te deja <b>${com}</b>.</p>
+        <p class="ay-p">Es una sola vez por negocio. Sus renovaciones ya no vuelven a
+          generar ${com}: esas cuentan en bonos.</p>
+        <p class="ay-p">Las comisiones quedan disponibles para reclamar en cuanto el pago
+          se confirma.</p>
 
-        <h3 class="ay-h">Cómo se atribuyen los negocios</h3>
-        <p class="ay-p">Cuando alguien abre tu enlace, le pedimos su correo antes de
-          mandarlo a VendoPlus. Ese correo queda guardado con tu nombre en nuestros
-          servidores, así que el negocio sigue siendo tuyo aunque <b>cambie de celular,
-          cierre el navegador o termine su registro días después</b>.</p>
-        <p class="ay-p">La única condición es que cree su cuenta de VendoPlus con
-          <b>el mismo correo</b> que dejó en tu enlace.</p>
-        <p class="ay-p">Una vez que un negocio queda atribuido a un promotor,
-          <b>ya no se puede pasar a otro</b>. Si dos promotores invitan al mismo negocio,
-          cuenta para el primero que lo registró.</p>
-
-        <h3 class="ay-h">Cuánto gano por cada negocio nuevo</h3>
-        <p class="ay-p"><b>${n500}</b> por cada negocio verdaderamente nuevo que complete
-          12 meses consecutivos de pagos válidos. Se aplica a <b>cada</b> negocio que
-          consigas: no hay límite de clientes, ni meta obligatoria, ni cuota mensual
-          o anual que tengas que cumplir.</p>
-
-        <h3 class="ay-h">Cuánto gano por la permanencia</h3>
-        <p class="ay-p">Después de esos primeros 12 meses, por cada periodo adicional
-          de 12 meses consecutivos que el negocio complete, ganas <b>${n200}</b>.
-          Se repite año con año mientras el negocio siga cumpliendo.</p>
-
-        <h3 class="ay-h">Cómo funcionan los periodos de 12 meses</h3>
-        <p class="ay-p">Cada negocio tiene <b>su propia fecha de incorporación y su propio
-          calendario</b>. El reloj empieza con su primer pago válido, no cuando lo invitaste.
-          Dos negocios que entraron el mismo año cumplen en fechas distintas.</p>
-        <p class="ay-p">Un periodo se completa cuando el negocio junta 365 días
-          de cobertura pagada sin huecos. Se tolera un retraso corto entre
-          renovaciones, para que un pago tardío no te quite la recompensa.</p>
-
-        <h3 class="ay-h">Qué pasa si un negocio cancela o deja de pagar</h3>
-        <p class="ay-p">El periodo que estaba a medias <b>no genera recompensa</b>:
-          los periodos incompletos no se pagan. Lo que ya habías ganado por periodos
-          completos se queda contigo.</p>
-        <p class="ay-p">Si el negocio vuelve a pagar más adelante, empieza una racha
-          nueva y puede volver a juntar sus 12 meses.</p>
-        <p class="ay-p">Si hay un <b>reembolso</b> que rompe una racha ya cumplida,
-          esa recompensa se cancela y lo verás en tu historial de movimientos.</p>
-
-        <h3 class="ay-h">Qué significa cada estado</h3>
-        <p class="ay-p"><b>En proceso</b> · el negocio todavía está juntando los 12 meses
-          de ese periodo. Aún no es dinero tuyo.</p>
-        <p class="ay-p"><b>Generada</b> · el periodo ya se cumplió. Esperamos
-          ${mad} días por si entra un reembolso o un contracargo.</p>
-        <p class="ay-p"><b>Disponible</b> · pasó la espera y ya cuenta en tu saldo
-          disponible.</p>
-        <p class="ay-p"><b>Cancelada</b> · el periodo dejó de cumplir las condiciones.</p>
-
-        <h3 class="ay-h">Cómo consulto mis transacciones</h3>
-        <p class="ay-p">En la pantalla principal entra a <b>Mis transacciones</b>.
-          Ahí está cada negocio con su fecha de incorporación, la fecha en que cumple
-          cada periodo, el tipo de recompensa, el importe, su generación y su estado.
-          Están ordenadas por fecha.</p>
-        <p class="ay-p">El desglose completo de tu dinero está dentro de
-          <b>Mi cartera</b> → <b>Saldo disponible</b>.</p>
-
-        <h3 class="ay-h">Por qué el botón de reclamar está apagado</h3>
-        <p class="ay-p">Los retiros todavía no están abiertos. El botón
-          <b>RECLAMAR DINERO</b> está ahí para que sepas dónde va a estar, pero por
-          ahora no hace nada y <b>no mueve tu saldo</b>. Tu dinero se queda registrado
-          y lo puedes ver cuando quieras.</p>
-
-        <h3 class="ay-h">Un ejemplo con números</h3>
-        <p class="ay-p">Supongamos que consigues 100 negocios por año. Son solo números
-          para explicar: <b>100 no es una meta</b>.</p>
+        <h3 class="ay-h">2 · Bonos acumulados</h3>
+        <p class="ay-p">Cada renovación mensual confirmada de tus negocios vale <b>${bon}</b>.</p>
+        <p class="ay-p"><b>El primer pago no genera bono</b>, porque ese ya te pagó su
+          comisión. Los bonos empiezan desde la segunda mensualidad.</p>
+        <p class="ay-p">Los bonos se liberan por grupos: cada <b>${grupo} renovaciones</b>
+          se desbloquean <b>${premio}</b> para reclamar.</p>
         <div class="ay-ej">
-          <b>Primer año</b><br>
-          100 negocios nuevos completan sus primeros 12 meses<br>
-          100 × ${n500} = <b>${pesosC((c.recompensa_nuevo_cents ?? 50000) * 100)}</b>
+          ${grupo} renovaciones = ${premio}<br>
+          ${grupo * 2} renovaciones = ${pesosC((b.siguiente_bono_cents ?? 40000) * 2)}<br>
+          ${grupo * 3} renovaciones = ${pesosC((b.siguiente_bono_cents ?? 40000) * 3)}<br>
+          y así, sin tope.
+        </div>
+        <p class="ay-p" style="margin-top:12px;">La cuenta de renovaciones <b>nunca se
+          reinicia</b>. No importa que cambie el mes o el año: sigue sumando.</p>
+
+        <h3 class="ay-h">Un ejemplo</h3>
+        <div class="ay-ej">
+          Llevas <b>9 renovaciones</b><br>
+          Acumulado: ${pesosC(9 * (b.por_renovacion_cents ?? 4000))}<br>
+          Falta 1 renovación para liberar ${premio}
         </div>
         <div class="ay-ej">
-          <b>Segundo año</b><br>
-          Los 100 de antes cumplen otro año: 100 × ${n200} = ${pesosC((c.recompensa_permanencia_cents ?? 20000) * 100)}<br>
-          Más 100 negocios nuevos: 100 × ${n500} = ${pesosC((c.recompensa_nuevo_cents ?? 50000) * 100)}<br>
-          Total: <b>${pesosC((c.recompensa_permanencia_cents ?? 20000) * 100 + (c.recompensa_nuevo_cents ?? 50000) * 100)}</b>
+          Llega la renovación <b>${grupo}</b><br>
+          Se liberan ${premio} para reclamar<br>
+          El siguiente objetivo pasa a ser ${grupo * 2} renovaciones
         </div>
-        <div class="ay-ej">
-          <b>Tercer año</b><br>
-          Las dos generaciones anteriores por permanencia:
-          2 × 100 × ${n200} = ${pesosC((c.recompensa_permanencia_cents ?? 20000) * 200)}<br>
-          Más 100 negocios nuevos: 100 × ${n500} = ${pesosC((c.recompensa_nuevo_cents ?? 50000) * 100)}<br>
-          Total: <b>${pesosC((c.recompensa_permanencia_cents ?? 20000) * 200 + (c.recompensa_nuevo_cents ?? 50000) * 100)}</b>
-        </div>
-        <p class="ay-p" style="margin-top:12px;">Cada negocio cumple en su propia fecha,
-          así que en la vida real el dinero va cayendo repartido a lo largo del año,
-          no todo junto.</p>
 
-        <h3 class="ay-h">Qué negocios no cuentan</h3>
-        <p class="ay-p">Solo cuentan los negocios <b>verdaderamente nuevos</b>.
-          No cuentan los que ya tenían cuenta de VendoPlus, ni tu propio correo,
-          ni un negocio que ya estaba atribuido a otro promotor. Todo esto lo revisa
-          el sistema contra los registros reales de cuentas y suscripciones.</p>
-        <p class="ay-p">La promoción que pueda recibir un cliente nuevo es otra cosa,
-          aparte de tu recompensa como promotor.</p>
+        <h3 class="ay-h">Qué es "acumulado" y qué es "disponible"</h3>
+        <p class="ay-p"><b>Acumulado</b> es todo lo que han sumado tus renovaciones.
+          <b>Disponible</b> es solo lo que ya completó grupos de ${grupo} y por eso se
+          puede reclamar. Lo que falta para cerrar el grupo sigue ahí, esperando.</p>
 
-        <h3 class="ay-h">Cuándo se actualiza esto</h3>
-        <p class="ay-p">Solo. Cuando un negocio tuyo paga, su avance y tu historial se
-          actualizan aquí sin que tengas que recargar la página ni volver a entrar.</p>
+        <h3 class="ay-h">Reclamar tu dinero</h3>
+        <p class="ay-p">Bonos y comisiones son dos saldos aparte, con su propio botón.
+          Al reclamar se registra el importe con su fecha y hora, y ese monto se descuenta
+          de tu saldo disponible.</p>
+        <p class="ay-p">El botón registra tu <b>solicitud</b>: nos llega y te contactamos
+          para entregarte el dinero. No es una transferencia automática.</p>
+
+        <h3 class="ay-h">Qué pasa si un negocio deja de pagar</h3>
+        <p class="ay-p">Deja de generarte bonos nuevos, pero <b>todo lo que ya te generó
+          se queda contigo</b>. Puedes verlos en “Ver negocios que dejaron de pagar”.</p>
+        <p class="ay-p">Si un cobro se reembolsa, esa recompensa sí se cancela, porque ese
+          dinero nunca se cobró de verdad.</p>
+
+        <h3 class="ay-h">Qué pagos cuentan</h3>
+        <p class="ay-p">Solo los cobros confirmados por <b>Stripe</b>. Los pagos pendientes,
+          fallidos o cancelados no generan nada. Cada cobro se identifica con su número de
+          factura, así que un aviso repetido nunca paga dos veces.</p>
+
+        <h3 class="ay-h">Cuándo se actualiza</h3>
+        <p class="ay-p">Solo. En cuanto Stripe confirma un pago de un negocio tuyo, tus
+          saldos y tus historiales se actualizan aquí sin que recargues la página.</p>
       </div>
     </div>`;
 }
@@ -1869,280 +1867,17 @@ function pintar(){
                   : p === 'clave'  ? pantallaClave()
                   : p === 'olvide' ? pantallaOlvide()
                   : pantallaNombre();
-    document.querySelector('meta[name=theme-color]').content = '#FFFFFF';
     cablearAcceso();
     return;
   }
 
   app.className = 'wrap';
-  app.innerHTML = p === 'inicio' ? pantallaInicio()
-                : p === 'saldo'  ? pantallaSaldo()
-                : p === 'trans'  ? pantallaTransacciones()
+  app.innerHTML = p === 'inicio'     ? pantallaInicio()
+                : p === 'bonos'      ? pantallaBonos()
+                : p === 'comisiones' ? pantallaComisiones()
+                : p === 'inactivos'  ? pantallaInactivos()
                 : pantallaAyuda();
-  document.querySelector('meta[name=theme-color]').content = p === 'inicio' ? '#FFFFFF' : '#FFFFFF';
   cablearPortal();
-}
-
-/* ---------- Eventos de las pantallas de acceso ---------- */
-function cablearAcceso(){
-  const p = S.pantalla;
-
-  if(p === 'acceso'){
-    const cor = $('aCorreo');
-    cor.oninput = () => { S.correo = cor.value.trim(); };
-    cor.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); accionAcceso(); } };
-    $('aBtn').onclick = accionAcceso;
-    $('bCambia').onclick = () => { S.modo = S.modo === 'login' ? 'signup' : 'login'; S.pw = ''; pintar(); };
-    if($('bOlvide')) $('bOlvide').onclick = () => { S.fpaso = 1; S.fverificado = false; irA('olvide'); };
-    if($('aPw')){
-      $('aPw').oninput = e => { S.pw = e.target.value; };
-      $('aPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); accionAcceso(); } };
-      ojo('aOjo', 'aPw');
-    }
-    setTimeout(() => cor.focus(), 160);
-  }
-
-  if(p === 'codigo'){
-    $('bAtras').onclick = async () => { await sb.auth.signOut().catch(() => {}); clearInterval(S.timer); irA('acceso'); };
-    cablearOtp();
-    $('oBtn').onclick = verificarCodigo;
-    cablearReenvio();
-  }
-
-  if(p === 'clave'){
-    const pw = $('pPw');
-    pw.oninput = () => { S.pw = pw.value; $('pBtn').disabled = pw.value.length < 8; };
-    pw.onkeydown = ev => { if(ev.key === 'Enter' && pw.value.length >= 8){ ev.preventDefault(); guardarClave(); } };
-    ojo('pOjo', 'pPw');
-    $('pBtn').onclick = guardarClave;
-    setTimeout(() => pw.focus(), 160);
-  }
-
-  if(p === 'olvide'){
-    $('bAtras').onclick = () => {
-      clearInterval(S.timer);
-      if(S.fpaso === 2){ S.fpaso = 1; pintar(); } else { S.modo = 'login'; irA('acceso'); }
-    };
-    if(S.fpaso === 2){
-      ojo('fOjo', 'fPw');
-      $('fBtn').onclick = confirmarOlvide;
-      $('fPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); confirmarOlvide(); } };
-      cablearReenvio();
-      setTimeout(() => $('fCod').focus(), 160);
-    }else{
-      const c = $('fCorreo');
-      c.oninput = () => { S.correo = c.value.trim(); };
-      c.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); enviarOlvide(); } };
-      $('fBtn').onclick = enviarOlvide;
-      setTimeout(() => c.focus(), 160);
-    }
-  }
-
-  if(p === 'nombre'){
-    const n = $('nNom');
-    n.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); crearPromotor(); } };
-    $('nBtn').onclick = crearPromotor;
-    setTimeout(() => n.focus(), 160);
-  }
-}
-
-function ojo(idBtn, idPw){
-  const b = $(idBtn); if(!b) return;
-  b.onclick = () => {
-    const i = $(idPw);
-    const ver = i.type === 'password';
-    i.type = ver ? 'text' : 'password';
-    b.innerHTML = ver ? ic('ojoNo') : ic('ojo');
-    i.focus();
-  };
-}
-
-function cablearReenvio(){
-  const area = $('reenvio'); if(!area) return;
-  const b = $('bReenviar');
-  if(b) b.onclick = () => { if(S.pantalla === 'olvide') enviarOlvide(); else accionAcceso(); };
-}
-
-/* ---------- Celdas del código ---------- */
-function cablearOtp(alCompletar){
-  const n = CONFIG.CODIGO_DIGITOS;
-  const celdas = [];
-  for(let i = 0; i < n; i++) celdas.push($('c' + i));
-
-  const revisar = () => {
-    const v = celdas.map(c => c.value).join('');
-    $('oBtn').disabled = v.length !== n;
-    celdas.forEach(c => c.classList.toggle('filled', !!c.value));
-    if(v.length === n) (alCompletar || verificarCodigo)();
-  };
-
-  celdas.forEach((c, i) => {
-    c.oninput = () => {
-      c.value = c.value.replace(/\D/g, '').slice(0, 1);
-      if(c.value && i < n - 1) celdas[i + 1].focus();
-      revisar();
-    };
-    c.onkeydown = ev => {
-      if(ev.key === 'Backspace' && !c.value && i > 0){ celdas[i - 1].focus(); celdas[i - 1].value = ''; revisar(); }
-    };
-    c.onpaste = ev => {
-      ev.preventDefault();
-      const t = (ev.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, n);
-      for(let k = 0; k < n; k++) celdas[k].value = t[k] || '';
-      celdas[Math.min(t.length, n - 1)].focus();
-      revisar();
-    };
-  });
-  setTimeout(() => celdas[0].focus(), 180);
-}
-const valorOtp = () => {
-  let v = '';
-  for(let i = 0; i < CONFIG.CODIGO_DIGITOS; i++) v += ($('c' + i) || {}).value || '';
-  return v;
-};
-function fallaOtp(msg){
-  const r = $('otpRow');
-  if(r){ r.classList.add('error'); setTimeout(() => r.classList.remove('error'), 400); }
-  for(let i = 0; i < CONFIG.CODIGO_DIGITOS; i++){ const c = $('c' + i); if(c){ c.value = ''; c.classList.remove('filled'); } }
-  const p = $('c0'); if(p) p.focus();
-  $('oBtn').disabled = true;
-  vibra([18, 60, 18]);
-  toast(msg, true);
-}
-
-/* ---------- Acciones de acceso ---------- */
-function accionAcceso(){
-  const correo = normCorreo(S.correo);
-  if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
-
-  const login = S.modo === 'login';
-  const reenvio = S.pantalla === 'codigo';
-  if(reenvio && S.reenvio > 0) return;
-  vibra(12);
-
-  return conBoton(reenvio ? null : 'aBtn', login ? 'Entrando…' : 'Enviando…', async () => {
-    if(login){
-      if((S.pw || '').length < 1) return toast('Escribe tu contraseña', true);
-      const { error } = await sb.auth.signInWithPassword({ email:correo, password:S.pw });
-      if(error) return toast(errLegible(error), true);
-      S.pw = '';
-      return await despuesDeEntrar();
-    }
-    const { error } = await mandarCodigo(correo, true);
-    if(error) return toast(errLegible(error), true);
-    S.reenvio = 60;
-    if(reenvio){
-      const el = $('reenvio'); if(el){ el.innerHTML = htmlReenvio(); cablearReenvio(); }
-      toast('Te mandamos otro código');
-    }else irA('codigo');
-    tiempoReenvio();
-  });
-}
-
-function verificarCodigo(){
-  const token = valorOtp();
-  if(token.length !== CONFIG.CODIGO_DIGITOS) return;
-  const correo = normCorreo(S.correo);
-
-  return conBoton('oBtn', 'Verificando…', async () => {
-    const { error } = await revisarCodigo(correo, token);
-    if(error) return fallaOtp(errLegible(error));
-    clearInterval(S.timer);
-    vibra(20);
-
-    // ¿Ya era promotor? Entonces entra directo.
-    const t = await sb.rpc('ref_mi_tablero');
-    if(t.data && t.data.ok){
-      S.promotor = t.data;
-      return await abrirPortal();
-    }
-    S.pw = '';
-    irA('clave');
-  });
-}
-
-function guardarClave(){
-  const pw = S.pw || '';
-  if(pw.length < 8) return toast('La contraseña debe tener mínimo 8 caracteres', true);
-
-  return conBoton('pBtn', 'Guardando…', async () => {
-    const { error } = await sb.auth.updateUser({ password:pw, data:{ vp_promotor:true } });
-    if(error) return toast(errLegible(error), true);
-    S.pw = '';
-    irA('nombre');
-  });
-}
-
-function crearPromotor(){
-  const nombre = ($('nNom').value || '').trim();
-  if(nombre.length < 2) return toast('Escribe tu nombre', true);
-
-  return conBoton('nBtn', 'Creando…', async () => {
-    const r = await sb.rpc('ref_alta_promotor', { p_nombre: nombre });
-    if(r.error) return toast(errLegible(r.error), true);
-    if(!r.data || !r.data.ok) return toast(r.data?.mensaje || 'No se pudo crear tu cuenta de promotor.', true);
-    vibra([15, 60, 15]);
-    await abrirPortal();
-    toast('Listo, tu enlace ya está activo');
-  });
-}
-
-function enviarOlvide(){
-  const correo = normCorreo(S.correo);
-  if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
-  const reenvio = S.fpaso === 2;
-  if(reenvio && S.reenvio > 0) return;
-
-  return conBoton(reenvio ? null : 'fBtn', 'Enviando…', async () => {
-    const { error } = await mandarCodigo(correo, false);
-    if(error) return toast(errLegible(error), true);
-    S.reenvio = 60; S.fverificado = false;
-    if(reenvio){ const el = $('reenvio'); if(el){ el.innerHTML = htmlReenvio(); cablearReenvio(); } }
-    else{ S.fpaso = 2; pintar(); }
-    tiempoReenvio();
-    toast('Te mandamos un código a tu correo');
-  });
-}
-
-function confirmarOlvide(){
-  const correo = normCorreo(S.correo);
-  const token = (($('fCod') || {}).value || '').replace(/\D/g, '');
-  const pw = ($('fPw') || {}).value || '';
-  if(!S.fverificado && token.length !== CONFIG.CODIGO_DIGITOS)
-    return toast('Escribe el código de ' + CONFIG.CODIGO_DIGITOS + ' dígitos', true);
-  if(pw.length < 8) return toast('La contraseña debe tener mínimo 8 caracteres', true);
-
-  return conBoton('fBtn', 'Cambiando…', async () => {
-    if(!S.fverificado){
-      const v = await revisarCodigo(correo, token);
-      if(v.error) return toast(errLegible(v.error), true);
-      S.fverificado = true;   // el código ya se usó: si falla la contraseña no se pide otra vez
-    }
-    const u = await sb.auth.updateUser({ password:pw });
-    if(u.error) return toast(errLegible(u.error), true);
-    clearInterval(S.timer);
-    S.fverificado = false; S.fpaso = 1;
-    await despuesDeEntrar();
-    toast('Contraseña actualizada');
-  });
-}
-
-/* ---------- Después de entrar ---------- */
-async function despuesDeEntrar(){
-  const t = await sb.rpc('ref_mi_tablero');
-  if(t.error){ toast(errLegible(t.error), true); return irA('acceso'); }
-  if(t.data && t.data.ok){
-    S.promotor = t.data;
-    return await abrirPortal();
-  }
-  // Tiene sesión pero todavía no es promotor: le pedimos su nombre.
-  irA('nombre');
-}
-
-async function abrirPortal(){
-  irA('inicio');
-  escuchar();
-  refrescar();
 }
 
 /* ---------- Eventos del portal ---------- */
@@ -2151,17 +1886,24 @@ function cablearPortal(){
 
   if(p === 'inicio'){
     $('bCopiar').onclick = copiarEnlace;
-    $('bCartera').onclick = async () => { irA('saldo'); await cargarCartera(); };
-    $('bTrans').onclick   = async () => { irA('trans'); await cargarTransacciones(); };
-    $('bAyuda').onclick   = () => irA('ayuda');
-    $('bSalir').onclick   = cerrarSesion;
+    $('bBonos').onclick  = async () => { irA('bonos');      await cargarBonos(); };
+    $('bComis').onclick  = async () => { irA('comisiones'); await cargarComisiones(); };
+    $('bAyuda').onclick  = () => irA('ayuda');
+    $('bSalir').onclick  = cerrarSesion;
   }
-  if(['saldo','trans','ayuda'].includes(p)){
-    $('bAtras').onclick = () => irA('inicio');
+
+  if(['bonos','comisiones','inactivos','ayuda'].includes(p)){
+    const atras = $('bAtras');
+    if(atras) atras.onclick = () => irA(p === 'inactivos' ? 'bonos' : 'inicio');
   }
-  if(p === 'saldo' && $('bReclamar')){
-    // Botón solo visual: no hace nada, no mueve el saldo.
-    $('bReclamar').onclick = ev => { ev.preventDefault(); };
+
+  if(p === 'bonos'){
+    if($('bInactivos')) $('bInactivos').onclick = async () => { irA('inactivos'); await cargarInactivos(); };
+    if($('bReclamarBonos')) $('bReclamarBonos').onclick = () => reclamar('bonos', 'bReclamarBonos');
+  }
+
+  if(p === 'comisiones' && $('bReclamarComis')){
+    $('bReclamarComis').onclick = () => reclamar('comisiones', 'bReclamarComis');
   }
 }
 
@@ -2184,11 +1926,23 @@ async function copiarEnlace(){
   setTimeout(() => { if(b.isConnected){ b.classList.remove('ok'); b.innerHTML = ic('copiar') + ' Copiar'; } }, 1800);
 }
 
+/** Pedir el dinero de una sección. El servidor decide el importe. */
+function reclamar(seccion, idBoton){
+  return conBoton(idBoton, 'Enviando…', async () => {
+    const r = await sb.rpc('ref_reclamar', { p_seccion: seccion });
+    if(r.error) return toast(errLegible(r.error), true);
+    if(!r.data || !r.data.ok) return toast((r.data && r.data.mensaje) || 'No se pudo reclamar.', true);
+    vibra([15, 60, 15]);
+    toast(r.data.mensaje);
+    await refrescar();
+  });
+}
+
 async function cerrarSesion(){
   try{ if(S.canal){ await sb.removeChannel(S.canal); S.canal = null; } }catch(e){}
   S.vivo = false;
   await sb.auth.signOut().catch(() => {});
-  S.promotor = null; S.cartera = null; S.transacciones = null;
+  S.promotor = null; S.bonos = null; S.comisiones = null; S.inactivos = null;
   S.modo = 'login'; S.pw = '';
   irA('acceso');
 }
@@ -2198,56 +1952,59 @@ async function cerrarSesion(){
    ===================================================================== */
 async function cargarTablero(){
   const r = await sb.rpc('ref_mi_tablero');
-  if(r.data && r.data.ok){ S.promotor = r.data; if(S.pantalla === 'inicio') pintar(); }
+  if(r.data && r.data.ok){
+    S.promotor = r.data;
+    if(['inicio','ayuda'].includes(S.pantalla)) pintar();
+  }
 }
-async function cargarCartera(){
-  const r = await sb.rpc('ref_mi_cartera');
-  if(r.data && r.data.ok){ S.cartera = r.data; if(['saldo','ayuda'].includes(S.pantalla)) pintar(); }
+async function cargarBonos(){
+  const r = await sb.rpc('ref_mis_bonos');
+  if(r.data && r.data.ok){ S.bonos = r.data; if(S.pantalla === 'bonos') pintar(); }
 }
-async function cargarTransacciones(){
-  const r = await sb.rpc('ref_mis_transacciones', { p_limite: 300 });
-  if(r.data && r.data.ok){ S.transacciones = r.data; if(S.pantalla === 'trans') pintar(); }
+async function cargarComisiones(){
+  const r = await sb.rpc('ref_mis_comisiones');
+  if(r.data && r.data.ok){ S.comisiones = r.data; if(S.pantalla === 'comisiones') pintar(); }
+}
+async function cargarInactivos(){
+  const r = await sb.rpc('ref_negocios_inactivos');
+  if(r.data && r.data.ok){ S.inactivos = r.data; if(S.pantalla === 'inactivos') pintar(); }
 }
 
-/** Trae lo que haga falta según la pantalla donde esté el promotor. */
 let refrescando = false;
 async function refrescar(){
   if(refrescando) return;
   refrescando = true;
   try{
     await cargarTablero();
-    if(S.pantalla === 'saldo' || S.cartera) await cargarCartera();
-    if(S.pantalla === 'trans' || S.transacciones) await cargarTransacciones();
+    if(S.pantalla === 'bonos'      || S.bonos)      await cargarBonos();
+    if(S.pantalla === 'comisiones' || S.comisiones) await cargarComisiones();
+    if(S.pantalla === 'inactivos'  || S.inactivos)  await cargarInactivos();
   }catch(e){ console.warn('refrescar', e); }
   finally{ refrescando = false; }
 }
 
 /* =====================================================================
    TIEMPO REAL
-   Cuando un negocio referido paga, el backend lo procesa y estas tablas
-   cambian. El portal se actualiza solo: sin recargar, sin volver a entrar.
-   Las políticas RLS se aplican también aquí, así que cada promotor recibe
-   únicamente sus propios cambios.
+   Cuando Stripe confirma un pago de un negocio referido, el backend lo
+   convierte en comisión o en bono y estas tablas cambian. El portal se
+   actualiza solo, sin recargar. Realtime respeta RLS: cada promotor
+   recibe únicamente lo suyo.
    ===================================================================== */
 let reintento = null;
 async function escuchar(){
   if(S.canal) return;
   const id = (S.promotor || {}).codigo || 'x';
 
-  /* Realtime tiene que ir firmado con la sesión del promotor: así el
-     servidor aplica RLS y solo manda los cambios que le tocan a él. */
   try{
     const { data } = await sb.auth.getSession();
     if(data && data.session) sb.realtime.setAuth(data.session.access_token);
   }catch(e){ console.warn('realtime auth', e); }
 
   S.canal = sb.channel('promotor:' + id)
-    .on('postgres_changes', { event:'*', schema:'public', table:'referral_wallet' },    alCambiar)
-    .on('postgres_changes', { event:'*', schema:'public', table:'referral_rewards' },   alCambiar)
-    .on('postgres_changes', { event:'*', schema:'public', table:'referral_movements' }, alCambiar)
-    .on('postgres_changes', { event:'*', schema:'public', table:'referral_clients' },   alCambiar)
-    .on('postgres_changes', { event:'*', schema:'public', table:'referral_periods' },   alCambiar)
-    .on('postgres_changes', { event:'*', schema:'public', table:'referral_payments' },  alPago)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_earnings' }, alGanar)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_claims' },   alCambiar)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_clients' },  alCambiar)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_payments' }, alCambiar)
     .subscribe(estado => {
       const antes = S.vivo;
       S.vivo = estado === 'SUBSCRIBED';
@@ -2265,17 +2022,16 @@ async function escuchar(){
 
 let pendiente = null;
 function alCambiar(){
-  // Se junta todo lo que llegue en medio segundo y se refresca una sola vez.
   clearTimeout(pendiente);
   pendiente = setTimeout(refrescar, 500);
 }
-function alPago(carga){
-  // Un pago suelto mueve el avance del negocio, pero NO adelanta recompensas:
-  // los $500 y $200 solo se liberan cuando el periodo se cumple de verdad.
+function alGanar(carga){
   alCambiar();
   const n = carga && carga.new;
-  if(n && n.estado === 'pagado' && carga.eventType === 'INSERT'){
-    toast('Un negocio tuyo acaba de pagar');
+  if(n && carga.eventType === 'INSERT' && n.estado === 'vigente'){
+    toast(n.tipo === 'comision'
+      ? 'Un negocio nuevo contrató su membresía: +' + pesosC(n.importe_cents)
+      : 'Un negocio tuyo renovó: +' + pesosC(n.importe_cents));
   }
 }
 
@@ -2283,6 +2039,7 @@ function alPago(carga){
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible' && S.promotor) refrescar();
 });
+
 
 /* =====================================================================
    ARRANQUE
@@ -2294,7 +2051,7 @@ sb.auth.onAuthStateChange((evento, sesion) => {
     try{ sb.realtime.setAuth(sesion.access_token); }catch(e){}
   }
   if(evento === 'SIGNED_OUT' && S.promotor){
-    S.promotor = null; S.cartera = null; S.transacciones = null;
+    S.promotor = null; S.bonos = null; S.comisiones = null; S.inactivos = null;
     S.modo = 'login';
     irA('acceso');
   }
