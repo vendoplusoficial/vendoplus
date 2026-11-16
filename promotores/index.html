@@ -701,6 +701,72 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
   .com-vacio{ padding:62px 20px 30px; }
 }
 
+/* =====================================================================
+   BONOS ACUMULADOS
+   Misma cabecera, mismas tarjetas y mismo historial que comisiones.
+   ===================================================================== */
+.bon-rejilla{ display:grid; gap:22px; }
+.bon-prog{ order:1; } .bon-ver{ order:2; } .bon-lado{ order:3; }
+
+.bon-card{
+  background:var(--surface); border:1px solid #F0F1F6; border-radius:16px;
+  box-shadow:0 1px 3px rgba(17,31,67,.045); padding:16px;
+}
+.bon-top{ display:flex; align-items:center; gap:13px; margin-bottom:14px; }
+.bon-t{ font-size:16px; font-weight:700; letter-spacing:-.2px; margin:0; color:var(--ink); }
+.bon-et{ font-size:14.5px; font-weight:400; color:var(--ink-soft); margin:0; line-height:1.35; }
+.bon-num{
+  font-size:36px; font-weight:700; letter-spacing:-1.4px; line-height:1.25;
+  color:var(--ink); margin:2px 0 0;
+}
+.bon-num i{ font-style:normal; font-size:15px; font-weight:500; color:var(--ink-soft); margin-left:9px; letter-spacing:0; }
+.bon-sub{ font-size:14.5px; font-weight:400; color:var(--ink-soft); margin:3px 0 0; line-height:1.35; }
+
+.bon-barra{ height:8px; border-radius:999px; background:#E6E7EE; overflow:hidden; margin:15px 0 11px; }
+.bon-barra i{ display:block; height:100%; border-radius:999px; background:var(--brand); }
+.bon-nota{ font-size:14px; font-weight:400; color:var(--ink-soft); line-height:1.5; margin:0; }
+
+.bon-sep{ height:1px; background:var(--border); margin:14px 0; }
+.bon-linea{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.bon-linea span{ font-size:14.5px; font-weight:500; color:var(--ink); }
+.bon-linea b{ font-size:15.5px; font-weight:700; color:#0E8A28; }
+
+.bon-btn{
+  width:100%; height:46px; border:none; border-radius:12px;
+  background:#EEEFF4; color:#B4B8C6; font-size:15.5px; font-weight:700;
+  letter-spacing:.4px; display:inline-flex; align-items:center; justify-content:center; gap:9px;
+}
+.bon-btn svg{ width:17px; height:17px; }
+.bon-btn.ok{ background:#CBF4C8; color:#0E8A28; }
+.bon-btn.ok:active{ transform:scale(.99); }
+.bon-pie{ font-size:14px; font-weight:400; color:var(--ink-soft); text-align:center; margin:10px 0 0; line-height:1.45; }
+
+.bon-ver{
+  display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  background:var(--surface); border:1px solid #F0F1F6; border-radius:16px;
+  box-shadow:0 1px 3px rgba(17,31,67,.045); padding:17px 16px; color:var(--ink);
+}
+.bon-ver > span:first-child{ flex:1; min-width:0; font-size:15.5px; font-weight:700; letter-spacing:-.2px; }
+.bon-chev{ flex:none; color:var(--ink-faint); display:grid; place-items:center; }
+.bon-chev svg{ width:17px; height:17px; }
+.bon-ver:active{ transform:scale(.995); }
+
+.bon-vacio{
+  background:var(--surface); border:1px solid #F0F1F6; border-radius:16px;
+  box-shadow:0 1px 3px rgba(17,31,67,.045); padding:34px 20px 32px; text-align:center;
+}
+.bon-vacio p{ font-size:15px; font-weight:400; color:var(--ink-soft); line-height:1.52; margin:0; }
+.bon-h2{ margin-top:0; }
+
+@media (min-width:860px){
+  .bon-rejilla{ grid-template-columns:1fr 1fr; align-items:stretch; gap:16px; }
+  .bon-lado{ display:flex; flex-direction:column; }
+  .bon-vacio{ flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .bon-prog{ order:1; } .bon-lado{ order:2; } .bon-ver{ order:3; grid-column:1 / -1; }
+  .bon-card{ padding:20px; }
+  .bon-vacio{ padding:44px 28px; }
+}
+
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
@@ -1870,108 +1936,89 @@ function pantallaBonos(){
   const meses = d.meses || [];
   const recl = d.reclamaciones || [];
   const puede = (b.disponible_cents || 0) > 0;
+  const grupo = b.grupo || 10;
+  const en = b.en_grupo || 0;
+  const pct = Math.max(0, Math.min(100, Math.round((en / grupo) * 100)));
 
   return `
-    <div class="top">
+    <div class="top com-top">
       <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
       <h1>Bonos acumulados</h1>
     </div>
 
-    <div class="body vista">
-      <div class="card">
-        <div class="card-top">
-          <span class="card-ico">${ic('reloj')}</span>
-          <h2 class="card-title">Tu progreso</h2>
-        </div>
+    <div class="body com bon vista">
+      <div class="bon-rejilla">
 
-        <p class="saldo-et">Acumulado en total</p>
-        <div class="saldo">
-          <span class="saldo-num">${pesosC(b.generado_cents)}</span>
-          <span class="saldo-mon">MXN</span>
-        </div>
-        <p class="card-note" style="margin-top:6px;">
-          ${b.renovaciones || 0} ${(b.renovaciones === 1) ? 'renovación confirmada' : 'renovaciones confirmadas'} ·
-          ${pesosC(b.por_renovacion_cents)} cada una
-        </p>
-
-        ${barraBonos(b)}
-
-        <div class="fila" style="margin-top:14px; border-top:1px solid var(--border); padding-top:16px;">
-          <div class="fila-txt">
-            <p class="fila-t">Disponible para reclamar</p>
-            <p class="fila-s">${b.grupos_completos || 0}
-               ${(b.grupos_completos === 1) ? 'grupo completo' : 'grupos completos'} de ${b.grupo || 10}</p>
+        <div class="bon-card bon-prog">
+          <div class="bon-top">
+            <span class="com-tile">${ic('regalo')}</span>
+            <h2 class="bon-t">Tu progreso</h2>
           </div>
-          <span class="fila-n verde">${pesosC(b.disponible_cents)}</span>
-        </div>
-        <div class="fila">
-          <div class="fila-txt">
-            <p class="fila-t">Todavía sin liberar</p>
-            <p class="fila-s">Se libera al completar el siguiente grupo</p>
-          </div>
-          <span class="fila-n gris">${pesosC(b.acumulado_cents)}</span>
-        </div>
-        ${(b.reclamado_cents || 0) > 0 ? `
-        <div class="fila">
-          <div class="fila-txt"><p class="fila-t">Ya reclamado</p></div>
-          <span class="fila-n gris">${pesosC(b.reclamado_cents)}</span>
-        </div>` : ''}
 
-        <button class="btn ${puede ? 'primary' : 'bloq'} block xl" id="bReclamarBonos"
-                style="margin-top:16px;" ${puede ? '' : 'disabled'}>
-          ${puede ? '' : ic('candado')} RECLAMAR DINERO
+          <p class="bon-et">Acumulado en total</p>
+          <p class="bon-num">${pesosC(b.generado_cents)}<i>MXN</i></p>
+          <p class="bon-sub">${b.renovaciones || 0}
+             ${(b.renovaciones === 1) ? 'renovación confirmada' : 'renovaciones confirmadas'}</p>
+
+          <div class="bon-barra"><i style="width:${pct}%"></i></div>
+          <p class="bon-nota">${en} de ${grupo} renovaciones ·
+            ${(b.faltan || 0) === 1
+              ? `falta 1 renovación para liberar ${pesosC(b.siguiente_bono_cents)}`
+              : `faltan ${b.faltan || grupo} renovaciones para liberar ${pesosC(b.siguiente_bono_cents)}`}</p>
+
+          ${puede ? `
+            <div class="bon-sep"></div>
+            <div class="bon-linea">
+              <span>Disponible para reclamar</span>
+              <b>${pesosC(b.disponible_cents)}</b>
+            </div>` : ''}
+
+          <div class="bon-sep"></div>
+          <button class="bon-btn ${puede ? 'ok' : ''}" id="bReclamarBonos" ${puede ? '' : 'disabled'}>
+            ${puede ? '' : ic('candado')}RECLAMAR DINERO
+          </button>
+          <p class="bon-pie">${puede
+            ? `Tienes ${b.grupos_completos || 0} ${(b.grupos_completos === 1) ? 'grupo completo' : 'grupos completos'} de ${grupo}.`
+            : `Junta ${grupo} renovaciones para liberar ${pesosC(b.siguiente_bono_cents)}.`}</p>
+        </div>
+
+        <button class="bon-ver" id="bInactivos">
+          <span>Ver negocios que dejaron de pagar</span>
+          <span class="bon-chev">${ic('der')}</span>
         </button>
-        ${puede ? '' : `<p class="card-note" style="margin-top:9px; text-align:center;">
-          Junta ${b.grupo || 10} renovaciones para liberar ${pesosC(b.siguiente_bono_cents)}.</p>`}
+
+        <div class="bon-lado">
+          ${meses.length ? `
+            <h2 class="com-h2 bon-h2">Historial de renovaciones</h2>
+            <div class="com-hist">
+              ${meses.map(m => `
+                <div class="com-mes">
+                  <b>${esc(m.etiqueta)}</b>
+                  <span>${m.renovaciones} ${m.renovaciones === 1 ? 'renovación' : 'renovaciones'}</span>
+                </div>
+                ${(m.filas || []).map(f => `
+                  <div class="com-fila">
+                    <span class="com-av">${ic('persona')}</span>
+                    <span class="com-correo">${esc(f.correo || '')}</span>
+                    <span class="com-mas">+${pesosC(f.importe_cents)}</span>
+                  </div>`).join('')}`).join('')}
+            </div>` : `
+            <div class="bon-vacio">
+              <span class="com-vacio-ico">${ic('semilla')}</span>
+              <p>Todavía no hay renovaciones.<br>
+                 El primer pago de un negocio genera su comisión;<br>
+                 los bonos empiezan desde la segunda mensualidad.</p>
+            </div>`}
+        </div>
       </div>
 
-      <button class="card tap" id="bInactivos">
-        <div class="card-top" style="margin-bottom:0;">
-          <span class="card-ico" style="background:var(--rojo-soft); color:var(--rojo);">${ic('alerta')}</span>
-          <h2 class="card-title">Ver negocios que dejaron de pagar</h2>
-          <span class="chev">${ic('der')}</span>
-        </div>
-      </button>
-
-      ${meses.length ? meses.map(m => `
-        <div class="card">
-          <div class="card-top" style="margin-bottom:6px;">
-            <h2 class="card-title" style="flex:1;">${esc(m.etiqueta)}</h2>
-            <span class="fila-n verde">${pesosC(m.total_cents)}</span>
-          </div>
-          <p class="card-note" style="margin-bottom:6px;">
-            ${m.renovaciones} ${m.renovaciones === 1 ? 'renovación' : 'renovaciones'}
-          </p>
-          ${(m.filas || []).map(f => `
-            <div class="fila">
-              <div class="fila-txt">
-                <p class="fila-t" style="word-break:break-all;">${esc(f.correo || '')}</p>
-                <p class="fila-s">Renovó su membresía · ${fechaHora(f.pagado_en)}</p>
-              </div>
-              <span class="fila-n verde">+${pesosC(f.importe_cents)}</span>
-            </div>`).join('')}
-        </div>`).join('') : `
-        <div class="card">
-          <div class="vacio">
-            ${ic('semilla')}
-            <p>Todavía no hay renovaciones.<br>
-               El primer pago de un negocio genera su comisión;<br>
-               los bonos empiezan desde la segunda mensualidad.</p>
-          </div>
-        </div>`}
-
       ${recl.length ? `
-        <div class="card">
-          <div class="card-top">
-            <span class="card-ico">${ic('lista')}</span>
-            <h2 class="card-title">Mis reclamaciones</h2>
-          </div>
+        <h2 class="com-h2">Mis reclamaciones</h2>
+        <div class="com-hist">
           ${recl.map(r => `
-            <div class="fila">
-              <div class="fila-txt">
-                <p class="fila-t">${pesosC(r.importe_cents)}</p>
-                <p class="fila-s">${fechaHora(r.creado_en)}${r.renovaciones ? ' · ' + r.renovaciones + ' renovaciones' : ''}</p>
-              </div>
+            <div class="com-fila">
+              <span class="com-av">${ic('dinero')}</span>
+              <span class="com-correo">${pesosC(r.importe_cents)} · ${fechaHora(r.creado_en)}</span>
               <span class="tag ${r.estado === 'pagado' ? 'disp' : (r.estado === 'rechazado' ? 'canc' : 'gen')}">
                 ${r.estado === 'pagado' ? 'Pagado' : (r.estado === 'rechazado' ? 'Rechazado' : 'En revisión')}
               </span>
