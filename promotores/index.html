@@ -388,7 +388,7 @@ a{ color:var(--brand-ink); }
    (clamp y porcentajes) para que no se deforme en ningún tamaño.
    ===================================================================== */
 .acceso.ini-pag{ display:block; background:var(--surface); padding:0; }
-.ini, .ini input, .ini button{ font-family:'VPInter', var(--sans); }
+body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 
 .ini{ min-height:100dvh; display:flex; flex-direction:column; background:var(--surface); }
 
@@ -471,6 +471,110 @@ a{ color:var(--brand-ink); }
   .ini-caja input{ padding-left:44px; }
 }
 
+/* =====================================================================
+   PANTALLA PRINCIPAL DEL PROMOTOR
+   Medidas tomadas de las imágenes de referencia.
+   ===================================================================== */
+.top.pri{
+  background:#FBFAFF; border-bottom:none; gap:0;
+  padding:calc(env(safe-area-inset-top) + 20px) 18px 14px;
+}
+.wrap.pri-pag{ background:#FBFAFF; }
+.pri-logo{
+  width:33px; height:33px; border-radius:10px; flex:none;
+  background:#4AB54B; color:#fff; display:grid; place-items:center;
+}
+.pri-logo svg{ width:18px; height:18px; }
+.pri-logo svg path{ fill:#fff; stroke-width:1.5; }
+.pri-marca{ margin-left:11px; flex:1; min-width:0; }
+.pri-marca b{ display:block; font-size:19px; font-weight:700; letter-spacing:-.3px; color:var(--ink); line-height:1.18; }
+.pri-marca span{ display:block; font-size:12.5px; font-weight:400; color:var(--ink-soft); line-height:1.25; }
+
+.vivo{
+  display:inline-flex; align-items:center; gap:7px; flex:none;
+  height:31px; padding:0 11.5px; border-radius:var(--radius-chip);
+  background:var(--surface-alt); color:var(--ink-faint);
+  font-size:12.5px; font-weight:600;
+}
+.vivo.on{ background:#EFF8F2; color:var(--brand-ink); }
+.vivo i{ width:6px; height:6px; border-radius:50%; background:currentColor; }
+.vivo.on i{ animation:late 2s ease-in-out infinite; }
+.top.pri .icon-btn{
+  width:32px; height:32px; border-radius:10px; margin-left:12px;
+  background:#F0F1F6; color:var(--ink);
+}
+.top.pri .icon-btn svg{ width:18px; height:18px; }
+
+.body.pri{ padding:20px 16px calc(env(safe-area-inset-bottom) + 96px); }
+.pri-hola{ font-size:15.2px; font-weight:500; color:var(--ink-soft); margin:0; line-height:1.15; }
+.pri-tit{ font-size:25.4px; font-weight:700; letter-spacing:-.7px; color:var(--ink); margin:0; line-height:1.2; }
+
+.pri-card{
+  background:var(--surface); border:1px solid #F0F1F6; border-radius:16px;
+  box-shadow:0 1px 3px rgba(17,31,67,.045);
+  padding:16px 14px 19px; margin-top:10px;
+}
+.body.pri > .pri-card:first-of-type{ margin-top:20px; }
+.pri-top{ display:flex; align-items:center; gap:13px; }
+.pri-ico{
+  width:36px; height:36px; border-radius:11px; flex:none;
+  display:grid; place-items:center; background:#E9F6EC; color:#1AA64B;
+}
+.pri-ico.gris{ background:#F3F4F8; color:var(--ink); }
+.pri-ico svg{ width:19px; height:19px; }
+.pri-card-tit{ font-size:16px; font-weight:700; margin:0; letter-spacing:-.2px; color:var(--ink); }
+
+.pri-enlace{
+  display:flex; align-items:center; gap:8px; margin-top:14px;
+  background:#F5F4F9; border-radius:12px; padding:5px 2px 5px 11px;
+}
+.pri-enlace-txt{
+  flex:1; min-width:0; font-family:var(--mono); font-size:12px; font-weight:400;
+  color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.pri-copiar{
+  flex:none; border:none; border-radius:9px; padding:0 13px; height:33px;
+  background:#0F193D; color:#fff; font-size:13.5px; font-weight:600;
+  display:inline-flex; align-items:center; gap:7px;
+}
+.pri-copiar svg{ width:15px; height:15px; }
+.pri-copiar.ok{ background:var(--exito); }
+.pri-copiar:active{ transform:scale(.98); }
+
+.pri-rejilla{ margin:0; }
+.pri-saldo{
+  display:flex; align-items:center; gap:15px; width:100%; text-align:left;
+  color:var(--ink); padding:15px 14px;
+}
+.pri-saldo.verde{ background:#F4FAF8; border-color:#E8F3EE; }
+.pri-saldo .pri-ico{ width:48px; height:48px; border-radius:14px; }
+.pri-saldo .pri-ico svg{ width:24px; height:24px; }
+.pri-saldo-tx{ flex:1; min-width:0; display:block; }
+.pri-saldo-t{ display:block; font-size:15.5px; font-weight:700; letter-spacing:-.2px; color:var(--ink); }
+.pri-saldo-n{ display:block; font-size:31px; font-weight:700; letter-spacing:-1.1px; line-height:1.5; color:var(--ink); }
+.pri-saldo-n i{ font-style:normal; font-size:15px; font-weight:500; color:var(--ink-soft); margin-left:8px; letter-spacing:0; }
+.pri-chev{
+  flex:none; width:30px; height:30px; border-radius:50%;
+  background:#F3F4F8; color:var(--ink); display:grid; place-items:center;
+}
+.pri-saldo.verde .pri-chev{ background:var(--surface); }
+.pri-chev svg{ width:15px; height:15px; }
+.pri-saldo:active{ transform:scale(.995); }
+
+/* --- Pantalla grande: el mismo tamaño de letra, las dos tarjetas a la par --- */
+@media (min-width:860px){
+  .wrap.pri-pag{ max-width:none; }
+  .top.pri{ background:var(--surface); }
+  .top.pri{
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:15px max(clamp(20px, 4vw, 64px), calc(50% - 750px));
+  }
+  .body.pri{ padding:26px max(clamp(20px, 4vw, 64px), calc(50% - 750px)) 96px; }
+  .pri-rejilla{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .pri-rejilla > .pri-card{ margin-top:0; }
+  .fab{ right:max(24px, clamp(20px, 4vw, 64px)); }
+}
+
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
@@ -530,6 +634,7 @@ const ICO = {
   semilla:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><path d="M50 72V44" stroke="#0E7A3D" stroke-width="5" stroke-linecap="round"/><path d="M50 46c0-9 7-16 16-16 0 9-7 16-16 16Z" fill="#25D366"/><path d="M50 52c0-9-7-16-16-16 0 9 7 16 16 16Z" fill="#1DAF5A"/></svg>',
   carta:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><rect x="27" y="36" width="46" height="31" rx="5" fill="#fff" stroke="#25D366" stroke-width="4"/><path d="m29 39 21 15 21-15" stroke="#0E7A3D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   llave:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><rect x="31" y="46" width="38" height="26" rx="6" fill="#fff" stroke="#25D366" stroke-width="4"/><path d="M39 46v-6a11 11 0 0 1 22 0v6" stroke="#0E7A3D" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="59" r="4" fill="#0E7A3D"/></svg>',
+  regalo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 11.5V19a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-7.5"/><rect x="2.5" y="7" width="19" height="4.8" rx="1.6"/><path d="M12 21V7"/><path d="M12 7H8.1a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h3.9a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z"/></svg>',
   cofre:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#FFF0C2"/><rect x="26" y="44" width="48" height="26" rx="5" fill="#fff" stroke="#F5BF3C" stroke-width="4"/><path d="M26 54h48" stroke="#F5BF3C" stroke-width="4"/><path d="M28 44c0-10 10-16 22-16s22 6 22 16" stroke="#8A6440" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="59" r="3.5" fill="#8A6440"/></svg>'
 };
 const ic = n => ICO[n] || '';
@@ -1550,16 +1655,17 @@ function pantallaNombre(){
    ===================================================================== */
 function pantallaInicio(){
   const p = S.promotor || {};
-  const s = p.saldos || {};
-  const b = s.bonos || {};
-  const c = s.comisiones || {};
+  const sa = p.saldos || {};
+  const b = sa.bonos || {};
+  const c = sa.comisiones || {};
   const nombre = (p.nombre || '').split(' ')[0] || 'Hola';
 
   return `
-    <div class="top">
-      <div class="marca">
-        <span class="logo">${ic('rayo')}</span>
-        <h1>Promotores</h1>
+    <div class="top pri">
+      <span class="pri-logo">${ic('rayo')}</span>
+      <div class="pri-marca">
+        <b>VendoPlus</b>
+        <span>Promotores</span>
       </div>
       <span class="vivo ${S.vivo ? 'on' : ''}" title="${S.vivo ? 'Actualizando en vivo' : 'Reconectando…'}">
         <i></i>${S.vivo ? 'En vivo' : '…'}
@@ -1567,66 +1673,44 @@ function pantallaInicio(){
       <button class="icon-btn" id="bSalir" aria-label="Cerrar sesión">${ic('salir')}</button>
     </div>
 
-    <div class="body vista">
-      <p style="font-size:15px; font-weight:500; color:var(--ink-soft); margin:0 0 15px;">
-        Hola, ${esc(nombre)}
-      </p>
+    <div class="body pri vista">
+      <p class="pri-hola">Hola, ${esc(nombre)}</p>
+      <h1 class="pri-tit">Tu resumen</h1>
 
       ${p.estado === 'suspendido' ? `
-        <div class="aviso">${ic('alerta')}
+        <div class="aviso" style="margin-top:16px;">${ic('alerta')}
           <p>Tu cuenta de promotor está suspendida. Escríbenos para revisarla.</p>
         </div>` : ''}
 
-      <!-- Mi enlace de invitación -->
-      <div class="card">
-        <div class="card-top">
-          <span class="card-ico">${ic('enlace')}</span>
-          <h2 class="card-title">Mi enlace de invitación</h2>
+      <div class="pri-card">
+        <div class="pri-top">
+          <span class="pri-ico verde">${ic('enlace')}</span>
+          <h2 class="pri-card-tit">Mi enlace de invitación</h2>
         </div>
-        <div class="enlace-caja">
-          <span class="enlace-txt" id="enlaceTxt">${esc(p.enlace || '')}</span>
-          <button class="btn-copiar" id="bCopiar">${ic('copiar')} Copiar</button>
+        <div class="pri-enlace">
+          <span class="pri-enlace-txt" id="enlaceTxt">${esc(p.enlace || '')}</span>
+          <button class="pri-copiar" id="bCopiar">${ic('copiar')} Copiar</button>
         </div>
-        <p class="card-note">Comparte tu enlace con negocios nuevos y comienza a generar recompensas</p>
       </div>
 
-      <div class="rejilla">
-      <!-- 1 · Bonos acumulados -->
-      <button class="card tap" id="bBonos">
-        <div class="card-top">
-          <span class="card-ico">${ic('reloj')}</span>
-          <h2 class="card-title">Bonos acumulados</h2>
-          <span class="chev">${ic('der')}</span>
-        </div>
-        <p class="saldo-et">Disponible para reclamar</p>
-        <div class="saldo">
-          <span class="saldo-num">${pesos(b.disponible_cents)}</span>
-          <span class="saldo-mon">MXN</span>
-        </div>
-        <p class="card-note" style="margin-top:8px;">
-          ${b.renovaciones || 0} ${(b.renovaciones === 1) ? 'renovación' : 'renovaciones'} ·
-          ${pesosC(b.generado_cents)} acumulados
-        </p>
-        ${(b.renovaciones || 0) > 0 ? barraBonos(b, true) : ''}
-      </button>
+      <div class="pri-rejilla">
+        <button class="pri-card pri-saldo verde" id="bComis">
+          <span class="pri-ico verde">${ic('cartera')}</span>
+          <span class="pri-saldo-tx">
+            <span class="pri-saldo-t">Comisiones ganadas</span>
+            <span class="pri-saldo-n">${pesosC(c.disponible_cents)}<i>MXN</i></span>
+          </span>
+          <span class="pri-chev">${ic('der')}</span>
+        </button>
 
-      <!-- 2 · Comisiones ganadas -->
-      <button class="card tap" id="bComis">
-        <div class="card-top">
-          <span class="card-ico amar">${ic('tienda')}</span>
-          <h2 class="card-title">Comisiones ganadas</h2>
-          <span class="chev">${ic('der')}</span>
-        </div>
-        <p class="saldo-et">Disponible para reclamar</p>
-        <div class="saldo">
-          <span class="saldo-num">${pesos(c.disponible_cents)}</span>
-          <span class="saldo-mon">MXN</span>
-        </div>
-        <p class="card-note" style="margin-top:8px;">
-          ${c.negocios || 0} ${(c.negocios === 1) ? 'negocio nuevo' : 'negocios nuevos'} ·
-          ${pesosC(c.por_negocio_cents)} cada uno
-        </p>
-      </button>
+        <button class="pri-card pri-saldo" id="bBonos">
+          <span class="pri-ico gris">${ic('regalo')}</span>
+          <span class="pri-saldo-tx">
+            <span class="pri-saldo-t">Bonos acumulados</span>
+            <span class="pri-saldo-n">${pesosC(b.disponible_cents)}<i>MXN</i></span>
+          </span>
+          <span class="pri-chev">${ic('der')}</span>
+        </button>
       </div>
     </div>
 
@@ -2043,7 +2127,7 @@ function pintar(){
     return;
   }
 
-  app.className = 'wrap';
+  app.className = p === 'inicio' ? 'wrap pri-pag' : 'wrap';
   app.innerHTML = p === 'inicio'     ? pantallaInicio()
                 : p === 'bonos'      ? pantallaBonos()
                 : p === 'comisiones' ? pantallaComisiones()
