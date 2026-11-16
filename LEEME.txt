@@ -1,0 +1,13 @@
+VENDOPLUS · WEB (el que cobra con Stripe)
+=========================================
+Estos 4 archivos van en la RAIZ de tu sitio (vendoplusoficial.com):
+
+  index.html           reemplaza el que tienes
+  vendo-premium.js     reemplaza el que tienes
+  vendo-comandas.js    NUEVO
+  vendo-comandas.css   NUEVO
+
+Los demas archivos del sitio NO se tocan.
+OJO: este index.html dice "Stripe". No lo subas a la app de Android.
+
+Antes de probar, corre comandas.sql en Supabase (una sola vez).
