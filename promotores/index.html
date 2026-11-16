@@ -368,6 +368,120 @@ a{ color:var(--brand-ink); }
   .fab{ right:max(24px, calc(50% - 540px + 24px)); }
 }
 
+/* =====================================================================
+   ENTRAR AL PROGRAMA DE PROMOTORES
+   Pantalla propia. En celular: marca, cartel de la promoción y el
+   formulario, uno debajo del otro. En pantalla grande: el cartel a la
+   izquierda y el formulario a la derecha. Todo con medidas flexibles
+   (clamp y porcentajes) para que no se deforme en ningún tamaño.
+   ===================================================================== */
+.acceso.ini-pag{ display:block; background:var(--surface); padding:0; }
+
+.ini{ min-height:100dvh; display:flex; flex-direction:column; background:var(--surface); }
+
+.ini-marca{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  padding:calc(env(safe-area-inset-top) + 22px) 22px 0;
+}
+.ini-logo{
+  width:30px; height:30px; border-radius:9px; flex:none;
+  background:#4AB54B; color:#fff; display:grid; place-items:center;
+}
+.ini-logo svg{ width:17px; height:17px; }
+/* El rayo va macizo, como en la app. */
+.ini-logo svg path{ fill:#fff; stroke-width:1.5; }
+.ini-marca b{ font-size:21px; font-weight:700; letter-spacing:-.5px; color:var(--ink); }
+
+.ini-cuerpo{ flex:1; width:100%; max-width:440px; margin:0 auto; padding:0 22px 40px; }
+
+.ini-promo{
+  background:#EFF0F5; border-radius:16px; padding:20px 16px 20px 18px;
+  margin:22px 0 26px; display:flex; align-items:center; gap:10px;
+}
+.ini-promo-tx{
+  margin:0; flex:1; min-width:0;
+  font-size:clamp(15.5px, 4.6vw, 20px); font-weight:700;
+  line-height:1.24; letter-spacing:-.5px; color:var(--ink);
+}
+.ini-promo-tx b{ font-size:1.3em; font-weight:700; letter-spacing:-1px; }
+.ini-promo-ilu{ width:33%; max-width:124px; flex:none; }
+.ini-promo-ilu svg{ width:100%; height:auto; display:block; }
+
+.ini-tit{
+  font-size:clamp(21px, 6.1vw, 27px); font-weight:700; letter-spacing:-.7px;
+  color:var(--ink); text-align:center; margin:0 0 10px; line-height:1.2;
+}
+.ini-sub{
+  font-size:15px; font-weight:400; color:var(--ink-soft);
+  line-height:1.5; text-align:center; margin:0 0 24px;
+}
+
+.ini-campo{ margin-bottom:16px; text-align:left; }
+.ini-campo label{ display:block; font-size:14px; font-weight:600; color:var(--ink); margin-bottom:8px; }
+.ini-caja{ position:relative; display:flex; align-items:center; }
+.ini-caja > svg{
+  position:absolute; left:14px; width:18px; height:18px;
+  color:var(--ink-faint); display:none; pointer-events:none;
+}
+.ini-caja input{
+  width:100%; border:1px solid #E6E8F0; border-radius:12px; background:var(--surface);
+  padding:14px 15px; font-family:inherit; font-size:16px; font-weight:500; color:var(--ink);
+}
+.ini-caja input::placeholder{ color:#C3C9D8; font-weight:400; }
+.ini-caja input:focus{ outline:none; border-color:var(--ink-faint); }
+.ini-caja.pw input{ padding-right:50px; }
+.ini-caja .pw-ojo{ right:7px; }
+
+.ini-entrar{
+  width:100%; border:none; border-radius:12px; margin-top:6px;
+  background:#122244; color:#fff; font-family:inherit;
+  padding:15px 18px; font-size:16px; font-weight:700; letter-spacing:-.2px;
+}
+.ini-entrar:disabled{ opacity:.55; }
+.ini-entrar:not(:disabled):active{ transform:scale(.99); }
+
+.ini-olvide{ text-align:center; margin:18px 0 0; }
+.ini-olvide button{
+  border:none; background:none; padding:0;
+  font-size:15px; font-weight:700; color:var(--ink);
+  text-decoration:underline; text-underline-offset:3px;
+}
+
+.ini-pie{
+  margin:24px 0 0; padding-top:20px; border-top:1px solid var(--border);
+  text-align:center; font-size:13.5px; font-weight:400;
+  color:var(--ink-soft); line-height:1.65;
+}
+.ini-pie a{ color:var(--ink); font-weight:600; }
+
+/* --- Tablet y computadora: cartel a la izquierda, formulario a la derecha --- */
+@media (min-width:860px){
+  .ini-marca{
+    justify-content:flex-start; width:100%; max-width:1240px;
+    margin:0 auto; padding:26px clamp(20px, 2.6vw, 36px) 0;
+  }
+  .ini-cuerpo{
+    max-width:1240px; padding:0 clamp(20px, 2.6vw, 36px) 32px;
+    display:grid; grid-template-columns:minmax(0, 1.04fr) minmax(0, 1fr);
+    gap:clamp(26px, 4vw, 60px); align-items:center;
+  }
+  .ini-promo{
+    margin:22px 0; border-radius:22px; background:#EDF8F2;
+    padding:clamp(32px, 4vw, 60px) clamp(26px, 3.1vw, 48px) clamp(20px, 2.2vw, 32px);
+    flex-direction:column; align-items:stretch; justify-content:space-between;
+    gap:clamp(14px, 2.2vw, 30px); min-height:min(78vh, 640px);
+  }
+  /* En columna, el texto no debe estirarse: si crece, empuja el dibujo. */
+  .ini-promo-tx{ flex:none; font-size:clamp(27px, 3.3vw, 50px); line-height:1.13; letter-spacing:-1.4px; }
+  .ini-promo-tx b{ font-size:1.12em; letter-spacing:-2px; }
+  .ini-promo-ilu{ width:min(76%, 372px); max-width:none; align-self:flex-end; }
+
+  .ini-form{ width:100%; max-width:470px; margin:0 auto; }
+  .ini-tit{ font-size:clamp(25px, 2.2vw, 33px); }
+  .ini-caja > svg{ display:block; }
+  .ini-caja input{ padding-left:44px; }
+}
+
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
@@ -621,7 +735,7 @@ async function apiAtribuir(cuerpo){
 async function apiCheckout(accion){
   const { data } = await sbNeg.auth.getSession();
   const jwt = data && data.session && data.session.access_token;
-  if(!jwt) return { ok:false, mensaje:'Inicia sesión otra vez.' };
+  if(!jwt) return { ok:false, sinSesion:true, mensaje:'Tu sesión venció. Entra otra vez.' };
   const r = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/ref-checkout', {
     method:'POST',
     headers:{ 'Content-Type':'application/json', apikey:CONFIG.SUPABASE_ANON_KEY,
@@ -689,6 +803,30 @@ function iluPromo(pct){
     <text x="256" y="91" text-anchor="middle" fill="#FFFFFF"
           font-family="-apple-system, Segoe UI, Roboto, sans-serif"
           font-size="11" font-weight="500" letter-spacing=".3">DE DESCUENTO</text>
+  </svg>`;
+}
+
+/* ---------------------------------------------------------------------
+   Ilustración del inicio de sesión del promotor: tres barras blancas que
+   suben y una flecha verde. Es dibujo propio, se adapta a cualquier
+   tamaño sin deformarse porque mantiene su proporción.
+   --------------------------------------------------------------------- */
+function iluGanancias(){
+  return `
+  <svg viewBox="0 0 230 176" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <filter id="iluSombra" x="-35%" y="-35%" width="180%" height="190%">
+        <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#111F43" flood-opacity=".14"/>
+      </filter>
+    </defs>
+    <g filter="url(#iluSombra)">
+      <rect x="60"  y="122" width="44" height="46" rx="6" fill="#FFFFFF"/>
+      <rect x="114" y="102" width="44" height="66" rx="6" fill="#FFFFFF"/>
+      <rect x="168" y="76"  width="44" height="92" rx="6" fill="#FFFFFF"/>
+    </g>
+    <path d="M14 146 C 64 152 126 116 172 46" stroke="#4AD94B" stroke-width="8"
+          stroke-linecap="round" fill="none"/>
+    <path d="M189 20 L185.6 48.9 L163.8 34.5 Z" fill="#4AD94B"/>
   </svg>`;
 }
 
@@ -884,7 +1022,11 @@ function pantallaInvOlvide(){
    ===================================================================== */
 function pantallaBienvenido(){
   const o = INV.oferta;
-  if(!o) return `<div class="inv"><div class="cargando" style="min-height:60vh;"><div class="spin"></div></div></div>`;
+  if(!o) return `
+    <div class="inv">
+      <div class="cargando" style="min-height:50vh;"><div class="spin"></div></div>
+      <p class="cambia"><button id="bVolverPromo">Volver</button></p>
+    </div>`;
 
   const pct = o.descuento_pct || 25;
   const conDesc = o.elegible === true;
@@ -1070,6 +1212,10 @@ function cablearInv(){
     }
   }
 
+  if(p === 'bienvenido' && $('bVolverPromo')){
+    $('bVolverPromo').onclick = () => { INV.oferta = null; irInv('promo'); };
+  }
+
   if(p === 'bienvenido' && $('bPagar')){
     $('bPagar').onclick = invPagar;
     $('bSalirNeg').onclick = async () => {
@@ -1186,7 +1332,21 @@ function invOlvideConfirmar(){
 async function invDespuesDeEntrar(){
   irInv('bienvenido');
   const o = await apiCheckout('estado');
-  if(!o.ok){ toast(o.mensaje || 'No se pudo cargar tu promoción.', true); return; }
+
+  if(!o.ok){
+    // La sesión guardada puede haber vencido. En ese caso se limpia y se
+    // regresa a la promoción: nunca se deja la pantalla girando sin salida.
+    if(o.sinSesion){
+      await sbNeg.auth.signOut().catch(() => {});
+      INV.oferta = null; INV.pw = '';
+      irInv('promo');
+      return toast('Tu sesión venció. Entra otra vez.', true);
+    }
+    INV.oferta = null;
+    irInv('promo');
+    return toast(o.mensaje || 'No se pudo cargar tu promoción. Inténtalo otra vez.', true);
+  }
+
   INV.oferta = o;
   pintarInv();
 }
@@ -1194,6 +1354,11 @@ async function invDespuesDeEntrar(){
 function invPagar(){
   return conBoton('bPagar', 'Abriendo pago…', async () => {
     const r = await apiCheckout('crear');
+    if(r.sinSesion){
+      await sbNeg.auth.signOut().catch(() => {});
+      INV.oferta = null; irInv('promo');
+      return toast('Tu sesión venció. Entra otra vez.', true);
+    }
     if(!r.ok || !r.url) return toast(r.mensaje || 'No se pudo abrir el pago.', true);
     if(!r.con_descuento && r.mensaje) toast(r.mensaje, true);
     location.href = r.url;     // a Stripe Checkout
@@ -1267,39 +1432,52 @@ function htmlReenvio(){
 /* ---------- Pantalla: entrar / crear cuenta ---------- */
 function pantallaAcceso(){
   return `
-    <div class="acceso-in vista">
-      <div style="display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:18px;">
-        <span class="logo">${ic('rayo')}</span>
-        <b style="font-size:17px; font-weight:600; letter-spacing:-.3px;">VendoPlus</b>
-      </div>
-      <h1 class="tit">Programa de promotores</h1>
-      <p class="sub">Entra con el correo y la contraseña de tu cuenta de VendoPlus.</p>
-
-      <div class="field">
-        <label for="aCorreo">Correo electrónico</label>
-        <input id="aCorreo" class="entrada" type="email" inputmode="email" autocomplete="email"
-               autocapitalize="none" spellcheck="false" maxlength="120"
-               placeholder="tucorreo@gmail.com" value="${esc(S.correo)}">
+    <div class="ini vista">
+      <div class="ini-marca">
+        <span class="ini-logo">${ic('rayo')}</span>
+        <b>VendoPlus</b>
       </div>
 
-      <div class="field">
-        <label for="aPw">Contraseña</label>
-        <div class="pw-caja">
-          <input id="aPw" class="entrada" type="password" autocomplete="current-password"
-                 style="padding-right:50px;" placeholder="••••••••">
-          <button class="pw-ojo" id="aOjo" type="button" aria-label="Ver contraseña">${ic('ojo')}</button>
-        </div>
+      <div class="ini-cuerpo">
+        <aside class="ini-promo">
+          <p class="ini-promo-tx">Gana hasta <b>$50,000</b> mensuales con VendoPlus Promotores</p>
+          <div class="ini-promo-ilu">${iluGanancias()}</div>
+        </aside>
+
+        <main class="ini-form">
+          <h1 class="ini-tit">Programa de promotores</h1>
+          <p class="ini-sub">Entra con el correo y la contraseña de tu cuenta de VendoPlus.</p>
+
+          <div class="ini-campo">
+            <label for="aCorreo">Correo electrónico</label>
+            <div class="ini-caja">
+              ${ic('correo')}
+              <input id="aCorreo" type="email" inputmode="email" autocomplete="email"
+                     autocapitalize="none" spellcheck="false" maxlength="120"
+                     placeholder="tucorreo@gmail.com" value="${esc(S.correo)}">
+            </div>
+          </div>
+
+          <div class="ini-campo">
+            <label for="aPw">Contraseña</label>
+            <div class="ini-caja pw">
+              ${ic('candado')}
+              <input id="aPw" type="password" autocomplete="current-password" placeholder="••••••••">
+              <button class="pw-ojo" id="aOjo" type="button" aria-label="Ver contraseña">${ic('ojo')}</button>
+            </div>
+          </div>
+
+          <button class="ini-entrar" id="aBtn" type="button">Entrar</button>
+
+          <p class="ini-olvide"><button id="bOlvide" type="button">¿Olvidaste tu contraseña?</button></p>
+
+          <p class="ini-pie">
+            ¿Todavía no tienes cuenta de VendoPlus?<br>
+            <a href="${esc(CONFIG.URL_VENDOPLUS)}" target="_blank" rel="noopener">Créala en vendoplusoficial.com</a>
+            y vuelve aquí a entrar.
+          </p>
+        </main>
       </div>
-
-      <button class="btn primary xl block" id="aBtn">Entrar</button>
-
-      <p class="cambia"><button id="bOlvide">¿Olvidaste tu contraseña?</button></p>
-      <p class="cambia" style="margin-top:22px; padding-top:18px; border-top:1px solid var(--border);">
-        ¿Todavía no tienes cuenta de VendoPlus?<br>
-        <a href="https://vendoplusoficial.com" target="_blank" rel="noopener"
-           style="color:var(--ink); font-weight:600;">Créala en vendoplusoficial.com</a>
-        y vuelve aquí a entrar.
-      </p>
     </div>`;
 }
 
@@ -1894,7 +2072,8 @@ function pintar(){
   }
 
   if(['acceso','codigo','clave','olvide','nombre'].includes(p)){
-    app.className = 'acceso';
+    /* La pantalla de entrar trae su propio acomodo de pantalla completa. */
+    app.className = p === 'acceso' ? 'acceso ini-pag' : 'acceso';
     app.innerHTML = p === 'acceso' ? pantallaAcceso()
                   : p === 'codigo' ? pantallaCodigo()
                   : p === 'clave'  ? pantallaClave()
@@ -2346,6 +2525,13 @@ sb.auth.onAuthStateChange((evento, sesion) => {
     if(t.data && t.data.ok){
       S.promotor = t.data;
       return abrirPortal();
+    }
+    if(t.error){
+      // Token vencido o revocado: se limpia y se pide entrar de nuevo.
+      await sb.auth.signOut().catch(() => {});
+      S.modo = 'login';
+      irA('acceso');
+      return toast('Tu sesión venció. Entra otra vez.', true);
     }
     // Sesión viva sin perfil de promotor: pedir nombre y crearlo.
     return irA('nombre');
