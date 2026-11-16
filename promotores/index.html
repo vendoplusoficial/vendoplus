@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="robots" content="noindex, nofollow">
+<title>Promotores · VendoPlus</title>
+<link rel="preconnect" href="https://yacmyrpluhjaphvrbqno.supabase.co" crossorigin>
+<link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin fetchpriority="high">
+<style>
+/* =====================================================================
+   PORTAL DE PROMOTORES · VENDOPLUS
+   Misma identidad que la app: verde de marca, tarjetas limpias, bordes
+   suaves, letra fuerte. Los colores y medidas se copiaron tal cual del
+   index.html de VendoPlus para que se sienta la misma casa.
+   ===================================================================== */
+:root{
+  --brand:#25D366;  --brand-2:#1DAF5A;  --brand-soft:#E5FAEC;  --brand-ink:#0E7A3D;
+  --brand-deep:#0E7A3D; --brand-deeper:#0A5A2D; --brand-deepest:#063D1F;
+  --teal:#128C7E; --teal-soft:#DDF3EF; --teal-ink:#0B6B61;
+
+  --bg:#F3F4FA; --surface:#FFFFFF; --surface-alt:#EEF0F7;
+  --ink:#16213E; --ink-soft:#8A93AC; --ink-faint:#C9CEDD;
+  --border:#E4E7F1;
+
+  --accent:#FFD666; --accent-strong:#F5BF3C; --accent-soft:#FFF0C2;
+  --accent-2:#E1594C; --danger-bg:#FBEAE8;
+  --success:#33A873; --success-bg:#E7F7EF;
+
+  --radius-card:18px; --radius-btn:13px; --radius-chip:999px;
+  --shadow-card:0 1px 2px rgba(22,33,62,.04), 0 6px 18px rgba(22,33,62,.05);
+  --shadow-pop:0 10px 26px rgba(22,33,62,.14);
+  --sans:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono:'SFMono-Regular', ui-monospace, 'Courier New', Courier, monospace;
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:var(--sans); background:var(--bg); color:var(--ink);
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+button{ font-family:inherit; cursor:pointer; }
+a{ color:var(--brand-ink); }
+
+.wrap{ max-width:560px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; }
+
+/* ---------- Encabezado ---------- */
+.top{
+  display:flex; align-items:center; gap:12px;
+  padding:calc(env(safe-area-inset-top) + 16px) 18px 14px;
+  background:var(--surface); border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:20;
+}
+.top h1{ font-size:17px; font-weight:800; margin:0; flex:1; letter-spacing:-.2px; }
+.top .marca{ display:flex; align-items:center; gap:9px; flex:1; min-width:0; }
+.logo{
+  width:30px; height:30px; border-radius:9px; flex:none;
+  background:linear-gradient(145deg, var(--brand), var(--brand-2));
+  display:grid; place-items:center; color:#fff;
+}
+.logo svg{ width:17px; height:17px; }
+.icon-btn{
+  width:38px; height:38px; border-radius:11px; border:none; flex:none;
+  background:var(--surface-alt); color:var(--ink-soft); display:grid; place-items:center;
+}
+.icon-btn:active{ transform:scale(.94); }
+.icon-btn svg{ width:19px; height:19px; }
+.back{ background:var(--surface-alt); color:var(--ink); }
+
+/* ---------- Cuerpo ---------- */
+.body{ flex:1; padding:18px 16px calc(env(safe-area-inset-bottom) + 90px); }
+.vista{ animation:entra .26s cubic-bezier(.22,.9,.3,1); }
+@keyframes entra{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+
+/* ---------- Tarjetas ---------- */
+.card{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-card); box-shadow:var(--shadow-card);
+  padding:18px; margin-bottom:14px;
+}
+.card.tap{ width:100%; text-align:left; display:block; border-color:var(--border); }
+.card.tap:active{ transform:scale(.99); background:#FCFDFF; }
+.card-top{ display:flex; align-items:center; gap:11px; margin-bottom:13px; }
+.card-ico{
+  width:34px; height:34px; border-radius:10px; flex:none; display:grid; place-items:center;
+  background:var(--brand-soft); color:var(--brand-ink);
+}
+.card-ico.teal{ background:var(--teal-soft); color:var(--teal-ink); }
+.card-ico.amar{ background:var(--accent-soft); color:#8A6440; }
+.card-ico svg{ width:18px; height:18px; }
+.card-title{ font-size:14.5px; font-weight:800; margin:0; letter-spacing:-.1px; }
+.card-note{ font-size:13px; font-weight:500; color:var(--ink-soft); margin:0; line-height:1.55; }
+.chev{ margin-left:auto; color:var(--ink-faint); display:grid; place-items:center; }
+.chev svg{ width:18px; height:18px; }
+
+/* ---------- Enlace de invitación ---------- */
+.enlace-caja{
+  display:flex; align-items:center; gap:10px;
+  background:var(--surface-alt); border:1px dashed var(--ink-faint);
+  border-radius:12px; padding:12px 13px; margin-bottom:11px;
+}
+.enlace-txt{
+  flex:1; min-width:0; font-family:var(--mono); font-size:12.5px; font-weight:700;
+  color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.btn-copiar{
+  flex:none; border:none; border-radius:10px; padding:9px 12px;
+  background:var(--ink); color:#fff; font-size:12.5px; font-weight:800;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.btn-copiar svg{ width:14px; height:14px; }
+.btn-copiar.ok{ background:var(--success); }
+
+/* ---------- Cartera ---------- */
+.saldo{ display:flex; align-items:baseline; gap:7px; margin:2px 0 4px; }
+.saldo-num{ font-size:38px; font-weight:800; letter-spacing:-1.4px; line-height:1; }
+.saldo-mon{ font-size:14px; font-weight:800; color:var(--ink-soft); }
+.saldo-et{ font-size:12.5px; font-weight:700; color:var(--ink-soft); margin:0 0 2px; }
+
+/* ---------- Desglose ---------- */
+.fila{
+  display:flex; align-items:center; gap:12px;
+  padding:14px 0; border-bottom:1px solid var(--border);
+}
+.fila:last-child{ border-bottom:none; }
+.fila-txt{ flex:1; min-width:0; }
+.fila-t{ font-size:14px; font-weight:700; margin:0; }
+.fila-s{ font-size:12.5px; font-weight:500; color:var(--ink-soft); margin:2px 0 0; line-height:1.5; }
+.fila-n{ font-size:15.5px; font-weight:800; flex:none; white-space:nowrap; }
+.fila-n.verde{ color:var(--brand-ink); }
+.fila-n.gris{ color:var(--ink-soft); }
+.fila-n.roja{ color:var(--accent-2); }
+
+/* ---------- Etiquetas de estado ---------- */
+.tag{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11px; font-weight:800; padding:4px 9px; border-radius:var(--radius-chip);
+  background:var(--surface-alt); color:var(--ink-soft); white-space:nowrap;
+}
+.tag.disp{ background:var(--success-bg); color:var(--brand-ink); }
+.tag.gen{ background:var(--accent-soft); color:#8A6440; }
+.tag.proc{ background:var(--teal-soft); color:var(--teal-ink); }
+.tag.canc{ background:var(--danger-bg); color:var(--accent-2); }
+
+/* ---------- Barra de progreso ---------- */
+.barra{ height:7px; border-radius:99px; background:var(--surface-alt); overflow:hidden; margin-top:9px; }
+.barra i{ display:block; height:100%; border-radius:99px; background:linear-gradient(90deg, var(--brand), var(--brand-2)); }
+
+/* ---------- Botones ---------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  border:none; border-radius:var(--radius-btn);
+  padding:14px 18px; font-size:15px; font-weight:700;
+  background:var(--surface-alt); color:var(--ink);
+}
+.btn svg{ width:17px; height:17px; }
+.btn.dark{ background:var(--ink); color:#fff; }
+.btn.primary{ background:var(--brand); color:#fff; }
+.btn.ghost{ background:var(--surface); border:1.6px solid var(--border); color:var(--ink); }
+.btn.block{ width:100%; }
+.btn.xl{ padding:17px 20px; font-size:16.5px; border-radius:16px; }
+.btn:disabled{ opacity:.5; }
+.btn:not(:disabled):active{ transform:scale(.985); }
+.btn.bloq{ background:var(--surface-alt); color:var(--ink-faint); }
+
+/* ---------- Formularios ---------- */
+.field{ margin-bottom:16px; text-align:left; }
+.field label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px; }
+.entrada{
+  width:100%; border:1.6px solid var(--border); border-radius:14px;
+  padding:15px 16px; font-size:16px; font-weight:700;
+  color:var(--ink); background:var(--surface); font-family:inherit;
+}
+.entrada:focus{ outline:none; border-color:var(--brand); }
+.pw-caja{ position:relative; }
+.pw-ojo{
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  width:40px; height:40px; border:none; background:none; color:var(--ink-soft);
+  display:grid; place-items:center; border-radius:10px;
+}
+.pw-ojo svg{ width:19px; height:19px; }
+
+.otp-row{ display:flex; gap:9px; justify-content:space-between; margin:6px 0 18px; }
+.otp-cell{
+  flex:1; min-width:0; aspect-ratio:1 / 1.18;
+  border:1.8px solid var(--border); border-radius:15px;
+  background:var(--surface-alt); font-family:inherit;
+  font-size:24px; font-weight:800; text-align:center; color:var(--ink);
+  padding:0; -moz-appearance:textfield;
+}
+.otp-cell::-webkit-outer-spin-button, .otp-cell::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.otp-cell:focus{ border-color:var(--brand); background:var(--surface); outline:none; }
+.otp-cell.filled{ background:var(--surface); border-color:var(--ink-faint); }
+.otp-row.error .otp-cell{ border-color:var(--accent-2); animation:shake .32s ease; }
+@keyframes shake{ 10%,90%{transform:translateX(-2px)} 30%,70%{transform:translateX(3px)} 50%{transform:translateX(-3px)} }
+.otp-help{ font-size:13.5px; font-weight:600; color:var(--ink-soft); text-align:center; margin:0; }
+.otp-help button{ border:none; background:none; color:var(--brand-ink); font-weight:800; text-decoration:underline; padding:0; font-size:13.5px; }
+.otp-help button:disabled{ color:var(--ink-faint); text-decoration:none; }
+
+/* ---------- Pantallas de acceso ---------- */
+.acceso{ background:var(--surface); min-height:100dvh; display:flex; flex-direction:column; }
+.acceso-in{ padding:calc(env(safe-area-inset-top) + 22px) 22px 32px; max-width:460px; margin:0 auto; width:100%; }
+.acceso-ilu{ display:grid; place-items:center; margin:10px 0 20px; }
+.acceso-ilu svg{ width:118px; height:118px; }
+.tit{ font-size:25px; font-weight:800; letter-spacing:-.7px; margin:4px 0 8px; text-align:center; }
+.sub{ font-size:14px; font-weight:500; color:var(--ink-soft); line-height:1.6; margin:0 0 20px; text-align:center; }
+.cambia{ text-align:center; font-size:13.5px; font-weight:600; color:var(--ink-soft); margin:16px 0 0; }
+.cambia button{ border:none; background:none; color:var(--brand-ink); font-weight:800; font-size:13.5px; padding:0; text-decoration:underline; }
+.aviso-correo{ font-size:12.5px; font-weight:600; color:var(--ink-soft); text-align:center; margin:-6px 0 14px; }
+
+/* ---------- Ayuda ---------- */
+.fab{
+  position:fixed; right:max(16px, calc(50% - 280px + 16px));
+  bottom:calc(env(safe-area-inset-bottom) + 20px);
+  width:52px; height:52px; border-radius:50%; border:none; z-index:30;
+  background:var(--surface); color:var(--brand-ink);
+  box-shadow:var(--shadow-pop); display:grid; place-items:center;
+  border:1px solid var(--border);
+}
+.fab:active{ transform:scale(.93); }
+.fab svg{ width:24px; height:24px; }
+
+.ay-h{ font-size:15px; font-weight:800; margin:22px 0 7px; letter-spacing:-.1px; }
+.ay-h:first-child{ margin-top:0; }
+.ay-p{ font-size:14px; font-weight:500; color:#4A5370; line-height:1.65; margin:0 0 9px; }
+.ay-p b{ color:var(--ink); font-weight:800; }
+.ay-ej{
+  background:var(--surface-alt); border-radius:12px; padding:13px 14px; margin:10px 0 4px;
+  font-size:13.5px; font-weight:600; color:#4A5370; line-height:1.7;
+}
+.ay-ej b{ color:var(--ink); }
+
+/* ---------- Avisos ---------- */
+.vacio{ text-align:center; padding:34px 18px; }
+.vacio svg{ width:78px; height:78px; margin-bottom:12px; }
+.vacio p{ font-size:14px; font-weight:600; color:var(--ink-soft); margin:0; line-height:1.6; }
+
+.aviso{
+  display:flex; gap:11px; align-items:flex-start;
+  background:var(--accent-soft); border-radius:12px; padding:13px 14px; margin-bottom:14px;
+}
+.aviso svg{ width:18px; height:18px; flex:none; color:#8A6440; margin-top:1px; }
+.aviso p{ margin:0; font-size:13px; font-weight:600; color:#6B4E2E; line-height:1.55; }
+
+.toast{
+  position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 86px);
+  transform:translateX(-50%) translateY(14px); z-index:60;
+  background:var(--ink); color:#fff; border-radius:13px;
+  padding:13px 17px; font-size:13.5px; font-weight:700;
+  box-shadow:var(--shadow-pop); max-width:calc(100% - 32px);
+  opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s ease;
+  display:flex; align-items:center; gap:9px;
+}
+.toast.ver{ opacity:1; transform:translateX(-50%) translateY(0); }
+.toast svg{ width:17px; height:17px; flex:none; }
+.toast.mal{ background:var(--accent-2); }
+
+.cargando{ display:grid; place-items:center; min-height:100dvh; }
+.spin{
+  width:30px; height:30px; border-radius:50%;
+  border:3px solid var(--surface-alt); border-top-color:var(--brand);
+  animation:gira .8s linear infinite;
+}
+@keyframes gira{ to{ transform:rotate(360deg); } }
+
+.vivo{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:11px; font-weight:800; color:var(--ink-soft);
+}
+.vivo i{ width:7px; height:7px; border-radius:50%; background:var(--ink-faint); }
+.vivo.on i{ background:var(--brand); animation:late 2s ease-in-out infinite; }
+@keyframes late{ 50%{ opacity:.35; } }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+<div id="app" class="cargando"><div class="spin"></div></div>
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" fetchpriority="high"></script>
+<script>
+/* =====================================================================
+   CONFIGURACIÓN
+   Misma nube y misma autenticación que VendoPlus. La clave es la pública
+   (publishable): nunca se pone aquí la service_role.
+   ===================================================================== */
+const CONFIG = {
+  SUPABASE_URL: 'https://yacmyrpluhjaphvrbqno.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_uxy6ZYubuYn6Q2LPwuElpg_qYwwWinX',
+  CODIGO_DIGITOS: 6,
+  URL_VENDOPLUS: 'https://vendoplusoficial.com/'
+};
+
+/* storageKey propio: si algún día el portal se sube a una carpeta del
+   mismo dominio que VendoPlus, su sesión NO se mezcla con la del POS.
+   Así nunca se toca la autenticación de la app. */
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession:true, autoRefreshToken:true, detectSessionInUrl:false,
+    storageKey:'vp-promotores-auth'
+  }
+});
+
+/* =====================================================================
+   ÍCONOS
+   ===================================================================== */
+const ICO = {
+  rayo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>',
+  enlace:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+  copiar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
+  cartera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="3"/><path d="M2.5 10h19"/><circle cx="17" cy="14.5" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  lista:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  ayuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"/><path d="M9.3 9.2a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.9v.4"/><circle cx="12" cy="17.4" r="1.1" fill="currentColor" stroke="none"/></svg>',
+  correo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="3"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>',
+  candado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10.5" rx="3"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg>',
+  izq:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>',
+  der:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>',
+  salir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4.5h2.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H15"/><path d="M10 8l-4 4 4 4M6 12h8"/></svg>',
+  alerta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"/><path d="M12 7.6v5.2"/><circle cx="12" cy="16.6" r="1.1" fill="currentColor" stroke="none"/></svg>',
+  ojo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12S18 18.2 12 18.2 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>',
+  ojoNo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M9.6 9.7A3 3 0 0 0 12 15a3 3 0 0 0 2.4-1.2"/><path d="M6.4 6.6C4.2 8.1 2.5 12 2.5 12S6 18.2 12 18.2c1.6 0 3-.4 4.2-1"/><path d="M18.4 15.1c1.8-1.5 3.1-3.1 3.1-3.1S18 5.8 12 5.8c-.7 0-1.4.1-2 .2"/></svg>',
+  tienda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5V19a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 19V9.5"/><path d="M3 9.5 5.2 4.3A1.5 1.5 0 0 1 6.6 3.5h10.8a1.5 1.5 0 0 1 1.4.8L21 9.5Z"/><path d="M9.5 20.5v-5h5v5"/></svg>',
+  dinero:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"/><path d="M12 7v10M14.8 9.4c0-1.2-1.3-1.9-2.8-1.9s-2.8.7-2.8 2 1.3 1.8 2.8 2.1 2.8.8 2.8 2.1-1.3 2-2.8 2-2.8-.8-2.8-2"/></svg>',
+  reloj:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.3"/><path d="M12 7.3V12l3.4 2"/></svg>',
+  semilla:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><path d="M50 72V44" stroke="#0E7A3D" stroke-width="5" stroke-linecap="round"/><path d="M50 46c0-9 7-16 16-16 0 9-7 16-16 16Z" fill="#25D366"/><path d="M50 52c0-9-7-16-16-16 0 9 7 16 16 16Z" fill="#1DAF5A"/></svg>',
+  carta:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><rect x="27" y="36" width="46" height="31" rx="5" fill="#fff" stroke="#25D366" stroke-width="4"/><path d="m29 39 21 15 21-15" stroke="#0E7A3D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  llave:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#E5FAEC"/><rect x="31" y="46" width="38" height="26" rx="6" fill="#fff" stroke="#25D366" stroke-width="4"/><path d="M39 46v-6a11 11 0 0 1 22 0v6" stroke="#0E7A3D" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="59" r="4" fill="#0E7A3D"/></svg>',
+  cofre:'<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="40" fill="#FFF0C2"/><rect x="26" y="44" width="48" height="26" rx="5" fill="#fff" stroke="#F5BF3C" stroke-width="4"/><path d="M26 54h48" stroke="#F5BF3C" stroke-width="4"/><path d="M28 44c0-10 10-16 22-16s22 6 22 16" stroke="#8A6440" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="59" r="3.5" fill="#8A6440"/></svg>'
+};
+const ic = n => ICO[n] || '';
+
+/* =====================================================================
+   UTILIDADES
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const vibra = ms => { try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} };
+
+const normCorreo = s => String(s ?? '').trim().toLowerCase();
+const esCorreo = s => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(normCorreo(s));
+
+const fmtMoneda = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', minimumFractionDigits:0, maximumFractionDigits:0 });
+const fmtMonedaC = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' });
+const pesos = c => fmtMoneda.format((Number(c) || 0) / 100);
+const pesosC = c => fmtMonedaC.format((Number(c) || 0) / 100);
+
+/* Las fechas se muestran siempre en hora del centro de México, para que
+   el mismo periodo se vea con la misma fecha desde cualquier celular. */
+const fmtFecha = new Intl.DateTimeFormat('es-MX', {
+  day:'2-digit', month:'short', year:'numeric', timeZone:'America/Mexico_City'
+});
+const fecha = s => s ? fmtFecha.format(new Date(s)) : '—';
+
+let toastT = null;
+function toast(texto, mal){
+  const t = $('toast');
+  t.className = 'toast ver' + (mal ? ' mal' : '');
+  t.innerHTML = (mal ? ic('alerta') : ic('check')) + '<span>' + esc(texto) + '</span>';
+  clearTimeout(toastT);
+  toastT = setTimeout(() => { t.className = 'toast' + (mal ? ' mal' : ''); }, 3200);
+}
+
+/** Traduce los errores de Supabase a algo que cualquiera entienda. */
+function errLegible(e){
+  const m = String(e?.message ?? e ?? '');
+  const code = e?.code ?? '';
+  const status = e?.status ?? 0;
+  if(/invalid login credentials/i.test(m))        return 'Correo o contraseña incorrectos';
+  if(/token has expired|expired/i.test(m))        return 'Ese código ya venció: pide otro';
+  if(/invalid.*(otp|token)|otp.*invalid/i.test(m))return 'Ese código no es correcto';
+  if(code === 'same_password' || /should be different/i.test(m)) return 'La contraseña nueva debe ser distinta a la anterior';
+  if(code === 'weak_password' || /password should|weak password/i.test(m)) return 'Esa contraseña es muy débil: usa al menos 8 caracteres';
+  if(code === 'over_email_send_rate_limit' || /rate limit/i.test(m) || status === 429) return 'Se mandaron muchos correos seguidos. Espera unos minutos';
+  if(/error sending|smtp|sending .*email/i.test(m)) return 'No se pudo mandar el correo. Inténtalo en un momento';
+  if(/failed to fetch|networkerror|network|load failed/i.test(m)) return 'Sin conexión: revisa tu internet';
+  if(status >= 500) return 'El servidor no contestó. Inténtalo otra vez';
+  return m || 'Algo salió mal, inténtalo otra vez';
+}
+
+let ocupado = false;
+async function conBoton(id, etiqueta, fn){
+  if(ocupado) return;
+  ocupado = true;
+  const b = id ? $(id) : null;
+  const antes = b ? b.innerHTML : '';
+  if(b){ b.disabled = true; b.textContent = etiqueta; }
+  try{ return await fn(); }
+  catch(e){ console.error(e); toast(errLegible(e), true); }
+  finally{
+    ocupado = false;
+    if(b && b.isConnected){ b.disabled = false; b.innerHTML = antes; }
+  }
+}
+
+/* =====================================================================
+   ESTADO
+   ===================================================================== */
+const S = {
+  pantalla:'cargando',
+  // acceso
+  modo:'signup', correo:'', pw:'', reenvio:0, timer:null, fverificado:false,
+  // sesión
+  promotor:null, cartera:null, transacciones:null,
+  canal:null, vivo:false,
+  // invitación (lado del negocio)
+  codigo:null, invita:null
+};
+
+/* =====================================================================
+   RUTA: ¿portal del promotor o página de invitación?
+   El enlace de un promotor es  .../?c=CODIGO
+   ===================================================================== */
+/* Nombres de carpeta que NUNCA son un código de promotor. */
+const CARPETAS = ['promotores', 'promotor'];
+
+function codigoLimpio(s){
+  const c = String(s || '').trim().toUpperCase().replace(/^\/+|\/+$/g, '');
+  if(!/^[A-Z0-9]{4,16}$/.test(c)) return null;
+  if(CARPETAS.includes(c.toLowerCase())) return null;
+  return c;
+}
+
+/**
+ * Saca el código del promotor de la dirección. Se aceptan tres formas,
+ * para que el enlace funcione se abra como se abra:
+ *   1. /promotores/ABNER001       ← la buena, la que se comparte
+ *   2. /promotores/?c=ABNER001    ← la que usa el rebote del 404
+ *   3. /promotores/#ABNER001      ← respaldo, igual que el menú digital
+ */
+function codigoDeLaUrl(){
+  const q = new URLSearchParams(location.search);
+  const porQuery = codigoLimpio(q.get('c') || q.get('ref'));
+  if(porQuery) return porQuery;
+
+  const porHash = codigoLimpio((location.hash || '').replace(/^#\/?/, ''));
+  if(porHash) return porHash;
+
+  const partes = location.pathname.split('/').filter(Boolean);
+  const ultima = partes[partes.length - 1] || '';
+  if(/\.html?$/i.test(ultima)) return null;      // .../promotores/index.html
+  if(partes.length < 2) return null;             // .../promotores  → el portal
+  return codigoLimpio(ultima);
+}
+
+/** Base del portal, sin el código ni el archivo: p. ej. /promotores */
+function basePortal(){
+  let p = location.pathname.replace(/\/[^\/]*\.html?$/i, '/');
+  const partes = p.split('/').filter(Boolean);
+  const ultima = partes[partes.length - 1] || '';
+  if(codigoLimpio(ultima)) partes.pop();         // quitar el código si viene en la ruta
+  return '/' + partes.join('/');
+}
+
+/**
+ * Deja la dirección bonita en la barra. Si el negocio llegó por el rebote
+ * (/promotores/?c=ABNER001), se reescribe a /promotores/ABNER001 sin
+ * recargar nada. Es solo cosmético: la atribución ya se decide en el servidor.
+ */
+function enderezarUrl(codigo){
+  try{
+    const limpia = (basePortal().replace(/\/+$/, '') || '') + '/' + codigo;
+    if(location.pathname + location.search !== limpia){
+      history.replaceState(null, '', limpia);
+    }
+  }catch(e){ /* si el navegador no deja, no pasa nada */ }
+}
+
+/* =====================================================================
+   ===================  LADO DEL NEGOCIO (INVITACIÓN)  =================
+   El negocio deja su correo aquí. A partir de ese momento la atribución
+   vive en el servidor, atada al correo: aguanta que cambie de celular,
+   que cierre el navegador o que termine su registro días después.
+   ===================================================================== */
+async function apiAtribuir(cuerpo){
+  const r = await fetch(CONFIG.SUPABASE_URL + '/functions/v1/ref-atribuir', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', apikey:CONFIG.SUPABASE_ANON_KEY },
+    body: JSON.stringify(cuerpo)
+  });
+  return await r.json().catch(() => ({ ok:false, mensaje:'No se pudo conectar.' }));
+}
+
+async function arrancarInvitacion(codigo){
+  S.codigo = codigo;
+  enderezarUrl(codigo);
+  const r = await apiAtribuir({ accion:'ver', codigo });
+  S.invita = r && r.ok ? r : null;
+  pintarInvitacion();
+}
+
+function pintarInvitacion(){
+  const app = $('app');
+  app.className = 'acceso';
+
+  if(!S.invita){
+    app.innerHTML = `
+      <div class="acceso-in vista">
+        <div class="acceso-ilu">${ic('alerta')}</div>
+        <h1 class="tit">Este enlace no es válido</h1>
+        <p class="sub">Puede estar mal copiado o el promotor ya no está activo.
+           Pídele a quien te invitó que te lo mande otra vez.</p>
+        <a class="btn primary xl block" href="${esc(CONFIG.URL_VENDOPLUS)}" style="text-decoration:none;">
+          Ir a VendoPlus
+        </a>
+      </div>`;
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="acceso-in vista">
+      <div style="display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:6px;">
+        <span class="logo">${ic('rayo')}</span>
+        <b style="font-size:16px; letter-spacing:-.3px;">VendoPlus</b>
+      </div>
+      <div class="acceso-ilu">${ic('tienda')}</div>
+      <h1 class="tit">${esc(S.invita.nombre)} te invitó a VendoPlus</h1>
+      <p class="sub">Deja tu correo para empezar. Es el mismo con el que vas a crear tu
+         cuenta de VendoPlus, y así tu registro queda ligado a esta invitación
+         aunque lo termines después o desde otro celular.</p>
+
+      <div class="field">
+        <label for="iCorreo">Tu correo electrónico</label>
+        <input id="iCorreo" class="entrada" type="email" inputmode="email" autocomplete="email"
+               autocapitalize="none" spellcheck="false" maxlength="120" placeholder="tucorreo@gmail.com">
+      </div>
+
+      <button class="btn primary xl block" id="iBtn">${ic('der')} Continuar</button>
+      <p class="cambia" style="margin-top:14px;">Si ya tienes cuenta de VendoPlus,
+         esta invitación no aplica: solo cuenta para negocios nuevos.</p>
+    </div>`;
+
+  $('iBtn').onclick = enviarInvitacion;
+  $('iCorreo').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); enviarInvitacion(); } };
+  setTimeout(() => $('iCorreo').focus(), 160);
+}
+
+function enviarInvitacion(){
+  const correo = normCorreo($('iCorreo').value);
+  if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
+
+  return conBoton('iBtn', 'Guardando…', async () => {
+    const r = await apiAtribuir({ accion:'capturar', codigo:S.codigo, correo });
+    if(!r.ok){ return toast(r.mensaje || 'No se pudo guardar.', true); }
+
+    vibra(20);
+    const destino = r.siguiente || CONFIG.URL_VENDOPLUS;
+    $('app').innerHTML = `
+      <div class="acceso-in vista">
+        <div class="acceso-ilu">${ic('semilla')}</div>
+        <h1 class="tit">Listo, ya quedó</h1>
+        <p class="sub">Tu invitación quedó guardada con el correo
+           <b style="color:var(--ink); word-break:break-all;">${esc(correo)}</b>.
+           Ahora crea tu cuenta de VendoPlus con <b>ese mismo correo</b>.</p>
+        <a class="btn primary xl block" id="iIr" href="${esc(destino)}" style="text-decoration:none;">
+          Crear mi cuenta en VendoPlus
+        </a>
+        <p class="cambia" style="margin-top:16px;">Si cierras esta página no pasa nada:
+           tu invitación ya está guardada.</p>
+      </div>`;
+  });
+}
+
+/* =====================================================================
+   ===================  LADO DEL PROMOTOR (PORTAL)  ====================
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   Autenticación: exactamente el mecanismo de VendoPlus.
+   El código al correo lo manda Supabase Auth (signInWithOtp); aquí no se
+   inventa ningún otro sistema de códigos.
+   --------------------------------------------------------------------- */
+const mandarCodigo = (correo, crear) =>
+  sb.auth.signInWithOtp({ email:correo, options:{ shouldCreateUser: !!crear } });
+const revisarCodigo = (correo, token) =>
+  sb.auth.verifyOtp({ email:correo, token, type:'email' });
+
+function irA(p){ S.pantalla = p; pintar(); }
+
+function tiempoReenvio(){
+  clearInterval(S.timer);
+  S.timer = setInterval(() => {
+    S.reenvio -= 1;
+    const el = $('reenvio');
+    if(!el || S.reenvio <= 0){
+      clearInterval(S.timer);
+      if(el){ el.innerHTML = htmlReenvio(); cablearReenvio(); }  /* el botón nuevo necesita su evento */
+      return;
+    }
+    el.innerHTML = htmlReenvio();
+  }, 1000);
+}
+function htmlReenvio(){
+  return S.reenvio > 0
+    ? `Puedes pedir otro código en <b>${S.reenvio}s</b>`
+    : `¿No te llegó? <button id="bReenviar">Enviar de nuevo</button>`;
+}
+
+/* ---------- Pantalla: entrar / crear cuenta ---------- */
+function pantallaAcceso(){
+  const login = S.modo === 'login';
+  return `
+    <div class="acceso-in vista">
+      <div style="display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:4px;">
+        <span class="logo">${ic('rayo')}</span>
+        <b style="font-size:16px; letter-spacing:-.3px;">VendoPlus</b>
+      </div>
+      <div class="acceso-ilu">${ic('cofre')}</div>
+      <h1 class="tit">${login ? 'Entra a tu portal' : 'Programa de promotores'}</h1>
+      <p class="sub">${login
+        ? 'Usa el correo y la contraseña de tu cuenta de promotor.'
+        : 'Invita negocios nuevos a VendoPlus con tu enlace y gana recompensas por cada uno que se queda.'}</p>
+
+      <div class="field">
+        <label for="aCorreo">Correo electrónico</label>
+        <input id="aCorreo" class="entrada" type="email" inputmode="email" autocomplete="email"
+               autocapitalize="none" spellcheck="false" maxlength="120"
+               placeholder="tucorreo@gmail.com" value="${esc(S.correo)}">
+      </div>
+
+      ${login ? `
+        <div class="field">
+          <label for="aPw">Contraseña</label>
+          <div class="pw-caja">
+            <input id="aPw" class="entrada" type="password" autocomplete="current-password"
+                   style="padding-right:50px;" placeholder="••••••••">
+            <button class="pw-ojo" id="aOjo" type="button" aria-label="Ver contraseña">${ic('ojo')}</button>
+          </div>
+        </div>` : ''}
+
+      <button class="btn primary xl block" id="aBtn">
+        ${login ? 'Entrar' : ic('correo') + ' Enviar código a mi correo'}
+      </button>
+
+      ${login ? `<p class="cambia"><button id="bOlvide">¿Olvidaste tu contraseña?</button></p>` : ''}
+
+      <p class="cambia">${login
+        ? '¿Eres nuevo? <button id="bCambia">Crea tu cuenta de promotor</button>'
+        : '¿Ya tienes cuenta? <button id="bCambia">Entrar</button>'}</p>
+    </div>`;
+}
+
+/* ---------- Pantalla: código de 6 dígitos ---------- */
+function pantallaCodigo(){
+  const n = CONFIG.CODIGO_DIGITOS;
+  let celdas = '';
+  for(let i = 0; i < n; i++){
+    celdas += `<input class="otp-cell" id="c${i}" type="tel" inputmode="numeric" maxlength="1"
+                 autocomplete="${i === 0 ? 'one-time-code' : 'off'}" aria-label="Dígito ${i + 1}">`;
+  }
+  return `
+    <div class="acceso-in vista">
+      <div class="top" style="background:none; border:none; padding:0 0 6px; position:static;">
+        <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
+      </div>
+      <div class="acceso-ilu">${ic('carta')}</div>
+      <h1 class="tit">Escribe tu código</h1>
+      <p class="sub">Te lo mandamos a
+         <b style="color:var(--ink); word-break:break-all;">${esc(S.correo)}</b>.</p>
+      <p class="aviso-correo">¿No lo ves? Busca en <b>Spam</b> o en <b>Promociones</b>.</p>
+      <div class="otp-row" id="otpRow">${celdas}</div>
+      <button class="btn primary xl block" id="oBtn" disabled>Verificar</button>
+      <p class="otp-help" id="reenvio" style="margin-top:14px;">${htmlReenvio()}</p>
+    </div>`;
+}
+
+/* ---------- Pantalla: elegir contraseña ---------- */
+function pantallaClave(){
+  return `
+    <div class="acceso-in vista">
+      <div class="acceso-ilu">${ic('llave')}</div>
+      <h1 class="tit">Elige tu contraseña</h1>
+      <p class="sub">Tu correo <b style="color:var(--ink); word-break:break-all;">${esc(S.correo)}</b>
+         ya quedó confirmado. Con esta contraseña vas a entrar la próxima vez.</p>
+      <div class="field">
+        <label for="pPw">Contraseña <span style="font-weight:600;">(mínimo 8 caracteres)</span></label>
+        <div class="pw-caja">
+          <input id="pPw" class="entrada" type="password" autocomplete="new-password"
+                 style="padding-right:50px;" placeholder="••••••••">
+          <button class="pw-ojo" id="pOjo" type="button" aria-label="Ver contraseña">${ic('ojo')}</button>
+        </div>
+      </div>
+      <button class="btn primary xl block" id="pBtn" disabled>Guardar y continuar</button>
+    </div>`;
+}
+
+/* ---------- Pantalla: recuperar contraseña ---------- */
+function pantallaOlvide(){
+  const paso2 = S.fpaso === 2;
+  return `
+    <div class="acceso-in vista">
+      <div class="top" style="background:none; border:none; padding:0 0 6px; position:static;">
+        <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
+      </div>
+      <div class="acceso-ilu">${paso2 ? ic('llave') : ic('carta')}</div>
+      <h1 class="tit">Recupera tu contraseña</h1>
+      <p class="sub">${paso2
+        ? 'Escribe el código que mandamos a tu correo y elige tu contraseña nueva.'
+        : 'Te mandamos un código a tu correo para que elijas una contraseña nueva.'}</p>
+      ${paso2 ? `
+        <p class="aviso-correo">¿No lo ves? Busca en <b>Spam</b> o en <b>Promociones</b>.</p>
+        <div class="field">
+          <label for="fCod">Código de ${CONFIG.CODIGO_DIGITOS} dígitos</label>
+          <input id="fCod" class="entrada" type="tel" inputmode="numeric" autocomplete="one-time-code"
+                 maxlength="${CONFIG.CODIGO_DIGITOS}" placeholder="${'0'.repeat(CONFIG.CODIGO_DIGITOS)}"
+                 style="letter-spacing:6px; text-align:center;">
+        </div>
+        <div class="field">
+          <label for="fPw">Contraseña nueva <span style="font-weight:600;">(mínimo 8 caracteres)</span></label>
+          <div class="pw-caja">
+            <input id="fPw" class="entrada" type="password" autocomplete="new-password"
+                   style="padding-right:50px;" placeholder="••••••••">
+            <button class="pw-ojo" id="fOjo" type="button" aria-label="Ver contraseña">${ic('ojo')}</button>
+          </div>
+        </div>
+        <button class="btn primary xl block" id="fBtn">Cambiar contraseña</button>
+        <p class="otp-help" id="reenvio" style="margin-top:14px;">${htmlReenvio()}</p>
+      ` : `
+        <div class="field">
+          <label for="fCorreo">Correo electrónico</label>
+          <input id="fCorreo" class="entrada" type="email" inputmode="email" autocomplete="email"
+                 autocapitalize="none" spellcheck="false" maxlength="120"
+                 placeholder="tucorreo@gmail.com" value="${esc(S.correo)}">
+        </div>
+        <button class="btn primary xl block" id="fBtn">${ic('correo')} Enviar código a mi correo</button>
+      `}
+    </div>`;
+}
+
+/* ---------- Pantalla: ¿cómo te llamas? (primera vez) ---------- */
+function pantallaNombre(){
+  return `
+    <div class="acceso-in vista">
+      <div class="acceso-ilu">${ic('semilla')}</div>
+      <h1 class="tit">¿Cómo te llamas?</h1>
+      <p class="sub">Así te van a ver los negocios que abran tu enlace de invitación.</p>
+      <div class="field">
+        <label for="nNom">Tu nombre</label>
+        <input id="nNom" class="entrada" type="text" autocomplete="name" maxlength="60"
+               placeholder="Ana Martínez">
+      </div>
+      <button class="btn primary xl block" id="nBtn">Crear mi enlace</button>
+    </div>`;
+}
+
+/* =====================================================================
+   PANTALLA PRINCIPAL
+   Sencilla a propósito: el enlace, el saldo disponible y nada más de
+   dinero. Todo el detalle vive dentro de "Saldo disponible".
+   ===================================================================== */
+function pantallaInicio(){
+  const p = S.promotor || {};
+  const nombre = (p.nombre || '').split(' ')[0] || 'Hola';
+  return `
+    <div class="top">
+      <div class="marca">
+        <span class="logo">${ic('rayo')}</span>
+        <h1>Promotores</h1>
+      </div>
+      <span class="vivo ${S.vivo ? 'on' : ''}" title="${S.vivo ? 'Actualizando en vivo' : 'Reconectando…'}">
+        <i></i>${S.vivo ? 'En vivo' : '…'}
+      </span>
+      <button class="icon-btn" id="bSalir" aria-label="Cerrar sesión">${ic('salir')}</button>
+    </div>
+
+    <div class="body vista">
+      <p style="font-size:13px; font-weight:700; color:var(--ink-soft); margin:0 0 14px;">
+        Hola, ${esc(nombre)}
+      </p>
+
+      ${p.estado === 'suspendido' ? `
+        <div class="aviso">${ic('alerta')}
+          <p>Tu cuenta de promotor está suspendida. Escríbenos para revisarla.</p>
+        </div>` : ''}
+
+      <!-- A. Mi enlace de invitación -->
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ico">${ic('enlace')}</span>
+          <h2 class="card-title">Mi enlace de invitación</h2>
+        </div>
+        <div class="enlace-caja">
+          <span class="enlace-txt" id="enlaceTxt">${esc(p.enlace || '')}</span>
+          <button class="btn-copiar" id="bCopiar">${ic('copiar')} Copiar</button>
+        </div>
+        <p class="card-note">Comparte tu enlace con negocios nuevos y comienza a generar recompensas</p>
+      </div>
+
+      <!-- B. Mi cartera: SOLO el saldo disponible -->
+      <button class="card tap" id="bCartera">
+        <div class="card-top">
+          <span class="card-ico teal">${ic('cartera')}</span>
+          <h2 class="card-title">Mi cartera</h2>
+          <span class="chev">${ic('der')}</span>
+        </div>
+        <p class="saldo-et">Saldo disponible</p>
+        <div class="saldo">
+          <span class="saldo-num">${pesos(p.disponible_cents)}</span>
+          <span class="saldo-mon">MXN</span>
+        </div>
+      </button>
+
+      <!-- C. Mis transacciones -->
+      <button class="card tap" id="bTrans">
+        <div class="card-top">
+          <span class="card-ico amar">${ic('lista')}</span>
+          <h2 class="card-title">Mis transacciones</h2>
+          <span class="chev">${ic('der')}</span>
+        </div>
+        <p class="card-note">Tus negocios, sus fechas y cada recompensa</p>
+      </button>
+    </div>
+
+    <button class="fab" id="bAyuda" aria-label="Ayuda">${ic('ayuda')}</button>`;
+}
+
+/* =====================================================================
+   PANTALLA: SALDO DISPONIBLE (el desglose completo)
+   ===================================================================== */
+function pantallaSaldo(){
+  const c = S.cartera;
+  if(!c) return pantallaEsperando('Saldo disponible');
+
+  const porTipo = c.por_tipo || {};
+  const nuevo = porTipo.nuevo || { n:0, cents:0 };
+  const perm  = porTipo.permanencia || { n:0, cents:0 };
+  const gens  = c.generaciones || [];
+  const movs  = c.movimientos || [];
+
+  return `
+    <div class="top">
+      <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
+      <h1>Saldo disponible</h1>
+    </div>
+
+    <div class="body vista">
+      <div class="card" style="text-align:center;">
+        <p class="saldo-et">Saldo disponible</p>
+        <div class="saldo" style="justify-content:center;">
+          <span class="saldo-num">${pesosC(c.disponible_cents)}</span>
+          <span class="saldo-mon">MXN</span>
+        </div>
+        <button class="btn bloq block xl" id="bReclamar" disabled
+                style="margin-top:16px;" aria-disabled="true">
+          ${ic('candado')} RECLAMAR DINERO
+        </button>
+        <p class="card-note" style="margin-top:10px;">
+          Los retiros todavía no están abiertos. Tu saldo se queda guardado aquí.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ico teal">${ic('dinero')}</span>
+          <h2 class="card-title">Cómo va tu dinero</h2>
+        </div>
+
+        <div class="fila">
+          <span class="card-ico" style="background:var(--success-bg); color:var(--brand-ink);">${ic('check')}</span>
+          <div class="fila-txt">
+            <p class="fila-t">Disponible</p>
+            <p class="fila-s">Ya cumplió todo y está a tu nombre</p>
+          </div>
+          <span class="fila-n verde">${pesosC(c.disponible_cents)}</span>
+        </div>
+
+        <div class="fila">
+          <span class="card-ico amar">${ic('reloj')}</span>
+          <div class="fila-txt">
+            <p class="fila-t">Generado, madurando</p>
+            <p class="fila-s">El periodo ya se cumplió. Pasa a disponible
+               ${c.maduracion_dias} días después, por si hay un reembolso</p>
+          </div>
+          <span class="fila-n gris">${pesosC(c.pendiente_maduracion_cents)}</span>
+        </div>
+
+        <div class="fila">
+          <span class="card-ico teal">${ic('reloj')}</span>
+          <div class="fila-txt">
+            <p class="fila-t">En proceso</p>
+            <p class="fila-s">Negocios que todavía están juntando sus 12 meses</p>
+          </div>
+          <span class="fila-n gris">${pesosC(c.en_proceso_cents)}</span>
+        </div>
+
+        <div class="fila">
+          <span class="card-ico">${ic('rayo')}</span>
+          <div class="fila-txt">
+            <p class="fila-t">Generado en total</p>
+            <p class="fila-s">Todo lo que has ganado desde que empezaste</p>
+          </div>
+          <span class="fila-n">${pesosC(c.generado_total_cents)}</span>
+        </div>
+
+        ${Number(c.cancelado_cents) > 0 ? `
+        <div class="fila">
+          <span class="card-ico" style="background:var(--danger-bg); color:var(--accent-2);">${ic('alerta')}</span>
+          <div class="fila-txt">
+            <p class="fila-t">Cancelado</p>
+            <p class="fila-s">Periodos que se rompieron por reembolso o falta de pagos</p>
+          </div>
+          <span class="fila-n roja">−${pesosC(c.cancelado_cents)}</span>
+        </div>` : ''}
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ico">${ic('tienda')}</span>
+          <h2 class="card-title">De dónde viene</h2>
+        </div>
+        <div class="fila">
+          <div class="fila-txt">
+            <p class="fila-t">Negocios nuevos</p>
+            <p class="fila-s">${nuevo.n} ${nuevo.n === 1 ? 'negocio cumplió' : 'negocios cumplieron'}
+               sus primeros 12 meses · ${pesosC(c.recompensa_nuevo_cents)} cada uno</p>
+          </div>
+          <span class="fila-n verde">${pesosC(nuevo.cents)}</span>
+        </div>
+        <div class="fila">
+          <div class="fila-txt">
+            <p class="fila-t">Permanencia</p>
+            <p class="fila-s">${perm.n} ${perm.n === 1 ? 'año adicional cumplido' : 'años adicionales cumplidos'}
+               · ${pesosC(c.recompensa_permanencia_cents)} cada uno</p>
+          </div>
+          <span class="fila-n verde">${pesosC(perm.cents)}</span>
+        </div>
+        <div class="fila">
+          <div class="fila-txt">
+            <p class="fila-t">Negocios atribuidos</p>
+            <p class="fila-s">${c.negocios_activos} al corriente de ${c.negocios_total} en total</p>
+          </div>
+          <span class="fila-n">${c.negocios_total}</span>
+        </div>
+      </div>
+
+      ${gens.length ? `
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ico amar">${ic('semilla')}</span>
+          <h2 class="card-title">Generaciones</h2>
+        </div>
+        <p class="card-note" style="margin-bottom:6px;">
+          Agrupadas por el año en que conseguiste cada negocio. Cada negocio cumple
+          su aniversario en su propia fecha.
+        </p>
+        ${gens.map(g => `
+          <div class="fila">
+            <div class="fila-txt">
+              <p class="fila-t">Generación ${g.generacion}${g.anio ? ' · ' + g.anio : ''}</p>
+              <p class="fila-s">${g.negocios} ${g.negocios === 1 ? 'negocio' : 'negocios'}${
+                Number(g.en_proceso_cents) > 0 ? ' · ' + pesosC(g.en_proceso_cents) + ' en proceso' : ''}</p>
+            </div>
+            <span class="fila-n verde">${pesosC(g.generado_cents)}</span>
+          </div>`).join('')}
+      </div>` : ''}
+
+      <div class="card">
+        <div class="card-top">
+          <span class="card-ico">${ic('lista')}</span>
+          <h2 class="card-title">Historial de movimientos</h2>
+        </div>
+        ${movs.length ? movs.map(m => `
+          <div class="fila">
+            <div class="fila-txt">
+              <p class="fila-t">${esc(m.negocio || 'Movimiento')}</p>
+              <p class="fila-s">${esc(m.nota)} · ${fecha(m.creado_en)}</p>
+            </div>
+            <span class="fila-n ${m.tipo === 'cancelada' ? 'roja' : (m.tipo === 'disponible' ? 'verde' : 'gris')}">
+              ${m.importe_cents < 0 ? '−' : '+'}${pesosC(Math.abs(m.importe_cents))}
+            </span>
+          </div>`).join('') : `
+          <div class="vacio" style="padding:20px 8px;">
+            <p>Todavía no hay movimientos. Aquí va a aparecer cada recompensa
+               en cuanto un negocio cumpla su periodo.</p>
+          </div>`}
+      </div>
+    </div>`;
+}
+
+/* =====================================================================
+   PANTALLA: MIS TRANSACCIONES
+   ===================================================================== */
+const ETIQUETA = {
+  en_proceso:{ t:'En proceso', c:'proc' },
+  generada:{ t:'Generada', c:'gen' },
+  disponible:{ t:'Disponible', c:'disp' },
+  cancelada:{ t:'Cancelada', c:'canc' }
+};
+
+function pantallaTransacciones(){
+  const d = S.transacciones;
+  if(!d) return pantallaEsperando('Mis transacciones');
+
+  const filas = d.filas || [];
+  const negocios = d.negocios || [];
+  const rechazados = negocios.filter(n => n.estado === 'rechazado');
+
+  return `
+    <div class="top">
+      <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
+      <h1>Mis transacciones</h1>
+    </div>
+
+    <div class="body vista">
+      ${!filas.length ? `
+        <div class="card">
+          <div class="vacio">
+            ${ic('semilla')}
+            <p>Todavía no tienes recompensas.<br>
+               Comparte tu enlace de invitación y aquí vas a ver cada negocio
+               y cada periodo que cumpla.</p>
+          </div>
+        </div>` : filas.map(f => {
+          const e = ETIQUETA[f.estado] || ETIQUETA.en_proceso;
+          const prog = Math.round(Number(f.progreso || 0) * 100);
+          return `
+          <div class="card">
+            <div class="card-top" style="margin-bottom:10px;">
+              <span class="card-ico ${f.tipo === 'nuevo' ? '' : 'teal'}">
+                ${f.tipo === 'nuevo' ? ic('tienda') : ic('reloj')}
+              </span>
+              <div style="flex:1; min-width:0;">
+                <h2 class="card-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  ${esc(f.negocio)}
+                </h2>
+                <p class="card-note" style="font-size:12px;">
+                  ${f.tipo === 'nuevo' ? 'Negocio nuevo' : 'Permanencia'} ·
+                  Generación ${f.generacion}${f.anio ? ' · ' + f.anio : ''}
+                </p>
+              </div>
+              <span class="fila-n ${f.estado === 'cancelada' ? 'roja' : (f.estado === 'disponible' ? 'verde' : 'gris')}">
+                ${pesosC(f.importe_cents)}
+              </span>
+            </div>
+
+            <div class="fila" style="padding:9px 0;">
+              <div class="fila-txt">
+                <p class="fila-s" style="margin:0;">Fecha de incorporación</p>
+              </div>
+              <span class="fila-n gris" style="font-size:13px;">${fecha(f.alta_en)}</span>
+            </div>
+            <div class="fila" style="padding:9px 0;">
+              <div class="fila-txt">
+                <p class="fila-s" style="margin:0;">Periodo ${f.periodo} · cumple</p>
+              </div>
+              <span class="fila-n gris" style="font-size:13px;">${fecha(f.cumplimiento)}</span>
+            </div>
+            <div class="fila" style="padding:9px 0; border-bottom:none;">
+              <div class="fila-txt">
+                <p class="fila-s" style="margin:0;">Estado</p>
+              </div>
+              <span class="tag ${e.c}">${e.t}</span>
+            </div>
+
+            ${f.estado === 'en_proceso' ? `
+              <div class="barra"><i style="width:${prog}%"></i></div>
+              <p class="card-note" style="font-size:12px; margin-top:7px;">
+                ${prog}% del periodo cubierto · pagado hasta ${fecha(f.cubierto_hasta)}
+              </p>` : ''}
+
+            ${f.estado === 'generada' ? `
+              <p class="card-note" style="font-size:12px; margin-top:9px;">
+                Cumplió el ${fecha(f.completado_en)}. Pasa a disponible cuando termine la maduración.
+              </p>` : ''}
+          </div>`;
+        }).join('')}
+
+      ${rechazados.length ? `
+        <div class="card">
+          <div class="card-top">
+            <span class="card-ico" style="background:var(--danger-bg); color:var(--accent-2);">${ic('alerta')}</span>
+            <h2 class="card-title">Negocios que no califican</h2>
+          </div>
+          <p class="card-note" style="margin-bottom:4px;">
+            Llegaron por tu enlace, pero no cuentan como negocio nuevo.
+          </p>
+          ${rechazados.map(n => `
+            <div class="fila">
+              <div class="fila-txt">
+                <p class="fila-t">${esc(n.negocio)}</p>
+                <p class="fila-s">${fecha(n.alta_en)}</p>
+              </div>
+              <span class="tag canc">No califica</span>
+            </div>`).join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+function pantallaEsperando(titulo){
+  return `
+    <div class="top">
+      <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
+      <h1>${esc(titulo)}</h1>
+    </div>
+    <div class="body"><div class="cargando" style="min-height:40vh;"><div class="spin"></div></div></div>`;
+}
+
+/* =====================================================================
+   PANTALLA: AYUDA
+   ===================================================================== */
+function pantallaAyuda(){
+  const c = S.cartera || {};
+  const n500 = pesosC(c.recompensa_nuevo_cents ?? 50000);
+  const n200 = pesosC(c.recompensa_permanencia_cents ?? 20000);
+  const mad = c.maduracion_dias ?? 30;
+
+  return `
+    <div class="top">
+      <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
+      <h1>Cómo funciona</h1>
+    </div>
+
+    <div class="body vista">
+      <div class="card">
+        <h3 class="ay-h">En pocas palabras</h3>
+        <p class="ay-p">Compartes tu enlace con negocios que todavía no usan VendoPlus.
+          Cuando uno de ellos se registra por tu enlace y <b>se queda pagando 12 meses
+          seguidos</b>, ganas <b>${n500}</b>. Por cada año adicional que siga pagando,
+          ganas <b>${n200}</b> más.</p>
+
+        <h3 class="ay-h">Cómo comparto mi enlace</h3>
+        <p class="ay-p">En la pantalla principal toca <b>Copiar</b> en la tarjeta
+          “Mi enlace de invitación” y mándalo por WhatsApp, mensaje o como quieras.
+          Tu enlace es tuyo y nunca cambia.</p>
+
+        <h3 class="ay-h">Cómo se atribuyen los negocios</h3>
+        <p class="ay-p">Cuando alguien abre tu enlace, le pedimos su correo antes de
+          mandarlo a VendoPlus. Ese correo queda guardado con tu nombre en nuestros
+          servidores, así que el negocio sigue siendo tuyo aunque <b>cambie de celular,
+          cierre el navegador o termine su registro días después</b>.</p>
+        <p class="ay-p">La única condición es que cree su cuenta de VendoPlus con
+          <b>el mismo correo</b> que dejó en tu enlace.</p>
+        <p class="ay-p">Una vez que un negocio queda atribuido a un promotor,
+          <b>ya no se puede pasar a otro</b>. Si dos promotores invitan al mismo negocio,
+          cuenta para el primero que lo registró.</p>
+
+        <h3 class="ay-h">Cuánto gano por cada negocio nuevo</h3>
+        <p class="ay-p"><b>${n500}</b> por cada negocio verdaderamente nuevo que complete
+          12 meses consecutivos de pagos válidos. Se aplica a <b>cada</b> negocio que
+          consigas: no hay límite de clientes, ni meta obligatoria, ni cuota mensual
+          o anual que tengas que cumplir.</p>
+
+        <h3 class="ay-h">Cuánto gano por la permanencia</h3>
+        <p class="ay-p">Después de esos primeros 12 meses, por cada periodo adicional
+          de 12 meses consecutivos que el negocio complete, ganas <b>${n200}</b>.
+          Se repite año con año mientras el negocio siga cumpliendo.</p>
+
+        <h3 class="ay-h">Cómo funcionan los periodos de 12 meses</h3>
+        <p class="ay-p">Cada negocio tiene <b>su propia fecha de incorporación y su propio
+          calendario</b>. El reloj empieza con su primer pago válido, no cuando lo invitaste.
+          Dos negocios que entraron el mismo año cumplen en fechas distintas.</p>
+        <p class="ay-p">Un periodo se completa cuando el negocio junta 365 días
+          de cobertura pagada sin huecos. Se tolera un retraso corto entre
+          renovaciones, para que un pago tardío no te quite la recompensa.</p>
+
+        <h3 class="ay-h">Qué pasa si un negocio cancela o deja de pagar</h3>
+        <p class="ay-p">El periodo que estaba a medias <b>no genera recompensa</b>:
+          los periodos incompletos no se pagan. Lo que ya habías ganado por periodos
+          completos se queda contigo.</p>
+        <p class="ay-p">Si el negocio vuelve a pagar más adelante, empieza una racha
+          nueva y puede volver a juntar sus 12 meses.</p>
+        <p class="ay-p">Si hay un <b>reembolso</b> que rompe una racha ya cumplida,
+          esa recompensa se cancela y lo verás en tu historial de movimientos.</p>
+
+        <h3 class="ay-h">Qué significa cada estado</h3>
+        <p class="ay-p"><b>En proceso</b> · el negocio todavía está juntando los 12 meses
+          de ese periodo. Aún no es dinero tuyo.</p>
+        <p class="ay-p"><b>Generada</b> · el periodo ya se cumplió. Esperamos
+          ${mad} días por si entra un reembolso o un contracargo.</p>
+        <p class="ay-p"><b>Disponible</b> · pasó la espera y ya cuenta en tu saldo
+          disponible.</p>
+        <p class="ay-p"><b>Cancelada</b> · el periodo dejó de cumplir las condiciones.</p>
+
+        <h3 class="ay-h">Cómo consulto mis transacciones</h3>
+        <p class="ay-p">En la pantalla principal entra a <b>Mis transacciones</b>.
+          Ahí está cada negocio con su fecha de incorporación, la fecha en que cumple
+          cada periodo, el tipo de recompensa, el importe, su generación y su estado.
+          Están ordenadas por fecha.</p>
+        <p class="ay-p">El desglose completo de tu dinero está dentro de
+          <b>Mi cartera</b> → <b>Saldo disponible</b>.</p>
+
+        <h3 class="ay-h">Por qué el botón de reclamar está apagado</h3>
+        <p class="ay-p">Los retiros todavía no están abiertos. El botón
+          <b>RECLAMAR DINERO</b> está ahí para que sepas dónde va a estar, pero por
+          ahora no hace nada y <b>no mueve tu saldo</b>. Tu dinero se queda registrado
+          y lo puedes ver cuando quieras.</p>
+
+        <h3 class="ay-h">Un ejemplo con números</h3>
+        <p class="ay-p">Supongamos que consigues 100 negocios por año. Son solo números
+          para explicar: <b>100 no es una meta</b>.</p>
+        <div class="ay-ej">
+          <b>Primer año</b><br>
+          100 negocios nuevos completan sus primeros 12 meses<br>
+          100 × ${n500} = <b>${pesosC((c.recompensa_nuevo_cents ?? 50000) * 100)}</b>
+        </div>
+        <div class="ay-ej">
+          <b>Segundo año</b><br>
+          Los 100 de antes cumplen otro año: 100 × ${n200} = ${pesosC((c.recompensa_permanencia_cents ?? 20000) * 100)}<br>
+          Más 100 negocios nuevos: 100 × ${n500} = ${pesosC((c.recompensa_nuevo_cents ?? 50000) * 100)}<br>
+          Total: <b>${pesosC((c.recompensa_permanencia_cents ?? 20000) * 100 + (c.recompensa_nuevo_cents ?? 50000) * 100)}</b>
+        </div>
+        <div class="ay-ej">
+          <b>Tercer año</b><br>
+          Las dos generaciones anteriores por permanencia:
+          2 × 100 × ${n200} = ${pesosC((c.recompensa_permanencia_cents ?? 20000) * 200)}<br>
+          Más 100 negocios nuevos: 100 × ${n500} = ${pesosC((c.recompensa_nuevo_cents ?? 50000) * 100)}<br>
+          Total: <b>${pesosC((c.recompensa_permanencia_cents ?? 20000) * 200 + (c.recompensa_nuevo_cents ?? 50000) * 100)}</b>
+        </div>
+        <p class="ay-p" style="margin-top:12px;">Cada negocio cumple en su propia fecha,
+          así que en la vida real el dinero va cayendo repartido a lo largo del año,
+          no todo junto.</p>
+
+        <h3 class="ay-h">Qué negocios no cuentan</h3>
+        <p class="ay-p">Solo cuentan los negocios <b>verdaderamente nuevos</b>.
+          No cuentan los que ya tenían cuenta de VendoPlus, ni tu propio correo,
+          ni un negocio que ya estaba atribuido a otro promotor. Todo esto lo revisa
+          el sistema contra los registros reales de cuentas y suscripciones.</p>
+        <p class="ay-p">La promoción que pueda recibir un cliente nuevo es otra cosa,
+          aparte de tu recompensa como promotor.</p>
+
+        <h3 class="ay-h">Cuándo se actualiza esto</h3>
+        <p class="ay-p">Solo. Cuando un negocio tuyo paga, su avance y tu historial se
+          actualizan aquí sin que tengas que recargar la página ni volver a entrar.</p>
+      </div>
+    </div>`;
+}
+
+/* =====================================================================
+   PINTAR
+   ===================================================================== */
+function pintar(){
+  const app = $('app');
+  const p = S.pantalla;
+
+  if(p === 'cargando'){
+    app.className = 'cargando';
+    app.innerHTML = '<div class="spin"></div>';
+    return;
+  }
+
+  if(['acceso','codigo','clave','olvide','nombre'].includes(p)){
+    app.className = 'acceso';
+    app.innerHTML = p === 'acceso' ? pantallaAcceso()
+                  : p === 'codigo' ? pantallaCodigo()
+                  : p === 'clave'  ? pantallaClave()
+                  : p === 'olvide' ? pantallaOlvide()
+                  : pantallaNombre();
+    document.querySelector('meta[name=theme-color]').content = '#FFFFFF';
+    cablearAcceso();
+    return;
+  }
+
+  app.className = 'wrap';
+  app.innerHTML = p === 'inicio' ? pantallaInicio()
+                : p === 'saldo'  ? pantallaSaldo()
+                : p === 'trans'  ? pantallaTransacciones()
+                : pantallaAyuda();
+  document.querySelector('meta[name=theme-color]').content = p === 'inicio' ? '#FFFFFF' : '#FFFFFF';
+  cablearPortal();
+}
+
+/* ---------- Eventos de las pantallas de acceso ---------- */
+function cablearAcceso(){
+  const p = S.pantalla;
+
+  if(p === 'acceso'){
+    const cor = $('aCorreo');
+    cor.oninput = () => { S.correo = cor.value.trim(); };
+    cor.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); accionAcceso(); } };
+    $('aBtn').onclick = accionAcceso;
+    $('bCambia').onclick = () => { S.modo = S.modo === 'login' ? 'signup' : 'login'; S.pw = ''; pintar(); };
+    if($('bOlvide')) $('bOlvide').onclick = () => { S.fpaso = 1; S.fverificado = false; irA('olvide'); };
+    if($('aPw')){
+      $('aPw').oninput = e => { S.pw = e.target.value; };
+      $('aPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); accionAcceso(); } };
+      ojo('aOjo', 'aPw');
+    }
+    setTimeout(() => cor.focus(), 160);
+  }
+
+  if(p === 'codigo'){
+    $('bAtras').onclick = async () => { await sb.auth.signOut().catch(() => {}); clearInterval(S.timer); irA('acceso'); };
+    cablearOtp();
+    $('oBtn').onclick = verificarCodigo;
+    cablearReenvio();
+  }
+
+  if(p === 'clave'){
+    const pw = $('pPw');
+    pw.oninput = () => { S.pw = pw.value; $('pBtn').disabled = pw.value.length < 8; };
+    pw.onkeydown = ev => { if(ev.key === 'Enter' && pw.value.length >= 8){ ev.preventDefault(); guardarClave(); } };
+    ojo('pOjo', 'pPw');
+    $('pBtn').onclick = guardarClave;
+    setTimeout(() => pw.focus(), 160);
+  }
+
+  if(p === 'olvide'){
+    $('bAtras').onclick = () => {
+      clearInterval(S.timer);
+      if(S.fpaso === 2){ S.fpaso = 1; pintar(); } else { S.modo = 'login'; irA('acceso'); }
+    };
+    if(S.fpaso === 2){
+      ojo('fOjo', 'fPw');
+      $('fBtn').onclick = confirmarOlvide;
+      $('fPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); confirmarOlvide(); } };
+      cablearReenvio();
+      setTimeout(() => $('fCod').focus(), 160);
+    }else{
+      const c = $('fCorreo');
+      c.oninput = () => { S.correo = c.value.trim(); };
+      c.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); enviarOlvide(); } };
+      $('fBtn').onclick = enviarOlvide;
+      setTimeout(() => c.focus(), 160);
+    }
+  }
+
+  if(p === 'nombre'){
+    const n = $('nNom');
+    n.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); crearPromotor(); } };
+    $('nBtn').onclick = crearPromotor;
+    setTimeout(() => n.focus(), 160);
+  }
+}
+
+function ojo(idBtn, idPw){
+  const b = $(idBtn); if(!b) return;
+  b.onclick = () => {
+    const i = $(idPw);
+    const ver = i.type === 'password';
+    i.type = ver ? 'text' : 'password';
+    b.innerHTML = ver ? ic('ojoNo') : ic('ojo');
+    i.focus();
+  };
+}
+
+function cablearReenvio(){
+  const area = $('reenvio'); if(!area) return;
+  const b = $('bReenviar');
+  if(b) b.onclick = () => { if(S.pantalla === 'olvide') enviarOlvide(); else accionAcceso(); };
+}
+
+/* ---------- Celdas del código ---------- */
+function cablearOtp(){
+  const n = CONFIG.CODIGO_DIGITOS;
+  const celdas = [];
+  for(let i = 0; i < n; i++) celdas.push($('c' + i));
+
+  const revisar = () => {
+    const v = celdas.map(c => c.value).join('');
+    $('oBtn').disabled = v.length !== n;
+    celdas.forEach(c => c.classList.toggle('filled', !!c.value));
+    if(v.length === n) verificarCodigo();
+  };
+
+  celdas.forEach((c, i) => {
+    c.oninput = () => {
+      c.value = c.value.replace(/\D/g, '').slice(0, 1);
+      if(c.value && i < n - 1) celdas[i + 1].focus();
+      revisar();
+    };
+    c.onkeydown = ev => {
+      if(ev.key === 'Backspace' && !c.value && i > 0){ celdas[i - 1].focus(); celdas[i - 1].value = ''; revisar(); }
+    };
+    c.onpaste = ev => {
+      ev.preventDefault();
+      const t = (ev.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, n);
+      for(let k = 0; k < n; k++) celdas[k].value = t[k] || '';
+      celdas[Math.min(t.length, n - 1)].focus();
+      revisar();
+    };
+  });
+  setTimeout(() => celdas[0].focus(), 180);
+}
+const valorOtp = () => {
+  let v = '';
+  for(let i = 0; i < CONFIG.CODIGO_DIGITOS; i++) v += ($('c' + i) || {}).value || '';
+  return v;
+};
+function fallaOtp(msg){
+  const r = $('otpRow');
+  if(r){ r.classList.add('error'); setTimeout(() => r.classList.remove('error'), 400); }
+  for(let i = 0; i < CONFIG.CODIGO_DIGITOS; i++){ const c = $('c' + i); if(c){ c.value = ''; c.classList.remove('filled'); } }
+  const p = $('c0'); if(p) p.focus();
+  $('oBtn').disabled = true;
+  vibra([18, 60, 18]);
+  toast(msg, true);
+}
+
+/* ---------- Acciones de acceso ---------- */
+function accionAcceso(){
+  const correo = normCorreo(S.correo);
+  if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
+
+  const login = S.modo === 'login';
+  const reenvio = S.pantalla === 'codigo';
+  if(reenvio && S.reenvio > 0) return;
+  vibra(12);
+
+  return conBoton(reenvio ? null : 'aBtn', login ? 'Entrando…' : 'Enviando…', async () => {
+    if(login){
+      if((S.pw || '').length < 1) return toast('Escribe tu contraseña', true);
+      const { error } = await sb.auth.signInWithPassword({ email:correo, password:S.pw });
+      if(error) return toast(errLegible(error), true);
+      S.pw = '';
+      return await despuesDeEntrar();
+    }
+    const { error } = await mandarCodigo(correo, true);
+    if(error) return toast(errLegible(error), true);
+    S.reenvio = 60;
+    if(reenvio){
+      const el = $('reenvio'); if(el){ el.innerHTML = htmlReenvio(); cablearReenvio(); }
+      toast('Te mandamos otro código');
+    }else irA('codigo');
+    tiempoReenvio();
+  });
+}
+
+function verificarCodigo(){
+  const token = valorOtp();
+  if(token.length !== CONFIG.CODIGO_DIGITOS) return;
+  const correo = normCorreo(S.correo);
+
+  return conBoton('oBtn', 'Verificando…', async () => {
+    const { error } = await revisarCodigo(correo, token);
+    if(error) return fallaOtp(errLegible(error));
+    clearInterval(S.timer);
+    vibra(20);
+
+    // ¿Ya era promotor? Entonces entra directo.
+    const t = await sb.rpc('ref_mi_tablero');
+    if(t.data && t.data.ok){
+      S.promotor = t.data;
+      return await abrirPortal();
+    }
+    S.pw = '';
+    irA('clave');
+  });
+}
+
+function guardarClave(){
+  const pw = S.pw || '';
+  if(pw.length < 8) return toast('La contraseña debe tener mínimo 8 caracteres', true);
+
+  return conBoton('pBtn', 'Guardando…', async () => {
+    const { error } = await sb.auth.updateUser({ password:pw, data:{ vp_promotor:true } });
+    if(error) return toast(errLegible(error), true);
+    S.pw = '';
+    irA('nombre');
+  });
+}
+
+function crearPromotor(){
+  const nombre = ($('nNom').value || '').trim();
+  if(nombre.length < 2) return toast('Escribe tu nombre', true);
+
+  return conBoton('nBtn', 'Creando…', async () => {
+    const r = await sb.rpc('ref_alta_promotor', { p_nombre: nombre });
+    if(r.error) return toast(errLegible(r.error), true);
+    if(!r.data || !r.data.ok) return toast(r.data?.mensaje || 'No se pudo crear tu cuenta de promotor.', true);
+    vibra([15, 60, 15]);
+    await abrirPortal();
+    toast('Listo, tu enlace ya está activo');
+  });
+}
+
+function enviarOlvide(){
+  const correo = normCorreo(S.correo);
+  if(!esCorreo(correo)) return toast('Revisa tu correo: debe verse así nombre@gmail.com', true);
+  const reenvio = S.fpaso === 2;
+  if(reenvio && S.reenvio > 0) return;
+
+  return conBoton(reenvio ? null : 'fBtn', 'Enviando…', async () => {
+    const { error } = await mandarCodigo(correo, false);
+    if(error) return toast(errLegible(error), true);
+    S.reenvio = 60; S.fverificado = false;
+    if(reenvio){ const el = $('reenvio'); if(el){ el.innerHTML = htmlReenvio(); cablearReenvio(); } }
+    else{ S.fpaso = 2; pintar(); }
+    tiempoReenvio();
+    toast('Te mandamos un código a tu correo');
+  });
+}
+
+function confirmarOlvide(){
+  const correo = normCorreo(S.correo);
+  const token = (($('fCod') || {}).value || '').replace(/\D/g, '');
+  const pw = ($('fPw') || {}).value || '';
+  if(!S.fverificado && token.length !== CONFIG.CODIGO_DIGITOS)
+    return toast('Escribe el código de ' + CONFIG.CODIGO_DIGITOS + ' dígitos', true);
+  if(pw.length < 8) return toast('La contraseña debe tener mínimo 8 caracteres', true);
+
+  return conBoton('fBtn', 'Cambiando…', async () => {
+    if(!S.fverificado){
+      const v = await revisarCodigo(correo, token);
+      if(v.error) return toast(errLegible(v.error), true);
+      S.fverificado = true;   // el código ya se usó: si falla la contraseña no se pide otra vez
+    }
+    const u = await sb.auth.updateUser({ password:pw });
+    if(u.error) return toast(errLegible(u.error), true);
+    clearInterval(S.timer);
+    S.fverificado = false; S.fpaso = 1;
+    await despuesDeEntrar();
+    toast('Contraseña actualizada');
+  });
+}
+
+/* ---------- Después de entrar ---------- */
+async function despuesDeEntrar(){
+  const t = await sb.rpc('ref_mi_tablero');
+  if(t.error){ toast(errLegible(t.error), true); return irA('acceso'); }
+  if(t.data && t.data.ok){
+    S.promotor = t.data;
+    return await abrirPortal();
+  }
+  // Tiene sesión pero todavía no es promotor: le pedimos su nombre.
+  irA('nombre');
+}
+
+async function abrirPortal(){
+  irA('inicio');
+  escuchar();
+  refrescar();
+}
+
+/* ---------- Eventos del portal ---------- */
+function cablearPortal(){
+  const p = S.pantalla;
+
+  if(p === 'inicio'){
+    $('bCopiar').onclick = copiarEnlace;
+    $('bCartera').onclick = async () => { irA('saldo'); await cargarCartera(); };
+    $('bTrans').onclick   = async () => { irA('trans'); await cargarTransacciones(); };
+    $('bAyuda').onclick   = () => irA('ayuda');
+    $('bSalir').onclick   = cerrarSesion;
+  }
+  if(['saldo','trans','ayuda'].includes(p)){
+    $('bAtras').onclick = () => irA('inicio');
+  }
+  if(p === 'saldo' && $('bReclamar')){
+    // Botón solo visual: no hace nada, no mueve el saldo.
+    $('bReclamar').onclick = ev => { ev.preventDefault(); };
+  }
+}
+
+async function copiarEnlace(){
+  const enlace = (S.promotor || {}).enlace || '';
+  if(!enlace) return;
+  const b = $('bCopiar');
+  try{
+    await navigator.clipboard.writeText(enlace);
+  }catch(e){
+    const t = document.createElement('textarea');
+    t.value = enlace; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select();
+    try{ document.execCommand('copy'); }catch(e2){}
+    document.body.removeChild(t);
+  }
+  vibra(15);
+  b.classList.add('ok');
+  b.innerHTML = ic('check') + ' Copiado';
+  setTimeout(() => { if(b.isConnected){ b.classList.remove('ok'); b.innerHTML = ic('copiar') + ' Copiar'; } }, 1800);
+}
+
+async function cerrarSesion(){
+  try{ if(S.canal){ await sb.removeChannel(S.canal); S.canal = null; } }catch(e){}
+  S.vivo = false;
+  await sb.auth.signOut().catch(() => {});
+  S.promotor = null; S.cartera = null; S.transacciones = null;
+  S.modo = 'login'; S.pw = '';
+  irA('acceso');
+}
+
+/* =====================================================================
+   DATOS
+   ===================================================================== */
+async function cargarTablero(){
+  const r = await sb.rpc('ref_mi_tablero');
+  if(r.data && r.data.ok){ S.promotor = r.data; if(S.pantalla === 'inicio') pintar(); }
+}
+async function cargarCartera(){
+  const r = await sb.rpc('ref_mi_cartera');
+  if(r.data && r.data.ok){ S.cartera = r.data; if(['saldo','ayuda'].includes(S.pantalla)) pintar(); }
+}
+async function cargarTransacciones(){
+  const r = await sb.rpc('ref_mis_transacciones', { p_limite: 300 });
+  if(r.data && r.data.ok){ S.transacciones = r.data; if(S.pantalla === 'trans') pintar(); }
+}
+
+/** Trae lo que haga falta según la pantalla donde esté el promotor. */
+let refrescando = false;
+async function refrescar(){
+  if(refrescando) return;
+  refrescando = true;
+  try{
+    await cargarTablero();
+    if(S.pantalla === 'saldo' || S.cartera) await cargarCartera();
+    if(S.pantalla === 'trans' || S.transacciones) await cargarTransacciones();
+  }catch(e){ console.warn('refrescar', e); }
+  finally{ refrescando = false; }
+}
+
+/* =====================================================================
+   TIEMPO REAL
+   Cuando un negocio referido paga, el backend lo procesa y estas tablas
+   cambian. El portal se actualiza solo: sin recargar, sin volver a entrar.
+   Las políticas RLS se aplican también aquí, así que cada promotor recibe
+   únicamente sus propios cambios.
+   ===================================================================== */
+let reintento = null;
+async function escuchar(){
+  if(S.canal) return;
+  const id = (S.promotor || {}).codigo || 'x';
+
+  /* Realtime tiene que ir firmado con la sesión del promotor: así el
+     servidor aplica RLS y solo manda los cambios que le tocan a él. */
+  try{
+    const { data } = await sb.auth.getSession();
+    if(data && data.session) sb.realtime.setAuth(data.session.access_token);
+  }catch(e){ console.warn('realtime auth', e); }
+
+  S.canal = sb.channel('promotor:' + id)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_wallet' },    alCambiar)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_rewards' },   alCambiar)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_movements' }, alCambiar)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_clients' },   alCambiar)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_periods' },   alCambiar)
+    .on('postgres_changes', { event:'*', schema:'public', table:'referral_payments' },  alPago)
+    .subscribe(estado => {
+      const antes = S.vivo;
+      S.vivo = estado === 'SUBSCRIBED';
+      if(antes !== S.vivo && S.pantalla === 'inicio') pintar();
+
+      if(['CLOSED','CHANNEL_ERROR','TIMED_OUT'].includes(estado)){
+        clearTimeout(reintento);
+        reintento = setTimeout(async () => {
+          try{ if(S.canal){ await sb.removeChannel(S.canal); S.canal = null; } }catch(e){}
+          if(S.promotor) escuchar();
+        }, 3000);
+      }
+    });
+}
+
+let pendiente = null;
+function alCambiar(){
+  // Se junta todo lo que llegue en medio segundo y se refresca una sola vez.
+  clearTimeout(pendiente);
+  pendiente = setTimeout(refrescar, 500);
+}
+function alPago(carga){
+  // Un pago suelto mueve el avance del negocio, pero NO adelanta recompensas:
+  // los $500 y $200 solo se liberan cuando el periodo se cumple de verdad.
+  alCambiar();
+  const n = carga && carga.new;
+  if(n && n.estado === 'pagado' && carga.eventType === 'INSERT'){
+    toast('Un negocio tuyo acaba de pagar');
+  }
+}
+
+/* Al volver a la pestaña, por si se perdió algún aviso mientras no estaba. */
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && S.promotor) refrescar();
+});
+
+/* =====================================================================
+   ARRANQUE
+   ===================================================================== */
+sb.auth.onAuthStateChange((evento, sesion) => {
+  /* Cuando se renueva el token hay que volver a firmar Realtime, o el
+     servidor deja de mandar cambios a media sesión. */
+  if(evento === 'TOKEN_REFRESHED' && sesion){
+    try{ sb.realtime.setAuth(sesion.access_token); }catch(e){}
+  }
+  if(evento === 'SIGNED_OUT' && S.promotor){
+    S.promotor = null; S.cartera = null; S.transacciones = null;
+    S.modo = 'login';
+    irA('acceso');
+  }
+});
+
+(async function arrancar(){
+  const codigo = codigoDeLaUrl();
+  if(codigo) return arrancarInvitacion(codigo);   // llegó un negocio por un enlace
+
+  const { data } = await sb.auth.getSession();
+  if(data && data.session){
+    const t = await sb.rpc('ref_mi_tablero');
+    if(t.data && t.data.ok){
+      S.promotor = t.data;
+      return abrirPortal();
+    }
+    // Sesión viva sin perfil de promotor: pedir nombre y crearlo.
+    return irA('nombre');
+  }
+  S.modo = 'signup';
+  irA('acceso');
+})();
+</script>
+</body>
+</html>
