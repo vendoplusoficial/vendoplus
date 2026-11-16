@@ -57,7 +57,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
       "offers": [
         { "@type": "Offer", "name": "Gratis", "price": "0", "priceCurrency": "MXN",
           "description": "Vender, tickets, historial, caja y corte, clientes y crédito, inventario y estadísticas simples. Sin tarjeta y sin límite de tiempo." },
-        { "@type": "Offer", "name": "Premium", "price": "199", "priceCurrency": "MXN",
+        { "@type": "Offer", "name": "Premium", "price": "249", "priceCurrency": "MXN",
           "description": "Menú Digital, asistente con IA, escaneos de carta con IA sin límite y estadísticas detalladas." }
       ],
       "publisher": { "@id": "https://vendoplusoficial.com/#org" }
@@ -12769,16 +12769,16 @@ function newUser(country, phone, email){
   };
 }
 
-/* ---------- Precio de la membresía Premium · $199 MXN al mes ----------
+/* ---------- Precio de la membresía Premium · $249 MXN al mes ----------
    Ya NO hay mes de prueba: Vendo Plus es gratis y lo que se cobra es Premium
    (ver vendo-premium.js). Estas constantes se quedan porque varias pantallas
    viejas todavía las nombran, y porque aquí vive el precio que ve el cliente.
 
    OJO: este número solo es el TEXTO que ve el cliente. Lo que se cobra de verdad
    es el precio que creaste en Stripe (price_...) y la suscripción de Google Play:
-   los dos tienen que ser de $199 MXN mensuales. */
+   los dos tienen que ser de $249 MXN mensuales. */
 const TRIAL_MESES = 1;
-const TRIAL_PRECIO = 199;
+const TRIAL_PRECIO = 249;
 function trialInfo(u){
   u = u || currentUser();
   if(!u) return null;
@@ -27994,7 +27994,7 @@ function cartSanitize(){
 <script src="vendo-cerebro.js"></script>
 <script src="vendo-mascota.js"></script>
 
-<!-- ===== MEMBRESIA PREMIUM (gratis vs. $199/mes) · va al final a proposito ===== -->
+<!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261030"></script>
 
 <style id="vp-fotos-cuadradas">

@@ -4,7 +4,7 @@
    Este archivo cambia por completo la forma de cobrar:
 
    ANTES:  1 mes gratis y después la app se bloqueaba entera.
-   AHORA:  la app NUNCA se bloquea. Lo que se vende es Premium ($199/mes).
+   AHORA:  la app NUNCA se bloquea. Lo que se vende es Premium ($249/mes).
 
    GRATIS PARA SIEMPRE (sin pagar un peso, sin tarjeta, sin avisos):
      · Vender y cobrar            · Generar y enviar tickets
@@ -15,7 +15,7 @@
      · Estadísticas simples (ventas netas, pedidos, ticket promedio, gráficas)
      · 3 pruebas de escaneo de carta con IA en total
 
-   PREMIUM · $199 MXN al mes:
+   PREMIUM · $249 MXN al mes:
      · Menú Digital con pedidos
      · Chat con IA (el asistente del robot)
      · Escáner de carta con IA sin límite
@@ -38,7 +38,7 @@
   'use strict';
   if (window.VPPremium) return;
 
-  var PRECIO = 199;
+  var PRECIO = 249;
 
   /* Atajos seguros a lo que ya existe en index.html (se declara con const,
      así que se llega por nombre, pero todo va envuelto por si cambiara). */
