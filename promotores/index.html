@@ -97,8 +97,15 @@ a{ color:var(--brand-ink); }
 
 /* ---------- Cuerpo ---------- */
 .body{ flex:1; padding:18px 16px calc(env(safe-area-inset-bottom) + 92px); }
-.vista{ animation:entra .24s cubic-bezier(.22,.9,.3,1); }
-@keyframes entra{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+/* Entrada de cada pantalla: la misma de tu app (sube desde abajo). */
+@keyframes entra{
+  from{ opacity:0; transform:translate3d(0, 28px, 0); }
+  to  { opacity:1; transform:translate3d(0, 0, 0); }
+}
+#app.entra > *{ animation:entra .55s cubic-bezier(.22, 1, .36, 1) both; }
+@media (prefers-reduced-motion:reduce){
+  #app.entra > *{ animation:none !important; }
+}
 
 /* ---------- Tarjetas ---------- */
 .card{
@@ -896,6 +903,98 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 .inv .btn.primary:active{ background:#13AE51; }
 .inv .btn.ghost{ background:var(--surface); border:1.8px solid #9FDCAE; color:#0E8A28; }
 
+/* =====================================================================
+   PANTALLA: CONTRATAR MEMBRESÍA
+   Mismo diseño en celular y computadora; solo cambia el acomodo.
+   ===================================================================== */
+.acceso.mem-pag{ display:block; background:var(--surface); padding:0; min-height:100dvh; }
+.carga{ min-height:100dvh; display:flex; flex-direction:column; justify-content:center;
+        align-items:center; gap:0; padding:24px; }
+.carga-in{ display:grid; place-items:center; gap:16px; flex:1; align-content:center; }
+.carga-tx{ font-size:15px; font-weight:600; color:var(--ink-soft); margin:0; text-align:center; }
+.carga-pie{ margin:0 0 6px; }
+.carga-pie button{
+  border:none; background:none; padding:8px; font-family:inherit;
+  font-size:14px; font-weight:600; color:var(--ink-soft); text-decoration:underline;
+}
+.mem{ min-height:100dvh; background:var(--surface); display:flex; flex-direction:column; }
+.mem-bar{ padding:calc(env(safe-area-inset-top) + 16px) 21px 13px; }
+.mem-bar span{ font-size:15px; font-weight:500; color:var(--ink-soft); }
+.mem-bar b{ color:var(--ink); font-weight:700; }
+.mem-in{
+  width:100%; max-width:520px; margin:0 auto;
+  padding:0 21px calc(34px + env(safe-area-inset-bottom));
+}
+.mem-tit{
+  font-size:25px; font-weight:800; letter-spacing:-.6px; line-height:1.18;
+  color:var(--ink); margin:6px 0 10px;
+}
+.mem-sub{ font-size:15.5px; font-weight:500; color:var(--ink-soft); line-height:1.5; margin:0 0 22px; }
+.mem-card{
+  border:1.5px solid var(--border); border-radius:18px; background:var(--surface);
+  padding:17px; box-shadow:0 6px 22px rgba(22,33,62,.05);
+}
+.mem-card-tx{ min-width:0; }
+.mem-card-tit{
+  font-size:19px; font-weight:800; letter-spacing:-.3px; line-height:1.3;
+  color:var(--ink); margin:0 0 20px;
+}
+.mem-antes{ display:flex; align-items:center; gap:12px; margin-bottom:11px; flex-wrap:wrap; }
+.mem-antes s{ font-size:15px; font-weight:600; color:var(--ink-soft); }
+.mem-chip{
+  font-size:13px; font-weight:800; color:#0E8A28; background:#E5FAEC;
+  border-radius:999px; padding:5px 11px; white-space:nowrap;
+}
+.mem-precio{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.mem-precio b{ font-size:38px; font-weight:800; letter-spacing:-1.2px; color:var(--ink); line-height:1.05; }
+.mem-precio em{ font-style:normal; font-size:14px; font-weight:600; color:var(--ink-soft); }
+.mem-nota{ font-size:14.5px; font-weight:500; color:var(--ink-soft); line-height:1.55; margin:16px 0 0; }
+.mem-cta{
+  width:100%; height:48px; border:none; border-radius:14px; flex:none;
+  background:#25D366; color:#fff; font-family:inherit;
+  font-size:17px; font-weight:700; letter-spacing:normal; margin-top:20px;
+  box-shadow:0 8px 20px rgba(37,211,102,.30);
+}
+.mem-cta:active{ background:#1FBE5A; }
+.mem-cta[disabled]{ opacity:.55; box-shadow:none; }
+.mem-sep{ border:none; border-top:1px solid var(--border); margin:26px 0 20px; }
+.mem-h3{ font-size:19px; font-weight:800; letter-spacing:-.3px; color:var(--ink); margin:0 0 15px; }
+.mem-opciones{ display:grid; gap:11px; }
+.mem-opc{
+  display:flex; align-items:center; min-height:56px; padding:0 12px;
+  border:1.5px solid var(--border); border-radius:14px;
+  background:var(--surface); color:var(--ink); text-decoration:none;
+}
+.mem-opc-ico{ width:24px; flex:none; display:grid; place-items:center; color:var(--ink); }
+.mem-opc-ico svg{ width:22px; height:22px; }
+.mem-opc i{ width:1px; align-self:stretch; background:var(--border); margin:15px 0 15px 10px; flex:none; }
+.mem-opc-tx{
+  flex:1; min-width:0; text-align:center; font-weight:700; padding:0 4px;
+  font-size:clamp(13px, 3.6vw, 15px); line-height:1.3;
+}
+.mem-salir{ text-align:center; margin:24px 0 0; }
+.mem-salir button{
+  border:none; background:none; padding:0; font-family:inherit;
+  font-size:14px; font-weight:600; color:var(--ink-soft); text-decoration:underline;
+}
+@media (min-width:860px){
+  .mem-bar{ text-align:center; border-bottom:1px solid var(--border); padding:17px 24px; }
+  .mem-in{ max-width:1120px; padding:0 40px 60px; }
+  .mem-tit{ font-size:34px; margin:34px 0 10px; }
+  .mem-sub{ font-size:17px; margin-bottom:26px; }
+  .mem-card{ display:flex; align-items:center; gap:40px; padding:26px 28px; border-radius:20px; }
+  .mem-card-tx{ flex:1; }
+  .mem-card-tit{ font-size:22px; margin-bottom:18px; }
+  .mem-precio b{ font-size:42px; }
+  .mem-nota{ font-size:15px; }
+  .mem-cta{ width:auto; min-width:300px; height:54px; margin-top:0; padding:0 34px; }
+  .mem-sep{ margin:34px 0 26px; }
+  .mem-h3{ font-size:22px; margin-bottom:18px; }
+  .mem-opciones{ grid-template-columns:1fr 1fr; gap:16px; max-width:920px; }
+  .mem-opc{ min-height:62px; padding:0 18px; }
+  .mem-opc-tx{ font-size:16px; }
+}
+
 .vpa{
   --acc:#16C15B; --acc-soft:#E5FAEC; --ink-soft:#7C88A3;
   --z:.9; zoom:var(--z);
@@ -1135,12 +1234,28 @@ const CONFIG = {
   SUPABASE_URL: 'https://yacmyrpluhjaphvrbqno.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_uxy6ZYubuYn6Q2LPwuElpg_qYwwWinX',
   CODIGO_DIGITOS: 6,
-  URL_VENDOPLUS: 'https://vendoplusoficial.com/'
+  URL_VENDOPLUS: 'https://vendoplusoficial.com/',
+  /* Pon aquí el enlace de descarga de la app si quieres que salga ese botón.
+     Si lo dejas vacío, solo aparece el de "usar desde tu navegador". */
+  URL_DESCARGA: ''
 };
 
 /* storageKey propio: si algún día el portal se sube a una carpeta del
    mismo dominio que VendoPlus, su sesión NO se mezcla con la del POS.
    Así nunca se toca la autenticación de la app. */
+try{ if('scrollRestoration' in history) history.scrollRestoration = 'manual'; }catch(e){}
+
+/* En celular NO abrimos el teclado solo: molesta y tapa la pantalla.
+   En computadora sí dejamos el cursor listo en la casilla. */
+const ES_TACTIL = (() => {
+  try{ return matchMedia('(hover:none) and (pointer:coarse)').matches; }
+  catch(e){ return 'ontouchstart' in window; }
+})();
+function enfocar(el, ms){
+  if(!el || ES_TACTIL) return;
+  setTimeout(() => { try{ el.focus(); }catch(e){} }, ms || 160);
+}
+
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
   auth: {
     persistSession:true, autoRefreshToken:true, detectSessionInUrl:false,
@@ -1152,6 +1267,8 @@ const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, 
    ÍCONOS
    ===================================================================== */
 const ICO = {
+  monitor:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2.2"/><path d="M8.5 21h7M12 17v4"/></svg>',
+  descargar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg>',
   rayo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>',
   enlace:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
   copiar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
@@ -1733,80 +1850,76 @@ function pantallaInvOlvide(){
    ===================================================================== */
 function pantallaBienvenido(){
   const o = INV.oferta;
-  if(!o) return `
-    <div class="inv">
-      <div class="cargando" style="min-height:50vh;"><div class="spin"></div></div>
-      <p class="cambia"><button id="bVolverPromo">Volver</button></p>
-    </div>`;
+  if(!o) return pantallaCargando('Preparando tu membresía…');
 
-  const pct = o.descuento_pct || 25;
+  const pct     = o.descuento_pct || 25;
   const conDesc = o.elegible === true;
   const normal  = dinero(o.precio_cents, o.moneda);
   const primero = dinero(o.precio_con_descuento_cents, o.moneda);
   const ahorro  = dinero(o.ahorro_cents, o.moneda);
   const cada    = cadaCuanto(o.intervalo);
+  const web     = esc(o.url_vendoplus || CONFIG.URL_VENDOPLUS);
+  const baja    = esc(CONFIG.URL_DESCARGA || '');
 
   return `
-    <div class="inv vista">
-      ${encabezadoEnlace()}
+    <div class="mem vista">
+      <div class="mem-bar"><span>Enlace de <b>${esc((INV.promotor||{}).nombre || '')}</b></span></div>
 
-      <h1 class="inv-tit" style="text-align:left; margin-top:6px;">¡Bienvenido, ${esc(o.nombre || '')}!</h1>
-      <p class="inv-sub" style="text-align:left;">Tu negocio está a un paso de crecer con VendoPlus.</p>
+      <div class="mem-in">
+        <h1 class="mem-tit">¡Bienvenido, ${esc(o.nombre || '')}!</h1>
+        <p class="mem-sub">Tu negocio está a un paso de crecer con VendoPlus.</p>
 
-      <div class="card" style="margin-top:18px;">
-        <div class="card-top">
-          <span class="card-ico">${ic('rayo')}</span>
-          <h2 class="card-title">${conDesc
-            ? `Activa tu membresía con ${pct}% de descuento`
-            : 'Activa tu membresía'}</h2>
+        <div class="mem-card">
+          <div class="mem-card-tx">
+            <h2 class="mem-card-tit">${conDesc
+              ? `Activa tu membresía con ${pct}% de descuento`
+              : 'Activa tu membresía'}</h2>
+
+            ${conDesc ? `
+              <div class="mem-antes">
+                <s>${normal}</s>
+                <span class="mem-chip">−${pct}%</span>
+              </div>
+              <div class="mem-precio"><b>${primero}</b><em>tu primer mes</em></div>
+              <p class="mem-nota">Te ahorras ${ahorro} en tu primer mes. Después se cobra
+                 el precio normal de ${normal} ${cada}, y puedes cancelar cuando quieras.</p>
+            ` : `
+              <div class="mem-precio"><b>${normal}</b><em>${cada}</em></div>
+              ${o.mensaje ? `<p class="mem-nota">${esc(o.mensaje)}</p>` : ''}
+            `}
+          </div>
+
+          <button class="mem-cta" id="bPagar">Contratar membresía</button>
         </div>
 
-        ${conDesc ? `
-          <div class="precio">
-            <span class="precio-antes">${normal}</span>
-            <span class="precio-chip">−${pct}%</span>
-          </div>
-          <div class="precio-ahora">
-            <span class="precio-num">${primero}</span>
-            <span class="precio-et">tu primer mes</span>
-          </div>
-          <p class="card-note" style="margin-top:10px;">
-            Te ahorras ${ahorro} en tu primer mes. Después se cobra el precio normal
-            de ${normal} ${cada}, y puedes cancelar cuando quieras.
-          </p>
-        ` : `
-          <div class="precio-ahora">
-            <span class="precio-num">${normal}</span>
-            <span class="precio-et">${cada}</span>
-          </div>
-          ${o.mensaje ? `<div class="aviso" style="margin-top:12px;">${ic('alerta')}<p>${esc(o.mensaje)}</p></div>` : ''}
-        `}
+        <hr class="mem-sep">
 
-        <button class="btn primary xl block" id="bPagar" style="margin-top:16px;">
-          ${conDesc ? `Contratar membresía con ${pct}% de descuento` : 'Contratar membresía'}
-        </button>
-        <p class="card-note" style="margin-top:10px; text-align:center;">
-          El pago es por Stripe. No guardamos los datos de tu tarjeta.
-        </p>
-      </div>
-
-      <div class="card">
-        <div class="card-top">
-          <span class="card-ico amar">${ic('tienda')}</span>
-          <h2 class="card-title">¿Prefieres comenzar gratis?</h2>
+        <h3 class="mem-h3">Usar VendoPlus versión básica</h3>
+        <div class="mem-opciones">
+          ${baja ? `
+          <a class="mem-opc" href="${baja}" target="_blank" rel="noopener">
+            <span class="mem-opc-ico">${ic('descargar')}</span><i></i>
+            <span class="mem-opc-tx">Descargar VendoPlus gratis</span>
+          </a>` : ''}
+          <a class="mem-opc" href="${web}" target="_blank" rel="noopener">
+            <span class="mem-opc-ico">${ic('monitor')}</span><i></i>
+            <span class="mem-opc-tx">Usar VendoPlus desde tu navegador</span>
+          </a>
         </div>
-        <p class="card-note" style="margin-bottom:14px;">
-          Puedes usar VendoPlus desde tu navegador e instalarlo en tu celular
-          desde ahí. El ${pct}% de descuento solo aplica contratando por Stripe.
-        </p>
-        <a class="btn ghost block" id="bGratis" href="${esc(o.url_vendoplus || '')}"
-           target="_blank" rel="noopener" style="text-decoration:none;">
-          Usar VendoPlus gratis
-        </a>
-      </div>
 
-      <p class="cambia"><button id="bSalirNeg">Cerrar sesión</button></p>
-      ${pieLegal()}
+        <p class="mem-salir"><button id="bSalirNeg">Cerrar sesión</button></p>
+      </div>
+    </div>`;
+}
+
+function pantallaCargando(txt){
+  return `
+    <div class="carga vista">
+      <div class="carga-in">
+        <div class="spin"></div>
+        <p class="carga-tx">${esc(txt || 'Un momento…')}</p>
+      </div>
+      <p class="carga-pie"><button id="bVolverPromo">Volver</button></p>
     </div>`;
 }
 
@@ -1834,7 +1947,8 @@ function pintarInv(){
   const pAct = INV.pantalla;
   app.className = (pAct === 'promo' && INV.promotor) ? 'acceso pro-pag'
     : (['login','signup','codigo','clave','olvide'].indexOf(pAct) >= 0 && INV.promotor)
-      ? 'acceso neg-pag' : 'acceso';
+      ? 'acceso neg-pag'
+    : (pAct === 'bienvenido' && INV.promotor) ? 'acceso mem-pag' : 'acceso';
 
   if(!INV.promotor){
     app.innerHTML = `
@@ -1859,10 +1973,34 @@ function pintarInv(){
                : p === 'pagado' ? pantallaPagado()
                : pantallaBienvenido();
   app.innerHTML = dentro;
+  entrada('inv:' + p);
   cablearInv();
 }
 
 function irInv(p){ INV.pantalla = p; pintarInv(); }
+
+/* Arreglo del deslizamiento: al cambiar de pantalla siempre arranca
+   hasta arriba (antes se quedaba donde estaba la pantalla anterior)
+   y la nueva entra subiendo, como en la app. */
+function entrada(clave){
+  const app = $('app');
+  if(!app || entrada._ult === clave) return;
+  entrada._ult = clave;
+  const arriba = () => {
+    try{ window.scrollTo(0, 0); }catch(e){}
+    if(document.scrollingElement) document.scrollingElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    app.scrollTop = 0;
+    app.querySelectorAll('.auth-body, .mem-in, .body, .vista').forEach(n => { n.scrollTop = 0; });
+  };
+  arriba();
+  requestAnimationFrame(arriba);
+  app.classList.remove('entra');
+  void app.offsetWidth;
+  app.classList.add('entra');
+  clearTimeout(entrada._t);
+  entrada._t = setTimeout(() => app.classList.remove('entra'), 700);
+}
 
 function cablearInv(){
   const p = INV.pantalla;
@@ -1891,7 +2029,7 @@ function cablearInv(){
       $('nPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); invAcceder(); } };
       verPw('nOjo', 'nPw');
     }
-    setTimeout(() => c.focus(), 160);
+    enfocar(c, 160);
   }
 
   if(p === 'codigo'){
@@ -1911,7 +2049,7 @@ function cablearInv(){
     pw.onkeydown = ev => { if(ev.key === 'Enter' && pw.value.length >= 8){ ev.preventDefault(); invGuardarClave(); } };
     verPw('nOjo2', 'nPw2');
     $('nBtn2').onclick = invGuardarClave;
-    setTimeout(() => pw.focus(), 160);
+    enfocar(pw, 160);
   }
 
   if(p === 'olvide'){
@@ -1924,13 +2062,13 @@ function cablearInv(){
       $('nfBtn').onclick = invOlvideConfirmar;
       $('nfPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); invOlvideConfirmar(); } };
       invCablearReenvio();
-      setTimeout(() => $('nfCod').focus(), 160);
+      enfocar($('nfCod'), 160);
     }else{
       const c = $('nfCorreo');
       c.oninput = () => { INV.correo = c.value.trim(); };
       c.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); invOlvideEnviar(); } };
       $('nfBtn').onclick = invOlvideEnviar;
-      setTimeout(() => c.focus(), 160);
+      enfocar(c, 160);
     }
   }
 
@@ -2796,6 +2934,7 @@ function pintar(){
                   : p === 'clave'  ? pantallaClave()
                   : p === 'olvide' ? pantallaOlvide()
                   : pantallaNombre();
+    entrada('app:' + p);
     cablearAcceso();
     return;
   }
@@ -2806,6 +2945,7 @@ function pintar(){
                 : p === 'comisiones' ? pantallaComisiones()
                 : p === 'inactivos'  ? pantallaInactivos()
                 : pantallaAyuda();
+  entrada('app:' + p);
   cablearPortal();
 }
 
@@ -2822,7 +2962,7 @@ function cablearAcceso(){
     $('aPw').oninput = e => { S.pw = e.target.value; };
     $('aPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); accionAcceso(); } };
     ojo('aOjo', 'aPw');
-    setTimeout(() => cor.focus(), 160);
+    enfocar(cor, 160);
   }
 
   if(p === 'codigo'){
@@ -2838,7 +2978,7 @@ function cablearAcceso(){
     pw.onkeydown = ev => { if(ev.key === 'Enter' && pw.value.length >= 8){ ev.preventDefault(); guardarClave(); } };
     ojo('pOjo', 'pPw');
     $('pBtn').onclick = guardarClave;
-    setTimeout(() => pw.focus(), 160);
+    enfocar(pw, 160);
   }
 
   if(p === 'olvide'){
@@ -2851,13 +2991,13 @@ function cablearAcceso(){
       $('fBtn').onclick = confirmarOlvide;
       $('fPw').onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); confirmarOlvide(); } };
       cablearReenvio();
-      setTimeout(() => $('fCod').focus(), 160);
+      enfocar($('fCod'), 160);
     }else{
       const c = $('fCorreo');
       c.oninput = () => { S.correo = c.value.trim(); };
       c.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); enviarOlvide(); } };
       $('fBtn').onclick = enviarOlvide;
-      setTimeout(() => c.focus(), 160);
+      enfocar(c, 160);
     }
   }
 
@@ -2865,7 +3005,7 @@ function cablearAcceso(){
     const n = $('nNom');
     n.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); crearPromotor(); } };
     $('nBtn').onclick = crearPromotor;
-    setTimeout(() => n.focus(), 160);
+    enfocar(n, 160);
   }
 }
 
@@ -2916,7 +3056,7 @@ function cablearOtp(alCompletar){
       revisar();
     };
   });
-  setTimeout(() => celdas[0].focus(), 180);
+  enfocar(celdas[0], 180);
 }
 const valorOtp = () => {
   let v = '';
