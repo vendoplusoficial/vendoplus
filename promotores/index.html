@@ -1636,15 +1636,49 @@ const sbApp = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KE
   auth: { persistSession:true, autoRefreshToken:false, detectSessionInUrl:false }
 });
 
+/* Llaves que tu app considera "del aparato" y no de la cuenta: esas se
+   respetan aunque se cambie de negocio (impresora, escáner, etc.). */
+const APP_LLAVES_DEL_APARATO = [
+  'mesa_session','mesa_user_session','mesa_active_user','mesa_printer','mesa_scanner',
+  'mesa_meta','mesa_md_cfg_visible','mesa_dm_name','mesa_sync','mesa_cloud_uid','mesa_sync_pending'
+];
+
+/* Cierra la cuenta que estuviera abierta en la app y borra sus datos locales.
+   Es lo mismo que hace tu app en wipeLocal() cuando entra otra cuenta en el
+   mismo aparato: lo de la nube se vuelve a bajar al entrar. */
+function cerrarCuentaDeLaApp(){
+  try{
+    const fuera = [];
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(!k) continue;
+      const esDeLaCuenta = k.indexOf('mesa_') === 0 && APP_LLAVES_DEL_APARATO.indexOf(k) < 0;
+      const seCierra = ['mesa_session','mesa_user_session','mesa_active_user','mesa_sync_pending'].indexOf(k) >= 0;
+      if(esDeLaCuenta || seCierra) fuera.push(k);
+    }
+    fuera.forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+  }catch(e){}
+}
+
 async function pasarSesionAlApp(){
   try{
     const { data } = await sbNeg.auth.getSession();
     const ses = data && data.session;
     if(!ses || !ses.access_token) return false;
 
-    // 1) La sesión, escrita por la propia librería para que quede en su formato.
-    //    Si no se puede (sin señal, por ejemplo) se guarda a mano, que es lo
-    //    mismo que escribe la librería.
+    const uid    = (ses.user && ses.user.id) || '';
+    const correo = normCorreo((ses.user && ses.user.email) || '');
+
+    /* ¿De quién son los datos que hay en este aparato? Tu app guarda ahí el
+       dueño y, si el token es de otra cuenta, no la deja entrar. Por eso,
+       cuando el negocio entra con otro correo, primero cerramos la anterior. */
+    let dueno = '';
+    try{ dueno = localStorage.getItem('mesa_cloud_uid') || ''; }catch(e){}
+    const otraCuenta = !!dueno && !!uid && dueno !== uid;
+    if(otraCuenta) cerrarCuentaDeLaApp();
+
+    /* 1) La sesión, escrita por la propia librería para que quede en su
+          formato. Si no se puede (sin señal) se guarda a mano. */
     try{
       const { error } = await sbApp.auth.setSession({
         access_token: ses.access_token,
@@ -1656,9 +1690,12 @@ async function pasarSesionAlApp(){
       if(ref) localStorage.setItem('sb-' + ref + '-auth-token', JSON.stringify(ses));
     }
 
-    // 2) El usuario local de tu app. Si ya había uno del mismo correo no se
-    //    toca, para no borrarle el nombre del negocio ni sus preferencias.
-    const correo = normCorreo((ses.user && ses.user.email) || '');
+    /* 2) El dueño de los datos del aparato pasa a ser esta cuenta. Sin esto,
+          tu app ve un token "ajeno" y lo ignora. */
+    if(uid) localStorage.setItem('mesa_cloud_uid', uid);
+
+    /* 3) El usuario local. Si ya era el mismo correo se respeta tal cual,
+          para no borrarle el nombre del negocio ni sus preferencias. */
     let u = null;
     try{ u = JSON.parse(localStorage.getItem('mesa_user') || 'null'); }catch(e){}
     if(!u || normCorreo(u.email || '') !== correo){
