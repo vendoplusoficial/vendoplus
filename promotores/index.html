@@ -1168,19 +1168,20 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
   margin:0 0 24px; line-height:1.55;
 }
 .vpa .auth-sub b{ color:var(--ink); word-break:break-all; }
-.vpa .auth-illu{ display:flex; justify-content:center; margin:4px 0 24px; }
-.vpa .auth-illu img{
-  display:block; width:auto; height:auto;
-  max-width:min(100%, 330px); max-height:235px;
-  margin:-4px auto -6px; mix-blend-mode:multiply;
+.vpa .auth-illu{
+  flex:1 1 0; min-height:0; display:flex;
+  align-items:center; justify-content:center; margin:6px 0 18px;
 }
-.vpa .auth-actions{ margin-top:auto; display:flex; flex-direction:column; gap:12px; padding-top:26px; }
+.vpa .auth-illu img{
+  display:block; width:100%; max-width:330px; height:100%;
+  object-fit:contain; margin:0 auto; mix-blend-mode:multiply;
+}
+.vpa .auth-actions{ margin-top:0; display:flex; flex-direction:column; gap:12px; padding-top:4px; }
 
 /* Celulares de pantalla corta (SE, equipos viejos): se junta un poco
    todo para que no haya que deslizar. En pantallas normales no cambia nada. */
 @media (max-height:720px){
   .vpa .auth-illu{ margin:0 0 14px; }
-  .vpa .auth-illu img{ max-width:min(100%, 250px); max-height:150px; }
   .vpa .auth-title{ margin-bottom:7px; }
   .vpa .auth-sub{ margin-bottom:16px; }
   .vpa .auth-actions{ padding-top:16px; }
@@ -1190,7 +1191,6 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 }
 @media (max-height:620px){
   .vpa .auth-illu{ margin:0 0 10px; }
-  .vpa .auth-illu img{ max-width:min(100%, 170px); max-height:100px; }
   .vpa .auth-title{ font-size:23px; margin-bottom:6px; }
   .vpa .auth-sub{ margin-bottom:12px; }
   .vpa .campo{ margin-bottom:12px; }
@@ -2147,7 +2147,7 @@ function irInv(p){ INV.pantalla = p; pintarInv(); }
     }
     const app = document.getElementById('app');
     if(app && app.scrollHeight - app.clientHeight <= 140) app.scrollTop = 0;
-    const cuerpo = app && app.querySelector('.auth-body, .mem-in, .body');
+    const cuerpo = app && app.querySelector && app.querySelector('.auth-body, .mem-in, .body');
     if(cuerpo && cuerpo.scrollHeight - cuerpo.clientHeight <= 140) cuerpo.scrollTop = 0;
   }
   function siNadieEscribe(){
@@ -2188,7 +2188,10 @@ function entrada(clave){
     if(document.scrollingElement) document.scrollingElement.scrollTop = 0;
     document.body.scrollTop = 0;
     app.scrollTop = 0;
-    app.querySelectorAll('.auth-body, .mem-in, .body, .vista').forEach(n => { n.scrollTop = 0; });
+    if(app.querySelectorAll){
+      app.querySelectorAll('.auth-body, .mem-in, .body, .vista')
+         .forEach(n => { n.scrollTop = 0; });
+    }
   };
   arriba();
   requestAnimationFrame(arriba);
