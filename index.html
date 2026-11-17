@@ -4444,6 +4444,9 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
   .vp-done-sheet #ticket-print{ display:block !important; margin:0; }
   .modal-sheet.vp-done-sheet{ height:auto !important; max-height:none !important; overflow:visible !important; display:block; }
 }
+/* El mismo confeti, pero de pantalla completa: el de bienvenida al
+   contratar desde el enlace de un promotor. No estorba al tocar. */
+.vp-confetti.vp-fiesta{ position:fixed; z-index:9999; }
 @media (prefers-reduced-motion:reduce){ .vp-confetti{ display:none; } }
 </style>
 
@@ -24161,6 +24164,55 @@ const Cloud = {
     }, 2500);
   },
 
+  /* ---------- Confeti de bienvenida ----------
+     Cae UNA sola vez, y solo para quien contrató VendoPlus por primera vez
+     entrando por el enlace de un promotor y con la promoción aplicada.
+
+     Quién lo merece NO se decide aquí: lo decide el servidor (ref_confeti),
+     que mira si esa cuenta tiene una promoción en estado "consumida" —o
+     sea que de verdad pagó— y en el mismo movimiento la marca como ya
+     festejada. Por eso no se puede provocar escribiendo algo en la
+     dirección, ni repetir borrando los datos del navegador: la marca vive
+     en la base de datos. Sin un "sí" del servidor, no cae nada. */
+  _confeti:false,
+  async confetiBienvenida(){
+    if(this._confeti) return;              /* ya hubo respuesta en esta carga */
+    if(!this.sb || !this.uid) return;      /* sin cuenta en la nube: ni se pregunta */
+    let r = null;
+    try{ r = await this.sb.rpc('ref_confeti'); }catch(e){ return; }
+    if(!r || r.error) return;              /* sin internet: se reintenta después */
+    const d = r.data || {};
+    if(d.motivo === 'sin_sesion') return;  /* la nube todavía no despierta */
+    this._confeti = true;                  /* ya contestó: no volver a preguntar */
+    if(d.confeti !== true) return;         /* a este no le toca, y punto */
+    this.lanzarConfeti();
+    toast('¡Bienvenido a VendoPlus!', {
+      variant:'toast-success', icon:icon('check'),
+      subtitle: d.promotor ? ('Te invitó ' + d.promotor) : 'Tu membresía quedó activa'
+    });
+  },
+  /* El confeti en sí: mismo movimiento y mismos colores que el de "Venta
+     realizada", para que se sienta de la misma app. Se quita solo al
+     terminar y no tapa nada mientras cae. */
+  lanzarConfeti(){
+    try{ if(matchMedia('(prefers-reduced-motion:reduce)').matches) return; }catch(e){}
+    const cols = ['#16C15B','#16213E','#FFD666','#7BE0A4','#FF8A80','#8FB8FF'];
+    const caja = document.createElement('div');
+    caja.className = 'vp-confetti vp-fiesta no-print';
+    caja.setAttribute('aria-hidden','true');
+    let h = '';
+    for(let i = 0; i < 70; i++){
+      const l = Math.round(Math.random()*100), d = (Math.random()*1.6).toFixed(2),
+            sz = 6 + Math.round(Math.random()*6), r = Math.random() > .5 ? '50%' : '2px';
+      h += '<i style="left:'+l+'%;width:'+sz+'px;height:'+(sz+(r==='2px'?4:0))+
+           'px;background:'+cols[i%cols.length]+';border-radius:'+r+
+           ';animation-delay:'+d+'s;--dx:'+(Math.round(Math.random()*160)-80)+'px"></i>';
+    }
+    caja.innerHTML = h;
+    document.body.appendChild(caja);
+    setTimeout(() => { try{ caja.remove(); }catch(e){} }, 5200);
+  },
+
   /** getUser() con límite de tiempo y reintentos: un parpadeo de internet
       no debe tumbar un inicio de sesión que ya salió bien. */
   async getUserConReintentos(intentos){
@@ -24849,6 +24901,7 @@ bootApp = async function(){
     _bootApp();
     Cloud.gate();
     Cloud.afterPayment();
+    Cloud.confetiBienvenida();
   };
 
   /* Cuenta ya iniciada -> se abre YA. Nadie dentro -> se le da un ratito
@@ -24932,6 +24985,7 @@ bootApp = async function(){
     else { try{ paintChrome(); render(); }catch(e){} }
     Cloud.gate();
     Cloud.afterPayment();
+    Cloud.confetiBienvenida();
   }
   if(vencida) toast('Tu sesión se cerró', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') });
 
@@ -24941,6 +24995,7 @@ bootApp = async function(){
     if(AUTH.isLogged() !== estabaDentro){ _bootApp(); return; }
     try{ paintChrome(); render(); }catch(e){}
     Cloud.gate();
+    Cloud.confetiBienvenida();   /* hasta aquí ya se sabe quién entró */
     if(vencida) toast('Tu sesión se cerró', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') });
   }).catch(() => {});
 };
