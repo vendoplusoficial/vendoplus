@@ -544,42 +544,46 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
   background:var(--surface); border:1px solid #F0F1F6; border-radius:18px;
   box-shadow:0 1px 3px rgba(17,31,67,.045);
 }
+/* Alto FIJO: así la tarjeta mide igual esté activa, bloqueada o lograda,
+   y no empuja hacia abajo el resto del resumen. */
 .rec-cuerpo{
   display:flex; align-items:center; gap:8px;
-  padding:14px 14px 15px; min-height:106px;
-  animation:recEntraDer .3s cubic-bezier(.22,.8,.3,1) both;
+  height:76px; padding:0 12px;
 }
-.rec.con-ant .rec-cuerpo{ padding-left:48px; }
-.rec.hacia-izq .rec-cuerpo{ animation-name:recEntraIzq; }
-@keyframes recEntraDer{ from{ opacity:0; transform:translateX(18px); } to{ opacity:1; transform:none; } }
-@keyframes recEntraIzq{ from{ opacity:0; transform:translateX(-18px); } to{ opacity:1; transform:none; } }
+.rec.con-ant .rec-cuerpo{ padding-left:42px; }
+
+/* La animación corre SOLO al cambiar de recompensa con las flechas.
+   Si se deja en cada dibujado, parpadea cada vez que se refresca el
+   resumen (y el resumen se refresca solo, en vivo). */
+.rec.hacia-der .rec-cuerpo{ animation:recEntraDer .26s cubic-bezier(.22,.8,.3,1) both; }
+.rec.hacia-izq .rec-cuerpo{ animation:recEntraIzq .26s cubic-bezier(.22,.8,.3,1) both; }
+@keyframes recEntraDer{ from{ opacity:0; transform:translateX(16px); } to{ opacity:1; transform:none; } }
+@keyframes recEntraIzq{ from{ opacity:0; transform:translateX(-16px); } to{ opacity:1; transform:none; } }
 
 .rec-tx{ flex:1 1 auto; min-width:0; }
 .rec-t{
-  margin:0; font-size:15.5px; font-weight:800; line-height:1.3;
-  letter-spacing:-.2px; color:var(--ink);
+  margin:0; font-size:13.5px; font-weight:800; line-height:1.3;
+  letter-spacing:-.15px; color:var(--ink);
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  overflow:hidden;                       /* nunca pasa de dos renglones */
 }
 .rec-t b{ font-weight:800; color:var(--brand-ink); }
-.rec-barra{ display:flex; align-items:center; gap:10px; margin-top:13px; }
+.rec-barra{ display:flex; align-items:center; gap:8px; margin-top:9px; }
 .rec-barra > .barra{
-  flex:1 1 auto; margin-top:0; height:11px;
+  flex:1 1 auto; margin-top:0; height:8px;
   background:var(--surface-alt); border:1px solid var(--border);
 }
-.rec-barra > .barra i{ background:var(--brand-ink); transition:width .5s cubic-bezier(.22,.8,.3,1); }
-.rec-cuenta{ flex:none; font-size:12.5px; font-weight:700; color:var(--ink-soft); white-space:nowrap; }
-.rec-cuenta.hecho{ display:inline-flex; align-items:center; gap:5px; color:var(--brand-ink); }
-.rec-cuenta.hecho svg{ width:14px; height:14px; }
-.rec-chip{
-  display:inline-flex; align-items:center; gap:7px;
-  padding:6px 11px; border-radius:999px;
-  background:var(--surface-alt); color:var(--ink-soft);
-  font-size:12.5px; font-weight:700;
+.rec-barra > .barra i{ background:var(--brand-ink); }
+.rec-cuenta{
+  flex:none; display:inline-flex; align-items:center; gap:5px;
+  font-size:11.5px; font-weight:700; color:var(--ink-soft); white-space:nowrap;
 }
-.rec-chip svg{ width:14px; height:14px; }
+.rec-cuenta.hecho{ color:var(--brand-ink); }
+.rec-cuenta svg{ width:13px; height:13px; flex:none; }
 
 /* El personaje. Su fondo es blanco, igual que la tarjeta: se funde solo. */
 .rec-art{
-  flex:none; width:98px; align-self:stretch;
+  flex:none; width:74px; height:66px;
   background:url('recompensa.jpg') center right/contain no-repeat;
 }
 .rec.bloq .rec-art{ filter:grayscale(1); opacity:.4; }
@@ -588,7 +592,7 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 /* Flechas para moverse entre recompensas */
 .rec-nav{
   position:absolute; top:50%; z-index:2;
-  width:34px; height:34px; border-radius:50%;
+  width:30px; height:30px; border-radius:50%;
   display:grid; place-items:center; cursor:pointer;
   background:rgba(255,255,255,.94); border:1px solid var(--border-fuerte);
   box-shadow:0 2px 9px rgba(17,31,67,.13); color:var(--ink);
@@ -597,17 +601,16 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
   transition:transform .14s ease, background .14s ease;
 }
 .rec-nav:active{ transform:translateY(-50%) scale(.88); background:var(--surface-alt); }
-.rec-nav.ant{ left:9px; }
-.rec-nav.sig{ right:9px; }
-.rec-nav svg{ width:17px; height:17px; }
+.rec-nav.ant{ left:8px; }
+.rec-nav.sig{ right:8px; }
+.rec-nav svg{ width:15px; height:15px; }
 
 @media (max-width:360px){
-  .rec-art{ width:76px; }
-  .rec-t{ font-size:14.5px; }
+  .rec-art{ width:58px; }
+  .rec-t{ font-size:12.5px; }
 }
 @media (prefers-reduced-motion:reduce){
-  .rec-cuerpo{ animation:none; }
-  .rec-barra > .barra i{ transition:none; }
+  .rec.hacia-der .rec-cuerpo, .rec.hacia-izq .rec-cuerpo{ animation:none; }
 }
 .body.pri > .pri-card:first-of-type{ margin-top:20px; }
 .pri-top{ display:flex; align-items:center; gap:13px; }
@@ -3003,18 +3006,21 @@ function bannerExtras(sa, hacia){
   const antes = i > 0 ? niveles[i - 1] : null;
   const premio = pesosC(n.premio_cents);
 
+  /* Los tres estados llevan la MISMA estructura —título de dos renglones,
+     barra y contador— para que la tarjeta mida exactamente igual en todos
+     y no empuje el resto de la pantalla al cambiar de recompensa. */
   let cuerpo;
   if(!n.abierto){
     /* Todavía no le toca: primero tiene que cerrar el nivel anterior. */
     cuerpo = `
-      <p class="rec-t">Desbloquea los ${antes ? antes.negocios : n.negocios} negocios
-        para la siguiente recompensa.</p>
+      <p class="rec-t">Desbloquea los ${antes ? antes.negocios : n.negocios} negocios para la siguiente recompensa.</p>
       <div class="rec-barra">
-        <span class="rec-chip">${ic('candado')}${n.negocios} negocios · ${premio} MXN</span>
+        <span class="barra"><i style="width:0%"></i></span>
+        <span class="rec-cuenta">${ic('candado')}${n.negocios} · ${premio}</span>
       </div>`;
   }else if(n.logrado){
     cuerpo = `
-      <p class="rec-t">¡Lograste los ${n.negocios} negocios! Ganaste <b>${premio} MXN</b> extras.</p>
+      <p class="rec-t">¡Listo! Ganaste <b>${premio} MXN</b> extras por ${n.negocios} negocios.</p>
       <div class="rec-barra">
         <span class="barra"><i style="width:100%"></i></span>
         <span class="rec-cuenta hecho">${ic('check')}Logrado</span>
@@ -3025,14 +3031,16 @@ function bannerExtras(sa, hacia){
       <p class="rec-t">Consigue ${n.negocios} negocios y obtén <b>${premio} MXN</b> extras.</p>
       <div class="rec-barra">
         <span class="barra"><i style="width:${pct}%"></i></span>
-        <span class="rec-cuenta">${n.avance} de ${n.negocios} negocios</span>
+        <span class="rec-cuenta">${n.avance} de ${n.negocios} este mes</span>
       </div>`;
   }
 
   const clases = ['rec'];
-  if(!n.abierto)      clases.push('bloq');
-  if(i > 0)           clases.push('con-ant');
+  if(!n.abierto) clases.push('bloq');
+  if(i > 0)      clases.push('con-ant');
+  /* Solo se anima si el cambio lo pidió el usuario con una flecha. */
   if(hacia === 'izq') clases.push('hacia-izq');
+  if(hacia === 'der') clases.push('hacia-der');
 
   /* El primero solo lleva ›, el de en medio ‹ y ›, el último solo ‹. */
   return `
