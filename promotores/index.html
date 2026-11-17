@@ -2608,10 +2608,15 @@ function invPagar(){
    ===================================================================== */
 async function arrancarInvitacion(codigo){
   INV.codigo = codigo;
-  enderezarUrl(codigo);
 
+  /* PRIMERO se lee la dirección y DESPUÉS se endereza. Al revés no sirve:
+     enderezarUrl() reescribe la dirección sin el "?pago=ok" que manda
+     Stripe al volver, así que leerlo después siempre daba null y nunca se
+     mostraba la pantalla de "ya pagaste" que lo pasa a la app. */
   const q = new URLSearchParams(location.search);
   INV.pago = q.get('pago');
+
+  enderezarUrl(codigo);
 
   const r = await apiAtribuir({ accion:'ver', codigo });
   INV.promotor = r && r.ok ? r : null;
@@ -2626,6 +2631,14 @@ async function arrancarInvitacion(codigo){
     }
     if(INV.pago === 'cancel') toast('No se completó el pago. Puedes intentarlo otra vez.', true);
     return await invDespuesDeEntrar();
+  }
+
+  /* Volvió de Stripe pero el navegador perdió la sesión (pasa en los
+     navegadores de dentro de otras apps). Su pago está bien; solo hay que
+     decirle que entre con su correo, no dejarlo en la promoción a secas. */
+  if(INV.pago === 'ok'){
+    toast('Tu pago se recibió. Entra con tu correo para abrir tu cuenta.',
+          false, 'Es el mismo correo con el que pagaste');
   }
 
   irInv('promo');
