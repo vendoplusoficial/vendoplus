@@ -928,6 +928,53 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
   border:none; background:none; padding:8px; font-family:inherit;
   font-size:14px; font-weight:600; color:var(--ink-soft); text-decoration:underline;
 }
+/* ---- Datos para el depósito ---- */
+.pri-cobro{
+  width:100%; display:flex; align-items:center; gap:12px; margin-top:10px;
+  padding:14px 15px; border:1.5px solid var(--border); border-radius:16px;
+  background:var(--surface); font-family:inherit; text-align:left;
+}
+.pri-cobro-n{ display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin-top:2px; }
+.cob-intro{ font-size:14px; font-weight:500; color:var(--ink-soft); line-height:1.5; margin:0 0 16px; }
+.cob-pista{ font-size:12.5px; font-weight:600; margin:6px 0 0; min-height:16px; }
+.cob-pista.bien{ color:#12A150; }
+.cob-pista.mal{ color:#D94A4A; }
+.cob-guardar{
+  width:100%; height:48px; border:none; border-radius:13px; margin-top:4px;
+  background:#25D366; color:#fff; font-family:inherit;
+  font-size:16px; font-weight:700;
+  box-shadow:0 8px 20px rgba(37,211,102,.28);
+}
+.cob-guardar:active{ background:#1FBE5A; }
+.cob-guardar:disabled{ opacity:.55; box-shadow:none; }
+.cob-ok{
+  display:flex; align-items:flex-start; gap:12px;
+  background:#E6F6EB; border-radius:14px; padding:14px 15px; margin-bottom:18px;
+}
+.cob-ok-ico{
+  width:32px; height:32px; border-radius:50%; flex:none; background:#CBF4C8;
+  display:grid; place-items:center; color:#0C7A2F;
+}
+.cob-ok-ico svg{ width:17px; height:17px; }
+.cob-ok b{ display:block; font-size:14.5px; font-weight:800; color:#0C7A2F; }
+.cob-ok span{ display:block; font-size:13px; font-weight:500; color:#2F7A4A; line-height:1.45; margin-top:2px; }
+.cob-lista{ display:grid; gap:14px; margin-bottom:18px; }
+.cob-lista > div > span{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:3px; }
+.cob-lista > div > b{ font-size:15.5px; font-weight:700; color:var(--ink); word-break:break-all; }
+.cob-clabe{ font-variant-numeric:tabular-nums; letter-spacing:.3px; }
+.cob-cambiar{
+  width:100%; height:46px; border:1.5px solid var(--border-fuerte); border-radius:13px;
+  background:var(--surface); color:var(--ink); font-family:inherit;
+  font-size:15px; font-weight:700;
+}
+.cob-cambiar:active{ background:var(--surface-alt); }
+.cob-cancelar{
+  width:100%; height:44px; border:none; border-radius:13px; margin-top:9px;
+  background:none; color:var(--ink-soft); font-family:inherit;
+  font-size:14.5px; font-weight:700;
+}
+.cob-nota{ font-size:12.5px; font-weight:500; color:var(--ink-faint); text-align:center; margin:12px 0 0; }
+
 .mem{ min-height:100dvh; background:var(--surface); display:flex; flex-direction:column; }
 .mem-bar{ padding:calc(env(safe-area-inset-top) + 12px) 21px 10px; }
 .mem-bar span{ font-size:15px; font-weight:500; color:var(--ink-soft); }
@@ -1406,6 +1453,7 @@ const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, 
    ÍCONOS
    ===================================================================== */
 const ICO = {
+  tarjeta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h3"/></svg>',
   monitor:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2.2"/><path d="M8.5 21h7M12 17v4"/></svg>',
   descargar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg>',
   rayo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>',
@@ -1533,7 +1581,7 @@ const S = {
   // acceso
   modo:'login', correo:'', pw:'', reenvio:0, timer:null, fverificado:false,
   // sesión
-  promotor:null, bonos:null, comisiones:null, inactivos:null,
+  promotor:null, bonos:null, comisiones:null, inactivos:null, cobro:null, editandoCobro:false,
   canal:null, vivo:false,
   // invitación (lado del negocio)
   codigo:null, invita:null
@@ -2843,9 +2891,90 @@ function pantallaInicio(){
           <span class="pri-chev">${ic('der')}</span>
         </button>
       </div>
+
+      <button class="pri-cobro" id="bCobro">
+        <span class="pri-ico gris">${ic('tarjeta')}</span>
+        <span class="pri-saldo-tx">
+          <span class="pri-saldo-t">Datos para el depósito</span>
+          <span class="pri-cobro-n">${cobroListo() ? 'Listos' : 'Faltan tus datos'}</span>
+        </span>
+        <span class="pri-chev">${ic('der')}</span>
+      </button>
     </div>
 
     <button class="fab" id="bAyuda" aria-label="Ayuda">${ic('ayuda')}</button>`;
+}
+
+/** ¿Ya tenemos a dónde mandarle su dinero? */
+function cobroListo(){
+  const c = S.cobro;
+  return !!(c && c.completo);
+}
+
+function pantallaCobro(){
+  const c = S.cobro || {};
+  const guardado = !!c.completo;
+  const editando = S.editandoCobro || !guardado;
+
+  const cuerpo = editando ? `
+        <p class="cob-intro">${guardado
+          ? 'Cambia lo que necesites y guarda. Lo que reclames se deposita a esta cuenta.'
+          : 'Aquí te depositamos lo que reclames. Solo los pones una vez.'}</p>
+
+        <div class="field">
+          <label for="cTitular">Nombre de quien recibe</label>
+          <input class="entrada" id="cTitular" type="text" autocomplete="name"
+                 placeholder="Como aparece en tu cuenta" value="${esc(c.titular || '')}">
+        </div>
+        <div class="field">
+          <label for="cBanco">Banco</label>
+          <input class="entrada" id="cBanco" type="text"
+                 placeholder="BBVA, Banorte, Nu…" value="${esc(c.banco || '')}">
+        </div>
+        <div class="field">
+          <label for="cClabe">CLABE (18 dígitos)</label>
+          <input class="entrada" id="cClabe" type="text" inputmode="numeric" maxlength="22"
+                 placeholder="18 dígitos" value="${esc(c.clabe || '')}">
+          <p class="cob-pista" id="cClabePista"></p>
+        </div>
+        <div class="field">
+          <label for="cWhats">WhatsApp</label>
+          <input class="entrada" id="cWhats" type="tel" inputmode="numeric" maxlength="17"
+                 placeholder="10 dígitos" value="${esc(c.whatsapp || '')}">
+        </div>
+
+        <button class="cob-guardar" id="bGuardarCobro">Guardar</button>
+        ${guardado ? '<button class="cob-cancelar" id="bCancelarCobro">Cancelar</button>' : ''}
+        <p class="cob-nota">Solo tú y VendoPlus pueden ver estos datos.</p>
+  ` : `
+        <div class="cob-ok">
+          <span class="cob-ok-ico">${ic('check')}</span>
+          <div>
+            <b>Tus datos ya están guardados</b>
+            <span>No tienes que ponerlos otra vez. Aquí te depositamos lo que reclames.</span>
+          </div>
+        </div>
+
+        <div class="cob-lista">
+          <div><span>Nombre de quien recibe</span><b>${esc(c.titular || '—')}</b></div>
+          <div><span>Banco</span><b>${esc(c.banco || '—')}</b></div>
+          <div><span>CLABE</span><b class="cob-clabe">${esc(c.clabe || '—')}</b></div>
+          <div><span>WhatsApp</span><b>${esc(c.whatsapp || '—')}</b></div>
+        </div>
+
+        <button class="cob-cambiar" id="bCambiarCobro">Cambiar mis datos</button>
+        <p class="cob-nota">Puedes cambiarlos cuando quieras.</p>
+  `;
+
+  return `
+    <div class="top">
+      <button class="icon-btn back" id="bAtras" aria-label="Regresar">${ic('izq')}</button>
+      <h1>Datos para el depósito</h1>
+    </div>
+
+    <div class="body vista">
+      <div class="card">${cuerpo}</div>
+    </div>`;
 }
 
 /** Barra de progreso hacia el siguiente grupo de renovaciones. */
@@ -3264,6 +3393,7 @@ function pintar(){
                 : p === 'bonos'      ? pantallaBonos()
                 : p === 'comisiones' ? pantallaComisiones()
                 : p === 'inactivos'  ? pantallaInactivos()
+                : p === 'cobro'      ? pantallaCobro()
                 : pantallaAyuda();
   entrada('app:' + p);
   cablearPortal();
@@ -3525,11 +3655,37 @@ function cablearPortal(){
     $('bComis').onclick  = async () => { irA('comisiones'); await cargarComisiones(); };
     $('bAyuda').onclick  = () => irA('ayuda');
     $('bSalir').onclick  = cerrarSesion;
+    if($('bCobro')) $('bCobro').onclick = () => irA('cobro');
   }
 
-  if(['bonos','comisiones','inactivos','ayuda'].includes(p)){
+  if(p === 'cobro'){
+    if($('bCambiarCobro')) $('bCambiarCobro').onclick = () => { S.editandoCobro = true; pintar(); };
+    if($('bCancelarCobro')) $('bCancelarCobro').onclick = () => { S.editandoCobro = false; pintar(); };
+    const cl = $('cClabe');
+    if(!cl) return;
+    const pista = $('cClabePista');
+    const revisar = () => {
+      const d = cl.value.replace(/\D/g, '');
+      if(!d.length){ pista.textContent = ''; pista.className = 'cob-pista'; return; }
+      if(d.length < 18){
+        pista.textContent = 'Llevas ' + d.length + ' de 18 dígitos';
+        pista.className = 'cob-pista';
+      }else if(clabeOk(d)){
+        pista.textContent = 'CLABE correcta';
+        pista.className = 'cob-pista bien';
+      }else{
+        pista.textContent = 'Esa CLABE no es válida: revisa los dígitos';
+        pista.className = 'cob-pista mal';
+      }
+    };
+    cl.oninput = revisar;
+    revisar();
+    $('bGuardarCobro').onclick = guardarCobro;
+  }
+
+  if(['bonos','comisiones','inactivos','ayuda','cobro'].includes(p)){
     const atras = $('bAtras');
-    if(atras) atras.onclick = () => irA(p === 'inactivos' ? 'bonos' : 'inicio');
+    if(atras) atras.onclick = () => { S.editandoCobro = false; irA(p === 'inactivos' ? 'bonos' : 'inicio'); };
   }
 
   if(p === 'bonos'){
@@ -3562,10 +3718,48 @@ async function copiarEnlace(){
 }
 
 /** Pedir el dinero de una sección. El servidor decide el importe. */
+async function cargarCobro(){
+  const r = await sb.rpc('ref_mi_cobro');
+  if(!r.error && r.data && r.data.ok) S.cobro = r.data;
+}
+
+/** Mismo cálculo que el del servidor: dígito verificador de la CLABE. */
+function clabeOk(txt){
+  const d = String(txt || '').replace(/\D/g, '');
+  if(d.length !== 18) return false;
+  const pesos = [3, 7, 1];
+  let suma = 0;
+  for(let i = 0; i < 17; i++) suma += (Number(d[i]) * pesos[i % 3]) % 10;
+  return ((10 - (suma % 10)) % 10) === Number(d[17]);
+}
+
+function guardarCobro(){
+  return conBoton('bGuardarCobro', 'Guardando…', async () => {
+    const r = await sb.rpc('ref_guardar_cobro', {
+      p_titular:  $('cTitular').value,
+      p_banco:    $('cBanco').value,
+      p_clabe:    $('cClabe').value,
+      p_whatsapp: $('cWhats').value
+    });
+    if(r.error) return toast(errLegible(r.error), true);
+    if(!r.data || !r.data.ok) return toast((r.data && r.data.mensaje) || 'No se pudo guardar.', true);
+    vibra([15, 60, 15]);
+    toast(r.data.mensaje);
+    S.editandoCobro = false;
+    await cargarCobro();
+    irA('inicio');
+  });
+}
+
 function reclamar(seccion, idBoton){
   return conBoton(idBoton, 'Enviando…', async () => {
     const r = await sb.rpc('ref_reclamar', { p_seccion: seccion });
     if(r.error) return toast(errLegible(r.error), true);
+    if(r.data && r.data.falta_cobro){
+      toast('Primero pon tus datos para el depósito', true,
+            'Sin CLABE no tenemos a dónde mandarte el dinero');
+      return irA('cobro');
+    }
     if(!r.data || !r.data.ok) return toast((r.data && r.data.mensaje) || 'No se pudo reclamar.', true);
     vibra([15, 60, 15]);
     toast(r.data.mensaje);
@@ -3611,6 +3805,7 @@ async function refrescar(){
   refrescando = true;
   try{
     await cargarTablero();
+    await cargarCobro();
     if(S.pantalla === 'bonos'      || S.bonos)      await cargarBonos();
     if(S.pantalla === 'comisiones' || S.comisiones) await cargarComisiones();
     if(S.pantalla === 'inactivos'  || S.inactivos)  await cargarInactivos();
