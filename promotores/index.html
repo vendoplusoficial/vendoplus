@@ -898,13 +898,15 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 
 .vpa{
   --acc:#16C15B; --acc-soft:#E5FAEC; --ink-soft:#7C88A3;
-  min-height:100dvh; display:flex; flex-direction:column;
+  --z:.9; zoom:var(--z);
+  min-height:calc(100dvh / var(--z)); display:flex; flex-direction:column;
   background:var(--surface);
 }
+@media (min-width:700px){ .vpa{ --z:1; } }
 .vpa .auth-top{
-  width:100%; max-width:430px; margin:0 auto;
-  padding:calc(12px + env(safe-area-inset-top)) 20px 2px;
-  display:flex; align-items:center; gap:10px; min-height:50px;
+  width:100%; max-width:440px; margin:0 auto;
+  padding:calc(14px + env(safe-area-inset-top)) 22px 4px;
+  display:flex; align-items:center; gap:10px; min-height:56px;
 }
 .vpa .auth-back{
   width:42px; height:42px; border-radius:14px; border:none;
@@ -915,33 +917,54 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 .vpa .auth-back:active{ transform:scale(.94); }
 
 .vpa .auth-body{
-  width:100%; max-width:430px; margin:0 auto;
-  padding:0 20px calc(20px + env(safe-area-inset-bottom));
+  width:100%; max-width:440px; margin:0 auto;
+  padding:0 22px calc(26px + env(safe-area-inset-bottom));
   flex:1; display:flex; flex-direction:column;
 }
 .vpa .auth-title{
-  font-size:21.5px; font-weight:800; letter-spacing:-.4px;
-  color:var(--ink); margin:0 0 7px; line-height:1.25;
+  font-size:25px; font-weight:800; letter-spacing:-.4px;
+  color:var(--ink); margin:0 0 10px; line-height:1.24;
 }
 .vpa .auth-sub{
-  font-size:13.8px; font-weight:500; color:var(--ink-soft);
-  margin:0 0 14px; line-height:1.5;
+  font-size:15px; font-weight:500; color:var(--ink-soft);
+  margin:0 0 24px; line-height:1.55;
 }
 .vpa .auth-sub b{ color:var(--ink); word-break:break-all; }
-.vpa .auth-illu{ display:flex; justify-content:center; margin:2px 0 14px; }
+.vpa .auth-illu{ display:flex; justify-content:center; margin:4px 0 24px; }
 .vpa .auth-illu img{
   display:block; width:auto; height:auto;
-  max-width:min(74%, 260px); max-height:190px;
+  max-width:min(100%, 330px); max-height:235px;
   margin:-4px auto -6px; mix-blend-mode:multiply;
 }
-.vpa .auth-actions{ margin-top:16px; display:flex; flex-direction:column; gap:10px; padding-top:0; }
+.vpa .auth-actions{ margin-top:auto; display:flex; flex-direction:column; gap:12px; padding-top:26px; }
 
-.vpa .campo{ margin-bottom:12px; }
-.vpa .campo label{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:6px; }
+/* Celulares de pantalla corta (SE, equipos viejos): se junta un poco
+   todo para que no haya que deslizar. En pantallas normales no cambia nada. */
+@media (max-height:720px){
+  .vpa .auth-illu{ margin:0 0 14px; }
+  .vpa .auth-illu img{ max-width:min(100%, 250px); max-height:150px; }
+  .vpa .auth-title{ margin-bottom:7px; }
+  .vpa .auth-sub{ margin-bottom:16px; }
+  .vpa .auth-actions{ padding-top:16px; }
+  .vpa .auth-foot{ margin-top:13px; }
+  .vpa .auth-mail-tip{ margin:-4px 0 12px; }
+  .vpa .otp-row{ margin:4px 0 12px; }
+}
+@media (max-height:620px){
+  .vpa .auth-illu{ margin:0 0 10px; }
+  .vpa .auth-illu img{ max-width:min(100%, 170px); max-height:100px; }
+  .vpa .auth-title{ font-size:23px; margin-bottom:6px; }
+  .vpa .auth-sub{ margin-bottom:12px; }
+  .vpa .campo{ margin-bottom:12px; }
+  .vpa .auth-actions{ padding-top:12px; }
+}
+
+.vpa .campo{ margin-bottom:16px; }
+.vpa .campo label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:7px; }
 .vpa .campo label span{ font-weight:600; }
 .vpa .email-input{
-  width:100%; border:1.6px solid var(--border); border-radius:12px;
-  padding:14px 16px; font-size:15px; font-weight:600; letter-spacing:0;
+  width:100%; height:49px; border:1.6px solid var(--border); border-radius:14px;
+  padding:0 16px; font-size:16px; font-weight:700; letter-spacing:0;
   color:var(--ink); background:var(--surface); font-family:inherit;
 }
 .vpa .email-input:focus{ border-color:var(--acc); outline:none; }
@@ -956,9 +979,9 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 }
 
 .vpa .btn-dark{
-  width:100%; border:none; border-radius:14px; padding:14px 18px;
+  width:100%; height:55.5px; border:none; border-radius:16px; padding:0 20px;
   background:#25D366; color:#fff; font-family:inherit;
-  font-size:15.5px; font-weight:700; letter-spacing:normal;
+  font-size:16.5px; font-weight:700; letter-spacing:normal;
   display:inline-flex; align-items:center; justify-content:center; gap:7px;
   box-shadow:0 10px 22px rgba(37,211,102,.30);
 }
@@ -967,12 +990,12 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 .vpa .btn-dark:not(:disabled):active{ transform:scale(.99); }
 
 .vpa .auth-mail-tip{
-  font-size:12px; font-weight:600; color:var(--ink-soft);
-  line-height:1.45; margin:-6px 0 12px; text-align:center;
+  font-size:12.5px; font-weight:600; color:var(--ink-soft);
+  line-height:1.5; margin:-8px 0 16px; text-align:center;
 }
 .vpa .auth-mail-tip b{ color:var(--ink); }
 
-.vpa .terms-row{ display:flex; align-items:flex-start; gap:11px; margin:12px 0 2px; cursor:pointer; }
+.vpa .terms-row{ display:flex; align-items:flex-start; gap:12px; margin:18px 0 4px; cursor:pointer; }
 .vpa .terms-box{
   width:24px; height:24px; border-radius:8px; flex-shrink:0; margin-top:1px;
   border:1.8px solid var(--ink-faint); background:var(--surface);
@@ -982,10 +1005,10 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 .vpa .terms-box svg{ width:14px; height:14px; color:#fff; opacity:0; transform:scale(.6); transition:opacity .15s ease, transform .15s ease; }
 .vpa .terms-row.checked .terms-box{ background:var(--acc); border-color:var(--acc); }
 .vpa .terms-row.checked .terms-box svg{ opacity:1; transform:scale(1); }
-.vpa .terms-text{ font-size:12.8px; line-height:1.55; color:var(--ink-soft); font-weight:600; }
+.vpa .terms-text{ font-size:13.5px; line-height:1.6; color:var(--ink-soft); font-weight:600; }
 .vpa .terms-text a{ color:var(--ink); font-weight:800; text-decoration:underline; }
 
-.vpa .otp-row{ display:flex; gap:8px; justify-content:space-between; margin:4px 0 12px; }
+.vpa .otp-row{ display:flex; gap:9px; justify-content:space-between; margin:6px 0 18px; }
 .vpa .otp-cell{
   flex:1; min-width:0; aspect-ratio:1 / 1.18; width:auto; height:auto;
   border:1.8px solid var(--border); border-radius:15px;
@@ -1005,14 +1028,14 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 .vpa .otp-help button:disabled{ color:var(--ink-faint); text-decoration:none; }
 .vpa .otp-help b{ color:var(--ink); }
 
-.vpa .auth-foot{ text-align:center; font-size:13px; font-weight:600; color:var(--ink-soft); margin:12px 0 0; }
+.vpa .auth-foot{ text-align:center; font-size:14px; font-weight:600; color:var(--ink-soft); margin:18px 0 0; }
 .vpa .auth-foot button{
-  background:none; border:none; color:var(--ink); font-weight:800; font-size:13px;
+  background:none; border:none; color:var(--ink); font-weight:800; font-size:14px;
   text-decoration:underline; padding:0; font-family:inherit;
 }
 .vpa .auth-legal{
-  text-align:center; font-size:11.5px; font-weight:600;
-  color:var(--ink-faint); margin:10px 0 0; display:flex;
+  text-align:center; font-size:12.5px; font-weight:600;
+  color:var(--ink-faint); margin:14px 0 0; display:flex;
   justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;
 }
 .vpa .auth-legal a, .vpa .auth-legal span{ color:var(--ink-soft); text-decoration:underline; }
@@ -1023,6 +1046,7 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 /* --- Computadora: panel verde a la izquierda y el formulario a la derecha --- */
 @media (min-width:900px){
   .vpa{
+    --z:1;
     display:grid; grid-template-columns:1.05fr 1fr;
     grid-template-areas:'side main';
     width:100%; max-width:none; margin:0;
@@ -1594,7 +1618,7 @@ function pantallaInvAcceso(){
           <div class="terms-row ${INV.terminos ? 'checked' : ''}" id="termsRow">
             <span class="terms-box">${ic('palomita')}</span>
             <span class="terms-text">Aceptas los ${liga(c.url_terminos, 'términos y condiciones')}
-              y el ${liga(c.url_privacidad, 'aviso de privacidad')}.</span>
+              y autorizas el ${liga(c.url_privacidad, 'tratamiento de datos personales.')}</span>
           </div>`}
 
         <div class="auth-actions">
@@ -1604,7 +1628,6 @@ function pantallaInvAcceso(){
           <p class="auth-foot">${login
             ? '¿Aún no tienes cuenta? <button id="bCambiaNeg">Créala aquí</button>'
             : '¿Ya tienes una cuenta? <button id="bCambiaNeg">Inicia sesión</button>'}</p>
-          ${login ? vpaLegal() : ''}
         </div>
       </div>
       ${vpaLado(login ? 'login' : 'signup')}
@@ -1625,7 +1648,7 @@ function pantallaInvCodigo(){
       <div class="auth-body">
         <h1 class="auth-title">Revisa tu correo</h1>
         <p class="auth-sub">Te mandamos un código de ${CONFIG.CODIGO_DIGITOS} dígitos a
-          <b>${esc(INV.correo)}</b>.</p>
+          <b>${esc(INV.correo)}</b>. Escríbelo aquí.</p>
 
         <div class="auth-illu"><img src="${ILU.codigo}" alt=""></div>
         <p class="auth-mail-tip">¿No lo ves? Busca en <b>Spam</b> o en <b>Promociones</b>. Llega de parte de VendoPlus.</p>
@@ -1657,7 +1680,6 @@ function pantallaInvClave(){
 
         <div class="auth-actions">
           <button class="btn-dark" id="nBtn2" disabled>Crear cuenta</button>
-          ${vpaLegal()}
         </div>
       </div>
       ${vpaLado('clave')}
