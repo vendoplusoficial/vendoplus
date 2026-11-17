@@ -1024,7 +1024,9 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 @media (min-width:900px){
   .vpa{
     display:grid; grid-template-columns:1.05fr 1fr;
-    grid-template-areas:'side main'; height:100dvh; min-height:0; overflow:hidden;
+    grid-template-areas:'side main';
+    width:100%; max-width:none; margin:0;
+    height:100dvh; min-height:0; overflow:hidden;
   }
   .vpa::before{
     content:''; grid-area:side; background:var(--surface);
@@ -1033,35 +1035,57 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
   .vpa > .auth-top, .vpa > .auth-body{ grid-area:main; }
   /* La barra de arriba va encima del formulario, pero solo el botón
      recibe los toques: si no, tapaba el formulario y no se podía regresar. */
-  .vpa > .auth-top{ align-self:start; background:none; z-index:3; pointer-events:none; }
-  .vpa > .auth-top .auth-back{ pointer-events:auto; }
-  .vpa > .auth-body{
-    align-self:center; overflow-y:auto; max-height:100dvh;
-    padding-top:64px; padding-bottom:28px; flex:none;
+  /* Medidas tomadas de tu app abierta en computadora, una por una. */
+  .vpa > .auth-top{
+    align-self:start; justify-self:start; background:none; z-index:3; pointer-events:none;
+    width:auto; max-width:none; margin:0; padding:26px 0 0 29px;
   }
+  .vpa > .auth-top .auth-back{ pointer-events:auto; }
+  .vpa .auth-back{ width:37px; height:37px; border-radius:14px; }
+  .vpa .auth-back svg{ width:18px; height:18px; }
+  .vpa > .auth-body{
+    align-self:center; justify-self:center; overflow-y:auto; max-height:100dvh;
+    width:100%; max-width:387px; padding:70px 22px 30px; flex:none;
+  }
+  .vpa .auth-title{ font-size:25px; margin:0 0 10px; line-height:1.24; }
+  .vpa .auth-sub{ font-size:15px; line-height:1.55; margin:0 0 24px; }
+  .vpa .campo{ margin-bottom:14px; }
+  .vpa .campo label{ font-size:11.5px; margin-bottom:6px; }
+  .vpa .email-input{ height:33px; padding:0 11px; font-size:13.5px; border-radius:10px; }
+  .vpa .pw-wrap .email-input{ padding-right:74px; }
+  .vpa .pw-toggle{ font-size:11.5px; padding:6px 9px; }
+  .vpa .btn-dark{ height:41px; padding:0 18px; font-size:15px; border-radius:13px; }
+  .vpa .btn-dark svg{ width:15px; height:15px; }
+  .vpa .terms-row{ margin:16px 0 2px; }
+  .vpa .terms-text{ font-size:13.5px; line-height:1.6; }
+  .vpa .auth-actions{ margin-top:20px; }
+  .vpa .auth-foot, .vpa .auth-foot button{ font-size:14px; }
+  .vpa .auth-legal{ font-size:12.5px; margin-top:14px; }
+  .vpa .otp-cell{ font-size:20px; border-radius:12px; }
+  .vpa .auth-mail-tip{ font-size:12.5px; margin:-6px 0 14px; }
   .vpa .auth-illu{ display:none; }
   .vpa .auth-actions{ margin-top:22px; }
 
   .vpa .auth-side{
-    grid-area:side; align-self:center; justify-self:center;
+    grid-column:1; grid-row:1; place-self:center; margin:0 auto;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; width:100%; max-width:460px; max-height:100dvh;
+    text-align:center; width:min(100%, 405px); max-height:100dvh;
     padding:24px 40px; color:var(--ink); overflow:hidden;
   }
   .vpa .auth-side-art{
-    width:100%; max-width:min(26vw, 300px); margin:0 auto 18px;
+    width:100%; max-width:min(30vw, 334px); margin:0 auto 20px;
     display:flex; align-items:center; justify-content:center;
   }
   .vpa .auth-side-art img{ display:block; width:100%; height:auto; }
-  .vpa .auth-side-title{ font-size:23px; font-weight:800; letter-spacing:-.4px; line-height:1.2; }
-  .vpa .auth-side-sub{ font-size:14.5px; font-weight:500; color:var(--ink-soft); line-height:1.5; margin-top:8px; }
+  .vpa .auth-side-title{ font-size:26px; font-weight:800; letter-spacing:-.4px; line-height:1.2; }
+  .vpa .auth-side-sub{ font-size:15px; font-weight:500; color:var(--ink-soft); line-height:1.55; margin-top:10px; }
   .vpa .auth-side-chips{
     display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:18px;
   }
   .vpa .auth-side-chips span{
     display:inline-flex; align-items:center; gap:7px;
     background:var(--surface-alt); color:var(--ink); border-radius:999px;
-    padding:8px 14px; font-size:13px; font-weight:700;
+    padding:9px 14px; font-size:12.5px; font-weight:700;
   }
   .vpa .auth-side-chips svg{ width:15px; height:15px; }
 }
