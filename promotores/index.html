@@ -284,15 +284,26 @@ a{ color:var(--brand-ink); }
 .toast{
   position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 86px);
   transform:translateX(-50%) translateY(14px); z-index:60;
-  background:var(--ink); color:#fff; border-radius:12px;
-  padding:13px 17px; font-size:14px; font-weight:500;
-  box-shadow:var(--shadow-pop); max-width:calc(100% - 32px);
+  background:#fff; color:var(--ink); border:1px solid var(--border); border-radius:16px;
+  padding:10px 15px 10px 11px; width:max-content; max-width:calc(100% - 32px);
+  box-shadow:0 14px 34px rgba(22,33,62,.18);
   opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s ease;
-  display:flex; align-items:center; gap:9px;
+  display:flex; align-items:center; gap:11px; text-align:left;
 }
 .toast.ver{ opacity:1; transform:translateX(-50%) translateY(0); }
-.toast svg{ width:17px; height:17px; flex:none; }
-.toast.mal{ background:var(--rojo); }
+.toast-ico{
+  width:38px; height:38px; border-radius:50%; flex:none;
+  display:grid; place-items:center; background:#E6F8EE; color:#12A150;
+}
+.toast.mal .toast-ico{ background:#FDEBEB; color:#D94A4A; }
+.toast-ico svg{ width:20px; height:20px; }
+.toast-tx{ min-width:0; }
+.toast-tx b{ display:block; font-size:14.5px; font-weight:800; line-height:1.25; color:var(--ink); }
+.toast-tx i{
+  display:block; font-style:normal; font-size:12.8px; font-weight:500;
+  line-height:1.3; margin-top:3px; color:var(--ink-soft);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
 
 .cargando{ display:grid; place-items:center; min-height:100dvh; }
 .spin{
@@ -1459,12 +1470,26 @@ const fmtFechaHora = new Intl.DateTimeFormat('es-MX', {
 const fechaHora = s => s ? fmtFechaHora.format(new Date(s)) : '—';
 
 let toastT = null;
-function toast(texto, mal){
+/* Segundo renglón del aviso: le dice a la persona qué hacer. */
+const TOAST_PISTA = {
+  'Correo o contraseña incorrectos': 'Revísalos o toca "¿Olvidaste tu contraseña?"',
+  'Ese código ya venció: pide otro': 'Toca "Pedir otro código" para recibir uno nuevo',
+  'Ese código no es correcto': 'Revisa los 6 dígitos que te llegaron al correo',
+  'Sin conexión: revisa tu internet': 'Revisa tus datos o el wifi y vuelve a intentar',
+  'Esa contraseña es muy débil: usa al menos 8 caracteres': 'Mezcla letras y números para que sea más segura',
+  'La contraseña nueva debe ser distinta a la anterior': 'Escribe una que no hayas usado antes'
+};
+
+function toast(texto, mal, pista){
   const t = $('toast');
+  const sub = pista || TOAST_PISTA[texto] || '';
   t.className = 'toast ver' + (mal ? ' mal' : '');
-  t.innerHTML = (mal ? ic('alerta') : ic('check')) + '<span>' + esc(texto) + '</span>';
+  t.innerHTML =
+    '<span class="toast-ico">' + (mal ? ic('alerta') : ic('check')) + '</span>' +
+    '<span class="toast-tx"><b>' + esc(texto) + '</b>' +
+    (sub ? '<i>' + esc(sub) + '</i>' : '') + '</span>';
   clearTimeout(toastT);
-  toastT = setTimeout(() => { t.className = 'toast' + (mal ? ' mal' : ''); }, 3200);
+  toastT = setTimeout(() => { t.className = 'toast' + (mal ? ' mal' : ''); }, 3600);
 }
 
 /** Traduce los errores de Supabase a algo que cualquiera entienda. */
@@ -2107,6 +2132,48 @@ function pintarInv(){
 }
 
 function irInv(p){ INV.pantalla = p; pintarInv(); }
+
+/* Arreglo del teclado: en celular, al cerrar el teclado (botón "Listo",
+   tocar fuera o mandar el formulario) la página se quedaba desplazada hacia
+   arriba con un hueco gris abajo. Esto la regresa a su lugar. */
+(function(){
+  function regresar(){
+    const d = document.scrollingElement || document.documentElement;
+    if(d.scrollHeight - window.innerHeight <= 140){
+      try{ window.scrollTo(0, 0); }catch(e){}
+      d.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+    const app = document.getElementById('app');
+    if(app && app.scrollHeight - app.clientHeight <= 140) app.scrollTop = 0;
+    const cuerpo = app && app.querySelector('.auth-body, .mem-in, .body');
+    if(cuerpo && cuerpo.scrollHeight - cuerpo.clientHeight <= 140) cuerpo.scrollTop = 0;
+  }
+  function siNadieEscribe(){
+    setTimeout(() => {
+      const a = document.activeElement;
+      if(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+      regresar();
+      setTimeout(regresar, 220);
+    }, 70);
+  }
+  addEventListener('focusout', siNadieEscribe, true);
+  if(window.visualViewport){
+    let alto = visualViewport.height;
+    visualViewport.addEventListener('resize', () => {
+      const nuevo = visualViewport.height;
+      if(nuevo > alto + 80) siNadieEscribe();   // se cerró el teclado
+      alto = nuevo;
+    });
+  }
+  // Con "Listo"/Enter se cierra el teclado en vez de dejarlo abierto.
+  addEventListener('keydown', ev => {
+    if(ev.key === 'Enter'){
+      const a = document.activeElement;
+      if(a && a.tagName === 'INPUT') setTimeout(() => { try{ a.blur(); }catch(e){} }, 0);
+    }
+  }, true);
+})();
 
 /* Arreglo del deslizamiento: al cambiar de pantalla siempre arranca
    hasta arriba (antes se quedaba donde estaba la pantalla anterior)
