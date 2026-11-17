@@ -947,17 +947,6 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
 }
 .cob-guardar:active{ background:#1FBE5A; }
 .cob-guardar:disabled{ opacity:.55; box-shadow:none; }
-.cob-ok{
-  display:flex; align-items:flex-start; gap:12px;
-  background:#E6F6EB; border-radius:14px; padding:14px 15px; margin-bottom:18px;
-}
-.cob-ok-ico{
-  width:32px; height:32px; border-radius:50%; flex:none; background:#CBF4C8;
-  display:grid; place-items:center; color:#0C7A2F;
-}
-.cob-ok-ico svg{ width:17px; height:17px; }
-.cob-ok b{ display:block; font-size:14.5px; font-weight:800; color:#0C7A2F; }
-.cob-ok span{ display:block; font-size:13px; font-weight:500; color:#2F7A4A; line-height:1.45; margin-top:2px; }
 .cob-lista{ display:grid; gap:14px; margin-bottom:18px; }
 .cob-lista > div > span{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:3px; }
 .cob-lista > div > b{ font-size:15.5px; font-weight:700; color:var(--ink); word-break:break-all; }
@@ -2947,14 +2936,6 @@ function pantallaCobro(){
         ${guardado ? '<button class="cob-cancelar" id="bCancelarCobro">Cancelar</button>' : ''}
         <p class="cob-nota">Solo tú y VendoPlus pueden ver estos datos.</p>
   ` : `
-        <div class="cob-ok">
-          <span class="cob-ok-ico">${ic('check')}</span>
-          <div>
-            <b>Tus datos ya están guardados</b>
-            <span>No tienes que ponerlos otra vez. Aquí te depositamos lo que reclames.</span>
-          </div>
-        </div>
-
         <div class="cob-lista">
           <div><span>Nombre de quien recibe</span><b>${esc(c.titular || '—')}</b></div>
           <div><span>Banco</span><b>${esc(c.banco || '—')}</b></div>
@@ -2963,7 +2944,6 @@ function pantallaCobro(){
         </div>
 
         <button class="cob-cambiar" id="bCambiarCobro">Cambiar mis datos</button>
-        <p class="cob-nota">Puedes cambiarlos cuando quieras.</p>
   `;
 
   return `
@@ -3661,26 +3641,29 @@ function cablearPortal(){
   if(p === 'cobro'){
     if($('bCambiarCobro')) $('bCambiarCobro').onclick = () => { S.editandoCobro = true; pintar(); };
     if($('bCancelarCobro')) $('bCancelarCobro').onclick = () => { S.editandoCobro = false; pintar(); };
+    /* Lo de abajo solo existe mientras edita. Ojo: nada de `return` aquí,
+       porque más abajo se cablea el botón de regresar de esta pantalla. */
     const cl = $('cClabe');
-    if(!cl) return;
-    const pista = $('cClabePista');
-    const revisar = () => {
-      const d = cl.value.replace(/\D/g, '');
-      if(!d.length){ pista.textContent = ''; pista.className = 'cob-pista'; return; }
-      if(d.length < 18){
-        pista.textContent = 'Llevas ' + d.length + ' de 18 dígitos';
-        pista.className = 'cob-pista';
-      }else if(clabeOk(d)){
-        pista.textContent = 'CLABE correcta';
-        pista.className = 'cob-pista bien';
-      }else{
-        pista.textContent = 'Esa CLABE no es válida: revisa los dígitos';
-        pista.className = 'cob-pista mal';
-      }
-    };
-    cl.oninput = revisar;
-    revisar();
-    $('bGuardarCobro').onclick = guardarCobro;
+    if(cl){
+      const pista = $('cClabePista');
+      const revisar = () => {
+        const d = cl.value.replace(/\D/g, '');
+        if(!d.length){ pista.textContent = ''; pista.className = 'cob-pista'; return; }
+        if(d.length < 18){
+          pista.textContent = 'Llevas ' + d.length + ' de 18 dígitos';
+          pista.className = 'cob-pista';
+        }else if(clabeOk(d)){
+          pista.textContent = 'CLABE correcta';
+          pista.className = 'cob-pista bien';
+        }else{
+          pista.textContent = 'Esa CLABE no es válida: revisa los dígitos';
+          pista.className = 'cob-pista mal';
+        }
+      };
+      cl.oninput = revisar;
+      revisar();
+      $('bGuardarCobro').onclick = guardarCobro;
+    }
   }
 
   if(['bonos','comisiones','inactivos','ayuda','cobro'].includes(p)){
@@ -3720,7 +3703,14 @@ async function copiarEnlace(){
 /** Pedir el dinero de una sección. El servidor decide el importe. */
 async function cargarCobro(){
   const r = await sb.rpc('ref_mi_cobro');
-  if(!r.error && r.data && r.data.ok) S.cobro = r.data;
+  if(r.error || !r.data || !r.data.ok) return;
+  S.cobro = r.data;
+  /* Repintar al llegar: el inicio ya se dibujó con el tablero, antes que
+     estos datos, y si no se repinta se queda con "Faltan tus datos".
+     En la pantalla de cobro solo se repinta si no está editando, para no
+     borrarle lo que está escribiendo. */
+  const editando = S.editandoCobro || !r.data.completo;
+  if(S.pantalla === 'inicio' || (S.pantalla === 'cobro' && !editando)) pintar();
 }
 
 /** Mismo cálculo que el del servidor: dígito verificador de la CLABE. */
