@@ -2498,6 +2498,8 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .md-del-clear[hidden]{ display:none; }
   .md-del-map{ height:190px; }
   .btn.md-del-gps{ margin-top:8px; padding:11px 10px; font-size:13.5px; }
+  .md-del-rates-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:16px 0; }
+  .md-del-rates-actions{ display:flex; flex-wrap:wrap; gap:8px; }
   .md-del-manual{ display:block; width:100%; margin-top:6px; border:0; background:none; cursor:pointer;
     font-family:inherit; font-size:12.5px; font-weight:700; color:var(--ink-soft); padding:9px;
     text-decoration:underline; -webkit-tap-highlight-color:transparent; }
@@ -16195,14 +16197,6 @@ function mdRenderDeliveryForm(){
       <div class="md-del-info">
         <div>${icon('monito')}<span>El cliente marca en un mapa dónde está.</span></div>
       </div>
-      <div class="field">
-        <b>Tarifas por distancia</b>
-        <p>Configura cuánto cuesta el envío hasta cada kilómetro. La distancia se mide en línea recta.</p>
-        <div id="mdDelRates">${mdDelRatesHTML()}</div>
-        <button type="button" class="btn ghost" onclick="mdDelRateStep(1)">Agregar kilómetro</button>
-        <button type="button" class="btn ghost" onclick="mdDelRateStep(-1)">Quitar último</button>
-        <p>Si el cliente está más lejos, se aplica el precio promedio por kilómetro de la última tarifa a la distancia adicional.</p>
-      </div>
     ` : ''}
     ${d.on === null ? '' : `
       <div class="md-del-map-head">
@@ -16213,6 +16207,12 @@ function mdRenderDeliveryForm(){
       <button type="button" class="btn ghost block md-del-gps" onclick="mdDelGps(this)">${icon('locate')} Usar mi ubicación actual</button>
       <button type="button" class="md-del-manual" onclick="mdDelManual()">O pega un link de Google Maps</button>
     `}
+    ${d.on === true ? `
+      <div class="md-del-rates-row">
+        <b>Editar tarifas</b>
+        <button type="button" class="btn ghost" onclick="mdOpenDeliveryRates()">Editar</button>
+      </div>
+    ` : ''}
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="mdCloseDeliveryForm()">Cancelar</button>
       <button class="btn primary block" id="mdDelSave" onclick="mdSaveDelivery()" ${(d.on === null || !pin) ? 'disabled' : ''}>Guardar</button>
@@ -16252,8 +16252,33 @@ function mdCloseDeliveryForm(){
   () => { mdRenderDeliveryForm(); },
   () => { mdDelDraft = null; closeModal(); });
 }
+function mdOpenDeliveryRates(){
+  if(!mdDelDraft || mdDelDraft.on !== true) return;
+  openModal(`
+    <div class="sheet-header">
+      <div class="sheet-header-left">
+        <button type="button" class="sheet-back" aria-label="Volver a servicio a domicilio" onclick="mdBackFromDeliveryRates()">${icon('chevronLeft')}</button>
+        <h2>Tarifas por distancia</h2>
+      </div>
+    </div>
+    <p>Configura el precio hasta cada kilómetro. La distancia se mide en línea recta.</p>
+    <div class="field" id="mdDelRates">${mdDelRatesHTML()}</div>
+    <div class="md-del-rates-actions">
+      <button type="button" class="btn ghost" onclick="mdDelRateStep(1)">Agregar kilómetro</button>
+      <button type="button" class="btn ghost" onclick="mdDelRateStep(-1)">Quitar último</button>
+    </div>
+    <p>Si el cliente está más lejos, los kilómetros adicionales se cobran al precio promedio por kilómetro de la última tarifa.</p>
+    <div class="sheet-actions">
+      <button type="button" class="btn primary block" onclick="mdBackFromDeliveryRates()">Volver a servicio a domicilio</button>
+    </div>
+  `, { dismissible:false });
+}
+function mdBackFromDeliveryRates(){
+  mdRenderDeliveryForm();
+  document.querySelector('.md-del-rates-row button')?.focus({ preventScroll:true });
+}
 function mdDelRatesHTML(){
-  return mdDelDraft.rates.map((rate, i) => `<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0">Hasta ${i + 1} km <span style="display:flex;align-items:center;gap:6px">$ <input style="width:100px" aria-label="Precio hasta ${i + 1} km en pesos" type="number" min="0" max="10000" step="0.01" inputmode="decimal" value="${rate == null ? '' : rate}" oninput="mdDelDraft.rates[${i}]=this.valueAsNumber"></span></label>`).join('');
+  return mdDelDraft.rates.map((rate, i) => `<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0">Hasta ${i + 1} km <span style="display:flex;align-items:center;gap:6px">$ <input style="width:100px" aria-label="Precio hasta ${i + 1} km en pesos" type="number" min="0" max="10000" step="0.01" inputmode="decimal" value="${Number.isFinite(rate) ? rate : ''}" oninput="mdDelDraft.rates[${i}]=this.valueAsNumber"></span></label>`).join('');
 }
 function mdDelRateStep(dir){
   const rates = mdDelDraft.rates;
