@@ -5,31 +5,28 @@ Deno.serve(async request => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (request.method !== 'POST') return fallo('Método inválido',405,origin);
   try {
-    const actor = await usuarioDeLaSesion(request);
-    if (!actor) return fallo('Inicia sesión para continuar',401,origin);
-    const input = await request.json().catch(() => ({}));
-    const businessAction = ['business-invite','business-link','business-drivers','business-assign'].includes(input.action);
-    if (!businessAction && !['invite','link','list','start','deliver'].includes(input.action)) return fallo('Acción inválida',400,origin);
-    let generated: string | undefined;
-    if (['invite','business-invite','business-assign'].includes(input.action)) {
-      generated = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2,'0')).join('');
-    }
-    const code = generated ?? (typeof input.code === 'string' ? input.code.trim().toLowerCase() : '');
-    if (['link','business-link'].includes(input.action) && !/^[a-f0-9]{32}$/.test(code)) return fallo('El código de enlace es inválido',400,origin);
-    const hash = code ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code))), byte => byte.toString(16).padStart(2,'0')).join('') : null;
-    const params = { p_actor:actor, p_action:input.action, p_id:typeof input.id === 'string' ? input.id : null, p_hash:hash };
-    const { data,error } = businessAction
-      ? await admin().rpc('delivery_business_request',{
-        ...params,p_code:code,p_name:typeof input.name === 'string' ? input.name : null,
-        p_driver:typeof input.driver === 'string' ? input.driver : null
-      })
-      : await admin().rpc('delivery_driver_request',params);
+    const input = await request.json().catch(() => null);
+    const action = input?.action;
+    const merchant = ['manage','remove','assign'].includes(action);
+    if (!merchant && !['enter','list','start','deliver'].includes(action)) return fallo('Acción inválida',400,origin);
+    const actor = merchant ? await usuarioDeLaSesion(request) : null;
+    if (merchant && !actor) return fallo('Inicia sesión como negocio',401,origin);
+    if (!merchant && (typeof input.code !== 'string' || !/^[A-F0-9]{16}$/i.test(input.code.trim()) ||
+        typeof input.name !== 'string' || input.name.length > 100)) return fallo('Revisa el nombre y el código del negocio',400,origin);
+    if (['remove','assign'].includes(action) && (typeof input.driver !== 'string' || !/^[a-f0-9-]{36}$/i.test(input.driver))) return fallo('Repartidor inválido',400,origin);
+    if (['assign','start','deliver'].includes(action) && (typeof input.id !== 'string' || !/^o[a-z0-9]{6,24}$/.test(input.id))) return fallo('Pedido inválido',400,origin);
+    const payload = {
+      code:input.code,name:input.name,id:input.id,driver:input.driver,
+      business_name:typeof input.business_name === 'string' ? input.business_name.slice(0,120) : null,
+      new_code:action === 'manage' ? Array.from(crypto.getRandomValues(new Uint8Array(8)),byte=>byte.toString(16).padStart(2,'0')).join('').toUpperCase() : null
+    };
+    const {data,error} = await admin().rpc('pos_delivery_request',{p_actor:actor,p_action:action,p_payload:payload});
     if (error) {
       if (error.code === 'P0001') return fallo(error.message,409,origin);
       console.error('delivery-driver',error.code);
       return fallo('No se pudo actualizar el reparto',503,origin);
     }
-    return json({...data,...(input.action === 'invite' ? {code:generated} : {})},200,origin);
+    return json(data,200,origin);
   } catch (_) {
     return fallo('No se pudo conectar con el reparto',503,origin);
   }
