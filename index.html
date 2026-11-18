@@ -16213,6 +16213,10 @@ function mdRenderDeliveryForm(){
         <b>Editar tarifas por kilómetro</b>
         <button type="button" class="btn ghost" onclick="mdOpenDeliveryRates()" aria-label="Editar tarifas por kilómetro">Editar</button>
       </div>
+      <div class="md-del-rates-row">
+        <b>Agregar repartidores</b>
+        <button type="button" class="btn ghost" onclick="mdOpenDriverInvitation()">Agregar</button>
+      </div>
     ` : ''}
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="mdCloseDeliveryForm()">Cancelar</button>
@@ -16252,6 +16256,26 @@ function mdCloseDeliveryForm(){
   },
   () => { mdRenderDeliveryForm(); },
   () => { mdDelDraft = null; closeModal(); });
+}
+async function mdOpenDriverInvitation(){
+  if(!mdDelDraft || mdDelDraft.on !== true) return;
+  openModal(`
+    <div class="sheet-header"><div class="sheet-header-left">
+      <button type="button" class="sheet-back" aria-label="Volver a servicio a domicilio" onclick="mdRenderDeliveryForm()">${icon('chevronLeft')}</button>
+      <h2>Agregar repartidores</h2>
+    </div></div>
+    <p>Este es el enlace de invitación. Al aceptarlo, el negocio quedará guardado en la cuenta del repartidor.</p>
+    <div id="mdDriverInvitation" role="status">Cargando enlace…</div>
+  `,{ dismissible:false });
+  const panel = document.getElementById('mdDriverInvitation');
+  try{
+    const result = await mpCall('delivery-driver',{action:'business-invite',name:bizData().name || ''},true);
+    if(!panel.isConnected) return;
+    const url = 'https://vendoplusoficial.com/repartidor/#negocio=' + encodeURIComponent(result.code);
+    panel.innerHTML = '<div class="field"><label for="mdDriverURL">Enlace de invitación</label><input id="mdDriverURL" readonly></div><button type="button" class="btn primary block">Copiar enlace</button>';
+    panel.querySelector('input').value = url;
+    panel.querySelector('button').onclick = () => mdCopy(url,'Enlace copiado');
+  }catch(error){ if(panel.isConnected) panel.textContent = error.message; }
 }
 function mdOpenDeliveryRates(){
   if(!mdDelDraft || mdDelDraft.on !== true) return;
@@ -26997,7 +27021,7 @@ function mdSaveDesign(abrir){
 /* Dentro de la app de Android: Google Play, botón Atrás e impresora nativa. */
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
-<script src="./vendo-order-chat.js?v=20261118-repartos"></script>
+<script src="./vendo-order-chat.js?v=20261118-negocios-reparto"></script>
 <script>
 /* =========================================================================
    ARRANQUE (va al final para que todo lo anterior ya esté cargado)

@@ -17,7 +17,7 @@ button.primary{background:#116c3b;color:#fff;border-color:#116c3b}button:disable
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.tag{color:#23653d;font-size:.88rem;font-weight:700} #notice{min-height:1.5em} [hidden]{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.10" defer></script>
-<script src="./repartidor.js" defer></script>
+<script src="./repartidor.js?v=negocios" defer></script>
 </head>
 <body><main>
 <header><strong>VendoPlus <span>Repartos</span></strong><button id="signout" type="button" hidden>Cerrar sesión</button></header>
@@ -35,10 +35,11 @@ button.primary{background:#116c3b;color:#fff;border-color:#116c3b}button:disable
     <h1>Mis entregas</h1>
     <button id="refresh-orders" type="button">Actualizar pedidos</button>
     <form id="link-form">
-      <label>Enlazarse con un negocio<input name="code" placeholder="Código de invitación" required autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <label>Enlazarse con un negocio<input name="code" placeholder="Enlace o código de invitación" required autocomplete="off" autocapitalize="off" spellcheck="false"></label>
       <button type="submit" class="primary">Enlazar negocio</button>
     </form>
     <p id="businesses"></p>
+    <small>Al enlazarte, el negocio podrá identificarte por el correo de tu cuenta.</small>
   </section>
   <div id="orders" aria-label="Pedidos asignados"></div>
 </div>

@@ -296,20 +296,32 @@ async function mdiChatChange(order,state,extra = {}){
 
 function mdiChatActions(order){
   if(!order.chatCheckout || !mdiIsDelivery(order) || !['confirmed','preparing'].includes(order.chatState)) return '';
-  return `<div class="vp-chat-pos"><button type="button" class="btn primary" onclick="mdiInviteDriver('${order.id}',this)">Enlazar repartidor</button></div>`;
+  return `<div class="vp-chat-pos"><button type="button" class="btn primary" onclick="mdiAssignDriver('${order.id}',this)">Asignar repartidor</button></div>`;
 }
 
-async function mdiInviteDriver(id,button){
+async function mdiAssignDriver(id,button){
   button.disabled = true;
   try{
-    const result = await mpCall('delivery-driver',{action:'invite',id},true);
-    const url = 'https://vendoplusoficial.com/repartidor/#enlace=' + result.code;
+    const {drivers} = await mpCall('delivery-driver',{action:'business-drivers'},true);
+    if(!button.isConnected) return;
+    if(!drivers.length){
+      toast('Todavía no tienes repartidores enlazados',{subtitle:'Ve a Menú Digital · Servicio a domicilio · Agregar repartidores'});
+      return;
+    }
     askConfirm({
-      title:'Enlace del repartidor',
-      text:'Comparte el enlace con la persona que entregará este pedido. Es válido durante 24 horas.',
-      extraHTML:`<label class="field">Enlace <input readonly value="${escapeHtml(url)}"></label>`,
-      ok:'Copiar enlace',cancel:'Cerrar'
-    },()=>mdCopy(url,'Enlace copiado'));
+      title:'Asignar repartidor',
+      extraHTML:`<div class="field"><label for="mdiDriverSelect">Repartidor</label><select id="mdiDriverSelect" required>
+        <option value="">Selecciona a una persona</option>
+        ${drivers.map(driver=>`<option value="${escapeHtml(driver.id)}">${escapeHtml(driver.label)}</option>`).join('')}
+      </select></div>`,
+      ok:'Asignar pedido',cancel:'Volver',
+      validate:dialog=>dialog.querySelector('#mdiDriverSelect').reportValidity()
+    },async dialog=>{
+      try{
+        await mpCall('delivery-driver',{action:'business-assign',id,driver:dialog.querySelector('#mdiDriverSelect').value},true);
+        toast('Pedido asignado al repartidor');
+      }catch(error){ toast(error.message,{variant:'toast-danger'}); }
+    });
   }catch(error){ toast(error.message,{variant:'toast-danger'}); }
   finally{ button.disabled = false; }
 }
