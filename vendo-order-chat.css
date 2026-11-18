@@ -26,3 +26,12 @@
 .vp-chat-pos { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
 #vpChatError:empty { display:none; }
 #vpChatError { color:#a12a36; margin:0; font-size:13px; }
+.vp-chat-progress.pickup { grid-template-columns:repeat(2,1fr); }
+.vp-chat-terminal { min-height:calc(100dvh - 32px); display:flex; flex-direction:column; justify-content:center; gap:14px; padding:clamp(16px,5vw,36px); text-align:center; }
+.vp-chat-terminal-icon { display:grid; place-items:center; margin:0 auto 4px; width:56px; height:56px; border-radius:50%; background:#e9eeed; color:#33423e; }
+.vp-chat-terminal.rejected .vp-chat-terminal-icon { background:#f7e9e7; color:#8d3530; }
+.vp-chat-terminal-icon svg { width:25px; height:25px; }
+.vp-chat-terminal small { color:#576473; }
+.vp-chat-terminal h1,.vp-chat-terminal p { margin:0; }
+.vp-chat-terminal h1 { font-size:clamp(24px,5vw,34px); }
+.vp-chat-terminal .btn.block { margin-top:8px; }

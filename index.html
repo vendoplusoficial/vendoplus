@@ -5160,7 +5160,7 @@ body.pg-mode{ background:#F4F6FA; }
 @media (prefers-reduced-motion: reduce){ .pg-load i{ animation:none; } }
 
 </style>
-<link rel="stylesheet" href="./vendo-order-chat.css">
+<link rel="stylesheet" href="./vendo-order-chat.css?v=20261118-status">
 </head>
 <body>
 <noscript>
@@ -18670,7 +18670,20 @@ async function mdiConfirm(id){
      Es el único monto que Mercado Pago puede cobrar por este pedido. */
   try{ const oc = MDI.get(id); if(oc) mpArm(oc, true); }catch(e){}
   MpWatch.pull();
-  mdiAfterDecision(id);
+  mdiUI = { id:null, compare:false, text:'', result:null };
+  openModal(`
+    <i class="fs-marker" hidden></i>
+    <div class="mdn-done mdn-full">
+      <div class="mdn-full-main">
+        <span class="mdn-done-ico ok">${icon('check')}</span>
+        <h2>Pedido aceptado</h2>
+        <p>${o.chatCheckout ? 'El cliente ya puede ver que su pedido se está preparando.' : 'El pedido aceptado está disponible en el POS.'}</p>
+      </div>
+      <div class="mdn-full-actions">
+        <button type="button" class="btn primary block" onclick="mdiDoneClose()">Salir y cobrar después</button>
+      </div>
+    </div>
+  `,{ dismissible:true });
 }
 
 /* ---------- Cobrar un pedido confirmado ----------
@@ -26975,7 +26988,7 @@ function mdSaveDesign(abrir){
 /* Dentro de la app de Android: Google Play, botón Atrás e impresora nativa. */
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
-<script src="./vendo-order-chat.js?v=20261118-sync"></script>
+<script src="./vendo-order-chat.js?v=20261118-status"></script>
 <script>
 /* =========================================================================
    ARRANQUE (va al final para que todo lo anterior ya esté cargado)
