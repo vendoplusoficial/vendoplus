@@ -150,16 +150,28 @@ async function orderChatRefresh(chat){
   finally{ chat.busy = false; }
 }
 
+function orderChatRefundHTML(data){
+  if(!['cancelled','rejected'].includes(data.state) || !data.refund_method) return '';
+  const payment = data.refund_method === 'tarjeta' ? 'con tarjeta por Mercado Pago' : 'por transferencia';
+  const phone = String(data.refund_whatsapp || '');
+  if(!/^[1-9][0-9]{7,14}$/.test(phone)){
+    return '<div class="vp-chat-wait">Escríbele al negocio en este chat para solicitar el reembolso.</div>';
+  }
+  const message = 'Hola, mi pedido ' + data.code + ' fue cancelado. Ya pagué ' + payment + '. ¿Me pueden ayudar con el reembolso, por favor?';
+  const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(message);
+  return `<div class="vp-chat-wait"><span>¿Necesitas tu reembolso?</span><a class="btn ghost" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Solicitar reembolso por WhatsApp</a></div>`;
+}
+
 function orderChatPaint(chat,data){
   const previous = chat.data;
   chat.data = data;
   const find = key => chat.root.querySelector('#vpChat' + key);
-  if(!previous || previous.state !== data.state){
-    find('Order').textContent = (data.business ? data.business + ' · ' : '') + data.code + ' · ' + orderChatLabels[data.state];
+  if(!previous || previous.state !== data.state || previous.refund_method !== data.refund_method || previous.refund_whatsapp !== data.refund_whatsapp){
+    find('Order').textContent = (data.business ? data.business + ' · ' : '') + data.code + ' · ' + (chat.token && data.state === 'rejected' ? 'Cancelado' : orderChatLabels[data.state]);
     find('Progress').innerHTML = orderChatProgress(data.state,data.customer?.service === 'domicilio');
     find('Actions').innerHTML = data.state === 'pending' && chat.token
       ? `<div class="vp-chat-wait">${icon('clock')}<span>Esperando confirmación</span><button class="btn ghost" type="button" onclick="orderChatCancel()">Cancelar pedido</button></div>`
-      : '';
+      : (chat.token ? orderChatRefundHTML(data) : '');
   }
   if(!previous) find('Summary').innerHTML = orderChatSummary(data);
   const channel = find('Thread');
@@ -199,7 +211,7 @@ function orderChatCancel(){
   const chat = activeOrderChat;
   if(!chat || chat.data?.state !== 'pending') return;
   askConfirm({
-    title:'¿Cancelar tu pedido?', text:chat.data.paid ? 'Si pagaste con tarjeta, podrás contactar al negocio en este chat para el reembolso.' : 'El negocio verá que cancelaste el pedido.',
+    title:'¿Cancelar tu pedido?', text:chat.data.paid ? 'Después de cancelar podrás contactar al negocio para solicitar el reembolso.' : 'El negocio verá que cancelaste el pedido.',
     ok:'Cancelar pedido', cancel:'Conservar pedido', danger:true
   },async () => {
     try{
