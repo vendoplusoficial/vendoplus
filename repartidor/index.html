@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>VendoPlus Repartos</title>
+<style>
+:root{font:16px/1.45 system-ui,sans-serif;color:#10241b;background:#f5f8f6;color-scheme:light}
+*{box-sizing:border-box} body{margin:0} main{width:min(100% - 32px,640px);margin:auto;padding:28px 0}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px} header strong{font-size:1.2rem} header span{color:#287144}
+h1{font-size:1.6rem;margin:0 0 12px} h2{font-size:1.12rem;margin:0 0 10px} p{margin:8px 0;color:#485950}
+section,article{padding:18px;background:#fff;border:1px solid #dfe8e2;border-radius:16px;margin-bottom:14px}
+form{display:grid;gap:10px} input{display:block;width:100%;margin-top:4px;min-height:44px;border:1px solid #a8baaf;border-radius:9px;padding:8px 10px;font:inherit;color:inherit}
+button,a.action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid #bdd3c3;font:inherit;font-weight:650;background:white;color:#17462b;text-decoration:none;cursor:pointer}
+button.primary{background:#116c3b;color:#fff;border-color:#116c3b}button:disabled{opacity:.65;cursor:wait}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.tag{color:#23653d;font-size:.88rem;font-weight:700} #notice{min-height:1.5em} [hidden]{display:none!important}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.10" defer></script>
+<script src="./repartidor.js" defer></script>
+</head>
+<body><main>
+<header><strong>VendoPlus <span>Repartos</span></strong><button id="signout" type="button" hidden>Cerrar sesión</button></header>
+<p id="notice" role="status" aria-live="polite"></p>
+<section id="login" hidden>
+  <h1>Acceso de repartidor</h1>
+  <form id="login-form">
+    <label>Correo<input name="email" type="email" autocomplete="email" required></label>
+    <label>Contraseña<input name="password" type="password" autocomplete="current-password" minlength="6" required></label>
+    <div class="actions"><button class="primary" type="submit" value="signin">Iniciar sesión</button><button type="submit" value="signup">Crear cuenta</button></div>
+  </form>
+</section>
+<div id="workspace" hidden>
+  <section>
+    <h1>Mis entregas</h1>
+    <button id="refresh-orders" type="button">Actualizar pedidos</button>
+    <form id="link-form">
+      <label>Enlazarse con un negocio<input name="code" placeholder="Código de invitación" required autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <button type="submit" class="primary">Enlazar negocio</button>
+    </form>
+    <p id="businesses"></p>
+  </section>
+  <div id="orders" aria-label="Pedidos asignados"></div>
+</div>
+</main></body></html>
