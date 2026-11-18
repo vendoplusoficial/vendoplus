@@ -2498,7 +2498,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .md-del-clear[hidden]{ display:none; }
   .md-del-map{ height:190px; }
   .btn.md-del-gps{ margin-top:8px; padding:11px 10px; font-size:13.5px; }
-  .md-del-rates-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:16px 0; padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:var(--accent-soft); }
+  .md-del-rates-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:16px 0; }
   .md-del-rates-actions{ display:flex; flex-wrap:wrap; gap:8px; }
   .md-del-manual{ display:block; width:100%; margin-top:6px; border:0; background:none; cursor:pointer;
     font-family:inherit; font-size:12.5px; font-weight:700; color:var(--ink-soft); padding:9px;
@@ -16210,7 +16210,7 @@ function mdRenderDeliveryForm(){
     ${d.on === true ? `
       <div class="md-del-rates-row">
         <b>Editar tarifas por kilómetro</b>
-        <button type="button" class="btn primary" onclick="mdOpenDeliveryRates()" aria-label="Editar tarifas por kilómetro">Editar</button>
+        <button type="button" class="btn ghost" onclick="mdOpenDeliveryRates()" aria-label="Editar tarifas por kilómetro">Editar</button>
       </div>
     ` : ''}
     <div class="sheet-actions">
