@@ -279,12 +279,6 @@ function orderChatCancel(){
   });
 }
 
-function mdiChatSet(id,state){
-  const order = MDI.get(id);
-  if(!order?.chatCheckout) return;
-  return mdiChatChange(order,state).then(ok => { if(ok) mdiOpen(id,true); });
-}
-
 async function mdiChatChange(order,state,extra = {}){
   try{
     if(!order.chatCheckout){
@@ -301,13 +295,23 @@ async function mdiChatChange(order,state,extra = {}){
 }
 
 function mdiChatActions(order){
-  if(!order.chatCheckout || !mdiIsDelivery(order)) return '';
-  const next = {
-    confirmed:['route','Iniciar ruta'],
-    preparing:['route','Iniciar ruta'],
-    route:['delivered','Marcar como entregado']
-  }[order.chatState];
-  return next ? `<div class="vp-chat-pos"><button type="button" class="btn primary" onclick="mdiChatSet('${order.id}','${next[0]}')">${next[1]}</button></div>` : '';
+  if(!order.chatCheckout || !mdiIsDelivery(order) || !['confirmed','preparing'].includes(order.chatState)) return '';
+  return `<div class="vp-chat-pos"><button type="button" class="btn primary" onclick="mdiInviteDriver('${order.id}',this)">Enlazar repartidor</button></div>`;
+}
+
+async function mdiInviteDriver(id,button){
+  button.disabled = true;
+  try{
+    const result = await mpCall('delivery-driver',{action:'invite',id},true);
+    const url = 'https://vendoplusoficial.com/repartidor/#enlace=' + result.code;
+    askConfirm({
+      title:'Enlace del repartidor',
+      text:'Comparte el enlace con la persona que entregará este pedido. Es válido durante 24 horas.',
+      extraHTML:`<label class="field">Enlace <input readonly value="${escapeHtml(url)}"></label>`,
+      ok:'Copiar enlace',cancel:'Cerrar'
+    },()=>mdCopy(url,'Enlace copiado'));
+  }catch(error){ toast(error.message,{variant:'toast-danger'}); }
+  finally{ button.disabled = false; }
 }
 
 function mdiChatMetadata(o,incoming){
