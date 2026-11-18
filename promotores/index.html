@@ -2430,20 +2430,15 @@ function cablearInv(){
   }
 
   if(p === 'pagado'){
-    /* Ya pagó: se le lleva a su cuenta en cuanto la sesión quede lista.
-       El tiempo de espera es solo un seguro por si algo tarda. */
+    // Ya pagó: se deja la sesión lista y se le lleva a su cuenta.
     const liga = $('bEntrarApp');
     const destino = (liga && liga.getAttribute('href')) || CONFIG.URL_VENDOPLUS;
+    pasarSesionAlApp();
     if(liga) liga.onclick = ev => { ev.preventDefault(); irAlApp(destino); };
-
-    const irYa = () => {
-      if(cablearInv._yendo || INV.pantalla !== 'pagado') return;
-      cablearInv._yendo = true;
-      location.href = destino;
-    };
     clearTimeout(cablearInv._irT);
-    pasarSesionAlApp().then(irYa, irYa);
-    cablearInv._irT = setTimeout(irYa, 2500);
+    cablearInv._irT = setTimeout(() => {
+      if(INV.pantalla === 'pagado') irAlApp(destino);
+    }, 3200);
   }
 
   if(p === 'bienvenido' && $('bPagar')){
@@ -2624,13 +2619,10 @@ function invPagar(){
    ===================================================================== */
 async function arrancarInvitacion(codigo){
   INV.codigo = codigo;
+  enderezarUrl(codigo);
 
-  /* Ojo: primero se lee el aviso de pago y después se limpia la dirección.
-     Al revés se borraba el "?pago=ok" antes de verlo y el negocio se
-     quedaba otra vez en el enlace del promotor en lugar de entrar. */
   const q = new URLSearchParams(location.search);
   INV.pago = q.get('pago');
-  enderezarUrl(codigo);
 
   const r = await apiAtribuir({ accion:'ver', codigo });
   INV.promotor = r && r.ok ? r : null;
