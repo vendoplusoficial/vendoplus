@@ -5160,7 +5160,7 @@ body.pg-mode{ background:#F4F6FA; }
 @media (prefers-reduced-motion: reduce){ .pg-load i{ animation:none; } }
 
 </style>
-<link rel="stylesheet" href="./vendo-order-chat.css?v=20261118-reparto-interno">
+<link rel="stylesheet" href="./vendo-order-chat.css?v=20261118-menu">
 </head>
 <body>
 <noscript>
@@ -13052,7 +13052,6 @@ function authWelcomeHTML(){
         <div class="auth-actions">
           <button class="btn dark xl block" onclick="authStart('signup')">Empezar</button>
           <button class="btn outline xl block" onclick="authStart('login')">Ya tengo una cuenta</button>
-        <a class="vp-driver-entry" href="#reparto" onclick="staffDriverOpen(event)">Iniciar como repartidor</a>
         </div>
       </div>
     </div>
@@ -16213,10 +16212,6 @@ function mdRenderDeliveryForm(){
       <div class="md-del-rates-row">
         <b>Editar tarifas por kilómetro</b>
         <button type="button" class="btn ghost" onclick="mdOpenDeliveryRates()" aria-label="Editar tarifas por kilómetro">Editar</button>
-      </div>
-      <div class="md-del-rates-row">
-        <b>Agregar repartidores</b>
-        <button type="button" class="btn ghost" onclick="staffDriverManage()">Agregar</button>
       </div>
     ` : ''}
     <div class="sheet-actions">
@@ -24507,7 +24502,6 @@ function authSetPwHTML(){
       </div>
       <div class="auth-actions">
         <button class="btn dark xl block" id="pwBtn" disabled onclick="createAccount()">Crear cuenta</button>
-        <a class="vp-driver-entry" href="#reparto" onclick="staffDriverOpen(event)">Iniciar como repartidor</a>
       </div>
     </div>`;
 }
@@ -27005,8 +26999,7 @@ function mdSaveDesign(abrir){
 /* Dentro de la app de Android: Google Play, botón Atrás e impresora nativa. */
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
-<script src="./vendo-order-chat.js?v=20261118-reparto-interno"></script>
-<script src="./vendo-staff-driver.js?v=3"></script>
+<script src="./vendo-order-chat.js?v=20261118-menu"></script>
 <script>
 /* =========================================================================
    ARRANQUE (va al final para que todo lo anterior ya esté cargado)
@@ -27014,9 +27007,18 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
 (function(){
   applyGiroLabels();
   muMigrateDemo();
-  if(staffDriverSavedAccess() || location.hash === '#reparto'){
-    if(location.hash !== '#reparto') history.replaceState(null,'','#reparto');
-    staffDriverBoot();
+  const oldAccessKey = 'vp_staff_driver_access';
+  if(localStorage.getItem(oldAccessKey) || location.hash === '#reparto'){
+    localStorage.removeItem(oldAccessKey);
+    AUTH.closeSession();
+    closeOpenShifts();
+    closeUserSession();
+    clearAppUnlocked();
+    const project = new URL(VENDO_CONFIG.SUPABASE_URL).hostname.split('.')[0];
+    localStorage.removeItem('sb-' + project + '-auth-token');
+    localStorage.removeItem('sb-' + project + '-auth-token-code-verifier');
+    history.replaceState(null,'',location.pathname + location.search);
+    location.reload();
     return;
   }
   const chatRoute = orderChatRoute();

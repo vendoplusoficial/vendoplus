@@ -279,6 +279,12 @@ function orderChatCancel(){
   });
 }
 
+function mdiChatSet(id,state){
+  const order = MDI.get(id);
+  if(!order?.chatCheckout) return;
+  return mdiChatChange(order,state).then(ok => { if(ok) mdiOpen(id,true); });
+}
+
 async function mdiChatChange(order,state,extra = {}){
   try{
     if(!order.chatCheckout){
@@ -295,35 +301,13 @@ async function mdiChatChange(order,state,extra = {}){
 }
 
 function mdiChatActions(order){
-  if(!order.chatCheckout || !mdiIsDelivery(order) || !['confirmed','preparing','route'].includes(order.chatState)) return '';
-  return `<div class="vp-chat-pos"><button type="button" class="btn primary" onclick="mdiAssignDriver('${order.id}',this)">Asignar repartidor</button></div>`;
-}
-
-async function mdiAssignDriver(id,button){
-  button.disabled = true;
-  try{
-    const {drivers} = await mpCall('delivery-driver',{action:'manage',business_name:bizData().name || ''},true);
-    if(!button.isConnected) return;
-    if(!drivers.length){
-      toast('Todavía no tienes repartidores enlazados',{subtitle:'Ve a Menú Digital · Servicio a domicilio · Agregar repartidores'});
-      return;
-    }
-    askConfirm({
-      title:'Asignar repartidor',
-      extraHTML:`<div class="field"><label for="mdiDriverSelect">Repartidor</label><select id="mdiDriverSelect" required>
-        <option value="">Selecciona a una persona</option>
-        ${drivers.map(driver=>`<option value="${escapeHtml(driver.id)}">${escapeHtml(driver.name)}</option>`).join('')}
-      </select></div>`,
-      ok:'Asignar pedido',cancel:'Volver',
-      validate:dialog=>dialog.querySelector('#mdiDriverSelect').reportValidity()
-    },async dialog=>{
-      try{
-        await mpCall('delivery-driver',{action:'assign',id,driver:dialog.querySelector('#mdiDriverSelect').value},true);
-        toast('Pedido asignado al repartidor');
-      }catch(error){ toast(error.message,{variant:'toast-danger'}); }
-    });
-  }catch(error){ toast(error.message,{variant:'toast-danger'}); }
-  finally{ button.disabled = false; }
+  if(!order.chatCheckout || !mdiIsDelivery(order)) return '';
+  const next = {
+    confirmed:['route','Iniciar ruta'],
+    preparing:['route','Iniciar ruta'],
+    route:['delivered','Marcar como entregado']
+  }[order.chatState];
+  return next ? `<div class="vp-chat-pos"><button type="button" class="btn primary" onclick="mdiChatSet('${order.id}','${next[0]}')">${next[1]}</button></div>` : '';
 }
 
 function mdiChatMetadata(o,incoming){
