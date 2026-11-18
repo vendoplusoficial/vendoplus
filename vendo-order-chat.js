@@ -162,16 +162,30 @@ function orderChatRefundHTML(data){
   return `<div class="vp-chat-wait"><span>¿Necesitas tu reembolso?</span><a class="btn ghost" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Solicitar reembolso por WhatsApp</a></div>`;
 }
 
+function orderChatCancelledHTML(data){
+  return `<div class="vp-chat-details">
+    <strong>Pedido cancelado</strong>
+    <button class="btn primary block" style="margin-top:10px" type="button" onclick="orderChatBackToMenu()">Volver al menú</button>
+  </div>${orderChatRefundHTML(data)}`;
+}
+
+function orderChatBackToMenu(){
+  const id = activeOrderChat?.data?.menu_id;
+  if(!id) return;
+  location.assign(mdLink({id}));
+  location.reload();
+}
+
 function orderChatPaint(chat,data){
   const previous = chat.data;
   chat.data = data;
   const find = key => chat.root.querySelector('#vpChat' + key);
-  if(!previous || previous.state !== data.state || previous.refund_method !== data.refund_method || previous.refund_whatsapp !== data.refund_whatsapp){
+  if(!previous || previous.state !== data.state || previous.menu_id !== data.menu_id || previous.refund_method !== data.refund_method || previous.refund_whatsapp !== data.refund_whatsapp){
     find('Order').textContent = (data.business ? data.business + ' · ' : '') + data.code + ' · ' + (chat.token && data.state === 'rejected' ? 'Cancelado' : orderChatLabels[data.state]);
     find('Progress').innerHTML = orderChatProgress(data.state,data.customer?.service === 'domicilio');
     find('Actions').innerHTML = data.state === 'pending' && chat.token
       ? `<div class="vp-chat-wait">${icon('clock')}<span>Esperando confirmación</span><button class="btn ghost" type="button" onclick="orderChatCancel()">Cancelar pedido</button></div>`
-      : (chat.token ? orderChatRefundHTML(data) : '');
+      : (chat.token && ['cancelled','rejected'].includes(data.state) ? orderChatCancelledHTML(data) : '');
   }
   if(!previous) find('Summary').innerHTML = orderChatSummary(data);
   const channel = find('Thread');
