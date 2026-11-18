@@ -18498,7 +18498,7 @@ function mdiDetailHTML(o){
       <div class="mdi-after">
         ${o.pendingNext ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiNext('${o.id}')">Siguiente ${icon('chevronRight')}</button>` : ''}
         ${sale && canSeeSale(sale) ? `<button class="btn ghost" onclick="showTicket(DB.getSales().find(s => s.id === '${sale.id}'))">${icon('receipt')} Ver ticket</button>` : ''}
-        ${o.status === 'confirmado' && o.chatState !== 'delivered' && !o.pendingNext && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
+        ${o.status === 'confirmado' && !o.pendingNext && (!mdiIsPaid(o) || o.chatState !== 'delivered') && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
         ${o.status === 'rechazado' && !o.chatCheckout && !o.pendingNext ? `<button class="btn ghost" onclick="mdiReopen('${o.id}')">${icon('undo')} Volver a revisar</button>` : ''}
         ${(o.status === 'rechazado' || o.status === 'cancelado') && !o.pendingNext && isOwner() ? `<button class="btn danger" onclick="mdiDelete('${o.id}')">${icon('trash')} Eliminar</button>` : ''}
       </div>
@@ -19366,7 +19366,9 @@ async function mdiReject(id,{reason,note,transferPaid}){
   if(!(await mdiChatChange(o0,'rejected',{note:note || reason,transferPaid}))) return;
   MDI.update(id, o => { o.status = 'rechazado'; delete o.pendingNext; delete o.notifiedAt; o.rejectReason = reason; o.rejectNote = note; o.decidedAt = new Date().toISOString(); });
   shieldClicks();
-  mdiAfterDecision(id);
+  toast('Pedido ' + o0.code + ' rechazado', { subtitle:o0.chatCheckout ? 'El cliente fue avisado en el seguimiento' : 'El pedido se movió a Rechazados' });
+  if(mdiUI.id === id) mdiClose();
+  else mdiAfterDecision(id);
 }
 function mdiReopen(id){
   const o0 = MDI.get(id);
@@ -27004,7 +27006,7 @@ function mdSaveDesign(abrir){
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
 <script src="./vendo-order-chat.js?v=20261118-reparto-interno"></script>
-<script src="./vendo-staff-driver.js?v=2"></script>
+<script src="./vendo-staff-driver.js?v=3"></script>
 <script>
 /* =========================================================================
    ARRANQUE (va al final para que todo lo anterior ya esté cargado)

@@ -134,10 +134,22 @@ function staffDriverBoot(){
     const token = access;
     access = null;
     localStorage.removeItem(STAFF_DRIVER_ACCESS_KEY);
-    if(token){
-      try{ await mdiTimeout(staffDriverRequest('logout',{token}),2000); }catch(_){}
-    }
-    location.href = location.href.split('#')[0];
+    AUTH.closeSession();
+    closeOpenShifts();
+    closeUserSession();
+    clearAppUnlocked();
+    const staffLogout = token ? mdiTimeout(staffDriverRequest('logout',{token}),2000) : Promise.resolve();
+    const storeLogout = Cloud.ready && Cloud.sb
+      ? mdiTimeout(Cloud.sb.auth.signOut({scope:'local'}),2000) : Promise.resolve();
+    await Promise.allSettled([staffLogout,storeLogout]);
+    // Clear the device's auth cache even if logout ran offline.
+    try{
+      const project = new URL(VENDO_CONFIG.SUPABASE_URL).hostname.split('.')[0];
+      const authKey = 'sb-' + project + '-auth-token';
+      localStorage.removeItem(authKey);
+      localStorage.removeItem(authKey + '-code-verifier');
+    }catch(_){}
+    history.replaceState(null,'',location.pathname + location.search);
     location.reload();
   };
 }
