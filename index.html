@@ -18078,7 +18078,12 @@ function mdiSectionHTML(){
   const all = MDI.all().slice().sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
   /* Pedidos entrantes: solo los que siguen en curso (nuevos y aceptados por cobrar).
      Al aceptarlo se queda aquí y su etiqueta cambia de "Nuevo" a "Por cobrar". */
-  const activos = all.filter(o => { const id = mdiStage(o).id; return id === 'nuevo' || id === 'pendiente' || o.chatUnread > 0 || (o.chatCheckout && (['confirmed','preparing','route'].includes(o.chatState) || (o.chatState === 'cancelled' && o.mp?.status === 'paid'))); });
+  const activos = all.filter(o => {
+    const id = mdiStage(o).id;
+    if(id === 'cancelado' || id === 'rechazado' || ['cancelled','rejected'].includes(o.chatState)) return false;
+    return id === 'nuevo' || id === 'pendiente' || o.chatUnread > 0 ||
+      (o.chatCheckout && ['confirmed','preparing','route'].includes(o.chatState));
+  });
   const nuevos = activos.filter(o => mdiStage(o).id === 'nuevo').length;
   const deHoy = all.filter(o => isSameDay(new Date(o.receivedAt || o.createdAt), new Date()));
   return `
@@ -19304,7 +19309,10 @@ async function mdiCancelOrderNow(id, fromHistory, transferPaid = false){
   const regresa = mdiStockToReturn(o, inventario, sale);
   const hayRegreso = Object.keys(regresa).length > 0;
   if(!(await mdiChatChange(o,'cancelled',{transferPaid}))) return;
-  if(MDI.get(id)?.status !== 'confirmado') return;
+  if(MDI.get(id)?.status !== 'confirmado'){
+    if(mdiUI.id === id) mdiClose();
+    return;
+  }
   const me = (typeof multiUser === 'function' && multiUser()) ? activeUser() : null;
   /* Primero se marca el pedido: si esto se llama dos veces, la segunda ya no hace nada */
   MDI.update(id, x => { x.status = 'cancelado'; delete x.pendingNext; x.cancelledAt = new Date().toISOString(); x.cancelledBy = me ? me.name : ''; delete x.stockTaken; });
@@ -19319,7 +19327,8 @@ async function mdiCancelOrderNow(id, fromHistory, transferPaid = false){
   vibrate([15, 60, 15]);
   toast('Pedido ' + o.code + ' cancelado', { subtitle:(sale ? 'Venta ' + orderNumberLabel(sale.number) + ' cancelada' : 'El pedido se movió a Cancelados') + (hayRegreso ? ' · existencias devueltas' : '') });
   if(fromHistory){ closeModal(); render(); mdiPaintBadge(); return; }
-  mdiAfterDecision(id);
+  if(mdiUI.id === id) mdiClose();
+  else mdiAfterDecision(id);
 }
 
 function mdiTransferRefundField(o,sale){
