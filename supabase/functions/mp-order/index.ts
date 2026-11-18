@@ -36,11 +36,24 @@ Deno.serve(async (req) => {
     const sb = admin();
     const { data: pedido } = await sb
       .from('menu_orders')
-      .select('id, menu_id, user_id, code, charge_total, charge_status, mp_payment_id, mpCheckout:data->mpCheckout')
+      .select('id, menu_id, user_id, code, charge_total, charge_status, mp_payment_id, data')
       .eq('id', b.order_id)
       .maybeSingle();
 
     if (!pedido) return fallo('Ese pedido no existe', 404, origen);
+
+    if (b.action === 'send_whatsapp') {
+      if (pedido.data?.mpCheckout !== true || pedido.charge_status !== 'paid') {
+        return fallo('El pago debe estar confirmado para enviar el pedido', 409, origen);
+      }
+      if (pedido.data.whatsappRequested !== true) {
+        const { data: enviado, error } = await sb.from('menu_orders')
+          .update({ data: { ...pedido.data, whatsappRequested: true } })
+          .eq('id', pedido.id).eq('charge_status', 'paid').select('id').maybeSingle();
+        if (error || !enviado) return fallo('No se pudo enviar el pedido. Inténtalo de nuevo.', 503, origen);
+      }
+      return json({ ok: true }, 200, origen);
+    }
 
     // Si está pendiente y ya hay un pago registrado, se le PREGUNTA a Mercado
     // Pago antes de contestar: así la pantalla nunca va por delante del banco.
@@ -119,8 +132,8 @@ Deno.serve(async (req) => {
       status: estado,
       status_detail_text: TEXTO_ESTADO[detalle] ?? '',
       mp_payment_id: paymentId,
-      menu_checkout: pedido.mpCheckout === true,
-      whatsapp: pedido.mpCheckout === true && estado === 'paid' ? String(menus?.[0]?.data?.wa ?? '').replace(/\D/g, '') : '',
+      menu_checkout: pedido.data?.mpCheckout === true,
+      whatsapp: pedido.data?.mpCheckout === true && estado === 'paid' ? String(menus?.[0]?.data?.wa ?? '').replace(/\D/g, '') : '',
       public_key: publicKey,
       live_mode: liveMode,
     }, 200, origen);

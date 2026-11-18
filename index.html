@@ -25633,9 +25633,27 @@ function pgPaintOk(){
       <span class="pg-big pg-ok">✓</span>
       <h1>¡Listo, ya pagaste!</h1>
       <p>Tu pago de <b>${pgMoney(d.amount)}</b> quedó confirmado por Mercado Pago.</p>
-      ${whatsapp ? `<a class="pg-btn" style="display:block;text-decoration:none" href="${pgEsc(whatsapp)}">Enviar pedido y comprobante por WhatsApp</a>` : ''}
+      ${whatsapp ? `<a class="pg-btn" style="display:block;text-decoration:none" href="${pgEsc(whatsapp)}" onclick="event.preventDefault(); pgSendWhatsApp(this)">Enviar pedido y comprobante por WhatsApp</a>` : ''}
+      <p id="pgSendError" role="alert" hidden></p>
       <p class="pg-mini">Pedido ${pgEsc(d.code || '')}${d.mp_payment_id ? ' · pago ' + pgEsc(d.mp_payment_id) : ''}</p>
     </div>`);
+}
+async function pgSendWhatsApp(link){
+  if(link.getAttribute('aria-disabled') === 'true') return;
+  link.setAttribute('aria-disabled', 'true');
+  const error = document.getElementById('pgSendError');
+  if(error) error.hidden = true;
+  try{
+    await mdiTimeout(pgFetch('mp-order', { order_id:pg.id, action:'send_whatsapp' }), 15000);
+    location.assign(link.href);
+  }catch(e){
+    if(error){
+      error.textContent = 'Tu pago está confirmado. Toca el botón de nuevo para enviar el pedido.';
+      error.hidden = false;
+    }
+  }finally{
+    link.removeAttribute('aria-disabled');
+  }
 }
 function pgPaintEsperando(detalle){
   pgPaint(`<div class="pg-card pg-center">
@@ -25875,6 +25893,9 @@ const MdiCloud = {
     const nuevos = [], ids = [];
     const gone = mdiGoneList();
     (rows || []).forEach(row => {
+      const data = row && row.data;
+      if(data && data.mpCheckout === true && row.charge_total != null &&
+        (data.whatsappRequested !== true || row.charge_status !== 'paid')) return;
       if(row && row.id) ids.push(row.id);
       if(row && gone.indexOf(row.id) >= 0) return;
       const o = mdiFromCloud(row);
@@ -25909,7 +25930,9 @@ const MdiCloud = {
            (y los marcó como recibidos), este también los tiene que ver. Lo que ya está aquí no se duplica. */
         const desde = new Date(Date.now() - 3 * 86400000).toISOString();
         const { data, error } = await mdiTimeout(Cloud.sb.from(MDI_TABLE)
-          .select('id,code,data,created_at,charge_status,mp_payment_id,paid_amount,paid_at').or('received_at.is.null,created_at.gte.' + desde)
+          .select('id,code,data,created_at,charge_total,charge_status,mp_payment_id,paid_amount,paid_at')
+          .or('received_at.is.null,created_at.gte.' + desde)
+          .or('data->>mpCheckout.is.null,data->>mpCheckout.neq.true,charge_total.is.null,and(data->>whatsappRequested.eq.true,charge_status.eq.paid)')
           .order('created_at', { ascending:true }).limit(150), 20000);
         if(error) throw error;
         await this.merge(force);
@@ -25989,6 +26012,13 @@ const MdiCloud = {
       this.ch = Cloud.sb.channel('vendo-pedidos-' + uid, { config:{ broadcast:{ self:false } } })
         .on('postgres_changes', { event:'INSERT', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
             payload => { if(this.canRun() && Cloud.uid === uid && payload && payload.new) this.take([payload.new]).then(() => this.ok()); })
+        .on('postgres_changes', { event:'UPDATE', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
+            payload => {
+              const row = payload && payload.new;
+              if(this.canRun() && Cloud.uid === uid && row && row.received_at == null && row.data?.whatsappRequested === true){
+                this.take([row]).then(() => this.ok());
+              }
+            })
         /* Aviso directo entre aparatos: en cuanto la computadora cobra,
            cancela o rechaza un pedido, el celular se entera en el momento
            (y al revés). No necesita nada en la base de datos. */
