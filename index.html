@@ -5160,7 +5160,7 @@ body.pg-mode{ background:#F4F6FA; }
 @media (prefers-reduced-motion: reduce){ .pg-load i{ animation:none; } }
 
 </style>
-<link rel="stylesheet" href="./vendo-order-chat.css?v=20261118-status">
+<link rel="stylesheet" href="./vendo-order-chat.css?v=20261118-reparto-interno">
 </head>
 <body>
 <noscript>
@@ -13052,6 +13052,7 @@ function authWelcomeHTML(){
         <div class="auth-actions">
           <button class="btn dark xl block" onclick="authStart('signup')">Empezar</button>
           <button class="btn outline xl block" onclick="authStart('login')">Ya tengo una cuenta</button>
+        <a class="vp-driver-entry" href="#reparto" onclick="staffDriverOpen(event)">Iniciar como repartidor</a>
         </div>
       </div>
     </div>
@@ -16215,7 +16216,7 @@ function mdRenderDeliveryForm(){
       </div>
       <div class="md-del-rates-row">
         <b>Agregar repartidores</b>
-        <button type="button" class="btn ghost" onclick="mdOpenDriverInvitation()">Agregar</button>
+        <button type="button" class="btn ghost" onclick="staffDriverManage()">Agregar</button>
       </div>
     ` : ''}
     <div class="sheet-actions">
@@ -16256,26 +16257,6 @@ function mdCloseDeliveryForm(){
   },
   () => { mdRenderDeliveryForm(); },
   () => { mdDelDraft = null; closeModal(); });
-}
-async function mdOpenDriverInvitation(){
-  if(!mdDelDraft || mdDelDraft.on !== true) return;
-  openModal(`
-    <div class="sheet-header"><div class="sheet-header-left">
-      <button type="button" class="sheet-back" aria-label="Volver a servicio a domicilio" onclick="mdRenderDeliveryForm()">${icon('chevronLeft')}</button>
-      <h2>Agregar repartidores</h2>
-    </div></div>
-    <p>Este es el enlace de invitación. Al aceptarlo, el negocio quedará guardado en la cuenta del repartidor.</p>
-    <div id="mdDriverInvitation" role="status">Cargando enlace…</div>
-  `,{ dismissible:false });
-  const panel = document.getElementById('mdDriverInvitation');
-  try{
-    const result = await mpCall('delivery-driver',{action:'business-invite',name:bizData().name || ''},true);
-    if(!panel.isConnected) return;
-    const url = 'https://vendoplusoficial.com/repartidor/#negocio=' + encodeURIComponent(result.code);
-    panel.innerHTML = '<div class="field"><label for="mdDriverURL">Enlace de invitación</label><input id="mdDriverURL" readonly></div><button type="button" class="btn primary block">Copiar enlace</button>';
-    panel.querySelector('input').value = url;
-    panel.querySelector('button').onclick = () => mdCopy(url,'Enlace copiado');
-  }catch(error){ if(panel.isConnected) panel.textContent = error.message; }
 }
 function mdOpenDeliveryRates(){
   if(!mdDelDraft || mdDelDraft.on !== true) return;
@@ -24524,6 +24505,7 @@ function authSetPwHTML(){
       </div>
       <div class="auth-actions">
         <button class="btn dark xl block" id="pwBtn" disabled onclick="createAccount()">Crear cuenta</button>
+        <a class="vp-driver-entry" href="#reparto" onclick="staffDriverOpen(event)">Iniciar como repartidor</a>
       </div>
     </div>`;
 }
@@ -27021,7 +27003,8 @@ function mdSaveDesign(abrir){
 /* Dentro de la app de Android: Google Play, botón Atrás e impresora nativa. */
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
-<script src="./vendo-order-chat.js?v=20261118-negocios-reparto"></script>
+<script src="./vendo-order-chat.js?v=20261118-reparto-interno"></script>
+<script src="./vendo-staff-driver.js?v=1"></script>
 <script>
 /* =========================================================================
    ARRANQUE (va al final para que todo lo anterior ya esté cargado)
@@ -27029,6 +27012,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
 (function(){
   applyGiroLabels();
   muMigrateDemo();
+  if(location.hash === '#reparto'){ staffDriverBoot(); return; }
   const chatRoute = orderChatRoute();
   if(chatRoute){ bootOrderChat(chatRoute); return; }
   const route = dmRoute();

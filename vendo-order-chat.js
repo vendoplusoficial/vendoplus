@@ -295,14 +295,14 @@ async function mdiChatChange(order,state,extra = {}){
 }
 
 function mdiChatActions(order){
-  if(!order.chatCheckout || !mdiIsDelivery(order) || !['confirmed','preparing'].includes(order.chatState)) return '';
+  if(!order.chatCheckout || !mdiIsDelivery(order) || !['confirmed','preparing','route'].includes(order.chatState)) return '';
   return `<div class="vp-chat-pos"><button type="button" class="btn primary" onclick="mdiAssignDriver('${order.id}',this)">Asignar repartidor</button></div>`;
 }
 
 async function mdiAssignDriver(id,button){
   button.disabled = true;
   try{
-    const {drivers} = await mpCall('delivery-driver',{action:'business-drivers'},true);
+    const {drivers} = await mpCall('delivery-driver',{action:'manage',business_name:bizData().name || ''},true);
     if(!button.isConnected) return;
     if(!drivers.length){
       toast('Todavía no tienes repartidores enlazados',{subtitle:'Ve a Menú Digital · Servicio a domicilio · Agregar repartidores'});
@@ -312,13 +312,13 @@ async function mdiAssignDriver(id,button){
       title:'Asignar repartidor',
       extraHTML:`<div class="field"><label for="mdiDriverSelect">Repartidor</label><select id="mdiDriverSelect" required>
         <option value="">Selecciona a una persona</option>
-        ${drivers.map(driver=>`<option value="${escapeHtml(driver.id)}">${escapeHtml(driver.label)}</option>`).join('')}
+        ${drivers.map(driver=>`<option value="${escapeHtml(driver.id)}">${escapeHtml(driver.name)}</option>`).join('')}
       </select></div>`,
       ok:'Asignar pedido',cancel:'Volver',
       validate:dialog=>dialog.querySelector('#mdiDriverSelect').reportValidity()
     },async dialog=>{
       try{
-        await mpCall('delivery-driver',{action:'business-assign',id,driver:dialog.querySelector('#mdiDriverSelect').value},true);
+        await mpCall('delivery-driver',{action:'assign',id,driver:dialog.querySelector('#mdiDriverSelect').value},true);
         toast('Pedido asignado al repartidor');
       }catch(error){ toast(error.message,{variant:'toast-danger'}); }
     });
