@@ -16013,24 +16013,8 @@ function mdGeoErr(e){
    card / transfer = null -> el negocio aún no responde (se pide antes de activar el menú)
    El efectivo siempre está disponible. Con transferencia se guarda la CLABE
    para que el cliente sepa a dónde pagar. */
-/* =========================================================================
-   MERCADO PAGO · ESCONDIDO POR AHORA
-   -------------------------------------------------------------------------
-   Nada se borró ni se apagó: el código, las funciones de Supabase y la
-   configuración que ya tengan los negocios siguen tal cual. Lo único que
-   pasa es que NO se muestra en ninguna pantalla, ni a ti ni a tus clientes.
-
-   Para volver a mostrarlo: cambia esta línea a  = false  y ya está. No hay
-   que tocar nada más.
-
-   Mientras está escondido:
-     · No aparece la hoja de "Enlazar con Mercado Pago".
-     · El cobro con tarjeta del Menú Digital sigue existiendo, pero como
-       tarjeta normal (el negocio cobra con su terminal), sin link de pago.
-     · A los pedidos ya pagados por Mercado Pago no les pasa nada: se siguen
-       revisando y cobrando solos como siempre.
-========================================================================= */
-const MP_OCULTO = true;
+/* Cambia MP_OCULTO a true para ocultar Mercado Pago del Menú Digital. */
+const MP_OCULTO = false;
 function mpVisible(){ return !MP_OCULTO; }
 
 /* El logo oficial de Mercado Pago (WebP, 256x256, fondo transparente).
