@@ -537,6 +537,81 @@ body, input, button, textarea{ font-family:'VPInter', var(--sans); }
   box-shadow:0 1px 3px rgba(17,31,67,.045);
   padding:16px 14px 19px; margin-top:10px;
 }
+
+/* ---- Banner de recompensas extra (6 → 4 → 2 negocios) ---- */
+.rec{
+  position:relative; margin-top:18px; overflow:hidden;
+  background:var(--surface); border:1px solid #F0F1F6; border-radius:18px;
+  box-shadow:0 1px 3px rgba(17,31,67,.045);
+}
+/* Alto FIJO: así la tarjeta mide igual esté activa, bloqueada o lograda,
+   y no empuja hacia abajo el resto del resumen. */
+.rec-cuerpo{
+  display:flex; align-items:center; gap:8px;
+  height:76px; padding:0 12px;
+}
+.rec.con-ant .rec-cuerpo{ padding-left:42px; }
+
+/* La animación corre SOLO al cambiar de recompensa con las flechas.
+   Si se deja en cada dibujado, parpadea cada vez que se refresca el
+   resumen (y el resumen se refresca solo, en vivo). */
+.rec.hacia-der .rec-cuerpo{ animation:recEntraDer .26s cubic-bezier(.22,.8,.3,1) both; }
+.rec.hacia-izq .rec-cuerpo{ animation:recEntraIzq .26s cubic-bezier(.22,.8,.3,1) both; }
+@keyframes recEntraDer{ from{ opacity:0; transform:translateX(16px); } to{ opacity:1; transform:none; } }
+@keyframes recEntraIzq{ from{ opacity:0; transform:translateX(-16px); } to{ opacity:1; transform:none; } }
+
+.rec-tx{ flex:1 1 auto; min-width:0; }
+.rec-t{
+  margin:0; font-size:13.5px; font-weight:800; line-height:1.3;
+  letter-spacing:-.15px; color:var(--ink);
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  overflow:hidden;                       /* nunca pasa de dos renglones */
+}
+.rec-t b{ font-weight:800; color:var(--brand-ink); }
+.rec-barra{ display:flex; align-items:center; gap:8px; margin-top:9px; }
+.rec-barra > .barra{
+  flex:1 1 auto; margin-top:0; height:8px;
+  background:var(--surface-alt); border:1px solid var(--border);
+}
+.rec-barra > .barra i{ background:var(--brand-ink); }
+.rec-cuenta{
+  flex:none; display:inline-flex; align-items:center; gap:5px;
+  font-size:11.5px; font-weight:700; color:var(--ink-soft); white-space:nowrap;
+}
+.rec-cuenta.hecho{ color:var(--brand-ink); }
+.rec-cuenta svg{ width:13px; height:13px; flex:none; }
+
+/* El personaje. Su fondo es blanco, igual que la tarjeta: se funde solo. */
+.rec-art{
+  flex:none; width:74px; height:66px;
+  background:url('recompensa.jpg') center right/contain no-repeat;
+}
+.rec.bloq .rec-art{ filter:grayscale(1); opacity:.4; }
+.rec.bloq .rec-t{ color:var(--ink-soft); font-weight:700; }
+
+/* Flechas para moverse entre recompensas */
+.rec-nav{
+  position:absolute; top:50%; z-index:2;
+  width:30px; height:30px; border-radius:50%;
+  display:grid; place-items:center; cursor:pointer;
+  background:rgba(255,255,255,.94); border:1px solid var(--border-fuerte);
+  box-shadow:0 2px 9px rgba(17,31,67,.13); color:var(--ink);
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  transform:translateY(-50%);
+  transition:transform .14s ease, background .14s ease;
+}
+.rec-nav:active{ transform:translateY(-50%) scale(.88); background:var(--surface-alt); }
+.rec-nav.ant{ left:8px; }
+.rec-nav.sig{ right:8px; }
+.rec-nav svg{ width:15px; height:15px; }
+
+@media (max-width:360px){
+  .rec-art{ width:58px; }
+  .rec-t{ font-size:12.5px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .rec.hacia-der .rec-cuerpo, .rec.hacia-izq .rec-cuerpo{ animation:none; }
+}
 .body.pri > .pri-card:first-of-type{ margin-top:20px; }
 .pri-top{ display:flex; align-items:center; gap:13px; }
 .pri-ico{
@@ -1582,6 +1657,7 @@ const S = {
   modo:'login', correo:'', pw:'', reenvio:0, timer:null, fverificado:false,
   // sesión
   promotor:null, bonos:null, comisiones:null, inactivos:null, cobro:null, editandoCobro:false,
+  recNivel:0,          /* qué recompensa extra se está viendo en el banner */
   canal:null, vivo:false,
   // invitación (lado del negocio)
   codigo:null, invita:null
@@ -2869,6 +2945,8 @@ function pantallaInicio(){
           <p>Tu cuenta de promotor está suspendida. Escríbenos para revisarla.</p>
         </div>` : ''}
 
+      ${bannerExtras(sa)}
+
       <div class="pri-card">
         <div class="pri-top">
           <span class="pri-ico verde">${ic('enlace')}</span>
@@ -2911,6 +2989,97 @@ function pantallaInicio(){
     </div>
 
     <button class="fab" id="bAyuda" aria-label="Ayuda">${ic('ayuda')}</button>`;
+}
+
+/* =====================================================================
+   BANNER DE RECOMPENSAS EXTRA
+
+   Una escalera de metas, en este orden y sin repetirse:
+     1º  6 negocios → $250     2º  4 negocios más → $180     3º  2 más → $100
+
+   Los niveles, los premios y el avance los calcula el servidor en
+   ref_saldos: aquí solo se dibuja lo que llega. Un nivel puede estar
+   bloqueado (falta el anterior), activo (es el que toca) o logrado.
+   El nivel que se está viendo se guarda en S.recNivel.
+   ===================================================================== */
+function bannerExtras(sa, hacia){
+  const niveles = ((sa || {}).extras || {}).niveles || [];
+  if(!niveles.length) return '';
+
+  const total = niveles.length;
+  const i     = Math.max(0, Math.min(S.recNivel | 0, total - 1));
+  const n     = niveles[i];
+  const antes = i > 0 ? niveles[i - 1] : null;
+  const premio = pesosC(n.premio_cents);
+
+  /* Los tres estados llevan la MISMA estructura —título de dos renglones,
+     barra y contador— para que la tarjeta mida exactamente igual en todos
+     y no empuje el resto de la pantalla al cambiar de recompensa. */
+  let cuerpo;
+  if(!n.abierto){
+    /* Todavía no le toca: primero tiene que cerrar el nivel anterior. */
+    cuerpo = `
+      <p class="rec-t">Desbloquea los ${antes ? antes.negocios : n.negocios} negocios para la siguiente recompensa.</p>
+      <div class="rec-barra">
+        <span class="barra"><i style="width:0%"></i></span>
+        <span class="rec-cuenta">${ic('candado')}${n.negocios} · ${premio}</span>
+      </div>`;
+  }else if(n.logrado){
+    cuerpo = `
+      <p class="rec-t">¡Listo! Ganaste <b>${premio} MXN</b> extras por ${n.negocios} negocios.</p>
+      <div class="rec-barra">
+        <span class="barra"><i style="width:100%"></i></span>
+        <span class="rec-cuenta hecho">${ic('check')}Logrado</span>
+      </div>`;
+  }else{
+    const pct = Math.round((n.avance / Math.max(n.negocios, 1)) * 100);
+    cuerpo = `
+      <p class="rec-t">Consigue ${n.negocios} negocios y obtén <b>${premio} MXN</b> extras.</p>
+      <div class="rec-barra">
+        <span class="barra"><i style="width:${pct}%"></i></span>
+        <span class="rec-cuenta">${n.avance} de ${n.negocios} este mes</span>
+      </div>`;
+  }
+
+  const clases = ['rec'];
+  if(!n.abierto) clases.push('bloq');
+  if(i > 0)      clases.push('con-ant');
+  /* Solo se anima si el cambio lo pidió el usuario con una flecha. */
+  if(hacia === 'izq') clases.push('hacia-izq');
+  if(hacia === 'der') clases.push('hacia-der');
+
+  /* El primero solo lleva ›, el de en medio ‹ y ›, el último solo ‹. */
+  return `
+    <div class="${clases.join(' ')}" id="recBanner">
+      ${i > 0 ? `<button class="rec-nav ant" id="bRecAnt" aria-label="Recompensa anterior">${ic('izq')}</button>` : ''}
+      <div class="rec-cuerpo">
+        <div class="rec-tx">${cuerpo}</div>
+        <span class="rec-art" aria-hidden="true"></span>
+      </div>
+      ${i < total - 1 ? `<button class="rec-nav sig" id="bRecSig" aria-label="Siguiente recompensa">${ic('der')}</button>` : ''}
+    </div>`;
+}
+
+function cablearBanner(){
+  const ant = $('bRecAnt'), sig = $('bRecSig');
+  if(ant) ant.onclick = () => moverBanner(-1);
+  if(sig) sig.onclick = () => moverBanner(1);
+}
+
+/* Cambiar de recompensa repinta SOLO el banner, no toda la pantalla: así
+   no brinca el scroll y la animación se siente fluida. */
+function moverBanner(paso){
+  const niveles = (((S.promotor || {}).saldos || {}).extras || {}).niveles || [];
+  if(!niveles.length) return;
+  const destino = Math.max(0, Math.min((S.recNivel | 0) + paso, niveles.length - 1));
+  if(destino === (S.recNivel | 0)) return;
+  S.recNivel = destino;
+
+  const viejo = $('recBanner');
+  if(!viejo) return pintar();
+  viejo.outerHTML = bannerExtras((S.promotor || {}).saldos, paso < 0 ? 'izq' : 'der');
+  cablearBanner();
+  vibra(8);
 }
 
 /** ¿Ya tenemos a dónde mandarle su dinero? */
@@ -3664,6 +3833,7 @@ function cablearPortal(){
     $('bAyuda').onclick  = () => irA('ayuda');
     $('bSalir').onclick  = cerrarSesion;
     if($('bCobro')) $('bCobro').onclick = () => irA('cobro');
+    cablearBanner();
   }
 
   if(p === 'cobro'){
