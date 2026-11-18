@@ -27004,7 +27004,7 @@ function mdSaveDesign(abrir){
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
 <script src="./vendo-order-chat.js?v=20261118-reparto-interno"></script>
-<script src="./vendo-staff-driver.js?v=1"></script>
+<script src="./vendo-staff-driver.js?v=2"></script>
 <script>
 /* =========================================================================
    ARRANQUE (va al final para que todo lo anterior ya esté cargado)
@@ -27012,7 +27012,11 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
 (function(){
   applyGiroLabels();
   muMigrateDemo();
-  if(location.hash === '#reparto'){ staffDriverBoot(); return; }
+  if(staffDriverSavedAccess() || location.hash === '#reparto'){
+    if(location.hash !== '#reparto') history.replaceState(null,'','#reparto');
+    staffDriverBoot();
+    return;
+  }
   const chatRoute = orderChatRoute();
   if(chatRoute){ bootOrderChat(chatRoute); return; }
   const route = dmRoute();
