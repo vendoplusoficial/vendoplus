@@ -15895,10 +15895,26 @@ function mdBizPin(cfg){
   const d = ((cfg || mdCfg()).delivery) || {};
   return mdValidLatLng(d.lat, d.lng);
 }
+const MD_DELIVERY_RATES = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+function mdDeliveryQuote(d, loc){
+  const origin = mdValidLatLng(d.lat, d.lng);
+  const target = loc && mdValidLatLng(loc.lat, loc.lng);
+  if(!origin || !target) return null;
+  const rad = Math.PI / 180;
+  const h = Math.sin((target.lat - origin.lat) * rad / 2) ** 2 +
+    Math.cos(origin.lat * rad) * Math.cos(target.lat * rad) * Math.sin((target.lng - origin.lng) * rad / 2) ** 2;
+  const km = Math.round(12742 * Math.asin(Math.sqrt(Math.min(1, h))) * 1000) / 1000;
+  const rates = d.rates;
+  const fee = km > rates.length ? rates[rates.length - 1] * km / rates.length : rates[Math.max(1, Math.ceil(km)) - 1];
+  return { km, fee:round2(fee) };
+}
 function mdCleanDelivery(d){
   d = d || {};
   const p = mdValidLatLng(d.lat, d.lng);
-  return { on: d.on === true ? true : (d.on === false ? false : null), lat: p ? p.lat : null, lng: p ? p.lng : null };
+  const rates = Array.isArray(d.rates) && d.rates.length > 0 && d.rates.length <= 100 &&
+    d.rates.every(value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 10000)
+    ? d.rates.map(round2) : MD_DELIVERY_RATES.slice();
+  return { on: d.on === true ? true : (d.on === false ? false : null), lat: p ? p.lat : null, lng: p ? p.lng : null, rates };
 }
 
 /* ---------- Mapa con el "monito" (Leaflet + OpenStreetMap) ----------
@@ -16153,7 +16169,7 @@ let mdDelDraft = null;
 function mdOpenDeliveryForm(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
   const d = mdCfg().delivery;
-  mdDelDraft = { on:d.on, lat:d.lat, lng:d.lng };
+  mdDelDraft = { on:d.on, lat:d.lat, lng:d.lng, rates:d.rates.slice() };
   mdRenderDeliveryForm();
 }
 function mdRenderDeliveryForm(){
@@ -16178,7 +16194,14 @@ function mdRenderDeliveryForm(){
     ${d.on === true ? `
       <div class="md-del-info">
         <div>${icon('monito')}<span>El cliente marca en un mapa dónde está.</span></div>
-        <div>${icon('whatsapp')}<span>El costo del envío lo pones tú al confirmar el pedido y le llega por WhatsApp.</span></div>
+      </div>
+      <div class="field">
+        <b>Tarifas por distancia</b>
+        <p>Configura cuánto cuesta el envío hasta cada kilómetro. La distancia se mide en línea recta.</p>
+        <div id="mdDelRates">${mdDelRatesHTML()}</div>
+        <button type="button" class="btn ghost" onclick="mdDelRateStep(1)">Agregar kilómetro</button>
+        <button type="button" class="btn ghost" onclick="mdDelRateStep(-1)">Quitar último</button>
+        <p>Si el cliente está más lejos, se aplica el precio promedio por kilómetro de la última tarifa a la distancia adicional.</p>
       </div>
     ` : ''}
     ${d.on === null ? '' : `
@@ -16228,6 +16251,15 @@ function mdCloseDeliveryForm(){
   },
   () => { mdRenderDeliveryForm(); },
   () => { mdDelDraft = null; closeModal(); });
+}
+function mdDelRatesHTML(){
+  return mdDelDraft.rates.map((rate, i) => `<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0">Hasta ${i + 1} km <span style="display:flex;align-items:center;gap:6px">$ <input style="width:100px" aria-label="Precio hasta ${i + 1} km en pesos" type="number" min="0" max="10000" step="0.01" inputmode="decimal" value="${rate == null ? '' : rate}" oninput="mdDelDraft.rates[${i}]=this.valueAsNumber"></span></label>`).join('');
+}
+function mdDelRateStep(dir){
+  const rates = mdDelDraft.rates;
+  if(dir > 0 && rates.length < 100) rates.push(Math.min(10000, round2((rates[rates.length - 1] || 0) + 5)));
+  if(dir < 0 && rates.length > 1) rates.pop();
+  document.getElementById('mdDelRates').innerHTML = mdDelRatesHTML();
 }
 function mdDelSet(on){ if(!mdDelDraft) return; mdDelDraft.on = on; vibrate(8); mdRenderDeliveryForm(); }
 function mdDelClear(){
@@ -16306,7 +16338,11 @@ function mdSaveDelivery(){
     return;
   }
   const cfg = mdCfg();
-  cfg.delivery = mdCleanDelivery({ on:d.on, lat:d.lat, lng:d.lng });
+  if(d.on && d.rates.some(rate => !Number.isFinite(rate) || rate < 0 || rate > 10000)){
+    toast('Escribe un precio válido en cada kilómetro', { icon:icon('alert'), variant:'toast-danger' });
+    return;
+  }
+  cfg.delivery = mdCleanDelivery(d);
   mdSaveCfg(cfg);
   mdDelDraft = null;
   closeModal();
@@ -18178,7 +18214,7 @@ function mdiServiceHTML(o){
 function mdiDeliveryHTML(o){
   if(!mdiIsDelivery(o)) return '';
   const loc = o.customer.loc;
-  const editable = o.status === 'nuevo';
+  const editable = o.status === 'nuevo' && o.autoDelivery !== true;
   const fee = mdiHasFee(o) ? mdiDeliveryFee(o) : null;
   return `
     <div class="mdi-deliv">
@@ -18355,7 +18391,7 @@ function mdiDetailHTML(o){
   const st = mdiStage(o);
   const mod = mdiIsModified(o);
   const esNuevo = o.status === 'nuevo';
-  const editable = esNuevo && !(o.mpCheckout && !mdiIsDelivery(o));
+  const editable = esNuevo && !(o.mpCheckout && (!mdiIsDelivery(o) || o.autoDelivery));
   const pagoTarjeta = o.mp && o.mp.status === 'paid';
   const sale = o.saleId ? DB.getSales().find(s => s.id === o.saleId) : null;
   const srcTxt = { menu:'desde el Menú Digital', link:'con el link de WhatsApp', pegado:'pegado de WhatsApp' }[o.source] || 'desde el Menú Digital';
@@ -18412,7 +18448,7 @@ function mdiDetailHTML(o){
     ${o.status === 'confirmado' && o.pendingNext ? `
       <div class="mdi-banner ok">${icon('check')}<span><b>Pedido aceptado</b>${o.notifiedAt ? 'Ya le avisaste al cliente. Toca “Siguiente” para pasarlo a Pendiente de pago.' : 'Avísale al cliente por WhatsApp y luego toca “Siguiente” para pasarlo a Pendiente de pago.'}</span></div>
       <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que lo aceptaste'}</button>` : ''}
-    ${esNuevo && o.mpCheckout ? `<div class="mdi-banner ${pagoTarjeta ? 'ok' : 'warn'}">${icon(pagoTarjeta ? 'check' : 'card')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pago con tarjeta pendiente'}</b>${pagoTarjeta ? 'Mercado Pago confirmó el pago.' : (mdiIsDelivery(o) ? 'Confirma el pedido y el costo de envío para habilitar el pago en el menú.' : 'Esperando la confirmación de Mercado Pago.')}</span></div>` : ''}
+    ${esNuevo && o.mpCheckout ? `<div class="mdi-banner ${pagoTarjeta ? 'ok' : 'warn'}">${icon(pagoTarjeta ? 'check' : 'card')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pago con tarjeta pendiente'}</b>${pagoTarjeta ? 'Mercado Pago confirmó el pago.' : (mdiIsDelivery(o) && !o.autoDelivery ? 'Confirma el pedido y el costo de envío para habilitar el pago en el menú.' : 'Esperando la confirmación de Mercado Pago.')}</span></div>` : ''}
     ${o.status === 'confirmado' && !o.pendingNext ? `
       ${mdiIsPaid(o) ? `<div class="mdi-banner ok">${icon('check')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pedido cobrado'}</b>${sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : ''}
       ${mdiIsPaid(o)
@@ -18447,7 +18483,7 @@ function mdiDetailHTML(o){
 
     ${esNuevo ? `
       <div class="mdi-decide">
-        ${!o.mpCheckout || (mdiIsDelivery(o) && !pagoTarjeta) ? `<button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>` : ''}
+        ${!o.mpCheckout || (mdiIsDelivery(o) && !o.autoDelivery && !pagoTarjeta) ? `<button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>` : ''}
         <button class="btn mdi-confirm" id="mdiConfirmBtn" onclick="mdiConfirm('${o.id}')">${icon('check')} Aceptar pedido · ${formatMoney(mdiOrderTotal(o))}</button>
       </div>
     ` : `
@@ -19117,7 +19153,7 @@ function mpPayUrl(o){
 /** Fija EN EL SERVIDOR cuánto hay que cobrar por este pedido.
     Es lo único que decide el monto: el navegador del cliente no puede cambiarlo. */
 async function mpArm(o, silencio){
-  if(!o || !mpLinked() || mdiPayId(o) !== 'tarjeta' || (o.mpCheckout && !mdiIsDelivery(o))) return false;
+  if(!o || !mpLinked() || mdiPayId(o) !== 'tarjeta' || (o.mpCheckout && (!mdiIsDelivery(o) || o.autoDelivery))) return false;
   if(!Cloud.ready || !Cloud.uid) return false;
   try{
     await mpCall(MP_FN.arm, { order_id:o.id, code:o.code, total:mdiOrderTotal(o) }, true);
@@ -19662,6 +19698,7 @@ dmConfirmHTML = function(){
   if(!del) co.svc = 'llevar';
   const nombre = (bizData().name || '').trim();
   const t = mdTotals(dm.cart);
+  const envio = co.svc === 'domicilio' ? mdDeliveryQuote(mdCfg().delivery, co.loc) : null;
   const n = dm.cart.length;
   const step = co.step === 2 ? 2 : 1;
   const check = `<span class="dm-opt-check">${icon('check')}</span>`;
@@ -19687,9 +19724,10 @@ dmConfirmHTML = function(){
     <button type="button" class="dm-co-sum" onclick="dmOpenSheet('cart')">
       <span class="dm-co-sum-ico">${icon('bag')}</span>
       <span class="dm-co-sum-txt"><b>${n} producto${n === 1 ? '' : 's'}</b><small>Toca para ver o cambiar tu pedido</small></span>
-      <b class="dm-co-sum-total">${formatMoney(t.total)}</b>
+      <b class="dm-co-sum-total">${formatMoney(t.total + (envio ? envio.fee : 0))}</b>
     </button>
 
+    ${step === 2 && envio ? `<div class="dm-banner fee">${icon('truck')}<span>Envío incluido en el total · ${formatMoney(envio.fee)}</span></div>` : ''}
     ${step === 1 ? `
     <div class="dm-co-sec" id="dmCoSvc">
       <div class="dm-co-label">Tipo de servicio</div>
@@ -19712,7 +19750,7 @@ dmConfirmHTML = function(){
       <div class="field" style="margin:10px 0 0;">
         <input id="dmRef" type="text" maxlength="200" autocomplete="street-address" placeholder="Dirección o referencias (opcional)" value="${escapeHtml(co.ref)}" oninput="dmCoState().ref=this.value">
       </div>
-      <div class="dm-banner fee">${icon('truck')}<span><b>El costo de envío te lo damos en el chat</b>Al confirmar tu pedido, el negocio te dirá por WhatsApp cuánto cuesta llevarlo.</span></div>
+      <div class="dm-banner fee">${icon('truck')}<span id="dmDeliveryQuote" aria-live="polite">${envio ? 'Envío: ' + formatMoney(envio.fee) + ' · ' + envio.km.toFixed(2) + ' km' : 'Marca tu ubicación para calcular el envío.'}</span></div>
     </div>` : ''}
 
     <div class="field dm-co-sec" style="margin-bottom:0;">
@@ -19772,6 +19810,7 @@ function dmCoSvc(id){
   const del = document.getElementById('dmCoDel');
   if(!del) return;
   del.hidden = id !== 'domicilio';
+  dmCoLocPaint();
   if(id === 'domicilio'){
     dmCoMountMap();
     setTimeout(() => { try{ del.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'start' }); }catch(e){} }, 90);
@@ -19790,13 +19829,23 @@ function dmCoPay(id){
   const whatsapp = document.getElementById('dmCheckoutWhatsApp');
   if(whatsapp) whatsapp.hidden = dmMpCheckout(co);
 }
+function dmRecentPayUrl(){
+  try{
+    const recent = JSON.parse(localStorage.getItem('mesa_dm_checkout_' + dm.id) || 'null');
+    return recent && /^o[a-z0-9]{6,24}$/.test(recent.id) && recent.at > Date.now() - 86400000 ? mpPayUrl(recent) : '';
+  }catch(e){ return ''; }
+}
+function dmResumePay(){
+  const url = dmRecentPayUrl();
+  if(url){ location.assign(url); location.reload(); }
+}
 function dmMpCheckout(co){
   const pm = mdCfg().payments;
   return co.pay === 'tarjeta' && !!(pm.mp && pm.mp.on);
 }
 function dmMpButton(co){
   if(!dmMpCheckout(co)) return icon('whatsapp') + ' Enviar pedido';
-  return icon('card') + (co.svc === 'domicilio' ? ' Ver total y pagar' : ' Pagar con tarjeta');
+  return icon('card') + ' Pagar con tarjeta';
 }
 /* Lo que ve el cliente según cómo va a pagar */
 function dmCoCash(v){ const co = dmCoState(); const n = Number(v); co.cashWith = n > 0 ? n : null; }
@@ -19818,7 +19867,7 @@ function dmPayInfoHTML(){
     if(mpOn){
       return `<div class="dm-pi">
         ${head('card', 'Pago con tarjeta', 'Pagas en línea con Mercado Pago, desde tu celular.')}
-        <small class="dm-pi-note">${dom ? 'El negocio confirmará el costo de envío antes de que pagues. ' : ''}Paga aquí y después envía tu pedido y la referencia del pago por WhatsApp. Tus datos de tarjeta no los ve el negocio ni esta app.</small>
+        <small class="dm-pi-note">Paga aquí y después envía tu pedido y la referencia del pago por WhatsApp. Tus datos de tarjeta no los ve el negocio ni esta app.</small>
       </div>`;
     }
     return `<div class="dm-pi">${head('card', 'Pago con tarjeta', dom ? 'Te cobramos con tarjeta cuando te entreguen tu pedido.' : 'Te cobramos con tarjeta cuando pases por tu pedido.')}</div>`;
@@ -19844,6 +19893,12 @@ function dmCoLocPaint(){
   const co = dmCoState();
   const st = document.getElementById('dmLocSt');
   if(st){ st.classList.toggle('ok', !!co.loc); st.innerHTML = co.loc ? icon('check') + 'Ubicación marcada' : 'Aún no marcas tu ubicación'; }
+  const cfg = mdCfg();
+  const envio = co.svc === 'domicilio' ? mdDeliveryQuote(cfg.delivery, co.loc) : null;
+  const quote = document.getElementById('dmDeliveryQuote');
+  if(quote) quote.textContent = envio ? 'Envío: ' + formatMoney(envio.fee) + ' · ' + envio.km.toFixed(2) + ' km' : 'Marca tu ubicación para calcular el envío.';
+  const total = document.querySelector('.dm-co-sum-total');
+  if(total) total.textContent = formatMoney(mdTotals(dm.cart).total + (envio ? envio.fee : 0));
   if(co.loc){ const box = document.getElementById('dmCoDel'); if(box) box.classList.remove('need'); }
 }
 function dmCoMountMap(){
@@ -19898,6 +19953,12 @@ dmSendWhatsApp = async function(){
     service: co.svc, payment: co.pay, cashWith: co.pay === 'efectivo' ? co.cashWith : null,
     loc: co.svc === 'domicilio' && co.loc ? { lat:co.loc.lat, lng:co.loc.lng, ref:(co.ref || '').trim() } : null
   });
+  if(co.svc === 'domicilio'){
+    const envio = mdDeliveryQuote(cfg.delivery, co.loc);
+    if(!envio){ dmToast('No se pudo calcular el envío. Revisa la ubicación.', 'warn'); return; }
+    order.deliveryFee = envio.fee;
+    order.autoDelivery = true;
+  }
   if(co.code && co.pay === 'transferencia') order.code = co.code;   /* el mismo que vio como concepto */
   if(dmMpCheckout(co)){
     const key = JSON.stringify([dm.id, order.customer, order.original]);
@@ -19912,6 +19973,7 @@ dmSendWhatsApp = async function(){
       const result = await mdiTimeout(mdiCloudSend(order, true), 15000);
       if(!result) throw new Error('Revisa tu conexión e inténtalo de nuevo');
       const url = mpPayUrl(order);
+      try{ localStorage.setItem('mesa_dm_checkout_' + dm.id, JSON.stringify({ id:order.id, at:Date.now() })); }catch(e){}
       location.assign(url);
       location.reload();
     }catch(e){
@@ -19924,7 +19986,7 @@ dmSendWhatsApp = async function(){
   order.waText = mdiMessage(order);          /* solo el número de pedido */
   const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
   /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
-  mdiReceive(order, 'menu');
+  if(!order.autoDelivery || !mpReady()) mdiReceive(order, 'menu');
   const enEsteAparato = !!MDI.get(order.id);
   const conNube = !!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY);
   const listo = msg => {
@@ -19956,20 +20018,20 @@ dmSendWhatsApp = async function(){
   dm.sending = true;
   if(btn){ btn.disabled = true; btn.textContent = 'Enviando tu pedido…'; }
   if(errBox) errBox.style.display = 'none';
-  let ok = false;
+  let ok = false, sendError = '';
   try{
     ok = await Promise.race([
       typeof mdiCloudSend === 'function' ? mdiCloudSend(order) : Promise.resolve(false),
       new Promise(r => setTimeout(() => r(false), 15000))
     ]);
-  }catch(e){ ok = false; }
+  }catch(e){ sendError = e.message || ''; }
   dm.sending = false;
   if(!ok){
     try{ if(win && !win.closed) win.close(); }catch(e){}
     if(btn && btn.isConnected){ btn.disabled = false; btn.innerHTML = btnHTML; }
     if(errBox && errBox.isConnected) errBox.style.display = '';
     dmVib([20, 40, 20]);
-    dmToast('No pudimos enviar tu pedido. Revisa tu internet e inténtalo otra vez', 'warn');
+    dmToast(sendError || 'No pudimos enviar tu pedido. Revisa tu internet e inténtalo otra vez', 'warn');
     return;
   }
   dmVib([60, 40, 60]);
@@ -25050,7 +25112,7 @@ function mdPublicSnapshot(){
     v:1,
     cfg:{ paused:!!cfg.paused, color:cfg.color, design:mdValidDesign(cfg.design), hours:cfg.hours,
          /* Servicio a domicilio: si lo hay y dónde empieza el mapa del cliente */
-         delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null },
+         delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null, rates:cfg.delivery.rates },
          /* Formas de pago: la CLABE solo se publica si aceptas transferencias */
          /* El banner y las redes viajan junto con el resto del menú */
          banner: mdCleanBanner(cfg.banner),
@@ -25377,7 +25439,7 @@ function mdiCloudSend(order, mpCheckout = false){
   const body = JSON.stringify({
     p_menu_id: dm.id,
     p_order: {
-      v:1, id:order.id, code:order.code, createdAt:order.createdAt, mpCheckout,
+      v:1, id:order.id, code:order.code, createdAt:order.createdAt, mpCheckout, deliveryQuote:order.deliveryFee,
       customer: mdiCleanCustomer(order.customer),   /* nombre, tipo de servicio, pago y ubicación */
       original:(order.original || []).slice(0, 150)
     }
@@ -25391,9 +25453,9 @@ function mdiCloudSend(order, mpCheckout = false){
       body
     }).then(async r => {
       const result = await r.json().catch(() => null);
-      if(mpCheckout && (!r.ok || !result || result.ok !== true)) throw new Error((result && result.error) || 'No se pudo preparar el pago');
+      if((mpCheckout || order.autoDelivery) && (!r.ok || !result || result.ok !== true)) throw new Error((result && result.error) || 'No se pudo preparar el pago');
       return r.ok && !!result && result.ok === true;
-    }).catch(e => { if(mpCheckout) throw e; return false; });
+    }).catch(e => { if(mpCheckout || order.autoDelivery) throw e; return false; });
   }catch(e){ return Promise.resolve(false); }
 }
 
@@ -25427,7 +25489,7 @@ function mdiFromCloud(row){
       customer: customer,
       original: lines,
       lines: lines.map(l => Object.assign({}, l)),
-      status:'nuevo', service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true, mpCheckout,
+      status:'nuevo', service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true, mpCheckout, autoDelivery:d.autoDelivery === true, deliveryFee:d.autoDelivery === true ? Number(d.deliveryFee) : undefined,
       mp: row.charge_status ? { status:row.charge_status, paymentId:row.mp_payment_id || null, amount:row.paid_amount == null ? null : Number(row.paid_amount), at:row.paid_at || null } : null
     };
   }catch(e){ return null; }
@@ -26560,10 +26622,14 @@ function cgCartHTML(){
     if(d.ok && d.cfg.design !== 'visual'){
       if(typeof fdTeardown === 'function') fdTeardown();
       cgRender(d);
-      return;
+    }else{
+      document.body.classList.remove('dm-cat');
+      prevRender.apply(this, arguments);
     }
-    document.body.classList.remove('dm-cat');
-    return prevRender.apply(this, arguments);
+    const view = document.querySelector('#dmRoot .dm-view');
+    if(view && d.ok && dmRecentPayUrl()){
+      view.insertAdjacentHTML('afterbegin', `<button type="button" class="btn ghost block" onclick="dmResumePay()">Volver a mi último pago</button>`);
+    }
   };
   const prevBar = dmRenderCartbar;
   dmRenderCartbar = function(){
