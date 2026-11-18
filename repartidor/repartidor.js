@@ -3,9 +3,9 @@ const deliveryPublicKey = 'sb_publishable_uxy6ZYubuYn6Q2LPwuElpg_qYwwWinX';
 const find = id => document.getElementById(id);
 const notify = message => { find('notice').textContent = message; };
 const auth = supabase.createClient(deliveryBackend,deliveryPublicKey,{auth:{storageKey:'vendo-repartidor-auth'}});
-const invite = location.hash.match(/^#enlace=([a-f0-9]{32})$/i)?.[1];
+const invite = location.hash.match(/^#(enlace|negocio)=([a-f0-9]{32})$/i);
 if(invite){
-  sessionStorage.setItem('vendo-repartidor-invite',invite);
+  sessionStorage.setItem('vendo-repartidor-invite',invite[1] + '=' + invite[2]);
   history.replaceState(null,'',location.pathname + location.search);
 }
 let currentSession = null;
@@ -68,7 +68,7 @@ async function refresh(){
   const version = ++requestVersion;
   const data = await request('list');
   if(version !== requestVersion || !currentSession) return;
-  find('businesses').textContent = data.businesses.length ? 'Negocios enlazados · ' + data.businesses.map(x=>x.name).join(', ') : 'Pide al negocio un enlace de invitación para ver su pedido.';
+  find('businesses').textContent = data.businesses.length ? 'Negocios enlazados · ' + data.businesses.map(x=>x.name).join(', ') : 'Pide al negocio su enlace de invitación.';
   listOrders(data.orders);
 }
 
@@ -106,11 +106,21 @@ find('link-form').onsubmit=async event=>{
   button.disabled=true;
   try{
     const value=form.elements.code.value.trim();
-    const code=value.match(/(?:#enlace=)?([a-f0-9]{32})$/i)?.[1] || value;
-    await request('link',{code});
+    const match = value.match(/(?:^|#)(enlace|negocio)=([a-f0-9]{32})$/i);
+    const permanent = match?.[1] === 'negocio';
+    const code = match?.[2] || value;
+    if(match?.[1] === 'enlace') await request('link',{code});
+    else if(permanent) await request('business-link',{code});
+    else {
+      try{ await request('business-link',{code}); }
+      catch(error){
+        if(error.message !== 'Invitación de negocio inválida') throw error;
+        await request('link',{code});
+      }
+    }
     sessionStorage.removeItem('vendo-repartidor-invite');
     form.reset();
-    notify('Negocio enlazado. Ya puedes ver el pedido asignado.');
+    notify('Negocio enlazado. Lo encontrarás en esta cuenta.');
     await refresh();
   }catch(error){ notify(error.message); }
   finally{ button.disabled=false; }
