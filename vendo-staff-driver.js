@@ -1,3 +1,25 @@
+const STAFF_DRIVER_ACCESS_KEY = 'vp_staff_driver_access';
+function staffDriverSavedAccess(){
+  try{
+    const token = localStorage.getItem(STAFF_DRIVER_ACCESS_KEY);
+    return /^[0-9a-f]{64}$/.test(token || '') ? token : null;
+  }catch(_){ return null; }
+}
+
+async function staffDriverRequest(action,payload={}){
+  const response = await fetch(mpBase() + '/functions/v1/delivery-driver',{
+    method:'POST',headers:{'Content-Type':'application/json',apikey:VENDO_CONFIG.SUPABASE_ANON_KEY},
+    body:JSON.stringify({action,...payload})
+  });
+  const data = await response.json();
+  if(!response.ok || !data.ok){
+    const error = new Error(data.error || 'No se pudo conectar con el reparto');
+    error.expired = data.expired === true;
+    throw error;
+  }
+  return data;
+}
+
 /* Reparto interno del POS. El acceso del repartidor vive solo en esta vista. */
 function staffDriverOpen(event){
   event?.preventDefault();
@@ -11,7 +33,7 @@ function staffDriverBoot(){
   const page = document.createElement('main');
   page.className = 'vp-driver-page';
   page.innerHTML = `
-    <header class="vp-chat-head"><h1>VendoPlus · Reparto</h1><button class="btn ghost" type="button" id="vpDriverExit">Salir</button></header>
+    <header class="vp-chat-head"><h1>VendoPlus · Reparto</h1><button class="btn ghost" type="button" id="vpDriverExit">Cerrar sesión</button></header>
     <p id="vpDriverNotice" role="status" aria-live="polite"></p>
     <section id="vpDriverLink" class="vp-chat-details">
       <h2>Enlazar con un negocio</h2>
@@ -27,7 +49,7 @@ function staffDriverBoot(){
   const notice = message => { find('vpDriverNotice').textContent = message; };
   const form = find('vpDriverForm');
   const submit = form.querySelector('button');
-  let access = null;
+  let access = staffDriverSavedAccess();
   let busy = false;
 
   function render(data){
@@ -47,7 +69,7 @@ function staffDriverBoot(){
   }
 
   async function refresh(){
-    const data = await pgFetch('delivery-driver',{action:'list',...access});
+    const data = await staffDriverRequest('list',{token:access});
     render(data);
   }
 
@@ -58,8 +80,9 @@ function staffDriverBoot(){
     submit.disabled = true;
     try{
       const credentials = {name:form.elements.name.value.trim(),code:form.elements.code.value.trim()};
-      const data = await pgFetch('delivery-driver',{action:'enter',...credentials});
-      access = credentials;
+      const data = await staffDriverRequest('enter',credentials);
+      access = data.token;
+      localStorage.setItem(STAFF_DRIVER_ACCESS_KEY,access);
       form.reset();
       notice('');
       render(data);
@@ -75,15 +98,45 @@ function staffDriverBoot(){
     try{
       const action = button.dataset.action;
       if(action !== 'list'){
-        await pgFetch('delivery-driver',{action,id:button.dataset.order,...access});
+        await staffDriverRequest(action,{id:button.dataset.order,token:access});
         notice(action === 'start' ? 'Ruta iniciada.' : 'Pedido entregado.');
       }else notice('');
       await refresh();
-    }catch(error){ notice(error.message); }
+    }catch(error){ recover(error); }
     finally{ busy = false; button.disabled = false; }
   };
-  find('vpDriverExit').onclick = () => {
+  function recover(error){
+    if(error.expired){
+      access = null;
+      localStorage.removeItem(STAFF_DRIVER_ACCESS_KEY);
+      find('vpDriverOrders').hidden = true;
+      find('vpDriverLink').hidden = false;
+    }
+    notice(error.message);
+  }
+
+  if(access){
+    find('vpDriverLink').hidden = true;
+    notice('Cargando tus entregas…');
+    refresh().then(()=>notice('')).catch(error=>{
+      recover(error);
+      if(!error.expired){
+        const retry = document.createElement('button');
+        retry.type='button'; retry.className='btn ghost'; retry.textContent='Reintentar';
+        retry.onclick = () => refresh().then(()=>{ notice(''); retry.remove(); }).catch(recover);
+        page.appendChild(retry);
+      }
+    });
+  }
+
+  find('vpDriverExit').onclick = async event => {
+    event.currentTarget.disabled = true;
+    const token = access;
     access = null;
+    localStorage.removeItem(STAFF_DRIVER_ACCESS_KEY);
+    if(token){
+      try{ await mdiTimeout(staffDriverRequest('logout',{token}),2000); }catch(_){}
+    }
     location.href = location.href.split('#')[0];
     location.reload();
   };
