@@ -2680,6 +2680,14 @@ function invPagar(){
     }
     if(!r.ok || !r.url) return toast(r.mensaje || 'No se pudo abrir el pago.', true);
     if(!r.con_descuento && r.mensaje) toast(r.mensaje, true);
+
+    /* La sesión se le pasa a la app ANTES de irse a Stripe. El portal y la
+       app guardan la sesión con llaves distintas, así que si no se copia
+       aquí, al volver del pago la app no sabría quién es y pediría entrar
+       otra vez. Copiándola ahora, Stripe puede regresar directo a la app
+       con la cuenta ya abierta, sin pantallas intermedias. */
+    await pasarSesionAlApp();
+
     location.href = r.url;     // a Stripe Checkout
   });
 }
