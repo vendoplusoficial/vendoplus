@@ -45,8 +45,9 @@ function orderChatSummary(data){
 
 function orderChatProgress(state, delivery){
   const index = ['pending','confirmed','preparing','route','delivered'].indexOf(state);
-  const steps = ['Confirmar pedido','Preparando pedido',delivery ? 'Iniciando ruta de repartidor' : 'Entregar pedido'];
-  return `<ol class="vp-chat-progress">${steps.map((step,i) => {
+  const steps = ['Pedido confirmado','Preparando pedido'];
+  if(delivery) steps.push('En camino');
+  return `<ol class="vp-chat-progress ${delivery ? '' : 'pickup'}">${steps.map((step,i) => {
     const active = index >= [1,2,3][i];
     return `<li class="${active ? 'active' : ''}"><i>${i + 1}</i><span>${step}</span></li>`;
   }).join('')}</ol>`;
@@ -87,6 +88,7 @@ function orderChatStop(){
   const chat = activeOrderChat;
   if(!chat) return;
   clearInterval(chat.timer);
+  clearTimeout(chat.readyTimer);
   document.removeEventListener('visibilitychange',chat.refreshVisible);
   if(chat.channel && chat.client) chat.client.removeChannel(chat.channel);
   activeOrderChat = null;
@@ -169,11 +171,33 @@ function orderChatRefundHTML(data){
   return `<div class="vp-chat-wait"><span>¿Necesitas tu reembolso?</span><a class="btn ghost" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Solicitar reembolso por WhatsApp</a></div>`;
 }
 
-function orderChatCancelledHTML(data){
-  return `<div class="vp-chat-details">
-    <strong>Pedido cancelado</strong>
-    <button class="btn primary block" style="margin-top:10px" type="button" onclick="orderChatBackToMenu()">Volver al menú</button>
-  </div>${orderChatRefundHTML(data)}`;
+function orderChatTerminalHTML(data){
+  const rejected = data.state === 'rejected';
+  const title = rejected ? 'El negocio rechazó tu pedido'
+    : data.cancelled_by === 'business' ? 'El negocio canceló tu pedido'
+    : data.cancelled_by === 'customer' ? 'Cancelaste tu pedido' : 'Pedido cancelado';
+  return `<section class="vp-chat-terminal ${rejected ? 'rejected' : 'cancelled'}">
+    <div class="vp-chat-terminal-icon" aria-hidden="true">${icon(rejected ? 'alert' : 'close')}</div>
+    <small>Pedido ${escapeHtml(data.code)}</small>
+    <h1>${title}</h1>
+    ${rejected && data.reject_note ? `<p>${escapeHtml(data.reject_note)}</p>` : ''}
+    ${orderChatRefundHTML(data)}
+    <button class="btn primary block" type="button" onclick="orderChatBackToMenu()">Volver al menú</button>
+  </section>`;
+}
+
+function orderChatPickupReady(chat,data){
+  clearTimeout(chat.readyTimer);
+  const delay = Date.parse(data.ready_at) - Date.now();
+  if(!chat.token || data.customer?.service === 'domicilio' ||
+      !['confirmed','preparing'].includes(data.state) || !Number.isFinite(delay)) return false;
+  if(delay > 0){
+    chat.readyTimer = setTimeout(() => {
+      if(chat === activeOrderChat && chat.root.isConnected) orderChatPaint(chat,chat.data);
+    },delay);
+    return false;
+  }
+  return true;
 }
 
 function orderChatBackToMenu(){
@@ -186,13 +210,26 @@ function orderChatBackToMenu(){
 function orderChatPaint(chat,data){
   const previous = chat.data;
   chat.data = data;
+  const terminal = chat.token && ['cancelled','rejected'].includes(data.state);
+  if(terminal){
+    clearTimeout(chat.readyTimer);
+    const screen = orderChatTerminalHTML(data);
+    if(chat.terminalScreen !== screen){
+      chat.root.innerHTML = screen;
+      chat.terminalScreen = screen;
+    }
+    return;
+  }
+  const ready = orderChatPickupReady(chat,data);
+  const visibleState = data.state === 'confirmed' ? 'preparing' : data.state;
   const find = key => chat.root.querySelector('#vpChat' + key);
-  if(!previous || previous.state !== data.state || previous.menu_id !== data.menu_id || previous.refund_method !== data.refund_method || previous.refund_whatsapp !== data.refund_whatsapp){
-    find('Order').textContent = (data.business ? data.business + ' · ' : '') + data.code + ' · ' + (chat.token && data.state === 'rejected' ? 'Cancelado' : orderChatLabels[data.state]);
-    find('Progress').innerHTML = orderChatProgress(data.state,data.customer?.service === 'domicilio');
+  if(!previous || previous.state !== data.state || chat.pickupReady !== ready){
+    chat.pickupReady = ready;
+    find('Order').textContent = (data.business ? data.business + ' · ' : '') + data.code + ' · ' + (ready ? 'Listo para recoger' : orderChatLabels[visibleState]);
+    find('Progress').innerHTML = orderChatProgress(visibleState,data.customer?.service === 'domicilio');
     find('Actions').innerHTML = data.state === 'pending' && chat.token
       ? `<div class="vp-chat-wait">${icon('clock')}<span>Esperando confirmación</span><button class="btn ghost" type="button" onclick="orderChatCancel()">Cancelar pedido</button></div>`
-      : (chat.token && ['cancelled','rejected'].includes(data.state) ? orderChatCancelledHTML(data) : '');
+      : ready ? '<div class="vp-chat-wait" role="status"><b>Ya puedes pasar por tu pedido</b></div>' : '';
   }
   if(!previous) find('Summary').innerHTML = orderChatSummary(data);
   const channel = find('Thread');
@@ -264,17 +301,13 @@ async function mdiChatChange(order,state,extra = {}){
 }
 
 function mdiChatActions(order){
-  if(!order.chatCheckout) return '';
+  if(!order.chatCheckout || !mdiIsDelivery(order)) return '';
   const next = {
-    confirmed:['preparing','Preparar pedido'],
-    preparing:mdiIsDelivery(order) ? ['route','Iniciar ruta'] : ['delivered','Marcar como entregado'],
+    confirmed:['route','Iniciar ruta'],
+    preparing:['route','Iniciar ruta'],
     route:['delivered','Marcar como entregado']
   }[order.chatState];
-  return `<div class="vp-chat-pos">
-    <button type="button" class="btn ghost" onclick="mdiOpenChat('${order.id}')">Chat del pedido${order.chatUnread ? ' · ' + order.chatUnread + ' sin leer' : ''}</button>
-    ${next ? `<button type="button" class="btn primary" onclick="mdiChatSet('${order.id}','${next[0]}')">${next[1]}</button>` : ''}
-    ${order.chatState === 'delivered' ? '<b>Entregado</b>' : ''}
-  </div>`;
+  return next ? `<div class="vp-chat-pos"><button type="button" class="btn primary" onclick="mdiChatSet('${order.id}','${next[0]}')">${next[1]}</button></div>` : '';
 }
 
 function mdiChatMetadata(o,incoming){
