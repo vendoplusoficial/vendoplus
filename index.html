@@ -19865,16 +19865,6 @@ function dmCoPay(id){
   const whatsapp = document.getElementById('dmCheckoutWhatsApp');
   if(whatsapp) whatsapp.hidden = dmMpCheckout(co);
 }
-function dmRecentPayUrl(){
-  try{
-    const recent = JSON.parse(localStorage.getItem('mesa_dm_checkout_' + dm.id) || 'null');
-    return recent && /^o[a-z0-9]{6,24}$/.test(recent.id) && recent.at > Date.now() - 86400000 ? mpPayUrl(recent) : '';
-  }catch(e){ return ''; }
-}
-function dmResumePay(){
-  const url = dmRecentPayUrl();
-  if(url){ location.assign(url); location.reload(); }
-}
 function dmMpCheckout(co){
   const pm = mdCfg().payments;
   return co.pay === 'tarjeta' && !!(pm.mp && pm.mp.on);
@@ -20009,7 +19999,6 @@ dmSendWhatsApp = async function(){
       const result = await mdiTimeout(mdiCloudSend(order, true), 15000);
       if(!result) throw new Error('Revisa tu conexión e inténtalo de nuevo');
       const url = mpPayUrl(order);
-      try{ localStorage.setItem('mesa_dm_checkout_' + dm.id, JSON.stringify({ id:order.id, at:Date.now() })); }catch(e){}
       location.assign(url);
       location.reload();
     }catch(e){
@@ -26691,10 +26680,6 @@ function cgCartHTML(){
     }else{
       document.body.classList.remove('dm-cat');
       prevRender.apply(this, arguments);
-    }
-    const view = document.querySelector('#dmRoot .dm-view');
-    if(view && d.ok && dmRecentPayUrl()){
-      view.insertAdjacentHTML('afterbegin', `<button type="button" class="btn ghost block" onclick="dmResumePay()">Volver a mi último pago</button>`);
     }
   };
   const prevBar = dmRenderCartbar;
