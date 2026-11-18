@@ -18518,7 +18518,7 @@ function mdiDetailHTML(o){
 
     ${esNuevo ? `
       <div class="mdi-decide">
-        ${!o.mpCheckout || (mdiIsDelivery(o) && !o.autoDelivery && !pagoTarjeta) ? `<button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>` : ''}
+        <button class="btn danger" onclick="mdiAskReject('${o.id}')">${icon('close')} Rechazar</button>
         <button class="btn mdi-confirm" id="mdiConfirmBtn" onclick="mdiConfirm('${o.id}')">${icon('check')} Aceptar pedido · ${formatMoney(mdiOrderTotal(o))}</button>
       </div>
     ` : `
@@ -18526,7 +18526,7 @@ function mdiDetailHTML(o){
         ${o.pendingNext ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiNext('${o.id}')">Siguiente ${icon('chevronRight')}</button>` : ''}
         ${o.status === 'confirmado' ? '' : `<button class="btn whatsapp" style="${o.pendingNext ? 'flex:1 1 100%;' : ''}" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} Avisar al cliente</button>`}
         ${sale && canSeeSale(sale) ? `<button class="btn ghost" onclick="showTicket(DB.getSales().find(s => s.id === '${sale.id}'))">${icon('receipt')} Ver ticket</button>` : ''}
-        ${o.status === 'confirmado' && !o.pendingNext && (!o.mpCheckout || mdiIsPaid(o)) && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
+        ${o.status === 'confirmado' && !o.pendingNext && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
         ${o.status === 'rechazado' && !o.pendingNext ? `<button class="btn ghost" onclick="mdiReopen('${o.id}')">${icon('undo')} Volver a revisar</button>` : ''}
         ${(o.status === 'rechazado' || o.status === 'cancelado') && !o.pendingNext && isOwner() ? `<button class="btn danger" onclick="mdiDelete('${o.id}')">${icon('trash')} Eliminar</button>` : ''}
       </div>
@@ -19311,7 +19311,8 @@ function mdiCancelOrder(id, fromHistory){
   askConfirm({
     title:'¿Cancelar el pedido ' + escapeHtml(o.code) + '?',
     text:(sale ? 'La venta ' + orderNumberLabel(sale.number) + ' se queda en tu historial como cancelada y deja de contar en tus ventas.' : 'El pedido pasa a Cancelados. Después puedes avisarle al cliente por WhatsApp.')
-      + (hayRegreso ? ' Lo que se descontó de tus existencias regresa al inventario.' : ''),
+      + (hayRegreso ? ' Lo que se descontó de tus existencias regresa al inventario.' : '')
+      + (o.mp?.status === 'paid' ? ' El cliente ya pagó con tarjeta. El reembolso se realiza desde Mercado Pago.' : ''),
     ok:'Cancelar pedido', cancel:'Volver', danger:true, icon:icon('alert')
   }, () => mdiCancelOrderNow(id, fromHistory));
 }
@@ -19353,7 +19354,7 @@ function mdiAskReject(id){
       <h2>Rechazar pedido ${escapeHtml(o.code)}</h2>
       <button class="sheet-close" onclick="mdiOpen('${id}')">${icon('close')}</button>
     </div>
-    <p class="sheet-text">El pedido no se cobra ni entra a tus ventas. Después puedes avisarle al cliente por WhatsApp.</p>
+    <p class="sheet-text">${o.mp?.status === 'paid' ? 'El cliente ya pagó con tarjeta. Si rechazas el pedido, haz el reembolso desde Mercado Pago y avísale al cliente por WhatsApp.' : 'El pedido no se cobra ni entra a tus ventas. Después puedes avisarle al cliente por WhatsApp.'}</p>
     <div class="filter-modal-label">¿Por qué?</div>
     <div class="filter-pill-row" id="mdiReasons" style="margin-bottom:14px;">
       ${MDI_REJECT_REASONS.map(r => `<button class="filter-chip ${mdiRejectReason === r ? 'active' : ''}" onclick="mdiRejectReason='${r}'; document.querySelectorAll('#mdiReasons .filter-chip').forEach(b => b.classList.toggle('active', b.textContent === '${r}'));">${r}</button>`).join('')}
