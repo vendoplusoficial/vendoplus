@@ -87,6 +87,7 @@ function orderChatStop(){
   const chat = activeOrderChat;
   if(!chat) return;
   clearInterval(chat.timer);
+  document.removeEventListener('visibilitychange',chat.refreshVisible);
   if(chat.channel && chat.client) chat.client.removeChannel(chat.channel);
   activeOrderChat = null;
 }
@@ -98,7 +99,9 @@ function orderChatStart(id, token, root){
   chat.timer = setInterval(() => {
     if(!root.isConnected){ orderChatStop(); return; }
     if(!document.hidden) orderChatRefresh(chat);
-  }, 5000);
+  }, 2000);
+  chat.refreshVisible = () => { if(!document.hidden) orderChatRefresh(chat); };
+  document.addEventListener('visibilitychange',chat.refreshVisible);
   orderChatRefresh(chat);
 }
 
@@ -133,7 +136,8 @@ function orderChatSubscribe(chat, topic){
 }
 
 async function orderChatRefresh(chat){
-  if(chat !== activeOrderChat || chat.busy || !chat.root.isConnected) return;
+  if(chat !== activeOrderChat || !chat.root.isConnected) return;
+  if(chat.busy){ chat.refreshAgain = true; return; }
   chat.busy = true;
   try{
     const data = await orderChatCall(chat.id,'get',{},chat.token);
@@ -147,7 +151,10 @@ async function orderChatRefresh(chat){
       chat.read = last;
     }
   }catch(e){ if(!chat.data) orderChatError(chat,e.message); }
-  finally{ chat.busy = false; }
+  finally{
+    chat.busy = false;
+    if(chat.refreshAgain){ chat.refreshAgain = false; orderChatRefresh(chat); }
+  }
 }
 
 function orderChatRefundHTML(data){
@@ -242,8 +249,14 @@ function mdiChatSet(id,state){
 }
 
 async function mdiChatChange(order,state,extra = {}){
-  if(!order.chatCheckout) return true;
   try{
+    if(!order.chatCheckout){
+      if(!order.online) return true;
+      const { data:row,error } = await Cloud.sb.from(MDI_TABLE).select('data').eq('id',order.id).maybeSingle();
+      if(error) throw error;
+      if(row?.data?.chatCheckout !== true) return true;
+      MDI.update(order.id,o => { o.chatCheckout = true; });
+    }
     const data = await orderChatCall(order.id,'state',{state,...extra});
     MDI.update(order.id,o => { o.chatState = data.state; if(data.eta) o.etaMin = data.eta; });
     return true;
@@ -269,6 +282,7 @@ function mdiChatMetadata(o,incoming){
   if(incoming.chatUnread > oldUnread) toast('Nuevo mensaje en ' + incoming.code, {
     subtitle:incoming.customer?.name || 'Cliente del Menú Digital'
   });
+  o.chatCheckout = true;
   o.chatUnread = incoming.chatUnread;
   o.chatState = incoming.chatState;
   if(incoming.etaMin) o.etaMin = incoming.etaMin;

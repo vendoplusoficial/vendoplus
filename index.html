@@ -18023,10 +18023,12 @@ function mdiQuickConfirm(id){
   }
   mdiConfirm(id);
 }
-/* Después de aceptar o rechazar: una hoja corta para avisarle al cliente */
 function mdiAfterDecision(id){
-  const o = MDI.get(id); if(!o) return;
-  mdiOpen(id,true);
+  if(mdiUI.id === id && document.querySelector('#modal-layer .mdi-sheet')){
+    mdiOpen(id,true);
+  }
+  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
+  mdiPaintBadge();
 }
 
 function mdiChargeFromDone(id){
@@ -19304,10 +19306,7 @@ async function mdiCancelOrderNow(id, fromHistory, transferPaid = false){
   vibrate([15, 60, 15]);
   toast('Pedido ' + o.code + ' cancelado', { subtitle:(sale ? 'Venta ' + orderNumberLabel(sale.number) + ' cancelada' : 'El pedido se movió a Cancelados') + (hayRegreso ? ' · existencias devueltas' : '') });
   if(fromHistory){ closeModal(); render(); mdiPaintBadge(); return; }
-  mdiUI = { id, compare:false, text:'', result:null };
-  mdiOpen(id);
-  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
-  mdiPaintBadge();
+  mdiAfterDecision(id);
 }
 
 function mdiTransferRefundField(o,sale){
@@ -19316,36 +19315,29 @@ function mdiTransferRefundField(o,sale){
 }
 
 /* ---------- Rechazar ---------- */
-let mdiRejectReason = MDI_REJECT_REASONS[0];
 function mdiAskReject(id){
-  const o = MDI.get(id); if(!o) return;
-  openModal(`
-    <div class="sheet-header">
-      <h2>Rechazar pedido ${escapeHtml(o.code)}</h2>
-      <button class="sheet-close" onclick="mdiOpen('${id}')">${icon('close')}</button>
-    </div>
-    <p class="sheet-text">${o.chatCheckout ? 'El motivo se enviará al chat del cliente.' : 'El pedido se marcará como rechazado en el POS.'}</p>
-    ${mdiTransferRefundField(o)}
-    <div class="filter-modal-label">¿Por qué?</div>
-    <div class="filter-pill-row" id="mdiReasons" style="margin-bottom:14px;">
-      ${MDI_REJECT_REASONS.map(r => `<button class="filter-chip ${mdiRejectReason === r ? 'active' : ''}" onclick="mdiRejectReason='${r}'; document.querySelectorAll('#mdiReasons .filter-chip').forEach(b => b.classList.toggle('active', b.textContent === '${r}'));">${r}</button>`).join('')}
-    </div>
-    <div class="field">
-      <label for="mdiRejectNote">Mensaje para el cliente (opcional)</label>
-      <textarea id="mdiRejectNote" class="md-textarea" rows="2" maxlength="200" placeholder="Ej. Nos quedamos sin el producto, mañana nos llega"></textarea>
-    </div>
-    <div class="sheet-actions">
-      <button class="btn ghost block" onclick="mdiOpen('${id}')">Volver</button>
-      <button class="btn danger block" onclick="mdiReject('${id}')">${o.chatCheckout ? 'Enviar al cliente' : 'Rechazar pedido'}</button>
-    </div>
-  `, { dismissible:true });
+  const o = MDI.get(id);
+  if(!o || o.status !== 'nuevo') return;
+  askConfirm({
+    title:'¿Rechazar el pedido ' + escapeHtml(o.code) + '?',
+    text:'Si el pedido tiene chat, el cliente verá la cancelación y el motivo.',
+    extraHTML:`<div class="field"><label for="mdiRejectReason">Motivo</label>
+        <select id="mdiRejectReason">${MDI_REJECT_REASONS.map(reason => `<option>${escapeHtml(reason)}</option>`).join('')}</select></div>
+      <div class="field"><label for="mdiRejectNote">Mensaje para el cliente (opcional)</label>
+        <textarea id="mdiRejectNote" class="md-textarea" rows="2" maxlength="200"></textarea></div>
+      ${mdiTransferRefundField(o)}`,
+    ok:'Enviar al cliente', cancel:'Volver', danger:true
+  },dialog => mdiReject(id, {
+    reason:dialog.querySelector('#mdiRejectReason').value,
+    note:dialog.querySelector('#mdiRejectNote').value.trim().slice(0,200),
+    transferPaid:!!dialog.querySelector('#mdiTransferReceived:checked')
+  }));
 }
-async function mdiReject(id){
+async function mdiReject(id,{reason,note,transferPaid}){
   const o0 = MDI.get(id);
   if(!o0 || o0.status !== 'nuevo') return;   /* ya confirmado/cobrado (p. ej. en otra pestaña): no se rechaza */
-  const note = ((document.getElementById('mdiRejectNote') || {}).value || '').trim().slice(0, 200);
-  if(!(await mdiChatChange(o0,'rejected',{note:note || mdiRejectReason,transferPaid:!!document.querySelector('#mdiTransferReceived:checked')}))) return;
-  MDI.update(id, o => { o.status = 'rechazado'; delete o.pendingNext; delete o.notifiedAt; o.rejectReason = mdiRejectReason; o.rejectNote = note; o.decidedAt = new Date().toISOString(); });
+  if(!(await mdiChatChange(o0,'rejected',{note:note || reason,transferPaid}))) return;
+  MDI.update(id, o => { o.status = 'rechazado'; delete o.pendingNext; delete o.notifiedAt; o.rejectReason = reason; o.rejectNote = note; o.decidedAt = new Date().toISOString(); });
   shieldClicks();
   mdiAfterDecision(id);
 }
@@ -25811,7 +25803,7 @@ const MdiCloud = {
       if(o.chatCheckout){
         if(r.isNew){
           if(o.chatUnread) toast('Nuevo mensaje en ' + o.code,{ subtitle:o.customer?.name || 'Cliente del Menú Digital' });
-        }else if(r.order.chatState !== o.chatState || r.order.chatUnread !== o.chatUnread || r.order.mp?.status !== o.mp?.status){
+        }else if(!r.order.chatCheckout || r.order.chatState !== o.chatState || r.order.chatUnread !== o.chatUnread || r.order.mp?.status !== o.mp?.status){
           MDI.update(o.id, current => mdiChatMetadata(current,o));
           if(currentView === 'menu' && !document.querySelector('#modal-layer .modal-sheet')) render();
         }
@@ -25926,7 +25918,7 @@ const MdiCloud = {
       this.chUid = uid;
       this.ch = Cloud.sb.channel('vendo-pedidos-' + uid, { config:{ broadcast:{ self:false } } })
         .on('postgres_changes', { event:'INSERT', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
-            payload => { if(this.canRun() && Cloud.uid === uid && payload && payload.new) this.take([payload.new]).then(() => this.ok()); })
+            payload => { if(this.canRun() && Cloud.uid === uid && payload && payload.new) this.pull(); })
         .on('postgres_changes', { event:'UPDATE', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
             payload => {
               const row = payload && payload.new;
@@ -26983,7 +26975,7 @@ function mdSaveDesign(abrir){
 /* Dentro de la app de Android: Google Play, botón Atrás e impresora nativa. */
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
-<script src="./vendo-order-chat.js"></script>
+<script src="./vendo-order-chat.js?v=20261118-sync"></script>
 <script>
 /* =========================================================================
    ARRANQUE (va al final para que todo lo anterior ya esté cargado)
