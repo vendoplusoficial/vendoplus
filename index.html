@@ -5160,7 +5160,6 @@ body.pg-mode{ background:#F4F6FA; }
 @media (prefers-reduced-motion: reduce){ .pg-load i{ animation:none; } }
 
 </style>
-<link rel="stylesheet" href="./vendo-order-chat.css?v=20261118-menu">
 </head>
 <body>
 <noscript>
@@ -16602,8 +16601,8 @@ function mdChecklist(){
            : '¿Aceptas transferencias? Toca para responder',
         action:'mdOpenTransferForm()' };
     })(),
-    { label:'WhatsApp del negocio', ok:!!wa, optional:true,
-      sub:wa ? escapeHtml(mdWhatsappLabel()) : 'Contacto opcional', action:'mdOpenWhatsappForm()' },
+    { label:'WhatsApp del negocio', ok:!!wa,
+      sub:wa ? escapeHtml(mdWhatsappLabel()) + (wa.fromAccount ? ' · el de tu cuenta de ' + APP_NAME : ' · aquí llegan los pedidos') : 'Aquí te llegarán los pedidos', action:'mdOpenWhatsappForm()' },
     { label:'Productos del menú', ok:prods.length > 0, free:true,
       sub:prods.length ? prods.length + ' activo' + (prods.length === 1 ? '' : 's') + (sinDesc ? ' · ' + sinDesc + ' sin descripción' : ' · todos con descripción') : 'Activa al menos un producto', action:"goTo('products')" },
   ];
@@ -16682,7 +16681,7 @@ function mdConfigHTML(cfg){
         <span class="md-status-ico ${cfg.active ? 'on' : ''}">${icon('menuBook')}</span>
         <span class="md-status-txt">
           <span class="md-status-title">${cfg.active ? 'Tu Menú Digital está activo' : 'Menú Digital desactivado'}</span>
-          <span class="md-status-sub">${cfg.active ? (cfg.paused ? 'Tus clientes ven el menú, pero no pueden enviar pedidos' : (mdClosedNow(cfg) ? 'Fuera de horario: ven el menú, pero no pueden pedir' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') : 'Los pedidos y mensajes llegan aquí')) : 'Confirma estas opciones y actívalo'}</span>
+          <span class="md-status-sub">${cfg.active ? (cfg.paused ? 'Tus clientes ven el menú, pero no pueden enviar pedidos' : (mdClosedNow(cfg) ? 'Fuera de horario: ven el menú, pero no pueden pedir' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') : 'Los pedidos llegan aquí y a tu WhatsApp')) : 'Confirma estas opciones y actívalo'}</span>
         </span>
         <span class="md-pill ${estado.cls}">${estado.txt}</span>
       </div>
@@ -17465,7 +17464,7 @@ function dmConfirmHTML(){
     <div class="dm-banner wa" style="margin:14px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
     <div class="dm-actions">
       <button class="btn" onclick="dmOpenSheet('cart')">Volver</button>
-      <button class="btn dm-green" onclick="dmConfirmOrder()">${icon('check')} Confirmar</button>
+      <button class="btn dm-green" onclick="dmSendWhatsApp()">${icon('check')} Confirmar</button>
     </div>`;
 }
 /* Arma el mensaje y abre el WhatsApp del negocio. */
@@ -17486,7 +17485,21 @@ function dmWhatsappMessage(){
   msg += '\n*Total: ' + formatMoney(t.total) + ' MXN*';
   return msg;
 }
-
+function dmSendWhatsApp(){
+  const cfg = mdCfg();
+  if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
+  if(mdClosedNow(cfg)){ dmToast('Estamos cerrados en este momento'); dmRender(); dmCloseSheet(); return; }
+  const tel = mdWhatsappDigits();
+  if(!tel){ dmToast('El negocio aún no configura su WhatsApp'); return; }
+  if(!dm.cart.length) return;
+  const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(dmWhatsappMessage());
+  const win = window.open(url, '_blank');
+  if(!win) location.href = url;
+  dm.cart = [];
+  dmCloseSheet();
+  dmRefreshCards();
+  dmToast('Pedido listo en WhatsApp');
+}
 
 /* ---------- Arranque del menú del cliente ---------- */
 function bootMenu(route){
@@ -18023,14 +18036,36 @@ function mdiQuickConfirm(id){
   }
   mdiConfirm(id);
 }
+/* Después de aceptar o rechazar: una hoja corta para avisarle al cliente */
 function mdiAfterDecision(id){
-  if(mdiUI.id === id && document.querySelector('#modal-layer .mdi-sheet')){
-    mdiOpen(id,true);
-  }
-  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
+  const o = MDI.get(id); if(!o) return;
+  const ok = o.status === 'confirmado';
+  const nombre = (((o.customer && o.customer.name) || '').trim().split(/\s+/)[0]) || 'el cliente';
+  mdiUI = { id:null, compare:false, text:'', result:null };
+  /* Pantalla completa: el mensaje al centro y los botones hasta abajo */
+  openModal(`
+    <i class="fs-marker" hidden></i>
+    <div class="mdn-done mdn-full">
+      <div class="mdn-full-main">
+        ${ok ? `<div class="mdn-okwrap"><span class="mdn-done-ico ok">${icon('check')}</span></div>` : `<span class="mdn-done-ico no">${icon('close')}</span>`}
+        <h2>${ok ? 'Pedido aceptado' : 'Pedido rechazado'}</h2>
+        <p>${ok ? 'Ahora lo verás en <b>Por cobrar</b>. Avísale al cliente que ya lo estás preparando.' : 'Avísale a ' + escapeHtml(nombre) + ' para que sepa que no se pudo surtir.'}</p>
+        ${ok ? `<img class="mdn-bag" src="data:image/webp;base64,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" alt="" width="220" height="220">` : ''}
+      </div>
+      <div class="mdn-full-actions">
+        ${ok ? `<button class="btn whatsapp block mdn-wa" onclick="mdiNotify('${id}')">${icon('whatsapp')}<span>Avisar al cliente por WhatsApp</span>${icon('chevronRight')}</button>
+             <button type="button" class="mdn-later" onclick="mdiDoneClose()">Salir y cobrar después ${icon('chevronRight')}</button>`
+             : `<button class="btn whatsapp block" onclick="mdiNotify('${id}')">${icon('whatsapp')} Avisar a ${escapeHtml(nombre)} por WhatsApp</button>
+                <button class="btn ghost block" onclick="mdiDoneClose()">Listo</button>`}
+      </div>
+    </div>
+  `, { dismissible:true });
+  /* Entra de abajo hacia arriba, como las demás pantallas completas */
+  const ovNew = document.getElementById('modalOverlay'); if(ovNew) ovNew.classList.remove('is-swap');
   mdiPaintBadge();
+  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
 }
-
+/* Después de aceptar: abre el pedido "Aceptado · falta cobrarlo" */
 function mdiChargeFromDone(id){
   if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
   mdiOpen(id);
@@ -18052,13 +18087,11 @@ function mdiCardHTML(o){
   if(mdiIsDelivery(o)) tags.push(`<span class="mdn-tag del">${icon('truck')} A domicilio</span>`);
   else if(c.service === 'llevar') tags.push(`<span class="mdn-tag">${icon('shop')} Pasa a recoger</span>`);
   if(pm) tags.push(`<span class="mdn-tag">${icon(pm.ico)} ${pm.name}</span>`);
-  if(o.chatCheckout && o.chatState === 'cancelled' && o.mp?.status === 'paid') tags.push('<span class="mdn-tag mod">Revisar reembolso</span>');
-  if(o.chatUnread) tags.push(`<span class="mdn-tag">${Number(o.chatUnread)} sin leer</span>`);
   if(mdiIsModified(o)) tags.push(`<span class="mdn-tag mod">Modificado</span>`);
   const stop = 'event.stopPropagation(); ';
   let acts = '';
   if(st.id === 'nuevo') acts = `<button type="button" class="mdn-btn no" onclick="${stop}mdiAskReject('${o.id}')">Rechazar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiQuickConfirm('${o.id}')">${icon('check')} Aceptar</button>`;
-  else if(st.id === 'pendiente' && !o.chatCheckout) acts = `<button type="button" class="mdn-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('cash')} Cobrar</button>`;
+  else if(st.id === 'pendiente') acts = `<button type="button" class="mdn-btn wa" onclick="${stop}mdiNotify('${o.id}')">${icon('whatsapp')} Avisar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('cash')} Cobrar</button>`;
   const badge = (st.id === 'nuevo' || st.id === 'pendiente') ? '' : `<span class="mdn-state ${st.cls}">${st.label}</span>`;
   return `
     <div class="mdn-card" role="button" tabindex="0" onclick="mdiOpen('${o.id}')">
@@ -18078,12 +18111,7 @@ function mdiSectionHTML(){
   const all = MDI.all().slice().sort((a, b) => new Date(b.receivedAt || b.createdAt) - new Date(a.receivedAt || a.createdAt));
   /* Pedidos entrantes: solo los que siguen en curso (nuevos y aceptados por cobrar).
      Al aceptarlo se queda aquí y su etiqueta cambia de "Nuevo" a "Por cobrar". */
-  const activos = all.filter(o => {
-    const id = mdiStage(o).id;
-    if(id === 'cancelado' || id === 'rechazado' || ['cancelled','rejected'].includes(o.chatState)) return false;
-    return id === 'nuevo' || id === 'pendiente' || o.chatUnread > 0 ||
-      (o.chatCheckout && ['confirmed','preparing','route'].includes(o.chatState));
-  });
+  const activos = all.filter(o => { const id = mdiStage(o).id; return id === 'nuevo' || id === 'pendiente'; });
   const nuevos = activos.filter(o => mdiStage(o).id === 'nuevo').length;
   const deHoy = all.filter(o => isSameDay(new Date(o.receivedAt || o.createdAt), new Date()));
   return `
@@ -18398,7 +18426,7 @@ function mdiDetailHTML(o){
   const st = mdiStage(o);
   const mod = mdiIsModified(o);
   const esNuevo = o.status === 'nuevo';
-  const editable = esNuevo && !o.chatCheckout && !(o.mpCheckout && (!mdiIsDelivery(o) || o.autoDelivery));
+  const editable = esNuevo && !(o.mpCheckout && (!mdiIsDelivery(o) || o.autoDelivery));
   const pagoTarjeta = o.mp && o.mp.status === 'paid';
   const sale = o.saleId ? DB.getSales().find(s => s.id === o.saleId) : null;
   const srcTxt = { menu:'desde el Menú Digital', link:'con el link de WhatsApp', pegado:'pegado de WhatsApp' }[o.source] || 'desde el Menú Digital';
@@ -18452,11 +18480,15 @@ function mdiDetailHTML(o){
       <span>${icon('clock')} ${formatDateTime(o.createdAt)} · ${srcTxt}</span>
     </div>
 
-    ${mdiChatActions(o)}
+    ${o.status === 'confirmado' && o.pendingNext ? `
+      <div class="mdi-banner ok">${icon('check')}<span><b>Pedido aceptado</b>${o.notifiedAt ? 'Ya le avisaste al cliente. Toca “Siguiente” para pasarlo a Pendiente de pago.' : 'Avísale al cliente por WhatsApp y luego toca “Siguiente” para pasarlo a Pendiente de pago.'}</span></div>
+      <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que lo aceptaste'}</button>` : ''}
     ${esNuevo && o.mpCheckout ? `<div class="mdi-banner ${pagoTarjeta ? 'ok' : 'warn'}">${icon(pagoTarjeta ? 'check' : 'card')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pago con tarjeta pendiente'}</b>${pagoTarjeta ? 'Mercado Pago confirmó el pago.' : (mdiIsDelivery(o) && !o.autoDelivery ? 'Confirma el pedido y el costo de envío para habilitar el pago en el menú.' : 'Esperando la confirmación de Mercado Pago.')}</span></div>` : ''}
     ${o.status === 'confirmado' && !o.pendingNext ? `
       ${mdiIsPaid(o) ? `<div class="mdi-banner ok">${icon('check')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pedido cobrado'}</b>${sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : ''}
-      ${mdiIsPaid(o) ? '' : mdiCobroHTML(o)}` : ''}
+      ${mdiIsPaid(o)
+        ? `<button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>`
+        : mdiCobroHTML(o)}` : ''}
     ${o.status === 'rechazado' ? `
       <div class="mdi-banner no">${icon('close')}<span><b>Pedido rechazado</b>${escapeHtml(o.rejectReason || 'Sin motivo')}${o.rejectNote ? ' · ' + escapeHtml(o.rejectNote) : ''}</span></div>` : ''}
     ${o.status === 'cancelado' ? `
@@ -18492,9 +18524,10 @@ function mdiDetailHTML(o){
     ` : `
       <div class="mdi-after">
         ${o.pendingNext ? `<button class="btn primary block" style="flex:1 1 100%;" onclick="mdiNext('${o.id}')">Siguiente ${icon('chevronRight')}</button>` : ''}
+        ${o.status === 'confirmado' ? '' : `<button class="btn whatsapp" style="${o.pendingNext ? 'flex:1 1 100%;' : ''}" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} Avisar al cliente</button>`}
         ${sale && canSeeSale(sale) ? `<button class="btn ghost" onclick="showTicket(DB.getSales().find(s => s.id === '${sale.id}'))">${icon('receipt')} Ver ticket</button>` : ''}
-        ${o.status === 'confirmado' && !o.pendingNext && (!mdiIsPaid(o) || o.chatState !== 'delivered') && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
-        ${o.status === 'rechazado' && !o.chatCheckout && !o.pendingNext ? `<button class="btn ghost" onclick="mdiReopen('${o.id}')">${icon('undo')} Volver a revisar</button>` : ''}
+        ${o.status === 'confirmado' && !o.pendingNext && can('cancelarVentas') ? `<button class="btn danger" onclick="mdiCancelOrder('${o.id}')">${icon('close')} Cancelar pedido</button>` : ''}
+        ${o.status === 'rechazado' && !o.pendingNext ? `<button class="btn ghost" onclick="mdiReopen('${o.id}')">${icon('undo')} Volver a revisar</button>` : ''}
         ${(o.status === 'rechazado' || o.status === 'cancelado') && !o.pendingNext && isOwner() ? `<button class="btn danger" onclick="mdiDelete('${o.id}')">${icon('trash')} Eliminar</button>` : ''}
       </div>
     `}
@@ -18642,7 +18675,7 @@ function mdiRemoveLine(){
    aquí: no crea venta ni toca la caja ni las existencias. (Los pedidos que
    se cobraron con la versión anterior siguen ligados a su venta.) */
 function mdiIsPaid(o){ return !!(o && o.saleId); }
-async function mdiConfirm(id){
+function mdiConfirm(id){
   const o = MDI.get(id);
   if(!o || o.status !== 'nuevo') return;
   /* Si falta algo: no deja pasar, regresa a ese lugar y lo marca en rojo */
@@ -18660,11 +18693,10 @@ async function mdiConfirm(id){
     toast('No hay existencias suficientes', { icon:icon('alert'), variant:'toast-danger', subtitle:faltan[0], duration:3000 });
     return;
   }
-  if(!(await mdiChatChange(o,'confirmed',{eta:Number(o.etaMin)}))) return;
   const me = (typeof multiUser === 'function' && multiUser()) ? activeUser() : null;
   let ok = false;
   MDI.update(id, x => {
-    if(x.status !== 'nuevo' && !(x.chatCheckout && x.status === 'confirmado')) return;
+    if(x.status !== 'nuevo') return;          /* otra pestaña ya lo decidió */
     x.status = 'confirmado'; delete x.pendingNext; delete x.notifiedAt; x.decidedAt = new Date().toISOString(); x.decidedBy = me ? me.name : '';
     ok = true;
   });
@@ -18675,20 +18707,7 @@ async function mdiConfirm(id){
      Es el único monto que Mercado Pago puede cobrar por este pedido. */
   try{ const oc = MDI.get(id); if(oc) mpArm(oc, true); }catch(e){}
   MpWatch.pull();
-  mdiUI = { id:null, compare:false, text:'', result:null };
-  openModal(`
-    <i class="fs-marker" hidden></i>
-    <div class="mdn-done mdn-full">
-      <div class="mdn-full-main">
-        <span class="mdn-done-ico ok">${icon('check')}</span>
-        <h2>Pedido aceptado</h2>
-        <p>${o.chatCheckout ? 'El cliente ya puede ver que su pedido se está preparando.' : 'El pedido aceptado está disponible en el POS.'}</p>
-      </div>
-      <div class="mdn-full-actions">
-        <button type="button" class="btn primary block" onclick="mdiDoneClose()">Salir y cobrar después</button>
-      </div>
-    </div>
-  `,{ dismissible:true });
+  mdiAfterDecision(id);
 }
 
 /* ---------- Cobrar un pedido confirmado ----------
@@ -19291,15 +19310,13 @@ function mdiCancelOrder(id, fromHistory){
   const hayRegreso = Object.keys(regresa).length > 0;
   askConfirm({
     title:'¿Cancelar el pedido ' + escapeHtml(o.code) + '?',
-    text:(sale ? 'La venta ' + orderNumberLabel(sale.number) + ' se queda en tu historial como cancelada y deja de contar en tus ventas.' : 'El pedido pasa a Cancelados.')
+    text:(sale ? 'La venta ' + orderNumberLabel(sale.number) + ' se queda en tu historial como cancelada y deja de contar en tus ventas.' : 'El pedido pasa a Cancelados. Después puedes avisarle al cliente por WhatsApp.')
       + (hayRegreso ? ' Lo que se descontó de tus existencias regresa al inventario.' : '')
-      + (o.chatCheckout ? ' El cliente verá la cancelación en su chat.' : '')
       + (o.mp?.status === 'paid' ? ' El cliente ya pagó con tarjeta. El reembolso se realiza desde Mercado Pago.' : ''),
-    extraHTML:mdiTransferRefundField(o,sale),
     ok:'Cancelar pedido', cancel:'Volver', danger:true, icon:icon('alert')
-  }, dialog => mdiCancelOrderNow(id, fromHistory, sale?.paymentMethod === 'transferencia' || !!dialog.querySelector('#mdiTransferReceived:checked')));
+  }, () => mdiCancelOrderNow(id, fromHistory));
 }
-async function mdiCancelOrderNow(id, fromHistory, transferPaid = false){
+function mdiCancelOrderNow(id, fromHistory){
   const o = MDI.get(id);
   if(!o || o.status !== 'confirmado') return;
   const sales = DB.getSales();
@@ -19308,11 +19325,6 @@ async function mdiCancelOrderNow(id, fromHistory, transferPaid = false){
   const inventario = DB.getProducts();
   const regresa = mdiStockToReturn(o, inventario, sale);
   const hayRegreso = Object.keys(regresa).length > 0;
-  if(!(await mdiChatChange(o,'cancelled',{transferPaid}))) return;
-  if(MDI.get(id)?.status !== 'confirmado'){
-    if(mdiUI.id === id) mdiClose();
-    return;
-  }
   const me = (typeof multiUser === 'function' && multiUser()) ? activeUser() : null;
   /* Primero se marca el pedido: si esto se llama dos veces, la segunda ya no hace nada */
   MDI.update(id, x => { x.status = 'cancelado'; delete x.pendingNext; x.cancelledAt = new Date().toISOString(); x.cancelledBy = me ? me.name : ''; delete x.stockTaken; });
@@ -19325,15 +19337,11 @@ async function mdiCancelOrderNow(id, fromHistory, transferPaid = false){
   }
   shieldClicks();
   vibrate([15, 60, 15]);
-  toast('Pedido ' + o.code + ' cancelado', { subtitle:(sale ? 'Venta ' + orderNumberLabel(sale.number) + ' cancelada' : 'El pedido se movió a Cancelados') + (hayRegreso ? ' · existencias devueltas' : '') });
+  toast('Pedido ' + o.code + ' cancelado', { subtitle:(sale ? 'Venta ' + orderNumberLabel(sale.number) + ' cancelada' : 'Puedes avisarle al cliente por WhatsApp') + (hayRegreso ? ' · existencias devueltas' : '') });
   if(fromHistory){ closeModal(); render(); mdiPaintBadge(); return; }
   if(mdiUI.id === id) mdiClose();
-  else mdiAfterDecision(id);
-}
-
-function mdiTransferRefundField(o,sale){
-  return o.chatCheckout && mdiPayId(o) === 'transferencia' && !sale
-    ? '<label class="field"><input type="checkbox" id="mdiTransferReceived"> Ya recibí la transferencia</label>' : '';
+  else if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
+  mdiPaintBadge();
 }
 
 /* ---------- Rechazar ---------- */
@@ -19342,32 +19350,30 @@ function mdiAskReject(id){
   if(!o || o.status !== 'nuevo') return;
   askConfirm({
     title:'¿Rechazar el pedido ' + escapeHtml(o.code) + '?',
-    text:'Si el pedido tiene chat, el cliente verá la cancelación y el motivo.',
+    text:'Puedes avisarle al cliente por WhatsApp después de confirmar.',
     extraHTML:`<div class="field"><label for="mdiRejectReason">Motivo</label>
         <select id="mdiRejectReason">${MDI_REJECT_REASONS.map(reason => `<option>${escapeHtml(reason)}</option>`).join('')}</select></div>
       <div class="field"><label for="mdiRejectNote">Mensaje para el cliente (opcional)</label>
         <textarea id="mdiRejectNote" class="md-textarea" rows="2" maxlength="200"></textarea></div>
-      ${mdiTransferRefundField(o)}`,
-    ok:'Enviar al cliente', cancel:'Volver', danger:true
+      `,
+    ok:'Rechazar pedido', cancel:'Volver', danger:true
   },dialog => mdiReject(id, {
     reason:dialog.querySelector('#mdiRejectReason').value,
-    note:dialog.querySelector('#mdiRejectNote').value.trim().slice(0,200),
-    transferPaid:!!dialog.querySelector('#mdiTransferReceived:checked')
+    note:dialog.querySelector('#mdiRejectNote').value.trim().slice(0,200)
   }));
 }
-async function mdiReject(id,{reason,note,transferPaid}){
+async function mdiReject(id,{reason,note}){
   const o0 = MDI.get(id);
   if(!o0 || o0.status !== 'nuevo') return;   /* ya confirmado/cobrado (p. ej. en otra pestaña): no se rechaza */
-  if(!(await mdiChatChange(o0,'rejected',{note:note || reason,transferPaid}))) return;
   MDI.update(id, o => { o.status = 'rechazado'; delete o.pendingNext; delete o.notifiedAt; o.rejectReason = reason; o.rejectNote = note; o.decidedAt = new Date().toISOString(); });
   shieldClicks();
-  toast('Pedido ' + o0.code + ' rechazado', { subtitle:o0.chatCheckout ? 'El cliente fue avisado en el seguimiento' : 'El pedido se movió a Rechazados' });
+  toast('Pedido ' + o0.code + ' rechazado', { subtitle:'El pedido se movió a Rechazados' });
   if(mdiUI.id === id) mdiClose();
   else mdiAfterDecision(id);
 }
 function mdiReopen(id){
   const o0 = MDI.get(id);
-  if(!o0 || o0.status !== 'rechazado' || o0.saleId || o0.chatCheckout) return;   /* solo los rechazados vuelven a revisarse */
+  if(!o0 || o0.status !== 'rechazado' || o0.saleId) return;   /* solo los rechazados vuelven a revisarse */
   MDI.update(id, o => { o.status = 'nuevo'; delete o.pendingNext; delete o.notifiedAt; delete o.rejectReason; delete o.rejectNote; delete o.decidedAt; });
   toast('El pedido volvió a “Nuevos”');
   mdiRefresh();
@@ -19410,7 +19416,14 @@ function mdiNext(id, force){
 }
 
 /* ---------- Avisar al cliente por WhatsApp ---------- */
-function mdiNotify(id){
+function mdiNotify(id, confirmed = false){
+  const order = MDI.get(id);
+  if(order && order.status === 'confirmado' && !confirmed &&
+      (mdiIsPaid(order) || order.mp?.status === 'paid')){
+    askConfirm({title:'¿Abrir WhatsApp?',text:'Se abrirá WhatsApp con el mensaje listo para el cliente.',
+      ok:'Abrir WhatsApp',cancel:'Volver',icon:icon('whatsapp')},()=>mdiNotify(id,true));
+    return;
+  }
   const o = MDI.get(id); if(!o) return;
   const b = bizData();
   const nombre = (o.customer && o.customer.name) ? ' ' + o.customer.name.split(/\s+/)[0] : '';
@@ -19720,13 +19733,14 @@ dmConfirmHTML = function(){
   const co = dmCoState();
   const del = dmDeliveryOn();
   if(!del) co.svc = 'llevar';
+  const nombre = (bizData().name || '').trim();
   const t = mdTotals(dm.cart);
   const envio = co.svc === 'domicilio' ? mdDeliveryQuote(mdCfg().delivery, co.loc) : null;
   const n = dm.cart.length;
   const step = co.step === 2 ? 2 : 1;
   const check = `<span class="dm-opt-check">${icon('check')}</span>`;
   const pcfg = mdCfg().payments;
-  const payList = basicPayMethods().filter(pm => pm.id === 'efectivo' || (pm.id === 'tarjeta' && pcfg.card && pcfg.mp?.on) || (pm.id === 'transferencia' && pcfg.transfer && mdClabeOk(pcfg.clabe)));
+  const payList = basicPayMethods().filter(pm => pm.id === 'efectivo' || (pm.id === 'tarjeta' && pcfg.card) || (pm.id === 'transferencia' && pcfg.transfer && mdClabeOk(pcfg.clabe)));
   if(co.pay && !payList.some(pm => pm.id === co.pay)) co.pay = null;
   if(payList.length === 1) co.pay = payList[0].id;
   const svcBtn = id => { const sv = MD_SERVICES[id]; return `
@@ -19792,9 +19806,11 @@ dmConfirmHTML = function(){
       <div class="dm-pi-box" id="dmPayInfo">${dmPayInfoHTML()}</div>
     </div>
 
+    <div class="dm-banner wa" id="dmCheckoutWhatsApp" style="margin:16px 0 0;" ${dmMpCheckout(co) ? 'hidden' : ''}>${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
+    <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Enviar pedido» otra vez.</span></div>
     <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmCoBack()">Volver</button>
-      <button class="btn dm-green" id="dmSendBtn" onclick="dmConfirmOrder()">Realizar pedido</button>
+      <button class="btn dm-green" id="dmSendBtn" onclick="dmSendWhatsApp()">${dmMpButton(co)}</button>
     </div>
     `}`;
 };
@@ -19845,6 +19861,18 @@ function dmCoPay(id){
   const box = document.getElementById('dmCoPay'); if(box) box.classList.remove('need');
   const info = document.getElementById('dmPayInfo');
   if(info && changed){ info.innerHTML = dmPayInfoHTML(); }
+  const btn = document.getElementById('dmSendBtn');
+  if(btn) btn.innerHTML = dmMpButton(co);
+  const whatsapp = document.getElementById('dmCheckoutWhatsApp');
+  if(whatsapp) whatsapp.hidden = dmMpCheckout(co);
+}
+function dmMpCheckout(co){
+  const pm = mdCfg().payments;
+  return co.pay === 'tarjeta' && !!(pm.mp && pm.mp.on);
+}
+function dmMpButton(co){
+  if(!dmMpCheckout(co)) return icon('whatsapp') + ' Enviar pedido';
+  return icon('card') + ' Pagar con tarjeta';
 }
 /* Lo que ve el cliente según cómo va a pagar */
 function dmCoCash(v){ const co = dmCoState(); const n = Number(v); co.cashWith = n > 0 ? n : null; }
@@ -19866,7 +19894,7 @@ function dmPayInfoHTML(){
     if(mpOn){
       return `<div class="dm-pi">
         ${head('card', 'Pago con tarjeta', 'Pagas en línea con Mercado Pago, desde tu celular.')}
-        <small class="dm-pi-note">Cuando Mercado Pago confirme el pago, se abrirá el chat de tu pedido. Tus datos de tarjeta no los ve el negocio ni esta app.</small>
+        <small class="dm-pi-note">Paga aquí y después envía tu pedido y la referencia del pago por WhatsApp. Tus datos de tarjeta no los ve el negocio ni esta app.</small>
       </div>`;
     }
     return `<div class="dm-pi">${head('card', 'Pago con tarjeta', dom ? 'Te cobramos con tarjeta cuando te entreguen tu pedido.' : 'Te cobramos con tarjeta cuando pases por tu pedido.')}</div>`;
@@ -19883,7 +19911,7 @@ function dmPayInfoHTML(){
         ${row('CLABE', mdClabeFmt(pm.clabe), pm.clabe)}
         ${row('Concepto', co.code, co.code)}
       </div>
-      <small class="dm-pi-note">En el concepto pon tu número de pedido y comparte la referencia del pago en el chat del pedido.</small>
+      <small class="dm-pi-note">En el concepto pon tu número de pedido y mándanos tu comprobante por WhatsApp.</small>
     </div>`;
   }
   return '';
@@ -19931,68 +19959,113 @@ function dmCoNeed(id, msg){
   el.classList.remove('need'); void el.offsetWidth; el.classList.add('need');
   try{ el.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'center' }); }catch(e){}
 }
-function dmConfirmOrder(){
-  if(dm.sending || !dm.cart.length) return;
+dmSendWhatsApp = async function(){
+  if(dm.sending) return;
   const cfg = mdCfg();
-  if(!cfg.active || cfg.id !== dm.id || cfg.paused || mdClosedNow(cfg)){
-    dmToast('El negocio no está recibiendo pedidos','warn');
-    return;
-  }
+  if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
+  if(mdClosedNow(cfg)){ dmToast('Estamos cerrados en este momento'); dmRender(); dmCloseSheet(); return; }
+  const tel = mdWhatsappDigits();
+  if(!tel){ dmToast('El negocio aún no configura su WhatsApp'); return; }
+  if(!dm.cart.length) return;
   const co = dmCoState();
-  if(!co.pay){ dmCoNeed('dmCoPay','Elige cómo vas a pagar'); return; }
-  if(!co.svc || (co.svc === 'domicilio' && !co.loc)){ dmCoBack(); return; }
-  const order = mdiBuildFromCart(dm.cart,(co.name || '').trim(),{
-    service:co.svc, payment:co.pay, cashWith:co.pay === 'efectivo' ? co.cashWith : null,
-    loc:co.svc === 'domicilio' ? { ...co.loc, ref:(co.ref || '').trim() } : null
+  const nameEl = document.getElementById('dmName'); if(nameEl) co.name = nameEl.value;
+  const refEl = document.getElementById('dmRef'); if(refEl) co.ref = refEl.value;
+  if(cfg.delivery.on !== true) co.svc = 'llevar';
+  if(!co.svc){ dmCoNeed('dmCoSvc', 'Elige el tipo de servicio'); return; }
+  if(co.svc === 'domicilio' && !co.loc){ dmCoNeed('dmCoDel', 'Marca en el mapa dónde te lo llevamos'); return; }
+  if(!co.pay){ dmCoNeed('dmCoPay', 'Elige cómo vas a pagar'); return; }
+  const name = (co.name || '').trim().slice(0, 60);
+  try{ if(name) localStorage.setItem('mesa_dm_name', name); }catch(e){}
+  const order = mdiBuildFromCart(dm.cart, name, {
+    service: co.svc, payment: co.pay, cashWith: co.pay === 'efectivo' ? co.cashWith : null,
+    loc: co.svc === 'domicilio' && co.loc ? { lat:co.loc.lat, lng:co.loc.lng, ref:(co.ref || '').trim() } : null
   });
   if(co.svc === 'domicilio'){
-    const envio = mdDeliveryQuote(cfg.delivery,co.loc);
-    if(!envio){ dmToast('No se pudo calcular el envío','warn'); return; }
+    const envio = mdDeliveryQuote(cfg.delivery, co.loc);
+    if(!envio){ dmToast('No se pudo calcular el envío. Revisa la ubicación.', 'warn'); return; }
     order.deliveryFee = envio.fee;
+    order.autoDelivery = true;
   }
-  if(co.code && co.pay === 'transferencia') order.code = co.code;
-  const fingerprint = JSON.stringify([dm.id,order.customer,order.original,order.deliveryFee]);
-  if(!co.chatDraft){
-    try{ co.chatDraft = JSON.parse(sessionStorage.getItem('vp_order_submit_' + dm.id) || 'null'); }catch(e){}
+  if(co.code && co.pay === 'transferencia') order.code = co.code;   /* el mismo que vio como concepto */
+  if(dmMpCheckout(co)){
+    const key = JSON.stringify([dm.id, order.customer, order.original]);
+    if(co.mpDraft && co.mpDraft.key === key){
+      order.id = co.mpDraft.id;
+      order.code = co.mpDraft.code;
+    }else co.mpDraft = { key, id:order.id, code:order.code };
+    dm.sending = true;
+    const btn = document.getElementById('dmSendBtn');
+    if(btn){ btn.disabled = true; btn.textContent = 'Preparando tu pago…'; }
+    try{
+      const result = await mdiTimeout(mdiCloudSend(order, true), 15000);
+      if(!result) throw new Error('Revisa tu conexión e inténtalo de nuevo');
+      const url = mpPayUrl(order);
+      location.assign(url);
+      location.reload();
+    }catch(e){
+      dm.sending = false;
+      if(btn){ btn.disabled = false; btn.innerHTML = dmMpButton(co); }
+      dmToast(String(e.message || e), 'warn');
+    }
+    return;
   }
-  if(co.chatDraft?.fingerprint === fingerprint){
-    order.id = co.chatDraft.id;
-    order.code = co.chatDraft.code;
-  }else{
-    const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), n=>n.toString(16).padStart(2,'0')).join('');
-    co.chatDraft = { fingerprint, id:order.id, code:order.code, token };
-  }
-  const card = co.pay === 'tarjeta';
-  askConfirm({
-    title:'Confirma tu pedido',
-    extraHTML:orderChatSummary({ customer:order.customer, items:order.original, total:mdTotals(order.original).total + (order.deliveryFee || 0) }),
-    ok:card ? 'Confirmar e ir al pago' : 'Confirmar pedido', cancel:'Volver'
-  },()=>dmCreateChatOrder(order,co.chatDraft.token,card));
-}
-
-async function dmCreateChatOrder(order,token,card){
-  if(dm.sending) return;
-  dm.sending = true;
-  const btn = document.getElementById('dmSendBtn');
-  if(btn) btn.disabled = true;
-  try{ sessionStorage.setItem('vp_order_submit_' + dm.id,JSON.stringify(dm.co.chatDraft)); }catch(e){}
-  try{
-    const result = await orderChatCall(order.id,'create',{
-      menu_id:dm.id, order:{
-        code:order.code, createdAt:order.createdAt, customer:mdiCleanCustomer(order.customer),
-        original:order.original.slice(0,150), mpCheckout:card, deliveryQuote:order.deliveryFee
-      }
-    },token);
-    try{ sessionStorage.removeItem('vp_order_submit_' + dm.id); }catch(e){}
+  order.waText = mdiMessage(order);          /* solo el número de pedido */
+  const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
+  /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
+  if(!order.autoDelivery || !mpReady()) mdiReceive(order, 'menu');
+  const enEsteAparato = !!MDI.get(order.id);
+  const conNube = !!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY);
+  const listo = msg => {
     dm.cart = [];
-    dm.co = null;
-    orderChatNavigate(order.id,token,result.state === 'payment' ? 'pago' : 'chat');
-  }catch(e){
-    dmToast(e.message,'warn');
-    dm.sending = false;
-    if(btn) btn.disabled = false;
+    dm.co = null;                 /* el nombre queda guardado en este celular */
+    dmCloseSheet();
+    dmRefreshCards();
+    dmToast(msg);
+  };
+
+  if(!conNube || enEsteAparato){
+    /* El pedido ya quedó en la caja de este aparato: WhatsApp se abre de inmediato. */
+    if(conNube && typeof mdiCloudSend === 'function') mdiCloudSend(order);   /* y llega a las demás cajas */
+    dmVib([60, 40, 60]);
+    const win = window.open(url, '_blank');
+    if(!win) location.href = url;
+    listo('Pedido ' + order.code + ' listo en WhatsApp');
+    return;
   }
-}
+
+  /* Desde el celular del cliente: por WhatsApp solo va el número de pedido,
+     así que primero el pedido tiene que llegar por internet a la caja.
+     La pestaña de WhatsApp se abre ya (con el toque del cliente, para que
+     el navegador no la bloquee) y se llena cuando el pedido llegó. */
+  const win = window.open('', '_blank');
+  const btn = document.getElementById('dmSendBtn');
+  const errBox = document.getElementById('dmSendErr');
+  const btnHTML = btn ? btn.innerHTML : '';
+  dm.sending = true;
+  if(btn){ btn.disabled = true; btn.textContent = 'Enviando tu pedido…'; }
+  if(errBox) errBox.style.display = 'none';
+  let ok = false, sendError = '';
+  try{
+    ok = await Promise.race([
+      typeof mdiCloudSend === 'function' ? mdiCloudSend(order) : Promise.resolve(false),
+      new Promise(r => setTimeout(() => r(false), 15000))
+    ]);
+  }catch(e){ sendError = e.message || ''; }
+  dm.sending = false;
+  if(!ok){
+    try{ if(win && !win.closed) win.close(); }catch(e){}
+    if(btn && btn.isConnected){ btn.disabled = false; btn.innerHTML = btnHTML; }
+    if(errBox && errBox.isConnected) errBox.style.display = '';
+    dmVib([20, 40, 20]);
+    dmToast(sendError || 'No pudimos enviar tu pedido. Revisa tu internet e inténtalo otra vez', 'warn');
+    return;
+  }
+  dmVib([60, 40, 60]);
+  let abierto = false;
+  try{ if(win && !win.closed){ win.location.href = url; abierto = true; } }catch(e){}
+  listo('El negocio ya recibió tu pedido ' + order.code);
+  if(!abierto) location.href = url;
+};
 dmWhatsappMessage = function(){ return mdiMessage(mdiBuildFromCart(dm.cart, '')); };
 
 /* =========================================================
@@ -25430,9 +25503,8 @@ function mdiFromCloud(row){
     if(!row || !/^o[a-z0-9]{6,24}$/.test(row.id || '')) return null;
     const d = row.data || {};
     const mpCheckout = d.mpCheckout === true;
-    const chatCheckout = d.chatCheckout === true;
     const lines = (Array.isArray(d.original) ? d.original : []).slice(0, 150)
-      .map(mdiCleanLine).filter(l => l.qty > 0).map(l => mpCheckout || chatCheckout ? l : mdiRepriceLine(l));
+      .map(mdiCleanLine).filter(l => l.qty > 0).map(l => mpCheckout ? l : mdiRepriceLine(l));
     if(!lines.length) return null;
     const when = new Date(row.created_at || Date.now());
     const customer = mdiCleanCustomer(d.customer);
@@ -25443,8 +25515,7 @@ function mdiFromCloud(row){
       customer: customer,
       original: lines,
       lines: lines.map(l => Object.assign({}, l)),
-      status:chatCheckout ? (d.chatState === 'rejected' ? 'rechazado' : d.chatState === 'cancelled' ? 'cancelado' : d.chatState === 'pending' ? 'nuevo' : 'confirmado') : 'nuevo',
-      chatCheckout, chatState:d.chatState, chatUnread:Number(d.chatUnread) || 0, etaMin:Number(d.chatEta) || undefined, service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true, mpCheckout, autoDelivery:d.autoDelivery === true, deliveryFee:d.autoDelivery === true ? Number(d.deliveryFee) : undefined,
+      status:d.chatState === 'cancelled' ? 'cancelado' : d.chatState === 'rejected' ? 'rechazado' : ['confirmed','preparing','route','delivered'].includes(d.chatState) ? 'confirmado' : 'nuevo', etaMin:Number(d.chatEta) || undefined, service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true, mpCheckout, autoDelivery:d.autoDelivery === true, deliveryFee:d.autoDelivery === true ? Number(d.deliveryFee) : undefined,
       mp: row.charge_status ? { status:row.charge_status, paymentId:row.mp_payment_id || null, amount:row.paid_amount == null ? null : Number(row.paid_amount), at:row.paid_at || null } : null
     };
   }catch(e){ return null; }
@@ -25469,8 +25540,8 @@ const MP_SDK = 'https://sdk.mercadopago.com/js/v2';
 const pg = { id:null, data:null, mp:null, brick:null, t:null, enviando:false };
 
 function pgRoute(){
-  const m = location.hash.match(/^#pago\/([A-Za-z0-9_-]+)(?:\/([a-f0-9]{64}))?$/);
-  return m ? { id:m[1], chatToken:m[2] || null } : null;
+  const m = location.hash.match(/^#pago\/([A-Za-z0-9_-]+)/);
+  return m ? { id:decodeURIComponent(m[1]) } : null;
 }
 function pgEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
 function pgMoney(n){ try{ return formatMoney(n); }catch(e){ return '$' + (Number(n) || 0).toFixed(2); } }
@@ -25492,7 +25563,6 @@ function bootPago(route){
   document.body.classList.add('dm-mode', 'pg-mode');
   const sp = document.getElementById('splash'); if(sp) sp.remove();
   pg.id = route.id;
-  pg.chatToken = route.chatToken;
   const root = document.createElement('div'); root.id = 'pgRoot'; root.className = 'pg';
   document.body.appendChild(root);
   pgPaint(pgCargandoHTML());
@@ -25545,7 +25615,6 @@ function pgCabeza(){
 function pgPaintOk(){
   const d = pg.data || {};
   if(pg.t){ clearInterval(pg.t); pg.t = null; }
-  if(pg.chatToken){ orderChatNavigate(pg.id,pg.chatToken,'chat'); return; }
   const recibo = 'Hola, hice el pedido *' + d.code + '* en su Menú Digital.\n\n' +
     '*Pago con tarjeta confirmado por Mercado Pago*\nImporte: ' + pgMoney(d.amount) + ' MXN' +
     (d.mp_payment_id ? '\nReferencia: ' + d.mp_payment_id : '');
@@ -25555,10 +25624,14 @@ function pgPaintOk(){
       <span class="pg-big pg-ok">✓</span>
       <h1>¡Listo, ya pagaste!</h1>
       <p>Tu pago de <b>${pgMoney(d.amount)}</b> quedó confirmado por Mercado Pago.</p>
-      ${whatsapp ? `<a class="pg-btn" style="display:block;text-decoration:none" href="${pgEsc(whatsapp)}" onclick="event.preventDefault(); pgSendWhatsApp(this)">Enviar pedido y comprobante por WhatsApp</a>` : ''}
+      ${whatsapp ? `<a class="pg-btn" style="display:block;text-decoration:none" href="${pgEsc(whatsapp)}" onclick="event.preventDefault(); pgConfirmWhatsApp(this)">Enviar pedido y comprobante por WhatsApp</a>` : ''}
       <p id="pgSendError" role="alert" hidden></p>
       <p class="pg-mini">Pedido ${pgEsc(d.code || '')}${d.mp_payment_id ? ' · pago ' + pgEsc(d.mp_payment_id) : ''}</p>
     </div>`);
+}
+function pgConfirmWhatsApp(link){
+  askConfirm({title:'¿Abrir WhatsApp?',text:'Se abrirá el mensaje con tu pedido y comprobante de pago.',
+    ok:'Abrir WhatsApp',cancel:'Volver',icon:icon('whatsapp')},()=>pgSendWhatsApp(link));
 }
 async function pgSendWhatsApp(link){
   if(link.getAttribute('aria-disabled') === 'true') return;
@@ -25816,22 +25889,13 @@ const MdiCloud = {
     const gone = mdiGoneList();
     (rows || []).forEach(row => {
       const data = row && row.data;
-      if(data?.chatCheckout === true && (data.chatReady !== true || (data.mpCheckout === true && row.charge_status !== 'paid'))) return;
-      if(data?.chatCheckout !== true && data && data.mpCheckout === true && row.charge_total != null &&
-        (data.whatsappRequested !== true || row.charge_status !== 'paid')) return;
+      if(data && data.mpCheckout === true && row.charge_total != null &&
+        ((data.whatsappRequested !== true && data.chatReady !== true) || row.charge_status !== 'paid')) return;
       if(row && row.id) ids.push(row.id);
       if(row && gone.indexOf(row.id) >= 0) return;
       const o = mdiFromCloud(row);
       if(!o) return;
       const r = mdiReceive(o, 'menu');
-      if(o.chatCheckout){
-        if(r.isNew){
-          if(o.chatUnread) toast('Nuevo mensaje en ' + o.code,{ subtitle:o.customer?.name || 'Cliente del Menú Digital' });
-        }else if(!r.order.chatCheckout || r.order.chatState !== o.chatState || r.order.chatUnread !== o.chatUnread || r.order.mp?.status !== o.mp?.status){
-          MDI.update(o.id, current => mdiChatMetadata(current,o));
-          if(currentView === 'menu' && !document.querySelector('#modal-layer .modal-sheet')) render();
-        }
-      }
       if(r.isNew) nuevos.push(r.order);
     });
     if(ids.length){
@@ -25863,7 +25927,7 @@ const MdiCloud = {
         const { data, error } = await mdiTimeout(Cloud.sb.from(MDI_TABLE)
           .select('id,code,data,created_at,charge_total,charge_status,mp_payment_id,paid_amount,paid_at')
           .or('received_at.is.null,created_at.gte.' + desde)
-          .or('and(data->>chatCheckout.eq.true,data->>chatReady.eq.true),and(or(data->>chatCheckout.is.null,data->>chatCheckout.neq.true),or(data->>mpCheckout.is.null,data->>mpCheckout.neq.true,charge_total.is.null,and(data->>whatsappRequested.eq.true,charge_status.eq.paid)))')
+          .or('data->>mpCheckout.is.null,data->>mpCheckout.neq.true,charge_total.is.null,and(or(data->>whatsappRequested.eq.true,data->>chatReady.eq.true),charge_status.eq.paid)')
           .order('created_at', { ascending:true }).limit(150), 20000);
         if(error) throw error;
         await this.merge(force);
@@ -25942,11 +26006,11 @@ const MdiCloud = {
       this.chUid = uid;
       this.ch = Cloud.sb.channel('vendo-pedidos-' + uid, { config:{ broadcast:{ self:false } } })
         .on('postgres_changes', { event:'INSERT', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
-            payload => { if(this.canRun() && Cloud.uid === uid && payload && payload.new) this.pull(); })
+            payload => { if(this.canRun() && Cloud.uid === uid && payload && payload.new) this.take([payload.new]).then(() => this.ok()); })
         .on('postgres_changes', { event:'UPDATE', schema:'public', table:MDI_TABLE, filter:'user_id=eq.' + uid },
             payload => {
               const row = payload && payload.new;
-              if(this.canRun() && Cloud.uid === uid && row && (row.data?.chatCheckout === true || (row.received_at == null && row.data?.whatsappRequested === true))){
+              if(this.canRun() && Cloud.uid === uid && row && row.received_at == null && (row.data?.whatsappRequested === true || row.data?.chatReady === true)){
                 this.take([row]).then(() => this.ok());
               }
             })
@@ -26999,7 +27063,6 @@ function mdSaveDesign(abrir){
 /* Dentro de la app de Android: Google Play, botón Atrás e impresora nativa. */
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
-<script src="./vendo-order-chat.js?v=20261118-menu"></script>
 <script>
 /* =========================================================================
    ARRANQUE (va al final para que todo lo anterior ya esté cargado)
@@ -27021,8 +27084,6 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
     location.reload();
     return;
   }
-  const chatRoute = orderChatRoute();
-  if(chatRoute){ bootOrderChat(chatRoute); return; }
   const route = dmRoute();
   if(route){ bootMenu(route); return; }
 
