@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
     // Pago antes de contestar: así la pantalla nunca va por delante del banco.
     let estado = (pedido.charge_status as string) ?? 'pending';
     let detalle = '';
+    let threeDSInfo = null;
     let paymentId = pedido.mp_payment_id ?? null;
     if (estado !== 'paid') {
       const { data: ultimo } = await sb
@@ -77,6 +78,10 @@ Deno.serve(async (req) => {
           const r = await mpGet(`/v1/payments/${ultimo.mp_payment_id}`, cuenta.access_token);
           if (r.ok && r.body?.status) {
             detalle = String(r.body.status_detail ?? '');
+            if (b.supports_3ds === true && r.body.status === 'pending' && detalle === 'pending_challenge') {
+              threeDSInfo = r.body.three_ds_info ?? null;
+              paymentId = ultimo.mp_payment_id;
+            }
             await sb.from('mp_payments')
               .update({ status: r.body.status, status_detail: detalle, updated_at: new Date().toISOString() })
               .eq('mp_payment_id', String(ultimo.mp_payment_id));
@@ -132,6 +137,8 @@ Deno.serve(async (req) => {
       status: estado,
       status_detail_text: TEXTO_ESTADO[detalle] ?? '',
       mp_payment_id: paymentId,
+      status_detail: detalle,
+      ...(threeDSInfo ? { three_ds_info: threeDSInfo } : {}),
       menu_checkout: pedido.data?.mpCheckout === true,
       whatsapp: pedido.data?.mpCheckout === true && estado === 'paid' ? String(menus?.[0]?.data?.wa ?? '').replace(/\D/g, '') : '',
       public_key: publicKey,
