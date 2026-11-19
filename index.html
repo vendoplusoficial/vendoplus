@@ -27142,20 +27142,38 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
     try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){ location.hash = ''; }
   }
 
-  bootApp();
+  const arranque = bootApp();
   mdiWatch();
-  /* Mercado Pago: consulta los pagos. La venta se registra en el POS. */
   const regreso = new URL(location.href);
   const enlace = regreso.searchParams.get('mp_enlace');
   if(enlace){
     regreso.searchParams.delete('mp_enlace');
     history.replaceState(null, '', regreso);
-    setTimeout(() => {
-      if(enlace === 'ok') toast('Mercado Pago enlazado', { icon:icon('check'), variant:'toast-success' });
-      else toast('No se completó el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Puedes intentarlo de nuevo desde el Menú Digital' });
-    }, 900);
+    const abrirPagoTarjeta = async () => {
+      if(!mpVisible() || !mpCanLink()) return;
+      goTo('menu');
+      mdPayKind = 'card';
+      const borrador = mdPayDraft = { on:enlace === 'ok' ? true : mdCfg().payments.card };
+      mdRenderPayForm();
+      if(enlace !== 'ok'){
+        toast('No se completó el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Puedes intentarlo de nuevo aquí' });
+        return;
+      }
+      const estado = await mpSyncStatus(true);
+      if(currentView !== 'menu' || mdPayDraft !== borrador ||
+         !document.querySelector('#modal-layer .md-card-sheet')) return;
+      if(estado) mdRenderPayForm();
+      if(estado && mpLinked()) toast('Mercado Pago enlazado', { icon:icon('check'), variant:'toast-success' });
+    };
+    Promise.resolve(arranque).then(() => {
+      if(document.body.classList.contains('auth-open')) mdiPendingOpen = abrirPagoTarjeta;
+      else abrirPagoTarjeta();
+    }).catch(error => console.warn('Vendo plus · regreso de Mercado Pago', error));
   }
-  try{ MpWatch.start(); setTimeout(() => mpSyncStatus(true), 4000); }catch(e){}
+  try{
+    MpWatch.start();
+    if(enlace !== 'ok') setTimeout(() => mpSyncStatus(true), 4000);
+  }catch(e){}
   mdiPaintBadge();
   /* "hace 5 min" se mantiene al día */
   setInterval(() => { if(currentView === 'menu' && !document.querySelector('#modal-layer .modal-sheet')){ const y = window.scrollY; render(); window.scrollTo(0, y); } }, 60000);
