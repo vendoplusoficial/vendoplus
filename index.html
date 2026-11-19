@@ -5124,6 +5124,46 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 .mp-row > span:last-child{ min-width:0; font-size:12.5px; font-weight:600; line-height:1.45; color:var(--ink-soft); }
 .mp-row b{ display:block; font-size:13.5px; font-weight:800; color:var(--ink); }
 
+/* Hojas de configuración de tarjeta y enlace de Mercado Pago */
+.modal-sheet.md-card-sheet, .modal-sheet.mp-link-sheet {
+  background:var(--surface); border-radius:22px 22px 0 0;
+  padding:10px 16px calc(26px + env(safe-area-inset-bottom));
+}
+.md-card-sheet .sheet-grip, .mp-link-sheet .sheet-grip { width:34px; margin:7px auto 15px; }
+.md-card-sheet .sheet-header { margin:0 2px 14px; }
+.md-card-sheet .sheet-header h2, .mp-link-sheet .sheet-header h2 { font-size:clamp(16px,4.65vw,18px); }
+.md-card-sheet .md-yn-q { margin:0 2px 17px; font-size:15px; }
+.md-card-sheet .md-yn { gap:8px; margin-bottom:0; }
+.md-card-sheet .md-yn-opt { min-height:66px; padding:10px 11px 10px 12px; gap:12px; }
+.md-card-sheet .md-yn-ico { width:34px; height:34px; border-radius:10px; }
+.md-card-sheet .md-yn-ico svg { width:17px; height:17px; }
+.md-card-sheet .md-yn-txt b { font-size:16px; line-height:1.1; }
+.md-card-sheet .md-yn-txt small { font-size:clamp(11px,3.05vw,12px); margin-top:0; line-height:1.2; }
+.md-card-sheet .md-yn-radio { width:20px; height:20px; }
+.md-card-sheet .sheet-actions { margin:26px 2px 0; }
+.md-card-sheet .sheet-actions .primary { border-radius:999px; }
+.md-card-sheet .sheet-actions .primary:disabled { opacity:1; background:#bce9d2; color:white; box-shadow:0 6px 18px -6px #bce9d2; }
+.md-card-sheet .sheet-actions .btn, .mp-link-sheet .sheet-actions .btn {
+  flex:1 1 0; min-width:0; min-height:45px; padding:8px 6px; font-size:14px; line-height:1.2;
+}
+.mp-link-sheet .sheet-grip { margin-bottom:20px; }
+.mp-link-sheet .sheet-header { gap:9px; margin:0 4px 8px 7px; }
+.mp-link-sheet .sheet-header h2 { flex:1; line-height:1.15; }
+.mp-link-logo { display:block; width:clamp(35px,11.8vw,46px); height:auto; flex:none; }
+.mp-link-description { margin:0 8px 38px; font-size:13px; line-height:1.4; color:var(--ink); }
+.mp-link-sheet .mp-rows { gap:15px; margin-bottom:0; }
+.mp-link-sheet .mp-row { gap:10px; }
+.mp-link-sheet .mp-row > span:last-child { font-size:12px; font-weight:500; line-height:1.23; }
+.mp-link-sheet .mp-row b { font-size:13px; line-height:1.25; margin-bottom:1px; }
+.mp-link-sheet .sheet-actions { margin-top:30px; }
+.mp-link-sheet .sheet-actions .btn { border-radius:18px; }
+.mp-link-sheet .mp-connect { border:0; background:#d2e8fc; color:#0077d5; gap:5px; }
+.mp-link-sheet .mp-connect img { display:block; width:30px; height:auto; flex:none; }
+@media (max-width:359px) {
+  .mp-link-description { margin-bottom:25px; }
+  .mp-link-sheet .sheet-actions .btn { font-size:13px; }
+}
+
 /* ===== Pantalla de pago del cliente (…#pago/<pedido>) ===== */
 body.pg-mode{ background:#F4F6FA; }
 .pg{ display:flex; align-items:flex-start; justify-content:center; min-height:100dvh; padding:18px 14px calc(28px + env(safe-area-inset-bottom)); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#16213E; }
@@ -7386,7 +7426,7 @@ function openModal(html, opts){
   const prevY = swap ? prevSheet.scrollTop : 0;
   const prevKeep = swap ? Array.from(prevSheet.querySelectorAll('[data-keep-scroll]')).map(e => [e.getAttribute('data-keep-scroll'), e.scrollTop]) : [];
   layer.innerHTML = `<div class="modal-overlay ${opts.center?'modal-center':''} ${swap?'is-swap':''}" id="modalOverlay" ${opts.dismissible === false ? 'data-lock="1"' : ''}>
-      <div class="modal-sheet ${opts.card?'modal-card':''}">
+      <div class="modal-sheet ${opts.card?'modal-card':''} ${opts.sheetClass || ''}">
         ${opts.grip !== false ? '<div class="sheet-grip"></div>' : ''}
         ${html}
       </div>
@@ -16109,15 +16149,13 @@ function mdRenderPayForm(){
   openModal(`
     <div class="sheet-header">
       <h2>${card ? 'Pago con tarjeta' : 'Pago por transferencia'}</h2>
-      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
     </div>
     <p class="md-yn-q">${card ? '¿Tu negocio cobra con tarjeta?' : '¿Tu negocio acepta transferencias?'}</p>
     <div class="md-yn">
       ${card
-        ? (mpVisible()
-            ? opt(true, 'card', 'Sí, con Mercado Pago', 'Tus clientes pagan con su tarjeta desde tu menú y el dinero llega a tu cuenta de Mercado Pago')
-            : opt(true, 'card', 'Sí, acepto tarjeta', 'Tus clientes eligen Tarjeta y tú se las cobras con tu terminal al entregar'))
-          + opt(false, 'cash', 'No, tarjeta no', 'La opción Tarjeta no le aparece al cliente')
+        ? opt(true, 'card', 'Sí', 'Tus clientes pueden pagar con tarjeta.')
+          + opt(false, 'cash', 'No', 'La opción Tarjeta no le aparece al cliente.')
         : opt(true, 'transfer', 'Sí, acepto transferencias', 'El cliente verá tu CLABE y el número de su pedido como concepto')
           + opt(false, 'cash', 'No, transferencia no', 'La opción Transferencia no le aparece al cliente')}
     </div>
@@ -16139,7 +16177,7 @@ function mdRenderPayForm(){
       <button class="btn ghost block" onclick="closeModal()">Cancelar</button>
       <button class="btn primary block" onclick="mdSavePay()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
     </div>
-  `, { dismissible:true });
+  `, { dismissible:true, sheetClass:card ? 'md-card-sheet' : '' });
 }
 function mdSavePay(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
@@ -19105,6 +19143,9 @@ async function mpSyncStatus(silencio){
 }
 
 /* ---------- Enlazar / desenlazar ---------- */
+const MP_SHEET_LOGO = './mercado-pago-emblema.webp';
+const MP_CONNECT_LABEL = `<img src="${MP_SHEET_LOGO}" alt=""> Mercado Pago`;
+
 function mpOpenForm(){
   if(!mpVisible()) return;          /* escondido: no se abre nada */
   if(!mpCanLink()){ toast('No tienes permiso para cambiar el Menú Digital', { icon:icon('alert'), variant:'toast-danger' }); return; }
@@ -19112,19 +19153,18 @@ function mpOpenForm(){
   const puesto = mpLinked();
   openModal(`
     <div class="sheet-header">
-      <h2>Pago con tarjeta</h2>
-      <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
-    </div>
-    <div class="mp-hero">
-      <span class="mp-hero-ico"><img src="${MP_LOGO}" alt="Mercado Pago" decoding="async"></span>
-      <div class="mp-hero-txt">
-        <b>${puesto ? 'Tu Mercado Pago está enlazado' : 'Cobra con tarjeta por Mercado Pago'}</b>
-        <small>${puesto
-          ? 'Tus clientes ya pueden pagar con tarjeta desde tu menú' + (m.nickname ? ' · cuenta ' + escapeHtml(m.nickname) : '') + '.'
-          : 'Tus clientes ponen su tarjeta en tu menú y el dinero llega directo a tu cuenta de Mercado Pago. No necesitas terminal.'}</small>
-      </div>
+      ${puesto ? '' : `<img class="mp-link-logo" src="${MP_SHEET_LOGO}" alt="">`}
+      <h2>${puesto ? 'Pago con tarjeta' : 'Cobros con Mercado Pago'}</h2>
+      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
     </div>
     ${puesto ? `
+      <div class="mp-hero">
+        <span class="mp-hero-ico"><img src="${MP_LOGO}" alt="Mercado Pago" decoding="async"></span>
+        <div class="mp-hero-txt">
+          <b>Tu Mercado Pago está enlazado</b>
+          <small>Tus clientes ya pueden pagar con tarjeta desde tu menú${m.nickname ? ' · cuenta ' + escapeHtml(m.nickname) : ''}.</small>
+        </div>
+      </div>
       ${m.liveMode === false ? `<div class="mdi-banner warn">${icon('alert')}<span><b>Cuenta de pruebas</b>Enlazaste una cuenta de prueba de Mercado Pago. Los cobros no son reales.</span></div>` : ''}
       <div class="mp-rows">
         <div class="mp-row"><span>${icon('check')}</span><span><b>Las tarjetas las cobra Mercado Pago</b>Vendo Plus nunca ve ni guarda los datos de la tarjeta de tu cliente.</span></div>
@@ -19136,6 +19176,7 @@ function mpOpenForm(){
         <button class="btn danger block" onclick="mpAskUnlink()">Desenlazar</button>
       </div>
     ` : `
+      <p class="mp-link-description">Acepta pagos con tarjeta en tu Menú Digital de forma segura y sin necesidad de una terminal.</p>
       <div class="mp-rows">
         <div class="mp-row"><span>${icon('person')}</span><span><b>Entras con tu cuenta de Mercado Pago</b>Se abre Mercado Pago, inicias sesión y autorizas a Vendo Plus. Tu contraseña nunca pasa por aquí.</span></div>
         <div class="mp-row"><span>${icon('card')}</span><span><b>Tus clientes pagan en tu menú</b>Ponen su tarjeta sin salir del menú ni instalar nada.</span></div>
@@ -19143,10 +19184,10 @@ function mpOpenForm(){
       </div>
       <div class="sheet-actions mp-acts">
         <button class="btn ghost block" onclick="mdOpenCardForm()">Volver</button>
-        <button class="btn primary block" id="mpGoBtn" onclick="mpConnect(this)">${icon('external')} Enlazar con Mercado Pago</button>
+        <button class="btn block mp-connect" id="mpGoBtn" onclick="mpConnect(this)">${MP_CONNECT_LABEL}</button>
       </div>
     `}
-  `, { dismissible:true });
+  `, { dismissible:true, sheetClass:puesto ? '' : 'mp-link-sheet' });
 }
 
 async function mpConnect(btn){
@@ -19158,7 +19199,7 @@ async function mpConnect(btn){
     if(!j.url) throw new Error('Mercado Pago no devolvió el enlace');
     location.assign(j.url);
   }catch(e){
-    if(btn){ btn.disabled = false; btn.innerHTML = icon('external') + ' Enlazar con Mercado Pago'; }
+    if(btn){ btn.disabled = false; btn.innerHTML = MP_CONNECT_LABEL; }
     toast('No se pudo abrir Mercado Pago', { icon:icon('alert'), variant:'toast-danger', subtitle:String(e.message || e).slice(0, 120), duration:4200 });
   }
 }
