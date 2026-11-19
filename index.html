@@ -26039,7 +26039,7 @@ async function pgMountBrick(){
       callbacks:{
         onReady: () => { const l = document.querySelector('#pgBrick .pg-load'); if(l) l.remove(); },
         onError: e => pgShowErr((e && (e.message || e.cause)) ? String(e.message || e.cause) : 'Revisa los datos de tu tarjeta'),
-        onSubmit: datos => pgSubmit(datos)
+        onSubmit: (datos, datosAdicionales) => pgSubmit(datos, datosAdicionales)
       }
     });
   }catch(e){
@@ -26054,8 +26054,8 @@ function pgShowErr(msg){
   b.textContent = msg;
 }
 
-/** Manda a nuestro servidor SOLO el token de la tarjeta. El monto lo pone el servidor. */
-function pgSubmit(datos){
+/** Envía el token y los datos del pagador. El monto lo pone el servidor. */
+function pgSubmit(datos, datosAdicionales){
   return new Promise(async (listo) => {
     if(pg.enviando){ listo(); return; }
     pg.enviando = true;
@@ -26070,6 +26070,7 @@ function pgSubmit(datos){
         issuer_id: f.issuer_id,
         installments: f.installments || 1,
         payer: f.payer || {},
+        cardholder_name: datosAdicionales?.cardholderName,
         supports_3ds:true,
         device_id:window.MP_DEVICE_SESSION_ID
       });

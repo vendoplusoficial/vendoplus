@@ -1,8 +1,8 @@
 // =============================================================================
 //  mp-pay · cobra la tarjeta del cliente a la cuenta del negocio
 //  ---------------------------------------------------------------------------
-//  Del navegador del cliente llega SOLO el token de la tarjeta (los datos de la
-//  tarjeta viajaron directo a Mercado Pago y nunca pasan por aquí ni se guardan).
+//  Del navegador llegan el token y los datos del pagador. El número de tarjeta,
+//  fecha de vencimiento y código de seguridad van directo a Mercado Pago.
 //
 //  El monto lo pone el servidor: sale de charge_total, que fijó el negocio al
 //  aceptar el pedido. Lo que diga el navegador no cuenta.
@@ -35,6 +35,10 @@ const TEXTO_ESTADO: Record<string, string> = {
   pending_review_manual: 'Mercado Pago lo está revisando. Te avisamos en cuanto termine.',
 };
 
+function textoCorto(valor: unknown, limite: number) {
+  return typeof valor === 'string' ? valor.trim().replace(/\s+/g, ' ').slice(0, limite) : '';
+}
+
 async function sha256(texto: string) {
   const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
   return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -57,7 +61,7 @@ Deno.serve(async (req) => {
     // ---- 1. El pedido y su monto, tal como los dejó el negocio ----
     const { data: pedido } = await sb
       .from('menu_orders')
-      .select('id, user_id, code, charge_total, charge_status, data')
+      .select('id, menu_id, user_id, code, charge_total, charge_status, data')
       .eq('id', b.order_id)
       .maybeSingle();
 
@@ -77,6 +81,21 @@ Deno.serve(async (req) => {
     // ---- 2. La cuenta del negocio (token secreto, nunca sale de aquí) ----
     const cuenta = await cuentaConTokenVivo(sb, pedido.user_id as string);
     if (!cuenta) return fallo('Este negocio aún no cobra con tarjeta', 409, origen);
+
+    const lineas = Array.isArray(pedido.data?.original) ? pedido.data.original : [];
+    const { data: menu } = await sb.from('public_menus')
+      .select('data->prods')
+      .eq('id', pedido.menu_id)
+      .eq('user_id', pedido.user_id)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const productos: Array<{ id: string; category?: string; description?: string }> =
+      Array.isArray(menu?.prods) ? menu.prods : [];
+    const catalogo = new Map(productos.map((producto) => [producto.id, producto]));
+    const [nombreTitular, ...apellidosTitular] = textoCorto(b.cardholder_name, 100).split(' ');
+    const nombre = textoCorto(b.payer?.first_name, 100) || nombreTitular;
+    const apellido = textoCorto(b.payer?.last_name, 100) || apellidosTitular.join(' ');
 
     // ---- 3. Un intento = un token de tarjeta. Reintentar no cobra dos veces ----
     const clave = (await sha256(`${pedido.id}:${b.token}`)).slice(0, 48);
@@ -112,16 +131,19 @@ Deno.serve(async (req) => {
     }
 
     // ---- 4. El cobro, a nombre del negocio ----
-    const lineas = Array.isArray(pedido.data?.original) ? pedido.data.original : [];
     const items = lineas.flatMap((linea: Record<string, unknown> | null) => {
       if (!linea || typeof linea.name !== 'string' || !linea.name.trim()) return [];
       const qty = Number(linea.qty);
       const price = Number(linea.price);
       if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price) || price <= 0) return [];
       const title = Number.isInteger(qty) ? linea.name : `${linea.name} (${qty} ${linea.unit ?? ''})`;
+      const producto = typeof linea.productId === 'string' ? catalogo.get(linea.productId) : undefined;
+      const detalle = [textoCorto(linea.name, 120), textoCorto(linea.sizeLabel, 60)].filter(Boolean).join(' · ');
       return [{
         id: typeof linea.productId === 'string' ? linea.productId.slice(0, 100) : undefined,
         title: title.slice(0, 120),
+        description: textoCorto(producto?.description, 200) || detalle,
+        category_id: textoCorto(producto?.category, 100) || 'others',
         quantity: Number.isInteger(qty) ? qty : 1,
         unit_price: redondea2(Number.isInteger(qty) ? price : qty * price),
       }];
@@ -146,6 +168,8 @@ Deno.serve(async (req) => {
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
       payer: {
         email: correo,
+        ...(nombre ? { first_name: nombre } : {}),
+        ...(apellido ? { last_name: apellido } : {}),
         ...(b?.payer?.identification?.type && b?.payer?.identification?.number
           ? { identification: { type: String(b.payer.identification.type), number: String(b.payer.identification.number) } }
           : {}),
