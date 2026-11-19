@@ -16114,8 +16114,13 @@ function mdCleanPayments(p){
 let mdPayDraft = null, mdPayKind = 'card';
 function mdOpenCardForm(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
-  mdPayKind = 'card'; mdPayDraft = { on:mdCfg().payments.card };
+  mdPayKind = 'card';
+  const borrador = mdPayDraft = { on:mdCfg().payments.card };
   mdRenderPayForm();
+  if(!mpVisible() || borrador.on !== true) return;
+  mpSyncStatus(true).then(estado => {
+    if(estado && mdPayDraft === borrador && document.querySelector('#modal-layer .md-card-sheet')) mdRenderPayForm();
+  });
 }
 function mdOpenTransferForm(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
@@ -25099,6 +25104,8 @@ bootApp = async function(){
     setTimeout(() => { if(Cloud.reintentarSesion) Cloud.reintentarSesion(); }, 3000);
   })();
 
+  Cloud.startupSync = trabajoNube;
+
   /* Si nadie estaba dentro, se espera a la nube (con tope) porque de eso
      depende qué pantalla se pinta. Si ya estaba dentro, no se espera. */
   if(!yaEstabaDentro){
@@ -27159,11 +27166,15 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
         toast('No se completó el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Puedes intentarlo de nuevo aquí' });
         return;
       }
+      // El POS puede abrir con datos locales mientras aún restaura la sesión.
+      // Consulta Mercado Pago después de hidratar la configuración del negocio.
+      await Cloud.startupSync;
       const estado = await mpSyncStatus(true);
       if(currentView !== 'menu' || mdPayDraft !== borrador ||
          !document.querySelector('#modal-layer .md-card-sheet')) return;
       if(estado) mdRenderPayForm();
       if(estado && mpLinked()) toast('Mercado Pago enlazado', { icon:icon('check'), variant:'toast-success' });
+      else toast('No pudimos confirmar el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Vuelve a abrir Pago con tarjeta para consultar el enlace' });
     };
     Promise.resolve(arranque).then(() => {
       if(document.body.classList.contains('auth-open')) mdiPendingOpen = abrirPagoTarjeta;
