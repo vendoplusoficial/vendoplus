@@ -16177,10 +16177,11 @@ function mdCleanPayments(p){
   };
 }
 let mdPayDraft = null, mdPayKind = 'card';
+let mdCardChoice;
 function mdOpenCardForm(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
   mdPayKind = 'card';
-  const borrador = mdPayDraft = { on:mdCfg().payments.card };
+  const borrador = mdPayDraft = { on:mdCardChoice ?? mdCfg().payments.card };
   mdRenderPayForm();
   if(!mpVisible() || borrador.on !== true) return;
   mpSyncStatus(true).then(estado => {
@@ -16199,7 +16200,19 @@ function mdPayGrab(){
   if(c) mdPayDraft.clabe = c.value.replace(/\D/g, '').slice(0, 18);
   if(h) mdPayDraft.holder = h.value;
 }
-function mdPaySet(on){ if(!mdPayDraft) return; mdPayGrab(); mdPayDraft.on = on; vibrate(8); mdRenderPayForm(); }
+function mdPaySet(on){
+  if(!mdPayDraft) return;
+  mdPayGrab();
+  mdPayDraft.on = on;
+  if(mdPayKind === 'card') mdCardChoice = on;
+  vibrate(8);
+  mdRenderPayForm();
+}
+function mdCancelPay(){
+  if(mdPayKind === 'card') mdCardChoice = undefined;
+  mdPayDraft = null;
+  closeModal();
+}
 function mdPayClabeInput(el){
   const raw = el.value.replace(/\D/g, '').slice(0, 18);
   el.value = mdClabeFmt(raw);
@@ -16256,7 +16269,7 @@ function mdRenderPayForm(){
         </div>
       </div>` : ''}
     <div class="sheet-actions">
-      <button class="btn ghost block" onclick="closeModal()">Cancelar</button>
+      <button class="btn ghost block" onclick="mdCancelPay()">Cancelar</button>
       <button class="btn primary block" onclick="mdSavePay()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
     </div>
   `, { dismissible:true, sheetClass:card ? 'md-card-sheet' : '' });
@@ -16278,7 +16291,11 @@ function mdSavePay(){
     cfg.payments.transfer = d.on;
     if(d.on === true){ cfg.payments.clabe = d.clabe; cfg.payments.holder = d.holder; }
   }
-  mdSaveCfg(cfg);
+  if(!mdSaveCfg(cfg)){
+    toast('No se pudo guardar el método de pago', { icon:icon('alert'), variant:'toast-danger' });
+    return;
+  }
+  if(mdPayKind === 'card') mdCardChoice = undefined;
   mdPayDraft = null;
   closeModal();
   const card = mdPayKind === 'card';
@@ -19237,7 +19254,7 @@ function mpOpenForm(){
     <div class="sheet-header">
       ${puesto ? '' : `<img class="mp-link-logo" src="${MP_SHEET_LOGO}" alt="">`}
       <h2>${puesto ? 'Pago con tarjeta' : 'Cobros con Mercado Pago'}</h2>
-      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
+      <button class="sheet-close" onclick="mdOpenCardForm()" aria-label="Volver a pago con tarjeta">${icon('close')}</button>
     </div>
     ${puesto ? `
       <div class="mp-hero">
@@ -19254,7 +19271,7 @@ function mpOpenForm(){
         <div class="mp-row"><span>${icon('check')}</span><span><b>Registro de la venta</b>Cuando Mercado Pago confirme el pago, confírmalo en el POS para registrar la venta.</span></div>
       </div>
       <div class="sheet-actions mp-acts">
-        <button class="btn ghost block" onclick="closeModal()">Listo</button>
+        <button class="btn ghost block" onclick="mdOpenCardForm()">Listo</button>
         <button class="btn danger block" onclick="mpAskUnlink()">Desenlazar</button>
       </div>
     ` : `
@@ -27237,7 +27254,8 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
       if(!mpVisible() || !mpCanLink()) return;
       goTo('menu');
       mdPayKind = 'card';
-      const borrador = mdPayDraft = { on:enlace === 'ok' ? true : mdCfg().payments.card };
+      if(enlace === 'ok') mdCardChoice = true;
+      const borrador = mdPayDraft = { on:mdCardChoice ?? mdCfg().payments.card };
       mdRenderPayForm();
       if(enlace !== 'ok'){
         toast('No se completó el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Puedes intentarlo de nuevo aquí' });
