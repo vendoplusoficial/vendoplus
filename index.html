@@ -5212,6 +5212,20 @@ body[data-section="menu"] .md-card-sheet .sheet-actions .primary:not(:disabled) 
   .mp-link-sheet .sheet-actions .btn { font-size:13px; }
 }
 
+/* Transiciones de las hojas de tarjeta y Mercado Pago */
+@media (prefers-reduced-motion:no-preference) {
+  .modal-overlay:not(.is-swap):not(.is-closing) .modal-sheet.payment-motion {
+    animation:sheetUp .36s cubic-bezier(.22,.75,.23,1) both;
+  }
+  .modal-overlay.is-swap:not(.is-closing) .modal-sheet.payment-motion-enter {
+    animation:paymentSheetIn .3s cubic-bezier(.22,.75,.23,1) both;
+  }
+  @keyframes paymentSheetIn {
+    from { transform:translateY(38px); opacity:.75; }
+    to { transform:translateY(0); opacity:1; }
+  }
+}
+
 /* ===== Pantalla de pago del cliente (…#pago/<pedido>) ===== */
 body.pg-mode{ background:#F4F6FA; }
 .pg{ display:flex; align-items:flex-start; justify-content:center; min-height:100dvh; padding:18px 14px calc(28px + env(safe-area-inset-bottom)); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#16213E; }
@@ -7470,11 +7484,14 @@ function openModal(html, opts){
      ejemplo al elegir Efectivo/Tarjeta o al cambiar una cantidad). */
   const prevSheet = layer.querySelector('.modal-overlay:not(.is-closing) .modal-sheet');
   const swap = !!prevSheet;
+  const paymentMotion = opts.sheetClass === 'md-card-sheet' ||
+    opts.sheetClass === 'mp-link-sheet' || opts.sheetClass === 'mp-linked-sheet';
+  const animatePaymentSwap = paymentMotion && swap && !prevSheet.classList.contains(opts.sheetClass);
   const prevTitle = swap ? sheetTitleOf(prevSheet) : '';
   const prevY = swap ? prevSheet.scrollTop : 0;
   const prevKeep = swap ? Array.from(prevSheet.querySelectorAll('[data-keep-scroll]')).map(e => [e.getAttribute('data-keep-scroll'), e.scrollTop]) : [];
   layer.innerHTML = `<div class="modal-overlay ${opts.center?'modal-center':''} ${swap?'is-swap':''}" id="modalOverlay" ${opts.dismissible === false ? 'data-lock="1"' : ''}>
-      <div class="modal-sheet ${opts.card?'modal-card':''} ${opts.sheetClass || ''}">
+      <div class="modal-sheet ${opts.card?'modal-card':''} ${opts.sheetClass || ''} ${paymentMotion ? 'payment-motion' : ''} ${animatePaymentSwap ? 'payment-motion-enter' : ''}">
         ${opts.grip !== false ? '<div class="sheet-grip"></div>' : ''}
         ${html}
       </div>
@@ -19252,7 +19269,7 @@ function mpOpenForm(){
         <button class="btn block mp-connect" id="mpGoBtn" onclick="mpConnect(this)">${MP_CONNECT_LABEL}</button>
       </div>
     `}
-  `, { dismissible:true, sheetClass:puesto ? '' : 'mp-link-sheet' });
+  `, { dismissible:true, sheetClass:puesto ? 'mp-linked-sheet' : 'mp-link-sheet' });
 }
 
 async function mpConnect(btn){
