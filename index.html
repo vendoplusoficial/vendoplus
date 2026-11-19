@@ -5256,6 +5256,31 @@ body.pg-mode{ background:#F4F6FA; }
 .pg-bad{ background:#FDECEA; color:#E5484D; }
 .pg-btn{ display:block; width:100%; margin-top:18px; border:0; border-radius:14px; padding:15px; cursor:pointer; font-family:inherit; font-size:15.5px; font-weight:800; color:#fff; background:#16C15B; -webkit-tap-highlight-color:transparent; }
 .pg-btn:active{ opacity:.85; }
+
+body.pg-mode:has(.pg-result){ background:#fff; }
+.pg:has(> .pg-result){ padding:calc(48px + env(safe-area-inset-top)) 15px calc(28px + env(safe-area-inset-bottom)); }
+.pg-card.pg-result{
+  margin-top:0; padding:17px 15px; border:1px solid #E7E8EC;
+  border-radius:18px; color:#111A36; box-shadow:0 8px 20px -14px rgba(17,26,54,.20);
+}
+.pg-result .pg-head{ gap:12px; margin-bottom:16px; }
+.pg-result .pg-logo{ width:42px; height:44px; }
+.pg-result .pg-logo-ph{ font-size:22px; }
+.pg-result .pg-head-txt b{ font-size:17px; line-height:1.2; overflow-wrap:anywhere; }
+.pg-result .pg-head-txt small{ margin-top:3px; font-size:13px; color:#606678; }
+.pg-result .pg-big{ width:66px; height:66px; }
+.pg-result .pg-big svg{ width:28px; height:28px; fill:none; stroke:currentColor; stroke-width:4; }
+.pg-result .pg-ok{ color:#08783E; background:#EAF9F0; }
+.pg-result .pg-bad{ color:#D93E48; background:#FCE9E9; }
+.pg-result h1{ margin:15px 0 10px; font-size:clamp(18px,5.1vw,22px); line-height:1.2; letter-spacing:-.02em; }
+.pg-result p{ color:#606678; font-size:14px; line-height:1.6; }
+.pg-result .pg-btn{
+  margin-top:21px; padding:13px 10px; border-radius:13px;
+  color:#111A36; background:#EEF0F4; font-size:16px; line-height:1.25; text-decoration:none;
+}
+.pg-result .pg-btn:focus-visible{ outline:2px solid #111A36; outline-offset:2px; }
+.pg-result p.pg-mini{ margin-top:10px; }
+.pg-result #pgSendError{ margin-top:10px; color:#A5362B; }
 .pg-load{ display:flex; align-items:center; justify-content:center; gap:7px; padding:18px 0; }
 .pg-load i{ width:10px; height:10px; border-radius:50%; background:#16C15B; animation:pgBounce 1.1s ease-in-out infinite; }
 .pg-load i:nth-child(2){ animation-delay:.14s; }
@@ -25766,14 +25791,14 @@ function pgPaintOk(){
     '*Pago con tarjeta confirmado por Mercado Pago*\nImporte: ' + pgMoney(d.amount) + ' MXN' +
     (d.mp_payment_id ? '\nReferencia: ' + d.mp_payment_id : '');
   const whatsapp = d.menu_checkout ? 'https://wa.me/' + (d.whatsapp || '') + '?text=' + encodeURIComponent(recibo) : '';
-  pgPaint(`<div class="pg-card pg-center">
+  pgPaint(`<div class="pg-card pg-center pg-result">
       ${pgCabeza()}
-      <span class="pg-big pg-ok">✓</span>
-      <h1>¡Listo, ya pagaste!</h1>
-      <p>Tu pago de <b>${pgMoney(d.amount)}</b> quedó confirmado por Mercado Pago.</p>
-      ${whatsapp ? `<a class="pg-btn" style="display:block;text-decoration:none" href="${pgEsc(whatsapp)}" onclick="event.preventDefault(); pgConfirmWhatsApp(this)">Enviar pedido y comprobante por WhatsApp</a>` : ''}
+      <span class="pg-big pg-ok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></svg></span>
+      <h1>Pago confirmado</h1>
+      <p>Mercado Pago confirmó el pago de tu pedido.</p>
+      ${whatsapp ? `<a class="pg-btn" href="${pgEsc(whatsapp)}" onclick="event.preventDefault(); pgConfirmWhatsApp(this)">Enviar pedido y comprobante por WhatsApp</a>` : ''}
       <p id="pgSendError" role="alert" hidden></p>
-      <p class="pg-mini">Pedido ${pgEsc(d.code || '')}${d.mp_payment_id ? ' · pago ' + pgEsc(d.mp_payment_id) : ''}</p>
+      <p class="pg-mini">Pedido ${pgEsc(d.code || '')} · ${pgMoney(d.amount)}${d.mp_payment_id ? ' · pago ' + pgEsc(d.mp_payment_id) : ''}</p>
     </div>`);
 }
 function pgConfirmWhatsApp(link){
@@ -25808,11 +25833,11 @@ function pgPaintEsperando(detalle){
 }
 function pgPaintRechazado(motivo){
   const d = pg.data || {};
-  pgPaint(`<div class="pg-card pg-center">
+  pgPaint(`<div class="pg-card pg-center pg-result">
       ${pgCabeza()}
-      <span class="pg-big pg-bad">×</span>
+      <span class="pg-big pg-bad" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19"/></svg></span>
       <h1>Tu banco no autorizó el pago</h1>
-      <p>${pgEsc(motivo || 'No se hizo ningún cargo. Puedes intentar con otra tarjeta.')}</p>
+      <p>${pgEsc(motivo || 'Prueba con otra tarjeta o comunícate con tu banco.')}</p>
       <button class="pg-btn" onclick="pgLoad()">Probar con otra tarjeta</button>
       <p class="pg-mini">Pedido ${pgEsc(d.code || '')} · ${pgMoney(d.amount)}</p>
     </div>`);
