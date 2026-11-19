@@ -5237,12 +5237,15 @@ body.pg-mode{ background:#F4F6FA; }
 .pg-head-txt{ min-width:0; }
 .pg-head-txt b{ display:block; font-size:15.5px; font-weight:800; }
 .pg-head-txt small{ display:block; margin-top:1px; font-size:12.5px; font-weight:600; color:#6B7487; }
-.pg-amt{ margin:0 0 14px; padding:14px 16px; border-radius:15px; background:#EAF9F0; }
-.pg-amt small{ display:block; font-size:12.5px; font-weight:700; color:#0E7A3D; }
-.pg-amt b{ display:block; margin-top:2px; font-size:32px; font-weight:800; letter-spacing:-.6px; }
-.pg-safe{ display:flex; align-items:flex-start; gap:9px; margin:0 0 16px; padding:11px 12px; border-radius:13px; background:#F4F6FA; font-size:12.5px; font-weight:600; line-height:1.45; color:#6B7487; }
-.pg-safe svg{ width:18px; height:18px; flex:none; margin-top:1px; color:#009EE3; }
-.pg-safe b{ font-weight:800; color:#16213E; }
+.pg:has(> .pg-form) { padding:10px 9px calc(10px + env(safe-area-inset-bottom)); }
+.pg-card.pg-form { margin-top:0; padding:19px clamp(16px,4.6vw,22px) 24px; border-radius:24px; }
+.pg-form .pg-head { margin-bottom:28px; }
+.pg-form .pg-head-txt b { font-size:17px; }
+.pg-form .pg-head-txt small { font-size:13px; font-weight:700; }
+.pg-amt { margin:0 0 22px; padding:0 16px; color:#161c2d; }
+.pg-amt small { display:block; font-size:12px; font-weight:600; color:#5c6576; }
+.pg-amt b { display:block; margin-top:5px; font-size:35px; font-weight:750; letter-spacing:-.035em; line-height:1.12; }
+.pg-form p.pg-mini { margin:34px 0 0; text-align:center; font-size:13px; font-weight:700; color:#687082; }
 .pg-brick{ min-height:120px; }
 .pg-err{ margin-top:12px; padding:11px 12px; border-radius:12px; background:#FDECEA; color:#A5362B; font-size:13px; font-weight:700; line-height:1.4; }
 .pg-mini{ margin:14px 0 0; font-size:11.5px; font-weight:600; color:#9AA3B5; text-align:center; }
@@ -20036,7 +20039,7 @@ function dmPayInfoHTML(){
     if(mpOn){
       return `<div class="dm-pi">
         ${head('card', 'Pago con tarjeta', 'Pagas en línea con Mercado Pago, desde tu celular.')}
-        <small class="dm-pi-note">Paga aquí y después envía tu pedido y la referencia del pago por WhatsApp. Tus datos de tarjeta no los ve el negocio ni esta app.</small>
+        <small class="dm-pi-note">Para pagar tu pedido, toca «Pagar con tarjeta».</small>
       </div>`;
     }
     return `<div class="dm-pi">${head('card', 'Pago con tarjeta', dom ? 'Te cobramos con tarjeta cuando te entreguen tu pedido.' : 'Te cobramos con tarjeta cuando pases por tu pedido.')}</div>`;
@@ -25842,10 +25845,9 @@ function pgWatch(esperaEnvio = false){
 function pgPaintForm(){
   const d = pg.data;
   pgPaint(`
-    <div class="pg-card">
+    <div class="pg-card pg-form">
       ${pgCabeza()}
       <div class="pg-amt"><small>Total a pagar</small><b>${pgMoney(d.amount)}</b></div>
-      <div class="pg-safe">${icon('card')}<span>Pagas con <b>Mercado Pago</b>. Tus datos de tarjeta viajan directo a Mercado Pago: este negocio y Vendo Plus no los ven ni los guardan.</span></div>
       <div id="pgBrick" class="pg-brick"><div class="pg-load"><i></i><i></i><i></i></div></div>
       <div id="pgErr" class="pg-err" hidden></div>
       <p class="pg-mini">Pedido ${pgEsc(d.code || '')}${d.live_mode === false ? ' · cuenta de prueba' : ''}</p>
