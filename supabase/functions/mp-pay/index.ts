@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
       ? b.device_id : undefined;
 
     const cuerpo: Record<string, unknown> = {
-      ...(b.supports_3ds === true && Deno.env.get('MP_ENABLE_3DS') === 'true'
+      ...(b.supports_3ds === true && Deno.env.get('MP_ENABLE_3DS')?.trim().toLowerCase() !== 'false'
         ? { three_d_secure_mode: 'optional' }
         : {}),
       transaction_amount: monto,            // <- del servidor, no del navegador
