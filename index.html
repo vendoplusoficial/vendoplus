@@ -18719,6 +18719,10 @@ function mdiCharge(id){
   if(!o || o.status !== 'confirmado') return;
   if(o.pendingNext){ toast('Primero avisa al cliente y toca “Siguiente”', { icon:icon('alert') }); return; }
   if(mdiIsPaid(o)){ toast('Este pedido ya se cobró', { icon:icon('alert'), subtitle:'Lo encuentras en Historial' }); return; }
+  if(mdiPayId(o) === 'tarjeta' && (o.mpCheckout || o.mp?.status === 'paid')){
+    mdiAskPaid(id);
+    return;
+  }
   const prods = DB.getProducts();
   if(!(o.lines || []).length || o.lines.some(l => !prods.some(p => p.id === l.productId))){ toast('Hay productos que ya no están en tu catálogo', { icon:icon('alert'), variant:'toast-danger' }); return; }
   /* Cobrar es una venta: se necesita la caja del día abierta */
@@ -18765,7 +18769,7 @@ function mdiCharge(id){
    salir del pedido ni pasar por la pantalla de ventas.
 
    Con tarjeta y Mercado Pago enlazado no hace falta ni tocar el botón:
-   cuando Mercado Pago confirma el pago, el pedido se cobra solo.
+   cuando Mercado Pago confirma el pago, el negocio lo registra como venta.
 ========================================================================= */
 
 /** Cómo dijo el cliente que va a pagar (efectivo si no eligió). */
@@ -18839,7 +18843,7 @@ function mdiCobroHTML(o){
         <div class="mdi-pay-amt">${formatMoney(total)}<small>el cliente ya pagó${mp.paymentId ? ' · pago ' + escapeHtml(mp.paymentId) : ''}</small></div>
         <p class="mdi-pay-txt">Mercado Pago confirmó el pago y el dinero ya va a tu cuenta. Puedes registrarlo como venta cuando la caja del día esté abierta.</p>
         <div class="mdi-pay-acts">
-          <button type="button" class="mdi-pay-go" onclick="mdiChargeNow('${id}', 'tarjeta', {ref:'${String(mp.paymentId || '').replace(/[^0-9]/g, '')}'})">${icon('check')} Registrar la venta</button>
+          <button type="button" class="mdi-pay-go" onclick="mdiAskPaid('${id}')">${icon('check')} Confirmar pago con tarjeta</button>
         </div>
       </div>`;
   }
@@ -18854,7 +18858,7 @@ function mdiCobroHTML(o){
           <span class="mdi-pay-pill">Mercado Pago</span>
         </div>
         <div class="mdi-pay-amt">${formatMoney(total)}<small>esperando el pago del cliente</small></div>
-        <p class="mdi-pay-txt">El cliente paga con su tarjeta en Mercado Pago y el dinero llega directo a tu cuenta. En cuanto Mercado Pago confirme el pago, este pedido se cobra solo.</p>
+        <p class="mdi-pay-txt">El cliente paga con su tarjeta en Mercado Pago y el dinero llega directo a tu cuenta. Cuando Mercado Pago confirme el pago, podrás registrarlo en el POS.</p>
         <div class="mdi-pay-live"><i class="mdi-pay-dot"></i>Esperando la confirmación de Mercado Pago</div>
         ${o.mpCheckout ? '' : `<div class="mdi-pay-acts">
           <button type="button" class="mdi-pay-alt" onclick="mdiChargeOther('${id}')">Pagó de otra forma · abrir el cobro</button>
@@ -18907,13 +18911,22 @@ function mdiAskPaid(id){
   const o = MDI.get(id);
   if(!o || o.status !== 'confirmado') return;
   if(mdiIsPaid(o)){ toast('Este pedido ya se cobró', { icon:icon('alert'), subtitle:'Lo encuentras en Historial' }); return; }
+  const metodo = mdiPayId(o);
+  const mpConfirmado = metodo === 'tarjeta' && o.mp?.status === 'paid';
+  if(metodo === 'tarjeta' && o.mpCheckout && !mpConfirmado){
+    toast('Mercado Pago aún no confirma el pago', {icon:icon('alert')});
+    MpWatch.pull();
+    return;
+  }
   const t = mdiCobroTextos(o);
   const total = mdiOrderTotal(o);
   askConfirm({
-    title: t.pregunta,
-    text: 'Son <b>' + formatMoney(total) + '</b>. ' + t.aviso + ' Al confirmar, el pedido ' + escapeHtml(o.code) + ' se cobra y se guarda como venta.',
-    ok:'Sí, ya me pagaron', cancel:'Todavía no', icon:icon('check')
-  }, () => mdiChargeNow(id, mdiPayId(o)));
+    title: mpConfirmado ? '¿Registrar el pago con tarjeta?' : t.pregunta,
+    text: mpConfirmado
+      ? 'Mercado Pago confirmó el pago de <b>' + formatMoney(total) + '</b>. Al confirmar se guardará como venta.'
+      : 'Son <b>' + formatMoney(total) + '</b>. ' + t.aviso + ' Al confirmar, el pedido ' + escapeHtml(o.code) + ' se cobra y se guarda como venta.',
+    ok:mpConfirmado ? 'Sí, registrar pago' : 'Sí, ya me pagaron', cancel:'Todavía no', icon:icon('check')
+  }, () => mdiChargeNow(id, metodo, mpConfirmado ? {ref:String(o.mp.paymentId || '').slice(0,40)} : undefined));
 }
 
 /* ---------- Cobrar el pedido sin salir de él ----------
@@ -19116,7 +19129,7 @@ function mpOpenForm(){
       <div class="mp-rows">
         <div class="mp-row"><span>${icon('check')}</span><span><b>Las tarjetas las cobra Mercado Pago</b>Vendo Plus nunca ve ni guarda los datos de la tarjeta de tu cliente.</span></div>
         <div class="mp-row"><span>${icon('coin')}</span><span><b>El dinero es tuyo</b>Cae en tu cuenta de Mercado Pago. Vendo Plus no cobra comisión.</span></div>
-        <div class="mp-row"><span>${icon('check')}</span><span><b>El pedido se cobra solo</b>Cuando Mercado Pago confirma el pago, el pedido pasa a cobrado sin que hagas nada.</span></div>
+        <div class="mp-row"><span>${icon('check')}</span><span><b>Registro de la venta</b>Cuando Mercado Pago confirme el pago, confírmalo en el POS para registrar la venta.</span></div>
       </div>
       <div class="sheet-actions mp-acts">
         <button class="btn ghost block" onclick="closeModal()">Listo</button>
@@ -19214,7 +19227,7 @@ function mpSendLink(id){
   if(!w) location.href = url;
 }
 
-/* ---------- Vigilante: los pedidos pagados se cobran solos ----------
+/* ---------- Vigilante: actualiza el estado de Mercado Pago ----------
    El pedido se marca como pagado en Supabase únicamente cuando el
    servidor le preguntó a Mercado Pago y Mercado Pago contestó que el
    pago está aprobado. Aquí solo se lee ese resultado. */
@@ -19240,16 +19253,12 @@ const MpWatch = {
         if(!o || mdiIsPaid(o) || !(o.status === 'confirmado' || (o.status === 'nuevo' && o.mpCheckout)) || o.pendingNext) return;
         const st = row.charge_status || 'pending';
         const recibido = { status:st, paymentId:row.mp_payment_id || null, amount:row.paid_amount == null ? null : Number(row.paid_amount), at:row.paid_at || null };
-        if(JSON.stringify(o.mp) !== JSON.stringify(recibido)) MDI.update(row.id, x => { x.mp = recibido; });
-        if(st === 'paid' && o.status === 'confirmado'){
-          /* No se cobra dos veces: mdiChargeNow revisa otra vez que siga sin
-             cobrar. Con la caja cerrada no se cobra ni se abre nada: el pedido
-             queda marcado como pagado y se registra al abrir la caja. */
-          const ok = mdiChargeNow(row.id, 'tarjeta', { ref:String(row.mp_payment_id || '').slice(0, 40), silencio:true, sinGate:true });
-          /* Con Mercado Pago escondido no se le nombra, pero el pago que ya
-             venía en camino sí se cobra y sí se avisa. */
-          if(ok) toast('Pedido ' + o.code + ' pagado con tarjeta', { icon:icon('check'), variant:'toast-success toast-top', subtitle:(mpVisible() ? 'Mercado Pago confirmó el pago · se cobró solo' : 'El pago quedó confirmado · se cobró solo'), duration:3200 });
-          else if(!cashReadyForSale()) toast('Pedido ' + o.code + ' pagado con tarjeta', { icon:icon('alert'), variant:'toast-top', subtitle:'Abre tu caja del día para registrarlo como venta', duration:4000 });
+        if(JSON.stringify(o.mp) === JSON.stringify(recibido)) return;
+        MDI.update(row.id, x => { x.mp = recibido; });
+        if(st === 'paid' && o.mp?.status !== 'paid' && o.status === 'confirmado'){
+          toast('Mercado Pago confirmó el pedido ' + o.code, {
+            icon:icon('check'),variant:'toast-success toast-top',subtitle:'Confirma el pago en el POS para registrar la venta',duration:3200
+          });
         }
       });
       if(mdiUI.id && lista.some(o => o.id === mdiUI.id)) mdiRefresh();
@@ -27094,7 +27103,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
 
   bootApp();
   mdiWatch();
-  /* Mercado Pago: revisa los pedidos que ya pagaron y los cobra solos */
+  /* Mercado Pago: consulta los pagos. La venta se registra en el POS. */
   const regreso = new URL(location.href);
   const enlace = regreso.searchParams.get('mp_enlace');
   if(enlace){
