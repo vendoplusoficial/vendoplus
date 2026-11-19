@@ -16168,8 +16168,8 @@ function mdGeoErr(e){
    card / transfer = null -> el negocio aún no responde (se pide antes de activar el menú)
    El efectivo siempre está disponible. Con transferencia se guarda la CLABE
    para que el cliente sepa a dónde pagar. */
-/* Cambia MP_OCULTO a true para ocultar Mercado Pago del Menú Digital. */
-const MP_OCULTO = false;
+/* Cambia MP_OCULTO a false para reactivar Mercado Pago en VendoPlus. */
+const MP_OCULTO = true;
 function mpVisible(){ return !MP_OCULTO; }
 
 /* El logo oficial de Mercado Pago (WebP, 256x256, fondo transparente).
@@ -18676,7 +18676,7 @@ function mdiDetailHTML(o){
     ${o.status === 'confirmado' && o.pendingNext ? `
       <div class="mdi-banner ok">${icon('check')}<span><b>Pedido aceptado</b>${o.notifiedAt ? 'Ya le avisaste al cliente. Toca “Siguiente” para pasarlo a Pendiente de pago.' : 'Avísale al cliente por WhatsApp y luego toca “Siguiente” para pasarlo a Pendiente de pago.'}</span></div>
       <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que lo aceptaste'}</button>` : ''}
-    ${esNuevo && o.mpCheckout ? `<div class="mdi-banner ${pagoTarjeta ? 'ok' : 'warn'}">${icon(pagoTarjeta ? 'check' : 'card')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pago con tarjeta pendiente'}</b>${pagoTarjeta ? 'Mercado Pago confirmó el pago.' : (mdiIsDelivery(o) && !o.autoDelivery ? 'Confirma el pedido y el costo de envío para habilitar el pago en el menú.' : 'Esperando la confirmación de Mercado Pago.')}</span></div>` : ''}
+    ${esNuevo && o.mpCheckout && mpVisible() ? `<div class="mdi-banner ${pagoTarjeta ? 'ok' : 'warn'}">${icon(pagoTarjeta ? 'check' : 'card')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pago con tarjeta pendiente'}</b>${pagoTarjeta ? 'Mercado Pago confirmó el pago.' : (mdiIsDelivery(o) && !o.autoDelivery ? 'Confirma el pedido y el costo de envío para habilitar el pago en el menú.' : 'Esperando la confirmación de Mercado Pago.')}</span></div>` : ''}
     ${o.status === 'confirmado' && !o.pendingNext ? `
       ${mdiIsPaid(o) ? `<div class="mdi-banner ok">${icon('check')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pedido cobrado'}</b>${sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : ''}
       ${mdiIsPaid(o)
@@ -19019,7 +19019,7 @@ function mdiCobroHTML(o){
   const c     = o.customer || {};
   /* Escondido: no se pinta ninguna pantalla de Mercado Pago. El pedido se
      cobra como tarjeta normal, con "Ya me pagó con tarjeta". */
-  const mp    = (pid === 'tarjeta' && (mpVisible() || o.mpCheckout)) ? mpOrderState(o) : null;
+  const mp    = (pid === 'tarjeta' && (mpVisible() || o.mpCheckout || o.mp?.status === 'paid')) ? mpOrderState(o) : null;
   const id    = o.id;
 
   /* Mercado Pago ya confirmó el pago pero falta registrarlo (casi siempre
@@ -19030,10 +19030,10 @@ function mdiCobroHTML(o){
         <div class="mdi-pay-top">
           <span class="mdi-pay-ico">${icon('check')}</span>
           <b>El cliente ya pagó con tarjeta</b>
-          <span class="mdi-pay-pill">Mercado Pago</span>
+          ${mpVisible() ? '<span class="mdi-pay-pill">Mercado Pago</span>' : ''}
         </div>
         <div class="mdi-pay-amt">${formatMoney(total)}<small>el cliente ya pagó${mp.paymentId ? ' · pago ' + escapeHtml(mp.paymentId) : ''}</small></div>
-        <p class="mdi-pay-txt">Mercado Pago confirmó el pago y el dinero ya va a tu cuenta. Puedes registrarlo como venta cuando la caja del día esté abierta.</p>
+        <p class="mdi-pay-txt">${mpVisible() ? 'Mercado Pago confirmó el pago y el dinero ya va a tu cuenta.' : 'El pago con tarjeta está confirmado.'} Puedes registrarlo como venta cuando la caja del día esté abierta.</p>
         <div class="mdi-pay-acts">
           <button type="button" class="mdi-pay-go" onclick="mdiAskPaid('${id}')">${icon('check')} Confirmar pago con tarjeta</button>
         </div>
@@ -19042,12 +19042,13 @@ function mdiCobroHTML(o){
 
   /* Con Mercado Pago el pago lo confirma Mercado Pago, no tú. */
   if(mp && mp.esperando){
+    if(!mpVisible()) return `<div class="mdi-pay st-live"><p class="mdi-pay-txt">El pago en línea está pausado para este pedido.</p></div>`;
     return `
       <div class="mdi-pay st-live">
         <div class="mdi-pay-top">
           <span class="mdi-pay-ico">${icon('card')}</span>
           <b>Cobro · Tarjeta</b>
-          <span class="mdi-pay-pill">Mercado Pago</span>
+          ${mpVisible() ? '<span class="mdi-pay-pill">Mercado Pago</span>' : ''}
         </div>
         <div class="mdi-pay-amt">${formatMoney(total)}<small>esperando el pago del cliente</small></div>
         <p class="mdi-pay-txt">El cliente paga con su tarjeta en Mercado Pago y el dinero llega directo a tu cuenta. Cuando Mercado Pago confirme el pago, podrás registrarlo en el POS.</p>
@@ -19106,7 +19107,7 @@ function mdiAskPaid(id){
   const metodo = mdiPayId(o);
   const mpConfirmado = metodo === 'tarjeta' && o.mp?.status === 'paid';
   if(metodo === 'tarjeta' && o.mpCheckout && !mpConfirmado){
-    toast('Mercado Pago aún no confirma el pago', {icon:icon('alert')});
+    toast(mpVisible() ? 'Mercado Pago aún no confirma el pago' : 'El pago en línea sigue pendiente', {icon:icon('alert')});
     MpWatch.pull();
     return;
   }
@@ -19115,7 +19116,7 @@ function mdiAskPaid(id){
   askConfirm({
     title: mpConfirmado ? '¿Registrar el pago con tarjeta?' : t.pregunta,
     text: mpConfirmado
-      ? 'Mercado Pago confirmó el pago de <b>' + formatMoney(total) + '</b>. Al confirmar se guardará como venta.'
+      ? (mpVisible() ? 'Mercado Pago confirmó el pago de <b>' : 'Se confirmó el pago con tarjeta de <b>') + formatMoney(total) + '</b>. Al confirmar se guardará como venta.'
       : 'Son <b>' + formatMoney(total) + '</b>. ' + t.aviso + ' Al confirmar, el pedido ' + escapeHtml(o.code) + ' se cobra y se guarda como venta.',
     ok:mpConfirmado ? 'Sí, registrar pago' : 'Sí, ya me pagaron', cancel:'Todavía no', icon:icon('check')
   }, () => mdiChargeNow(id, metodo, mpConfirmado ? {ref:String(o.mp.paymentId || '').slice(0,40)} : undefined));
@@ -19240,6 +19241,7 @@ function mpReady(){ return !!(mpBase() && VENDO_CONFIG.SUPABASE_ANON_KEY); }
 
 /** Llamada a una Edge Function. Con sesión manda el token del negocio. */
 async function mpCall(fn, body, conSesion){
+  if(!mpVisible()) throw new Error('El pago en línea está desactivado');
   if(!mpReady()) throw new Error('Falta configurar Supabase');
   const headers = { 'Content-Type':'application/json', apikey:VENDO_CONFIG.SUPABASE_ANON_KEY };
   let auth = VENDO_CONFIG.SUPABASE_ANON_KEY;
@@ -19285,7 +19287,7 @@ function mpSaveCfg(m){
 
 /** Le pregunta al servidor si la cuenta sigue enlazada (nunca pide los tokens). */
 async function mpSyncStatus(silencio){
-  if(!mpReady() || !Cloud.ready || !Cloud.uid) return null;
+  if(!mpVisible() || !mpReady() || !Cloud.ready || !Cloud.uid) return null;
   try{
     const j = await mpCall(MP_FN.status, {}, true);
     mpSaveCfg({ on:!!j.connected, nickname:j.nickname || '', publicKey:j.public_key || '', liveMode:j.live_mode !== false, at:j.connected_at || null });
@@ -19345,6 +19347,7 @@ function mpOpenForm(){
 }
 
 async function mpConnect(btn){
+  if(!mpVisible()) return;
   if(!mpCanLink()) return;
   if(!Cloud.ready || !Cloud.uid){ toast('Entra a tu cuenta para enlazar Mercado Pago', { icon:icon('alert'), variant:'toast-danger' }); return; }
   if(btn){ btn.disabled = true; btn.textContent = 'Abriendo Mercado Pago…'; }
@@ -19397,7 +19400,7 @@ function mpPayUrl(o){
 /** Fija EN EL SERVIDOR cuánto hay que cobrar por este pedido.
     Es lo único que decide el monto: el navegador del cliente no puede cambiarlo. */
 async function mpArm(o, silencio){
-  if(!o || !mpLinked() || mdiPayId(o) !== 'tarjeta' || (o.mpCheckout && (!mdiIsDelivery(o) || o.autoDelivery))) return false;
+  if(!mpVisible() || !o || !mpLinked() || mdiPayId(o) !== 'tarjeta' || (o.mpCheckout && (!mdiIsDelivery(o) || o.autoDelivery))) return false;
   if(!Cloud.ready || !Cloud.uid) return false;
   try{
     await mpCall(MP_FN.arm, { order_id:o.id, code:o.code, total:mdiOrderTotal(o) }, true);
@@ -19450,7 +19453,7 @@ const MpWatch = {
         const recibido = { status:st, paymentId:row.mp_payment_id || null, amount:row.paid_amount == null ? null : Number(row.paid_amount), at:row.paid_at || null };
         if(JSON.stringify(o.mp) === JSON.stringify(recibido)) return;
         MDI.update(row.id, x => { x.mp = recibido; });
-        if(st === 'paid' && o.mp?.status !== 'paid' && o.status === 'confirmado'){
+        if(mpVisible() && st === 'paid' && o.mp?.status !== 'paid' && o.status === 'confirmado'){
           toast('Mercado Pago confirmó el pedido ' + o.code, {
             icon:icon('check'),variant:'toast-success toast-top',subtitle:'Confirma el pago en el POS para registrar la venta',duration:3200
           });
@@ -19517,7 +19520,7 @@ function mdiCancelOrder(id, fromHistory){
     title:'¿Cancelar el pedido ' + escapeHtml(o.code) + '?',
     text:(sale ? 'La venta ' + orderNumberLabel(sale.number) + ' se queda en tu historial como cancelada y deja de contar en tus ventas.' : 'El pedido pasa a Cancelados. Después puedes avisarle al cliente por WhatsApp.')
       + (hayRegreso ? ' Lo que se descontó de tus existencias regresa al inventario.' : '')
-      + (o.mp?.status === 'paid' ? ' El cliente ya pagó con tarjeta. El reembolso se realiza desde Mercado Pago.' : ''),
+      + (o.mp?.status === 'paid' ? ' El cliente ya pagó con tarjeta.' + (mpVisible() ? ' El reembolso se realiza desde Mercado Pago.' : '') : ''),
     ok:'Cancelar pedido', cancel:'Volver', danger:true, icon:icon('alert')
   }, () => mdiCancelOrderNow(id, fromHistory));
 }
@@ -20067,7 +20070,7 @@ function dmCoPay(id){
 }
 function dmMpCheckout(co){
   const pm = mdCfg().payments;
-  return !co.cardFallback && co.pay === 'tarjeta' && !!(pm.mp && pm.mp.on);
+  return mpVisible() && !co.cardFallback && co.pay === 'tarjeta' && !!(pm.mp && pm.mp.on);
 }
 function dmMpButton(co){
   if(!dmMpCheckout(co)) return icon('whatsapp') + ' Enviar pedido';
@@ -20089,7 +20092,7 @@ function dmPayInfoHTML(){
     </div>`;
   }
   if(co.pay === 'tarjeta'){
-    const mpOn = !!(pm.mp && pm.mp.on);
+    const mpOn = mpVisible() && !!(pm.mp && pm.mp.on);
     if(mpOn){
       return `<div class="dm-pi">
         ${head('card', 'Pago con tarjeta', 'Pagas en línea con Mercado Pago, desde tu celular.')}
@@ -25759,6 +25762,7 @@ function pgEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
 function pgMoney(n){ try{ return formatMoney(n); }catch(e){ return '$' + (Number(n) || 0).toFixed(2); } }
 
 async function pgFetch(fn, body){
+  if(!mpVisible()) throw new Error('El pago en línea está desactivado');
   const base = String(VENDO_CONFIG.SUPABASE_URL || '').replace(/\/+$/, '');
   const r = await fetch(base + '/functions/v1/' + fn, {
     method:'POST',
@@ -25774,14 +25778,18 @@ async function pgFetch(fn, body){
 function bootPago(route){
   document.body.classList.add('dm-mode', 'pg-mode');
   const sp = document.getElementById('splash'); if(sp) sp.remove();
+  const root = document.createElement('div'); root.id = 'pgRoot'; root.className = 'pg';
+  document.body.appendChild(root);
+  if(!mpVisible()){
+    pgPaint(pgErrorHTML('Pago en línea no disponible', 'Contacta al negocio para acordar otra forma de pago.', false));
+    return;
+  }
   pg.id = route.id;
   const security = document.createElement('script');
   security.src = 'https://www.mercadopago.com/v2/security.js';
   security.setAttribute('view', 'checkout');
   security.async = true;
   document.head.appendChild(security);
-  const root = document.createElement('div'); root.id = 'pgRoot'; root.className = 'pg';
-  document.body.appendChild(root);
   pgPaint(pgCargandoHTML());
   pgLoad();
 }
