@@ -122,6 +122,11 @@ Deno.serve(async (req) => {
       return [{
         id: typeof linea.productId === 'string' ? linea.productId.slice(0, 100) : undefined,
         title: title.slice(0, 120),
+        // Datos verídicos del pedido; nunca inventar una categoría.
+        description: (typeof linea.description === 'string' && linea.description.trim()
+          ? linea.description.trim() : linea.name.trim()).slice(0, 256),
+        ...(typeof linea.category_id === 'string' && linea.category_id.trim()
+          ? { category_id: linea.category_id.trim().slice(0, 100) } : {}),
         quantity: Number.isInteger(qty) ? qty : 1,
         unit_price: redondea2(Number.isInteger(qty) ? price : qty * price),
       }];
@@ -146,6 +151,9 @@ Deno.serve(async (req) => {
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
       payer: {
         email: correo,
+        // Solo se envía si el comprador proporcionó explícitamente el apellido.
+        ...(typeof b?.payer?.last_name === 'string' && b.payer.last_name.trim()
+          ? { last_name: b.payer.last_name.trim().slice(0, 100) } : {}),
         ...(b?.payer?.identification?.type && b?.payer?.identification?.number
           ? { identification: { type: String(b.payer.identification.type), number: String(b.payer.identification.number) } }
           : {}),
