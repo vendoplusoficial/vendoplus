@@ -1,0 +1,155 @@
+// =============================================================================
+//  mp-pay · cobra la tarjeta del cliente a la cuenta del negocio
+//  ---------------------------------------------------------------------------
+//  Del navegador del cliente llega SOLO el token de la tarjeta (los datos de la
+//  tarjeta viajaron directo a Mercado Pago y nunca pasan por aquí ni se guardan).
+//
+//  El monto lo pone el servidor: sale de charge_total, que fijó el negocio al
+//  aceptar el pedido. Lo que diga el navegador no cuenta.
+//
+//  Contra cobros dobles:
+//   1. Si el pedido ya está pagado, se contesta y no se cobra otra vez.
+//   2. Cada intento lleva X-Idempotency-Key atado al token de la tarjeta: si el
+//      celular reintenta por mala señal, Mercado Pago devuelve el MISMO pago.
+//   3. mp_payments.idempotency_key es único: dos peticiones a la vez no crean
+//      dos cobros.
+// =============================================================================
+import {
+  admin, cors, cuentaConTokenVivo, esIdDePedido, fallo, json,
+  marcarPagado, mpPost, redondea2,
+} from './mp.ts';
+
+const TEXTO_ESTADO: Record<string, string> = {
+  cc_rejected_bad_filled_card_number: 'Revisa el número de tu tarjeta.',
+  cc_rejected_bad_filled_date: 'Revisa la fecha de vencimiento.',
+  cc_rejected_bad_filled_security_code: 'Revisa el código de seguridad.',
+  cc_rejected_bad_filled_other: 'Revisa los datos de tu tarjeta.',
+  cc_rejected_insufficient_amount: 'Tu tarjeta no tiene fondos suficientes.',
+  cc_rejected_high_risk: 'Tu banco no autorizó el pago. Prueba con otra tarjeta.',
+  cc_rejected_call_for_authorize: 'Tu banco pide que autorices este cargo. Llámale y vuelve a intentar.',
+  cc_rejected_card_disabled: 'Tu tarjeta está inactiva. Llama a tu banco.',
+  cc_rejected_duplicated_payment: 'Ya hiciste este pago. Revisa tu estado de cuenta.',
+  cc_rejected_max_attempts: 'Muchos intentos seguidos. Prueba con otra tarjeta.',
+  cc_rejected_invalid_installments: 'Tu tarjeta no acepta ese número de pagos.',
+  pending_contingency: 'Mercado Pago lo está revisando. Te avisamos en cuanto termine.',
+  pending_review_manual: 'Mercado Pago lo está revisando. Te avisamos en cuanto termine.',
+};
+
+async function sha256(texto: string) {
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
+  return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+Deno.serve(async (req) => {
+  const origen = req.headers.get('origin') ?? undefined;
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origen) });
+  if (req.method !== 'POST') return fallo('Método no permitido', 405, origen);
+
+  try {
+    const b = await req.json().catch(() => ({}));
+    if (!esIdDePedido(b?.order_id)) return fallo('Ese pedido no existe', 404, origen);
+    if (typeof b?.token !== 'string' || b.token.length < 8 || b.token.length > 200) {
+      return fallo('Faltan los datos de la tarjeta', 400, origen);
+    }
+
+    const sb = admin();
+
+    // ---- 1. El pedido y su monto, tal como los dejó el negocio ----
+    const { data: pedido } = await sb
+      .from('menu_orders')
+      .select('id, user_id, code, charge_total, charge_status')
+      .eq('id', b.order_id)
+      .maybeSingle();
+
+    if (!pedido) return fallo('Ese pedido no existe', 404, origen);
+    if (pedido.charge_status === 'paid') {
+      return json({ ok: true, status: 'approved', ya_pagado: true }, 200, origen);
+    }
+
+    const monto = redondea2(Number(pedido.charge_total));
+    if (!(monto > 0)) return fallo('Este pedido todavía no tiene total. Pídeselo al negocio.', 409, origen);
+
+    const correo = typeof b?.payer?.email === 'string' ? b.payer.email.trim() : '';
+    if (correo.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      return fallo('Escribe un correo electrónico válido en el formulario de tarjeta.', 400, origen);
+    }
+
+    // ---- 2. La cuenta del negocio (token secreto, nunca sale de aquí) ----
+    const cuenta = await cuentaConTokenVivo(sb, pedido.user_id as string);
+    if (!cuenta) return fallo('Este negocio aún no cobra con tarjeta', 409, origen);
+
+    // ---- 3. Un intento = un token de tarjeta. Reintentar no cobra dos veces ----
+    const clave = (await sha256(`${pedido.id}:${b.token}`)).slice(0, 48);
+
+    const { error: eIns } = await sb.from('mp_payments').insert({
+      order_id: pedido.id,
+      user_id: pedido.user_id,
+      amount: monto,
+      status: 'creating',
+      idempotency_key: clave,
+    });
+    if (eIns && !String(eIns.message ?? '').includes('duplicate')) {
+      console.error('registrar intento', eIns);
+      return fallo('No se pudo empezar el cobro. Intenta otra vez.', 500, origen);
+    }
+
+    // ---- 4. El cobro, a nombre del negocio ----
+    const cuerpo: Record<string, unknown> = {
+      transaction_amount: monto,            // <- del servidor, no del navegador
+      token: b.token,
+      description: `Pedido ${pedido.code ?? pedido.id}`,
+      installments: Math.max(1, Math.min(12, Number(b?.installments) || 1)),
+      payment_method_id: typeof b?.payment_method_id === 'string' ? b.payment_method_id : undefined,
+      issuer_id: b?.issuer_id ? String(b.issuer_id) : undefined,
+      external_reference: String(pedido.id),
+      statement_descriptor: 'VENDOPLUS',
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mp-webhook`,
+      payer: {
+        email: correo,
+        ...(b?.payer?.identification?.type && b?.payer?.identification?.number
+          ? { identification: { type: String(b.payer.identification.type), number: String(b.payer.identification.number) } }
+          : {}),
+      },
+      metadata: { order_id: pedido.id, order_code: pedido.code ?? '' },
+    };
+    Object.keys(cuerpo).forEach((k) => cuerpo[k] === undefined && delete cuerpo[k]);
+
+    const r = await mpPost('/v1/payments', cuenta.access_token, cuerpo, clave);
+    const pago = r.body ?? {};
+
+    if (!r.ok || !pago?.id) {
+      const msg = pago?.message ?? pago?.error ?? 'Mercado Pago no pudo procesar el pago';
+      console.error('mp payment', r.status, pago);
+      await sb.from('mp_payments')
+        .update({ status: 'error', status_detail: String(msg).slice(0, 200), updated_at: new Date().toISOString() })
+        .eq('idempotency_key', clave);
+      return fallo(String(msg).slice(0, 160), 400, origen);
+    }
+
+    await sb.from('mp_payments').update({
+      mp_payment_id: String(pago.id),
+      status: String(pago.status ?? 'pending'),
+      status_detail: String(pago.status_detail ?? ''),
+      updated_at: new Date().toISOString(),
+    }).eq('idempotency_key', clave);
+
+    // ---- 5. Marcar pagado SOLO con lo que contestó Mercado Pago ----
+    //      (marcarPagado vuelve a revisar el monto y que no estuviera ya pagado)
+    if (pago.status === 'approved') {
+      await marcarPagado(sb, pedido.id as string, pago);
+    } else if (pago.status === 'rejected' || pago.status === 'cancelled') {
+      await sb.from('menu_orders').update({ charge_status: 'rejected' })
+        .eq('id', pedido.id).neq('charge_status', 'paid');
+    }
+
+    return json({
+      ok: true,
+      status: pago.status === 'approved' ? 'approved' : (pago.status === 'rejected' || pago.status === 'cancelled' ? 'rejected' : 'pending'),
+      status_detail_text: TEXTO_ESTADO[String(pago.status_detail ?? '')] ?? '',
+      mp_payment_id: String(pago.id),
+    }, 200, origen);
+  } catch (e) {
+    console.error('mp-pay', e);
+    return fallo('No se pudo procesar el pago. Intenta otra vez.', 500, origen);
+  }
+});
