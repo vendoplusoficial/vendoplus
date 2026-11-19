@@ -25709,7 +25709,7 @@ function mdiFromCloud(row){
      se marca pagado cuando el servidor le pregunta a Mercado Pago.
 ========================================================================= */
 const MP_SDK = 'https://sdk.mercadopago.com/js/v2';
-const pg = { id:null, data:null, mp:null, brick:null, t:null, enviando:false };
+const pg = { id:null, data:null, mp:null, brick:null, statusBrick:null, t:null, enviando:false };
 
 function pgRoute(){
   const m = location.hash.match(/^#pago\/([A-Za-z0-9_-]+)/);
@@ -25740,7 +25740,12 @@ function bootPago(route){
   pgPaint(pgCargandoHTML());
   pgLoad();
 }
-function pgPaint(html){ const r = document.getElementById('pgRoot'); if(r) r.innerHTML = html; }
+function pgPaint(html){
+  const r = document.getElementById('pgRoot');
+  for(const controller of [pg.brick, pg.statusBrick]) controller?.unmount();
+  pg.brick = pg.statusBrick = null;
+  if(r) r.innerHTML = html;
+}
 
 function pgCargandoHTML(){
   return `<div class="pg-card"><div class="pg-load"><i></i><i></i><i></i></div><p class="pg-load-txt">Buscando tu pedido…</p></div>`;
@@ -25758,10 +25763,13 @@ async function pgLoad(){
   if(pg.t){ clearInterval(pg.t); pg.t = null; }
   pgPaint(pgCargandoHTML());
   try{
-    const j = await pgFetch('mp-order', { order_id:pg.id });
+    const j = await pgFetch('mp-order', { order_id:pg.id, supports_3ds:true });
     pg.data = j;
     if(j.status === 'paid') return pgPaintOk();
-    if(j.status === 'processing') return pgPaintEsperando(j.status_detail_text);
+    if(j.status === 'processing'){
+      if(j.status_detail === 'pending_challenge') return pgPaintVerificacion(j);
+      return pgPaintEsperando(j.status_detail_text);
+    }
     if(!j.public_key) return pgPaint(pgErrorHTML('Este negocio aún no cobra con tarjeta', 'Escríbele por WhatsApp para pagar de otra forma.', false));
     if(j.menu_checkout && !(Number(j.amount) > 0)){
       pgPaint(pgErrorHTML('Esperando el costo de envío', 'Tu pedido ya llegó al negocio. Cuando confirmen el total, podrás pagar aquí y enviarlo por WhatsApp.', true));
@@ -25822,6 +25830,45 @@ async function pgSendWhatsApp(link){
     link.removeAttribute('aria-disabled');
   }
 }
+async function pgPaintVerificacion(pago){
+  pgPaint(`<div class="pg-card pg-center pg-result">
+      ${pgCabeza()}
+      <h1>Verifica tu pago</h1>
+      <p>Completa la verificación que te solicita tu banco.</p>
+      <div id="pgStatusBrick"></div>
+      <div id="pgVerificationError" hidden>
+        <p role="alert">No pudimos abrir la verificación. Consulta el estado del pago para volver a intentarlo.</p>
+        <button class="pg-btn" onclick="pgLoad()">Consultar estado</button>
+      </div>
+      <p class="pg-mini">Pedido ${pgEsc(pg.data.code || '')} · ${pgMoney(pg.data.amount)}</p>
+    </div>`);
+  const container = document.getElementById('pgStatusBrick');
+  const error = document.getElementById('pgVerificationError');
+  const showError = () => { error.hidden = false; };
+  pgWatch();
+  try{
+    const info = pago.three_ds_info;
+    if(!/^\d+$/.test(pago.mp_payment_id) || !info?.creq ||
+       new URL(info.external_resource_url).protocol !== 'https:' || !pg.data.public_key){
+      return showError();
+    }
+    await pgLoadSdk();
+    if(!container.isConnected) return;
+    pg.mp = pg.mp || new window.MercadoPago(pg.data.public_key, { locale:'es-MX' });
+    const controller = await pg.mp.bricks().create('statusScreen', container.id, {
+      initialization:{
+        paymentId:pago.mp_payment_id,
+        additionalInfo:{ externalResourceURL:info.external_resource_url, creq:info.creq }
+      },
+      callbacks:{ onReady:() => {}, onError:showError }
+    });
+    if(container.isConnected) pg.statusBrick = controller;
+    else controller.unmount();
+  }catch(e){
+    showError();
+  }
+}
+
 function pgPaintEsperando(detalle){
   pgPaint(`<div class="pg-card pg-center">
       ${pgCabeza()}
@@ -25934,7 +25981,8 @@ function pgSubmit(datos){
         payment_method_id: f.payment_method_id,
         issuer_id: f.issuer_id,
         installments: f.installments || 1,
-        payer: f.payer || {}
+        payer: f.payer || {},
+        supports_3ds:true
       });
       if(j.status === 'approved'){
         pg.data = Object.assign({}, pg.data, { status:'paid', mp_payment_id:j.mp_payment_id });
@@ -25942,6 +25990,7 @@ function pgSubmit(datos){
         else pgPaintOk();
       }
       else if(j.status === 'rejected') pgPaintRechazado(j.status_detail_text);
+      else if(j.status_detail === 'pending_challenge') pgPaintVerificacion(j);
       else pgPaintEsperando(j.status_detail_text);
     }catch(e){
       pgShowErr(String(e.message || e).slice(0, 160));

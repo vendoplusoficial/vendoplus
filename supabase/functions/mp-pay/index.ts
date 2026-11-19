@@ -95,6 +95,9 @@ Deno.serve(async (req) => {
 
     // ---- 4. El cobro, a nombre del negocio ----
     const cuerpo: Record<string, unknown> = {
+      ...(b.supports_3ds === true && Deno.env.get('MP_ENABLE_3DS') === 'true'
+        ? { three_d_secure_mode: 'optional' }
+        : {}),
       transaction_amount: monto,            // <- del servidor, no del navegador
       token: b.token,
       description: `Pedido ${pedido.code ?? pedido.id}`,
@@ -147,6 +150,10 @@ Deno.serve(async (req) => {
       status: pago.status === 'approved' ? 'approved' : (pago.status === 'rejected' || pago.status === 'cancelled' ? 'rejected' : 'pending'),
       status_detail_text: TEXTO_ESTADO[String(pago.status_detail ?? '')] ?? '',
       mp_payment_id: String(pago.id),
+      status_detail: String(pago.status_detail ?? ''),
+      ...(b.supports_3ds === true && pago.status_detail === 'pending_challenge'
+        ? { three_ds_info: pago.three_ds_info }
+        : {}),
     }, 200, origen);
   } catch (e) {
     console.error('mp-pay', e);
