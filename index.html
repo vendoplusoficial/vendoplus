@@ -5146,6 +5146,54 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 .md-card-sheet .sheet-actions .btn, .mp-link-sheet .sheet-actions .btn {
   flex:1 1 0; min-width:0; min-height:45px; padding:8px 6px; font-size:14px; line-height:1.2;
 }
+/* Estado de Mercado Pago dentro de Pago con tarjeta */
+.md-card-sheet .sheet-grip { width:30px; margin:6px auto 13px; }
+.md-card-sheet .sheet-header h2 { font-size:16px; }
+.md-card-sheet .md-yn-q { font-size:14px; margin-bottom:15px; }
+.md-card-sheet .md-yn-opt { min-height:58px; gap:11px; border-radius:13px; padding:10px 11px; }
+.md-card-sheet .md-yn-ico { width:30px; height:30px; border-radius:9px; }
+.md-card-sheet .md-yn-txt b { font-size:15px; }
+.md-card-sheet .md-yn-radio { width:18px; height:18px; }
+.md-card-sheet .md-yn-opt.active { border-color:#43b251; background:#eaf7ee; }
+.md-card-sheet .md-yn-opt.active .md-yn-ico { background:#42b650; }
+.md-card-sheet .md-yn-opt.active .md-yn-radio {
+  border-color:#43b251; background:radial-gradient(circle, #43b251 0 4px, #fff 4.5px);
+}
+.md-card-sheet .sheet-actions { margin-top:27px; }
+.md-card-sheet .sheet-actions .btn { min-height:40px; }
+body[data-section="menu"] .md-card-sheet .sheet-actions .primary:not(:disabled) {
+  background:#40b84d; box-shadow:0 7px 16px -8px #40b84d80;
+}
+.md-mp-card {
+  display:flex; align-items:center; gap:10px; min-height:65px; margin-top:13px;
+  padding:9px 10px; border:1px solid var(--border); border-radius:12px; background:var(--surface);
+}
+.md-mp-card.is-linked {
+  justify-content:center; gap:13px; background:#e3f0fc; border-color:#8dbde9; color:#071e75;
+}
+.md-mp-brand {
+  display:flex; flex:none; align-items:center; gap:4px;
+  color:#071e75; font-size:clamp(10px,3.3vw,13px); line-height:.89; letter-spacing:-.035em;
+}
+.md-mp-brand img { width:clamp(25px,9.3vw,37px); height:auto; display:block; }
+.md-mp-card.is-linked .md-mp-brand img { width:clamp(31px,10.7vw,42px); }
+.md-mp-copy {
+  flex:1; min-width:0; margin:0; padding-left:10px; border-left:1px solid #c9cdd9;
+  font-size:clamp(8px,2.22vw,10px); line-height:1.35;
+}
+.md-mp-card.is-linked .md-mp-copy {
+  flex:0 1 auto; padding-left:13px; border-color:#a6c5e3; font-size:clamp(11px,3.55vw,14px);
+}
+.md-mp-copy strong { display:block; font-weight:800; }
+.md-mp-action {
+  flex:none; border:0; border-radius:999px; background:#006bf3; color:white;
+  min-height:28px; padding:4px clamp(8px,4.65vw,19px);
+  font:inherit; font-size:clamp(10px,3.06vw,12px); font-weight:750; cursor:pointer;
+}
+.md-mp-card.is-linked .md-mp-action {
+  min-height:0; padding:3px 0 0; background:none; color:#0064bd;
+  font-size:clamp(10px,3.35vw,13px); font-weight:600; text-decoration:underline;
+}
 .mp-link-sheet .sheet-grip { margin-bottom:20px; }
 .mp-link-sheet .sheet-header { gap:9px; margin:0 4px 8px 7px; }
 .mp-link-sheet .sheet-header h2 { flex:1; line-height:1.15; }
@@ -16145,10 +16193,12 @@ function mdPayClabeInput(el){
 function mdRenderPayForm(){
   const d = mdPayDraft; if(!d) return;
   const card = mdPayKind === 'card';
+  const showMercadoPago = card && d.on === true && mpVisible();
+  const linked = showMercadoPago && mpLinked();
   const opt = (on, ico, title, sub) => `
     <button type="button" class="md-yn-opt ${d.on === on ? 'active' : ''}" onclick="mdPaySet(${on})" aria-pressed="${d.on === on}">
       <span class="md-yn-ico">${icon(ico)}</span>
-      <span class="md-yn-txt"><b>${title}</b><small>${sub}</small></span>
+      <span class="md-yn-txt"><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</span>
       <span class="md-yn-radio"></span>
     </button>`;
   openModal(`
@@ -16159,14 +16209,24 @@ function mdRenderPayForm(){
     <p class="md-yn-q">${card ? '¿Tu negocio cobra con tarjeta?' : '¿Tu negocio acepta transferencias?'}</p>
     <div class="md-yn">
       ${card
-        ? opt(true, 'card', 'Sí', 'Tus clientes pueden pagar con tarjeta.')
-          + opt(false, 'cash', 'No', 'La opción Tarjeta no le aparece al cliente.')
+        ? opt(true, 'card', 'Sí', linked ? '' : 'Tus clientes pueden pagar con tarjeta.')
+          + opt(false, 'cash', 'No', linked ? '' : 'La opción Tarjeta no le aparece al cliente.')
         : opt(true, 'transfer', 'Sí, acepto transferencias', 'El cliente verá tu CLABE y el número de su pedido como concepto')
           + opt(false, 'cash', 'No, transferencia no', 'La opción Transferencia no le aparece al cliente')}
     </div>
-    ${card && d.on === true && mpVisible() ? (mpLinked()
-      ? `<div class="mdi-banner ok" style="margin:14px 0 0;">${icon('check')}<span><b>Mercado Pago enlazado</b>${escapeHtml(mpCfg().nickname || 'Tu cuenta está conectada')} · tus clientes ya pueden pagar con tarjeta. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Ver o desenlazar</button></span></div>`
-      : `<div class="mdi-banner warn" style="margin:14px 0 0;">${icon('alert')}<span><b>Falta enlazar tu Mercado Pago</b>Sin enlazarlo, la opción Tarjeta no le aparece a tus clientes. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Enlazar ahora</button></span></div>`) : ''}
+    ${showMercadoPago ? `
+      <div class="md-mp-card ${linked ? 'is-linked' : ''}">
+        <span class="md-mp-brand" role="img" aria-label="Mercado Pago">
+          <img src="${MP_SHEET_LOGO}" alt=""><b aria-hidden="true">mercado<br>pago</b>
+        </span>
+        ${linked ? `
+          <div class="md-mp-copy">
+            <strong>Mercado Pago enlazado</strong>
+            <button type="button" class="md-mp-action" onclick="mpOpenForm()">Ver y desenlazar</button>
+          </div>` : `
+          <p class="md-mp-copy">Enlaza tu cuenta de Mercado Pago para que tus clientes puedan pagar con tarjeta.</p>
+          <button type="button" class="md-mp-action" onclick="mpOpenForm()">Enlazar</button>`}
+      </div>` : ''}
     ${!card && d.on === true ? `
       <div class="md-pay-fields">
         <div class="field" id="mdPayClabeField">
