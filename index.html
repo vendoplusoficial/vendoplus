@@ -18435,7 +18435,7 @@ function mdiCardSimpleHTML(o, enHoy){
   const st = mdiStage(o);
   const cu = o.customer || {};
   const cls = { nuevo:'st-nuevo', pendiente:'st-pend', finalizado:'st-ok', rechazado:'st-no', cancelado:'st-cancel' }[st.id] || '';
-  const pill = st.id === 'nuevo' ? 'Nuevo' : st.label;
+  const pill = o.stripeTest ? 'Prueba Stripe' : st.id === 'nuevo' ? 'Nuevo' : st.label;
   const n = (o.lines || []).length;
   return `
       <button type="button" class="mdi-card ${cls}" onclick="${enHoy === true ? `mdiOpenFromToday('${o.id}')` : `mdiFromToday=false; mdiOpen('${o.id}')`}">
@@ -18967,6 +18967,7 @@ function mdiIsPaid(o){ return !!(o && o.saleId); }
 function mdiConfirm(id){
   const o = MDI.get(id);
   if(!o || o.status !== 'nuevo') return;
+  if(o.stripeTest){ toast('Pedido de prueba de Stripe', { subtitle:'Este pedido no se registra como venta.' }); return; }
   /* Si falta algo: no deja pasar, regresa a ese lugar y lo marca en rojo */
   const falta = !o.lines.length ? { id:'mdiLines', msg:'El pedido no tiene productos' }
     : mdiMissing(o) ? { id:'mdiLines', msg:'Elige el producto que falta en tu catálogo' }
@@ -20304,14 +20305,47 @@ async function dmStripeTestReturn(){
   const sessionId = url.searchParams.get('stripe_test_session');
   const cancelled = url.searchParams.has('stripe_test_cancel');
   if(!sessionId && !cancelled) return;
-  url.searchParams.delete('stripe_test_session');
-  url.searchParams.delete('stripe_test_cancel');
-  history.replaceState(null, '', url);
-  if(cancelled){ dmToast('Cancelaste el pago de prueba.', 'warn'); return; }
-  try{
-    const result = await dmStripeTestRequest({ action:'status', sessionId });
-    dmToast(result.paid ? 'Stripe confirmó el pago de prueba.' : 'Stripe aún no confirma el pago de prueba.', result.paid ? undefined : 'warn');
-  }catch(error){ dmToast(error.message, 'warn'); }
+  const dialog = document.createElement('dialog');
+  dialog.style.cssText = 'width:min(90vw,440px);max-width:440px;max-height:90vh;padding:24px;border:1px solid #e0e3e9;border-radius:20px;background:#fff;color:#151f36;text-align:center;';
+  dialog.setAttribute('aria-labelledby', 'dmStripeResultTitle');
+  document.body.append(dialog);
+  dialog.addEventListener('close', () => dialog.remove(), { once:true });
+  function closeResult(){
+    url.searchParams.delete('stripe_test_session');
+    url.searchParams.delete('stripe_test_cancel');
+    history.replaceState(null, '', url);
+    dialog.close();
+  }
+  function paint(title, description, action = '', result = null){
+    dialog.innerHTML = `<header style="text-align:left;font-weight:700">VendoPlus <small style="font-weight:500">· Stripe de prueba</small></header>
+      <h2 id="dmStripeResultTitle" style="margin:24px 0 8px">${escapeHtml(title)}</h2>
+      <p style="margin:0 0 18px">${escapeHtml(description)}</p>
+      ${action ? `<button type="button" class="btn primary block" data-action>${escapeHtml(action)}</button>` : ''}
+      <button type="button" class="btn ghost block" style="margin-top:8px" data-close>Volver al menú</button>`;
+    dialog.querySelector('[data-close]').onclick = closeResult;
+    const button = dialog.querySelector('[data-action]');
+    if(!button) return;
+    button.onclick = result ? () => {
+      const tel = mdWhatsappDigits();
+      if(!tel){ dmToast('El negocio aún no tiene WhatsApp disponible.', 'warn'); return; }
+      const receipt = 'Hola, te envío mi pedido ' + result.code + '. Comprobante de prueba de Stripe: pago confirmado por ' + new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' }).format(result.amount / 100) + '.';
+      window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(receipt), '_blank', 'noopener,noreferrer');
+    } : check;
+  }
+  async function check(){
+    paint('Verificando tu pago', 'Estamos consultando a Stripe y preparando el pedido.');
+    try{
+      const result = await dmStripeTestRequest({ action:'status', sessionId });
+      if(result.paid) paint('Pago confirmado', 'Pedido ' + result.code + ' · ' + new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' }).format(result.amount / 100) + '. Ya se recibió en VendoPlus.', 'Enviar pedido y comprobante por WhatsApp', result);
+      else if(result.expired) paint('No pudimos procesar tu pago', 'Regresa al menú para volver a intentar.');
+      else paint('Pago pendiente', 'Stripe aún no confirma el pago. Consulta el estado antes de volver a pagar.', 'Consultar estado');
+    }catch{
+      paint('No pudimos verificar el pago', 'Vuelve a consultar el estado antes de intentar otro pago.', 'Consultar estado');
+    }
+  }
+  dialog.showModal();
+  if(cancelled) paint('Pago cancelado', 'Puedes volver al menú y elegir cómo pagar.');
+  else check();
 }
 dmSendWhatsApp = async function(){
   if(dm.sending || (dm.co?.stripeCheck && dm.co.pay === 'tarjeta')) return;
@@ -25891,8 +25925,9 @@ function mdiFromCloud(row){
     if(!row || !/^o[a-z0-9]{6,24}$/.test(row.id || '')) return null;
     const d = row.data || {};
     const mpCheckout = d.mpCheckout === true;
+    const stripeTest = d.stripeTest === true;
     const lines = (Array.isArray(d.original) ? d.original : []).slice(0, 150)
-      .map(mdiCleanLine).filter(l => l.qty > 0).map(l => mpCheckout ? l : mdiRepriceLine(l));
+      .map(mdiCleanLine).filter(l => l.qty > 0).map(l => mpCheckout || stripeTest ? l : mdiRepriceLine(l));
     if(!lines.length) return null;
     const when = new Date(row.created_at || Date.now());
     const customer = mdiCleanCustomer(d.customer);
@@ -25903,7 +25938,7 @@ function mdiFromCloud(row){
       customer: customer,
       original: lines,
       lines: lines.map(l => Object.assign({}, l)),
-      status:d.chatState === 'cancelled' ? 'cancelado' : d.chatState === 'rejected' ? 'rechazado' : ['confirmed','preparing','route','delivered'].includes(d.chatState) ? 'confirmado' : 'nuevo', etaMin:Number(d.chatEta) || undefined, service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true, mpCheckout, autoDelivery:d.autoDelivery === true, deliveryFee:d.autoDelivery === true ? Number(d.deliveryFee) : undefined,
+      status:d.chatState === 'cancelled' ? 'cancelado' : d.chatState === 'rejected' ? 'rechazado' : ['confirmed','preparing','route','delivered'].includes(d.chatState) ? 'confirmado' : 'nuevo', etaMin:Number(d.chatEta) || undefined, service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true, mpCheckout, stripeTest, autoDelivery:d.autoDelivery === true, deliveryFee:d.autoDelivery === true ? Number(d.deliveryFee) : undefined,
       mp: row.charge_status ? { status:row.charge_status, paymentId:row.mp_payment_id || null, amount:row.paid_amount == null ? null : Number(row.paid_amount), at:row.paid_at || null } : null
     };
   }catch(e){ return null; }
