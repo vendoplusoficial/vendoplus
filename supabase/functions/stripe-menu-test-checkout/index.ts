@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     if (menuError) throw menuError;
     if (!menu) return json({ error: 'Abre el menú de tu negocio con tu sesión de VendoPlus.' }, 403);
     const { data: account, error: accountError } = await sb.from('stripe_menu_accounts')
-      .select('stripe_account_id').eq('user_id', user.id).eq('livemode', false).maybeSingle();
+      .select('stripe_account_id').eq('user_id', user.id).eq('livemode', false).eq('connected', true).maybeSingle();
     if (accountError) throw accountError;
     if (!account) return json({ error: 'Primero enlaza Stripe en modo de prueba.' }, 409);
 
