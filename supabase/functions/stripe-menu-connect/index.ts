@@ -36,7 +36,15 @@ Deno.serve(async (request) => {
 
     const body = await request.json().catch(() => null);
     const action = body?.action;
-    if (action !== 'status' && action !== 'start') return json({ error: 'Acción inválida' }, 400);
+    if (action !== 'status' && action !== 'start' && action !== 'unlink') return json({ error: 'Acción inválida' }, 400);
+
+    const accounts = database.from('stripe_menu_accounts');
+    if (action === 'unlink') {
+      const { error } = await accounts.update({ connected: false })
+        .eq('user_id', user.id).eq('livemode', false);
+      if (error) throw error;
+      return json({ linked: false, ready: false });
+    }
 
     const key = Deno.env.get('STRIPE_MENU_TEST_SECRET_KEY') ?? '';
     if (!/^(sk|rk)_test_/.test(key)) {
@@ -72,13 +80,12 @@ Deno.serve(async (request) => {
       return result;
     }
 
-    const accounts = database.from('stripe_menu_accounts');
     const { data: row, error: readError } = await accounts
-      .select('stripe_account_id').eq('user_id', user.id).eq('livemode', false).maybeSingle();
+      .select('stripe_account_id, connected').eq('user_id', user.id).eq('livemode', false).maybeSingle();
     if (readError) throw readError;
     let accountId = row?.stripe_account_id;
 
-    if (action === 'status' && !accountId) return json({ linked: false, ready: false });
+    if (action === 'status' && (!accountId || !row?.connected)) return json({ linked: false, ready: false });
     if (!accountId) {
       const account = await stripe('accounts', {
         dashboard: 'full',
@@ -104,7 +111,8 @@ Deno.serve(async (request) => {
 
     if (action === 'status') {
       const account = await stripe('accounts/' + encodeURIComponent(accountId) +
-        '?include%5B0%5D=configuration.merchant');
+        '?include%5B0%5D=configuration.merchant').catch(() => null);
+      if (!account) return json({ linked: true, ready: false, statusUnavailable: true });
       const capabilities = account.configuration?.merchant?.capabilities;
       return json({
         linked: true,
@@ -126,6 +134,11 @@ Deno.serve(async (request) => {
     });
     const linkUrl = new URL(link.url);
     if (!['https://accounts.stripe.com', 'https://connect.stripe.com'].includes(linkUrl.origin)) throw new StripeError('unexpected_link_origin');
+    if (row?.connected === false) {
+      const { error: reconnectError } = await accounts.update({ connected: true })
+        .eq('user_id', user.id).eq('livemode', false).eq('stripe_account_id', accountId);
+      if (reconnectError) throw reconnectError;
+    }
     return json({ url: linkUrl.href });
   } catch (error) {
     const code = error instanceof StripeError ? error.code : 'internal_error';
