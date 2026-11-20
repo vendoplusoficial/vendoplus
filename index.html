@@ -309,7 +309,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .btn.dark{ background:var(--ink); color:#fff; }
   .btn.danger{ background:var(--danger-bg); color:var(--accent-2); }
   .btn.block{ width:100%; }
-  #stripeMenuTest button[hidden], #stripeMenuLive button[hidden], #stripeMenuLive[hidden]{ display:none; }
+  #stripeMenuTest [hidden]{ display:none; }
   .btn.ghost{ background:transparent; border:1.5px solid var(--border); }
   .btn:disabled{ opacity:.45; }
   .btn svg{ width:16px; height:16px; }
@@ -16252,7 +16252,7 @@ function mdPayClabeInput(el){
   const b = document.getElementById('mdPayBank'); if(b){ const n = mdBankOf(raw); b.textContent = n; b.hidden = !n; }
   clearFieldError('mdPayClabeField');
 }
-async function stripeMenuRequest(action, mode = 'test'){
+async function stripeMenuRequest(action){
   const { data } = await Cloud.sb.auth.getSession();
   if(!data?.session?.access_token) throw new Error('Inicia sesión para enlazar Stripe.');
   const response = await fetch(mpBase() + '/functions/v1/stripe-menu-connect', {
@@ -16262,7 +16262,7 @@ async function stripeMenuRequest(action, mode = 'test'){
       apikey:VENDO_CONFIG.SUPABASE_ANON_KEY,
       Authorization:'Bearer ' + data.session.access_token
     },
-    body:JSON.stringify({ action, mode }),
+    body:JSON.stringify({ action }),
     signal:AbortSignal.timeout(45000)
   });
   const result = await response.json().catch(() => ({}));
@@ -16272,30 +16272,27 @@ async function stripeMenuRequest(action, mode = 'test'){
   }
   return result;
 }
-async function stripeMenuStatus(mode = 'test'){
-  const live = mode === 'live';
-  const panel = document.getElementById(live ? 'stripeMenuLive' : 'stripeMenuTest');
+async function stripeMenuStatus(){
+  const panel = document.getElementById('stripeMenuTest');
   if(!panel) return;
   const status = panel.querySelector('small');
   const button = panel.querySelector('button');
   try{
-    let result = await stripeMenuRequest('status', mode);
+    let result = await stripeMenuRequest('status');
     for(const delay of [1500, 3000]){
       if(!panel.isConnected) return;
       if(!result.linked || result.ready) break;
       await new Promise(resolve => setTimeout(resolve, delay));
       if(!panel.isConnected) return;
-      result = await stripeMenuRequest('status', mode);
+      result = await stripeMenuRequest('status');
     }
     if(!panel.isConnected) return;
-    if(live && result.available === false) return;
-    panel.hidden = false;
-    status.textContent = result.ready
-      ? (live ? 'Cuenta de Stripe verificada.' : 'Registro completado. Cuenta de prueba lista.')
-      : result.linked ? 'Completa el registro en Stripe.'
-      : live ? 'Enlaza la cuenta que recibirá los cobros.' : 'Enlaza una cuenta de prueba.';
+    status.textContent = result.ready ? 'Registro completado. Cuenta de prueba lista.' :
+      result.linked ? 'Completa el registro en Stripe.' : 'Enlaza una cuenta de prueba.';
     button.textContent = result.linked ? 'Abrir registro de Stripe' : 'Enlazar Stripe';
     button.hidden = result.ready === true;
+    const preview = panel.querySelector('a');
+    if(preview) preview.hidden = result.ready !== true;
   }catch(error){
     if(panel.isConnected){
       status.textContent = error.message;
@@ -16303,17 +16300,17 @@ async function stripeMenuStatus(mode = 'test'){
     }
   }
 }
-async function stripeMenuStart(button, mode = 'test'){
+async function stripeMenuStart(button){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
   button.disabled = true;
   try{
-    const result = await stripeMenuRequest('start', mode);
+    const result = await stripeMenuRequest('start');
     const link = new URL(result.url);
     if(!['https://accounts.stripe.com', 'https://connect.stripe.com'].includes(link.origin)) throw new Error('Stripe devolvió un enlace inválido.');
     location.assign(link.href);
   }catch(error){
     button.disabled = false;
-    const status = button.closest('.md-pay-fields')?.querySelector('small');
+    const status = button.closest('#stripeMenuTest')?.querySelector('small');
     if(status) status.textContent = error.message;
   }
 }
@@ -16355,18 +16352,12 @@ function mdRenderPayForm(){
           <button type="button" class="md-mp-action" onclick="mpOpenForm()">Enlazar</button>`}
       </div>` : ''}
     ${card && location.origin === 'https://vendoplusoficial.com' ? `
-      <div id="stripeMenuLive" class="md-pay-fields" hidden>
-        <div class="field">
-          <label>Stripe · Cobros reales</label>
-          <small role="status">Consultando el estado de Stripe…</small>
-          <button type="button" class="btn ghost block" onclick="stripeMenuStart(this, 'live')" hidden>Enlazar Stripe</button>
-        </div>
-      </div>
       <div id="stripeMenuTest" class="md-pay-fields">
         <div class="field">
           <label>Stripe · Modo de prueba</label>
           <small role="status">Consultando el estado de Stripe…</small>
           <button type="button" class="btn ghost block" onclick="stripeMenuStart(this)" hidden>Enlazar Stripe</button>
+          ${mdCfg().id ? `<a class="btn ghost block" href="/?stripe_menu_test=1#menu/${encodeURIComponent(mdCfg().id)}" hidden>Probar pago en mi menú</a>` : ''}
         </div>
       </div>` : ''}
     ${!card && d.on === true ? `
@@ -16385,10 +16376,7 @@ function mdRenderPayForm(){
       <button class="btn primary block" onclick="mdSavePay()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
     </div>
   `, { dismissible:true, sheetClass:card ? 'md-card-sheet' : '' });
-  if(card){
-    stripeMenuStatus();
-    stripeMenuStatus('live');
-  }
+  if(card) stripeMenuStatus();
 }
 function mdSavePay(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
@@ -17781,6 +17769,7 @@ function bootMenu(route){
   document.body.classList.add('dm-mode');
   const sp = document.getElementById('splash'); if(sp) sp.remove();
   dm.id = route.id;
+  dm.stripeTest = new URLSearchParams(location.search).get('stripe_menu_test') === '1';
   const root = document.createElement('div'); root.id = 'dmRoot'; root.className = 'dm dmx';
   const bar = document.createElement('div'); bar.id = 'dmCartbar'; bar.className = 'dm-cartbar dmx';
   const layer = document.createElement('div'); layer.id = 'dmLayer'; layer.className = 'dmx';
@@ -17789,6 +17778,7 @@ function bootMenu(route){
   const restored = dmRestoreCardDraft(route);
   dmRender();
   if(restored) dmOpenSheet('confirm');
+  if(dm.stripeTest) dmStripeTestReturn();
   dm.sig = dmSig();
   setTimeout(() => { const r = document.getElementById('dmRoot'); if(r) r.classList.add('dm-booted'); }, 2200);
   let dmSpyRaf = 0;
@@ -20025,7 +20015,7 @@ dmConfirmHTML = function(){
   const step = co.step === 2 ? 2 : 1;
   const check = `<span class="dm-opt-check">${icon('check')}</span>`;
   const pcfg = mdCfg().payments;
-  const payList = basicPayMethods().filter(pm => pm.id === 'efectivo' || (pm.id === 'tarjeta' && pcfg.card && !co.cardFallback) || (pm.id === 'transferencia' && pcfg.transfer && mdClabeOk(pcfg.clabe)));
+  const payList = basicPayMethods().filter(pm => pm.id === 'efectivo' || (pm.id === 'tarjeta' && (pcfg.card || dm.stripeTest) && !co.cardFallback) || (pm.id === 'transferencia' && pcfg.transfer && mdClabeOk(pcfg.clabe)));
   if(co.pay && !payList.some(pm => pm.id === co.pay)) co.pay = null;
   if(payList.length === 1) co.pay = payList[0].id;
   const svcBtn = id => { const sv = MD_SERVICES[id]; return `
@@ -20091,7 +20081,7 @@ dmConfirmHTML = function(){
       <div class="dm-pi-box" id="dmPayInfo">${dmPayInfoHTML()}</div>
     </div>
 
-    <div class="dm-banner wa" id="dmCheckoutWhatsApp" style="margin:16px 0 0;" ${dmMpCheckout(co) ? 'hidden' : ''}>${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
+    <div class="dm-banner wa" id="dmCheckoutWhatsApp" style="margin:16px 0 0;" ${(dmStripeTestCheckout(co) || dmMpCheckout(co)) ? 'hidden' : ''}>${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
     <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Enviar pedido» otra vez.</span></div>
     <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmCoBack()">Volver</button>
@@ -20151,13 +20141,17 @@ function dmCoPay(id){
   const btn = document.getElementById('dmSendBtn');
   if(btn) btn.innerHTML = dmMpButton(co);
   const whatsapp = document.getElementById('dmCheckoutWhatsApp');
-  if(whatsapp) whatsapp.hidden = dmMpCheckout(co);
+  if(whatsapp) whatsapp.hidden = dmStripeTestCheckout(co) || dmMpCheckout(co);
 }
 function dmMpCheckout(co){
   const pm = mdCfg().payments;
   return mpVisible() && !co.cardFallback && co.pay === 'tarjeta' && !!(pm.mp && pm.mp.on);
 }
+function dmStripeTestCheckout(co){
+  return dm.stripeTest && !co.cardFallback && co.pay === 'tarjeta';
+}
 function dmMpButton(co){
+  if(dmStripeTestCheckout(co)) return icon('card') + ' Pagar con tarjeta';
   if(!dmMpCheckout(co)) return icon('whatsapp') + ' Enviar pedido';
   return icon('card') + ' Pagar con tarjeta';
 }
@@ -20177,6 +20171,10 @@ function dmPayInfoHTML(){
     </div>`;
   }
   if(co.pay === 'tarjeta'){
+    if(dmStripeTestCheckout(co)) return `<div class="dm-pi">
+      ${head('card', 'Pago con tarjeta', 'Se abrirá Stripe para pagar tu pedido.')}
+      <small class="dm-pi-note">Modo de prueba. No se hará ningún cobro real ni se enviará el pedido al negocio.</small>
+    </div>`;
     const mpOn = mpVisible() && !!(pm.mp && pm.mp.on);
     if(mpOn){
       return `<div class="dm-pi">
@@ -20246,15 +20244,43 @@ function dmCoNeed(id, msg){
   el.classList.remove('need'); void el.offsetWidth; el.classList.add('need');
   try{ el.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'center' }); }catch(e){}
 }
+async function dmStripeTestRequest(payload){
+  const auth = await Cloud.sb?.auth.getSession();
+  const token = auth?.data?.session?.access_token;
+  if(!token) throw new Error('Inicia sesión en VendoPlus con la cuenta del negocio.');
+  const response = await fetch(mpBase() + '/functions/v1/stripe-menu-test-checkout', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', apikey:VENDO_CONFIG.SUPABASE_ANON_KEY, Authorization:'Bearer ' + token },
+    body:JSON.stringify({ ...payload, menuId:dm.id }),
+    signal:AbortSignal.timeout(35000)
+  });
+  const result = await response.json();
+  if(!response.ok) throw new Error(result.error || 'No se pudo abrir Stripe.');
+  return result;
+}
+async function dmStripeTestReturn(){
+  const url = new URL(location.href);
+  const sessionId = url.searchParams.get('stripe_test_session');
+  const cancelled = url.searchParams.has('stripe_test_cancel');
+  if(!sessionId && !cancelled) return;
+  url.searchParams.delete('stripe_test_session');
+  url.searchParams.delete('stripe_test_cancel');
+  history.replaceState(null, '', url);
+  if(cancelled){ dmToast('Cancelaste el pago de prueba.', 'warn'); return; }
+  try{
+    const result = await dmStripeTestRequest({ action:'status', sessionId });
+    dmToast(result.paid ? 'Stripe confirmó el pago de prueba.' : 'Stripe aún no confirma el pago de prueba.', result.paid ? undefined : 'warn');
+  }catch(error){ dmToast(error.message, 'warn'); }
+}
 dmSendWhatsApp = async function(){
   if(dm.sending) return;
   const cfg = mdCfg();
   if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
   if(mdClosedNow(cfg)){ dmToast('Estamos cerrados en este momento'); dmRender(); dmCloseSheet(); return; }
   const tel = mdWhatsappDigits();
-  if(!tel){ dmToast('El negocio aún no configura su WhatsApp'); return; }
   if(!dm.cart.length) return;
   const co = dmCoState();
+  if(!tel && !dmStripeTestCheckout(co)){ dmToast('El negocio aún no configura su WhatsApp'); return; }
   const nameEl = document.getElementById('dmName'); if(nameEl) co.name = nameEl.value;
   const refEl = document.getElementById('dmRef'); if(refEl) co.ref = refEl.value;
   if(cfg.delivery.on !== true) co.svc = 'llevar';
@@ -20278,6 +20304,22 @@ dmSendWhatsApp = async function(){
     order.autoDelivery = true;
   }
   if(co.code && co.pay === 'transferencia') order.code = co.code;   /* el mismo que vio como concepto */
+  if(dmStripeTestCheckout(co)){
+    dm.sending = true;
+    const btn = document.getElementById('dmSendBtn');
+    if(btn){ btn.disabled = true; btn.textContent = 'Preparando tu pago de prueba…'; }
+    try{
+      const result = await dmStripeTestRequest({ action:'start', order });
+      const url = new URL(result.url);
+      if(url.origin !== 'https://checkout.stripe.com') throw new Error('Stripe devolvió un enlace inválido.');
+      location.assign(url.href);
+    }catch(error){
+      dm.sending = false;
+      if(btn){ btn.disabled = false; btn.innerHTML = dmMpButton(co); }
+      dmToast(error.message, 'warn');
+    }
+    return;
+  }
   if(dmMpCheckout(co)){
     const key = JSON.stringify([dm.id, order.customer, order.original]);
     if(co.mpDraft && co.mpDraft.key === key){
