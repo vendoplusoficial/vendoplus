@@ -16281,23 +16281,44 @@ async function stripeMenuStatus(){
     let result = await stripeMenuRequest('status');
     for(const delay of [1500, 3000]){
       if(!panel.isConnected) return;
-      if(!result.linked || result.ready) break;
+      if(!result.linked || result.ready || result.statusUnavailable) break;
       await new Promise(resolve => setTimeout(resolve, delay));
       if(!panel.isConnected) return;
       result = await stripeMenuRequest('status');
     }
     if(!panel.isConnected) return;
-    status.textContent = result.ready ? 'Registro completado. Cuenta de prueba lista.' :
+    status.textContent = result.statusUnavailable ? 'No pudimos consultar el estado de Stripe.' :
+      result.ready ? 'Registro completado. Cuenta de prueba lista.' :
       result.linked ? 'Completa el registro en Stripe.' : 'Enlaza una cuenta de prueba.';
     button.textContent = result.linked ? 'Abrir registro de Stripe' : 'Enlazar Stripe';
-    button.hidden = result.ready === true;
-    const preview = panel.querySelector('a');
-    if(preview) preview.hidden = result.ready !== true;
+    button.hidden = result.ready === true || result.statusUnavailable === true;
+    panel.querySelector('button[onclick="stripeMenuUnlink(this)"]').hidden = !result.linked;
   }catch(error){
     if(panel.isConnected){
       status.textContent = error.message;
       button.hidden = false;
     }
+  }
+}
+async function stripeMenuUnlink(button){
+  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
+  if(!window.confirm('¿Desenlazar Stripe de VendoPlus? Podrás volver a enlazarlo cuando quieras.')) return;
+  const panel = button.closest('#stripeMenuTest');
+  const status = panel.querySelector('small');
+  const connect = panel.querySelector('button');
+  button.disabled = true;
+  connect.disabled = true;
+  try{
+    await stripeMenuRequest('unlink');
+    button.hidden = true;
+    connect.textContent = 'Enlazar Stripe';
+    connect.hidden = false;
+    status.textContent = 'Stripe desenlazado.';
+  }catch(error){
+    status.textContent = error.message;
+  }finally{
+    button.disabled = false;
+    connect.disabled = false;
   }
 }
 async function stripeMenuStart(button){
@@ -16357,7 +16378,7 @@ function mdRenderPayForm(){
           <label>Stripe · Modo de prueba</label>
           <small role="status">Consultando el estado de Stripe…</small>
           <button type="button" class="btn ghost block" onclick="stripeMenuStart(this)" hidden>Enlazar Stripe</button>
-          ${mdCfg().id ? `<a class="btn ghost block" href="/?stripe_menu_test=1#menu/${encodeURIComponent(mdCfg().id)}" hidden>Probar pago en mi menú</a>` : ''}
+          <button type="button" class="btn ghost block" onclick="stripeMenuUnlink(this)" hidden>Desenlazar Stripe</button>
         </div>
       </div>` : ''}
     ${!card && d.on === true ? `
