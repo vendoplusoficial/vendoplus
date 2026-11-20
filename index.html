@@ -309,6 +309,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .btn.dark{ background:var(--ink); color:#fff; }
   .btn.danger{ background:var(--danger-bg); color:var(--accent-2); }
   .btn.block{ width:100%; }
+  #stripeMenuTest button[hidden]{ display:none; }
   .btn.ghost{ background:transparent; border:1.5px solid var(--border); }
   .btn:disabled{ opacity:.45; }
   .btn svg{ width:16px; height:16px; }
@@ -16277,14 +16278,24 @@ async function stripeMenuStatus(){
   const status = panel.querySelector('small');
   const button = panel.querySelector('button');
   try{
-    const result = await stripeMenuRequest('status');
+    let result = await stripeMenuRequest('status');
+    for(const delay of [1500, 3000]){
+      if(!panel.isConnected) return;
+      if(!result.linked || result.ready) break;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      if(!panel.isConnected) return;
+      result = await stripeMenuRequest('status');
+    }
     if(!panel.isConnected) return;
-    status.textContent = result.ready ? 'Cuenta de prueba lista.' :
+    status.textContent = result.ready ? 'Registro completado. Cuenta de prueba lista.' :
       result.linked ? 'Completa el registro en Stripe.' : 'Enlaza una cuenta de prueba.';
     button.textContent = result.linked ? 'Abrir registro de Stripe' : 'Enlazar Stripe';
     button.hidden = result.ready === true;
   }catch(error){
-    if(panel.isConnected) status.textContent = error.message;
+    if(panel.isConnected){
+      status.textContent = error.message;
+      button.hidden = false;
+    }
   }
 }
 async function stripeMenuStart(button){
@@ -16342,8 +16353,8 @@ function mdRenderPayForm(){
       <div id="stripeMenuTest" class="md-pay-fields">
         <div class="field">
           <label>Stripe · Modo de prueba</label>
-          <small role="status">Registro de prueba. Tus clientes aún no pueden pagar con Stripe.</small>
-          <button type="button" class="btn ghost block" onclick="stripeMenuStart(this)">Enlazar Stripe</button>
+          <small role="status">Consultando el estado de Stripe…</small>
+          <button type="button" class="btn ghost block" onclick="stripeMenuStart(this)" hidden>Enlazar Stripe</button>
         </div>
       </div>` : ''}
     ${!card && d.on === true ? `
