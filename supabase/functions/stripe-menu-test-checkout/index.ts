@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
     const { data: account, error: accountError } = await sb.from('stripe_menu_accounts')
       .select('stripe_account_id').eq('user_id', user.id).eq('livemode', false).eq('connected', true).maybeSingle();
     if (accountError) throw accountError;
+    if (!account && input.action === 'availability') return json({ available: false });
     if (!account) return json({ error: 'Primero enlaza Stripe en modo de prueba.' }, 409);
 
     async function stripe(path: string, form?: URLSearchParams, connected = true, attempt?: string) {
@@ -63,16 +64,20 @@ Deno.serve(async (req) => {
       }
       return json({ paid: session.payment_status === 'paid' });
     }
+    async function canPayWithCard() {
+      const linked = await stripe('v2/core/accounts/' + account!.stripe_account_id +
+        '?include%5B0%5D=configuration.merchant', undefined, false);
+      return linked.livemode === false && !linked.closed &&
+        linked.configuration?.merchant?.capabilities?.card_payments?.status === 'active';
+    }
+    if (input.action === 'availability') return json({ available: await canPayWithCard() });
     const order = input.order;
     if (input.action !== 'start' || !order || typeof order.id !== 'string' ||
         !/^o[a-z0-9]{6,24}$/.test(order.id) || !Array.isArray(order.original) ||
         order.customer?.payment !== 'tarjeta' || !['llevar', 'domicilio'].includes(order.customer?.service)) {
       return json({ error: 'Pedido de prueba no válido.' }, 400);
     }
-    const connectedAccount = await stripe('v2/core/accounts/' + account.stripe_account_id +
-      '?include%5B0%5D=configuration.merchant', undefined, false);
-    if (connectedAccount.livemode !== false || connectedAccount.closed ||
-        connectedAccount.configuration?.merchant?.capabilities?.card_payments?.status !== 'active') {
+    if (!await canPayWithCard()) {
       return json({ error: 'Stripe todavía no habilita tarjetas para esta cuenta de prueba.' }, 409);
     }
 
