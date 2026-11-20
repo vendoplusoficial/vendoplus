@@ -20093,7 +20093,7 @@ dmConfirmHTML = function(){
 
     <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmOpenSheet('cart')">Volver</button>
-      <button class="btn dm-green" onclick="dmCoNext(this)">Continuar ${icon('chevronRight')}</button>
+      <button class="btn dm-green" onclick="dmCoNext()">Continuar ${icon('chevronRight')}</button>
     </div>
     ` : `
     <div class="dm-co-sec" id="dmCoPay">
@@ -20106,7 +20106,7 @@ dmConfirmHTML = function(){
     <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Enviar pedido» otra vez.</span></div>
     <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmCoBack()">Volver</button>
-      <button class="btn dm-green" id="dmSendBtn" onclick="dmSendWhatsApp()">${dmMpButton(co)}</button>
+      <button class="btn dm-green" id="dmSendBtn" onclick="dmSendWhatsApp()" ${co.stripeCheck && co.pay === 'tarjeta' ? 'disabled' : ''}>${dmMpButton(co)}</button>
     </div>
     `}`;
 };
@@ -20120,27 +20120,30 @@ function dmCoStepAnim(dir){
     el.animate([{ opacity:0, transform:'translateX(' + (dir * 26) + 'px)' }, { opacity:1, transform:'none' }], { duration:360, delay:Math.min(i, 6) * 40, easing:'cubic-bezier(.22,1,.36,1)', fill:'backwards' });
   });
 }
-async function dmCoNext(button){
+function dmCoNext(){
   const co = dmCoState();
   const nameEl = document.getElementById('dmName'); if(nameEl) co.name = nameEl.value;
   const refEl = document.getElementById('dmRef'); if(refEl) co.ref = refEl.value;
   if(!dmDeliveryOn()) co.svc = 'llevar';
   if(!co.svc){ dmCoNeed('dmCoSvc', 'Elige el tipo de servicio'); return; }
   if(co.svc === 'domicilio' && !co.loc){ dmCoNeed('dmCoDel', 'Marca en el mapa dónde te lo llevamos'); return; }
-  if(button?.disabled) return;
-  if(button) button.disabled = true;
-  try{
-    dm.stripeTest = false;
-    if(!co.cardFallback && mdCfg().payments.card && Cloud.sb){
-      const result = await dmStripeTestRequest({ action:'availability' }, 13000).catch(() => null);
-      if(dm.co !== co || dm.sheet !== 'confirm' || co.step !== 1) return;
-      dm.stripeTest = result?.available === true;
-    }
-    co.step = 2; dmVib(8);
-    dmOpenSheet('confirm'); dmCoStepAnim(1);
-  }finally{
-    if(button) button.disabled = false;
-  }
+  dm.stripeTest = false;
+  const check = !co.cardFallback && mdCfg().payments.card && Cloud.sb
+    ? dmStripeTestRequest({ action:'availability' }, 13000).catch(() => null)
+    : null;
+  co.stripeCheck = check;
+  co.step = 2; dmVib(8);
+  dmOpenSheet('confirm'); dmCoStepAnim(1);
+  if(check) check.then(result => {
+    if(co.stripeCheck !== check) return;
+    co.stripeCheck = null;
+    if(dm.co !== co || dm.sheet !== 'confirm' || co.step !== 2) return;
+    dm.stripeTest = result?.available === true;
+    if(co.pay !== 'tarjeta') return;
+    dmCoPay('tarjeta');
+    const info = document.getElementById('dmPayInfo');
+    if(info) info.innerHTML = dmPayInfoHTML();
+  });
 }
 function dmCoBack(){
   const co = dmCoState(); co.step = 1; dmVib(8);
@@ -20172,7 +20175,10 @@ function dmCoPay(id){
   const info = document.getElementById('dmPayInfo');
   if(info && changed){ info.innerHTML = dmPayInfoHTML(); }
   const btn = document.getElementById('dmSendBtn');
-  if(btn) btn.innerHTML = dmMpButton(co);
+  if(btn){
+    btn.innerHTML = dmMpButton(co);
+    btn.disabled = !!dm.sending || !!(co.stripeCheck && co.pay === 'tarjeta');
+  }
   const whatsapp = document.getElementById('dmCheckoutWhatsApp');
   if(whatsapp) whatsapp.hidden = dmStripeTestCheckout(co) || dmMpCheckout(co);
 }
@@ -20184,6 +20190,7 @@ function dmStripeTestCheckout(co){
   return dm.stripeTest && !co.cardFallback && co.pay === 'tarjeta';
 }
 function dmMpButton(co){
+  if(co.stripeCheck && co.pay === 'tarjeta') return 'Verificando tarjeta…';
   if(dmStripeTestCheckout(co)) return icon('card') + ' Pagar con tarjeta';
   if(!dmMpCheckout(co)) return icon('whatsapp') + ' Enviar pedido';
   return icon('card') + ' Pagar con tarjeta';
@@ -20204,6 +20211,7 @@ function dmPayInfoHTML(){
     </div>`;
   }
   if(co.pay === 'tarjeta'){
+    if(co.stripeCheck) return `<div class="dm-pi">${head('card', 'Pago con tarjeta', 'Verificando la disponibilidad del pago en línea…')}</div>`;
     if(dmStripeTestCheckout(co)) return `<div class="dm-pi">
       ${head('card', 'Pago con tarjeta', 'Se abrirá Stripe para pagar tu pedido.')}
       <small class="dm-pi-note">Modo de prueba. No se hará ningún cobro real ni se enviará el pedido al negocio.</small>
@@ -20306,7 +20314,7 @@ async function dmStripeTestReturn(){
   }catch(error){ dmToast(error.message, 'warn'); }
 }
 dmSendWhatsApp = async function(){
-  if(dm.sending) return;
+  if(dm.sending || (dm.co?.stripeCheck && dm.co.pay === 'tarjeta')) return;
   const cfg = mdCfg();
   if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
   if(mdClosedNow(cfg)){ dmToast('Estamos cerrados en este momento'); dmRender(); dmCloseSheet(); return; }
