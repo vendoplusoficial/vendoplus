@@ -16293,7 +16293,7 @@ async function stripeMenuStart(button){
   try{
     const result = await stripeMenuRequest('start');
     const link = new URL(result.url);
-    if(link.origin !== 'https://connect.stripe.com') throw new Error('Stripe devolvió un enlace inválido.');
+    if(!['https://accounts.stripe.com', 'https://connect.stripe.com'].includes(link.origin)) throw new Error('Stripe devolvió un enlace inválido.');
     location.assign(link.href);
   }catch(error){
     button.disabled = false;
