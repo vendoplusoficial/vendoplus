@@ -17790,7 +17790,7 @@ function bootMenu(route){
   document.body.classList.add('dm-mode');
   const sp = document.getElementById('splash'); if(sp) sp.remove();
   dm.id = route.id;
-  dm.stripeTest = new URLSearchParams(location.search).get('stripe_menu_test') === '1';
+  dm.stripeTest = false;
   const root = document.createElement('div'); root.id = 'dmRoot'; root.className = 'dm dmx';
   const bar = document.createElement('div'); bar.id = 'dmCartbar'; bar.className = 'dm-cartbar dmx';
   const layer = document.createElement('div'); layer.id = 'dmLayer'; layer.className = 'dmx';
@@ -17799,7 +17799,7 @@ function bootMenu(route){
   const restored = dmRestoreCardDraft(route);
   dmRender();
   if(restored) dmOpenSheet('confirm');
-  if(dm.stripeTest) dmStripeTestReturn();
+  dmStripeTestReturn();
   dm.sig = dmSig();
   setTimeout(() => { const r = document.getElementById('dmRoot'); if(r) r.classList.add('dm-booted'); }, 2200);
   let dmSpyRaf = 0;
@@ -20093,7 +20093,7 @@ dmConfirmHTML = function(){
 
     <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmOpenSheet('cart')">Volver</button>
-      <button class="btn dm-green" onclick="dmCoNext()">Continuar ${icon('chevronRight')}</button>
+      <button class="btn dm-green" onclick="dmCoNext(this)">Continuar ${icon('chevronRight')}</button>
     </div>
     ` : `
     <div class="dm-co-sec" id="dmCoPay">
@@ -20120,15 +20120,27 @@ function dmCoStepAnim(dir){
     el.animate([{ opacity:0, transform:'translateX(' + (dir * 26) + 'px)' }, { opacity:1, transform:'none' }], { duration:360, delay:Math.min(i, 6) * 40, easing:'cubic-bezier(.22,1,.36,1)', fill:'backwards' });
   });
 }
-function dmCoNext(){
+async function dmCoNext(button){
   const co = dmCoState();
   const nameEl = document.getElementById('dmName'); if(nameEl) co.name = nameEl.value;
   const refEl = document.getElementById('dmRef'); if(refEl) co.ref = refEl.value;
   if(!dmDeliveryOn()) co.svc = 'llevar';
   if(!co.svc){ dmCoNeed('dmCoSvc', 'Elige el tipo de servicio'); return; }
   if(co.svc === 'domicilio' && !co.loc){ dmCoNeed('dmCoDel', 'Marca en el mapa dónde te lo llevamos'); return; }
-  co.step = 2; dmVib(8);
-  dmOpenSheet('confirm'); dmCoStepAnim(1);
+  if(button?.disabled) return;
+  if(button) button.disabled = true;
+  try{
+    dm.stripeTest = false;
+    if(!co.cardFallback && mdCfg().payments.card && Cloud.sb){
+      const result = await dmStripeTestRequest({ action:'availability' }, 13000).catch(() => null);
+      if(dm.co !== co || dm.sheet !== 'confirm' || co.step !== 1) return;
+      dm.stripeTest = result?.available === true;
+    }
+    co.step = 2; dmVib(8);
+    dmOpenSheet('confirm'); dmCoStepAnim(1);
+  }finally{
+    if(button) button.disabled = false;
+  }
 }
 function dmCoBack(){
   const co = dmCoState(); co.step = 1; dmVib(8);
@@ -20265,7 +20277,7 @@ function dmCoNeed(id, msg){
   el.classList.remove('need'); void el.offsetWidth; el.classList.add('need');
   try{ el.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'center' }); }catch(e){}
 }
-async function dmStripeTestRequest(payload){
+async function dmStripeTestRequest(payload, timeout = 35000){
   const auth = await Cloud.sb?.auth.getSession();
   const token = auth?.data?.session?.access_token;
   if(!token) throw new Error('Inicia sesión en VendoPlus con la cuenta del negocio.');
@@ -20273,7 +20285,7 @@ async function dmStripeTestRequest(payload){
     method:'POST',
     headers:{ 'Content-Type':'application/json', apikey:VENDO_CONFIG.SUPABASE_ANON_KEY, Authorization:'Bearer ' + token },
     body:JSON.stringify({ ...payload, menuId:dm.id }),
-    signal:AbortSignal.timeout(35000)
+    signal:AbortSignal.timeout(timeout)
   });
   const result = await response.json();
   if(!response.ok) throw new Error(result.error || 'No se pudo abrir Stripe.');
@@ -20326,6 +20338,11 @@ dmSendWhatsApp = async function(){
   }
   if(co.code && co.pay === 'transferencia') order.code = co.code;   /* el mismo que vio como concepto */
   if(dmStripeTestCheckout(co)){
+    const key = JSON.stringify([dm.id, order.customer, order.original, order.deliveryFee]);
+    if(co.stripeDraft?.key === key){
+      order.id = co.stripeDraft.id;
+      order.code = co.stripeDraft.code;
+    }else co.stripeDraft = { key, id:order.id, code:order.code };
     dm.sending = true;
     const btn = document.getElementById('dmSendBtn');
     if(btn){ btn.disabled = true; btn.textContent = 'Preparando tu pago de prueba…'; }
