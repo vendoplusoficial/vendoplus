@@ -38,15 +38,9 @@ Deno.serve(async (request) => {
     const action = body?.action;
     if (action !== 'status' && action !== 'start') return json({ error: 'Acción inválida' }, 400);
 
-    if (body.mode !== undefined && body.mode !== 'test' && body.mode !== 'live') {
-      return json({ error: 'Modo de Stripe inválido' }, 400);
-    }
-    const live = body.mode === 'live';
-    const mode = live ? 'live' : 'test';
-    const key = Deno.env.get(live ? 'STRIPE_MENU_LIVE_SECRET_KEY' : 'STRIPE_MENU_TEST_SECRET_KEY') ?? '';
-    if (!new RegExp('^(sk|rk)_' + mode + '_').test(key)) {
-      if (live && action === 'status') return json({ linked: false, ready: false, available: false });
-      return json({ error: 'Stripe Connect aún no está configurado para este modo' }, 503);
+    const key = Deno.env.get('STRIPE_MENU_TEST_SECRET_KEY') ?? '';
+    if (!/^(sk|rk)_test_/.test(key)) {
+      return json({ error: 'Stripe Connect de prueba aún no está configurado' }, 503);
     }
 
     async function stripe(path: string, payload?: object, idempotencyKey?: string) {
@@ -80,7 +74,7 @@ Deno.serve(async (request) => {
 
     const accounts = database.from('stripe_menu_accounts');
     const { data: row, error: readError } = await accounts
-      .select('stripe_account_id').eq('user_id', user.id).eq('livemode', live).maybeSingle();
+      .select('stripe_account_id').eq('user_id', user.id).eq('livemode', false).maybeSingle();
     if (readError) throw readError;
     let accountId = row?.stripe_account_id;
 
@@ -92,18 +86,18 @@ Deno.serve(async (request) => {
         configuration: { merchant: { capabilities: { card_payments: { requested: true } } } },
         defaults: { responsibilities: { fees_collector: 'stripe', losses_collector: 'stripe' } },
         include: ['defaults'],
-      }, 'vendoplus-menu-' + mode + '-full-' + user.id);
-      if (account.livemode !== live || account.dashboard !== 'full' ||
+      }, 'vendoplus-menu-test-full-' + user.id);
+      if (account.livemode !== false || account.dashboard !== 'full' ||
           account.defaults?.responsibilities?.losses_collector !== 'stripe' ||
           account.defaults?.responsibilities?.fees_collector !== 'stripe') {
         throw new StripeError('unexpected_account_configuration');
       }
       const { error: writeError } = await accounts.upsert({
-        user_id: user.id, livemode: live, stripe_account_id: account.id,
+        user_id: user.id, livemode: false, stripe_account_id: account.id,
       }, { onConflict: 'user_id,livemode', ignoreDuplicates: true });
       if (writeError) throw writeError;
       const { data: persisted, error: reloadError } = await accounts
-        .select('stripe_account_id').eq('user_id', user.id).eq('livemode', live).single();
+        .select('stripe_account_id').eq('user_id', user.id).eq('livemode', false).single();
       if (reloadError) throw reloadError;
       accountId = persisted.stripe_account_id;
     }
@@ -114,7 +108,7 @@ Deno.serve(async (request) => {
       const capabilities = account.configuration?.merchant?.capabilities;
       return json({
         linked: true,
-        ready: account.livemode === live && !account.closed &&
+        ready: account.livemode === false && !account.closed &&
           capabilities?.card_payments?.status === 'active' &&
           capabilities?.stripe_balance?.payouts?.status === 'active',
       });
@@ -136,6 +130,6 @@ Deno.serve(async (request) => {
   } catch (error) {
     const code = error instanceof StripeError ? error.code : 'internal_error';
     console.error('stripe-menu-connect', code);
-    return json({ error: 'No se pudo completar el enlace de Stripe', code }, 502);
+    return json({ error: 'No se pudo completar el enlace de Stripe de prueba', code }, 502);
   }
 });
