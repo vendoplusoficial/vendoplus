@@ -309,7 +309,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .btn.dark{ background:var(--ink); color:#fff; }
   .btn.danger{ background:var(--danger-bg); color:var(--accent-2); }
   .btn.block{ width:100%; }
-  #stripeMenuTest button[hidden]{ display:none; }
+  #stripeMenuTest button[hidden], #stripeMenuLive button[hidden], #stripeMenuLive[hidden]{ display:none; }
   .btn.ghost{ background:transparent; border:1.5px solid var(--border); }
   .btn:disabled{ opacity:.45; }
   .btn svg{ width:16px; height:16px; }
@@ -16252,7 +16252,7 @@ function mdPayClabeInput(el){
   const b = document.getElementById('mdPayBank'); if(b){ const n = mdBankOf(raw); b.textContent = n; b.hidden = !n; }
   clearFieldError('mdPayClabeField');
 }
-async function stripeMenuRequest(action){
+async function stripeMenuRequest(action, mode = 'test'){
   const { data } = await Cloud.sb.auth.getSession();
   if(!data?.session?.access_token) throw new Error('Inicia sesión para enlazar Stripe.');
   const response = await fetch(mpBase() + '/functions/v1/stripe-menu-connect', {
@@ -16262,7 +16262,7 @@ async function stripeMenuRequest(action){
       apikey:VENDO_CONFIG.SUPABASE_ANON_KEY,
       Authorization:'Bearer ' + data.session.access_token
     },
-    body:JSON.stringify({ action }),
+    body:JSON.stringify({ action, mode }),
     signal:AbortSignal.timeout(45000)
   });
   const result = await response.json().catch(() => ({}));
@@ -16272,23 +16272,28 @@ async function stripeMenuRequest(action){
   }
   return result;
 }
-async function stripeMenuStatus(){
-  const panel = document.getElementById('stripeMenuTest');
+async function stripeMenuStatus(mode = 'test'){
+  const live = mode === 'live';
+  const panel = document.getElementById(live ? 'stripeMenuLive' : 'stripeMenuTest');
   if(!panel) return;
   const status = panel.querySelector('small');
   const button = panel.querySelector('button');
   try{
-    let result = await stripeMenuRequest('status');
+    let result = await stripeMenuRequest('status', mode);
     for(const delay of [1500, 3000]){
       if(!panel.isConnected) return;
       if(!result.linked || result.ready) break;
       await new Promise(resolve => setTimeout(resolve, delay));
       if(!panel.isConnected) return;
-      result = await stripeMenuRequest('status');
+      result = await stripeMenuRequest('status', mode);
     }
     if(!panel.isConnected) return;
-    status.textContent = result.ready ? 'Registro completado. Cuenta de prueba lista.' :
-      result.linked ? 'Completa el registro en Stripe.' : 'Enlaza una cuenta de prueba.';
+    if(live && result.available === false) return;
+    panel.hidden = false;
+    status.textContent = result.ready
+      ? (live ? 'Cuenta de Stripe verificada.' : 'Registro completado. Cuenta de prueba lista.')
+      : result.linked ? 'Completa el registro en Stripe.'
+      : live ? 'Enlaza la cuenta que recibirá los cobros.' : 'Enlaza una cuenta de prueba.';
     button.textContent = result.linked ? 'Abrir registro de Stripe' : 'Enlazar Stripe';
     button.hidden = result.ready === true;
   }catch(error){
@@ -16298,17 +16303,17 @@ async function stripeMenuStatus(){
     }
   }
 }
-async function stripeMenuStart(button){
+async function stripeMenuStart(button, mode = 'test'){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
   button.disabled = true;
   try{
-    const result = await stripeMenuRequest('start');
+    const result = await stripeMenuRequest('start', mode);
     const link = new URL(result.url);
     if(!['https://accounts.stripe.com', 'https://connect.stripe.com'].includes(link.origin)) throw new Error('Stripe devolvió un enlace inválido.');
     location.assign(link.href);
   }catch(error){
     button.disabled = false;
-    const status = button.closest('#stripeMenuTest')?.querySelector('small');
+    const status = button.closest('.md-pay-fields')?.querySelector('small');
     if(status) status.textContent = error.message;
   }
 }
@@ -16350,6 +16355,13 @@ function mdRenderPayForm(){
           <button type="button" class="md-mp-action" onclick="mpOpenForm()">Enlazar</button>`}
       </div>` : ''}
     ${card && location.origin === 'https://vendoplusoficial.com' ? `
+      <div id="stripeMenuLive" class="md-pay-fields" hidden>
+        <div class="field">
+          <label>Stripe · Cobros reales</label>
+          <small role="status">Consultando el estado de Stripe…</small>
+          <button type="button" class="btn ghost block" onclick="stripeMenuStart(this, 'live')" hidden>Enlazar Stripe</button>
+        </div>
+      </div>
       <div id="stripeMenuTest" class="md-pay-fields">
         <div class="field">
           <label>Stripe · Modo de prueba</label>
@@ -16373,7 +16385,10 @@ function mdRenderPayForm(){
       <button class="btn primary block" onclick="mdSavePay()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
     </div>
   `, { dismissible:true, sheetClass:card ? 'md-card-sheet' : '' });
-  if(card) stripeMenuStatus();
+  if(card){
+    stripeMenuStatus();
+    stripeMenuStatus('live');
+  }
 }
 function mdSavePay(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
