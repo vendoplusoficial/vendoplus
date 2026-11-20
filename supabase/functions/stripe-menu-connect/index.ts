@@ -57,7 +57,18 @@ Deno.serve(async (request) => {
         signal: AbortSignal.timeout(12000),
       });
       const result = await response.json();
-      if (!response.ok) throw new StripeError(result.error?.code ?? 'stripe_request_failed');
+      if (!response.ok) {
+        const errorCode = result.error?.code ?? 'stripe_request_failed';
+        const field = result.error?.param;
+        console.warn('Stripe Connect request rejected', {
+          operation: payload ? (path === 'accounts' ? 'create_account' : 'create_link') : 'read_account',
+          status: response.status,
+          code: errorCode,
+          field: typeof field === 'string' && /^[a-z_.\[\]0-9]+$/i.test(field) ? field : undefined,
+          requestId: response.headers.get('request-id'),
+        });
+        throw new StripeError(errorCode);
+      }
       return result;
     }
 
@@ -93,7 +104,7 @@ Deno.serve(async (request) => {
 
     if (action === 'status') {
       const account = await stripe('accounts/' + encodeURIComponent(accountId) +
-        '?include%5B%5D=configuration.merchant');
+        '?include%5B0%5D=configuration.merchant');
       const capabilities = account.configuration?.merchant?.capabilities;
       return json({
         linked: true,
@@ -115,7 +126,7 @@ Deno.serve(async (request) => {
       },
     });
     const linkUrl = new URL(link.url);
-    if (linkUrl.origin !== 'https://connect.stripe.com') throw new StripeError('unexpected_link_origin');
+    if (!['https://accounts.stripe.com', 'https://connect.stripe.com'].includes(linkUrl.origin)) throw new StripeError('unexpected_link_origin');
     return json({ url: linkUrl.href });
   } catch (error) {
     const code = error instanceof StripeError ? error.code : 'internal_error';
