@@ -119,7 +119,6 @@ Deno.serve(async (request) => {
       use_case: {
         type: 'account_onboarding',
         account_onboarding: {
-          configurations: ['merchant'],
           refresh_url: origin + '/?stripe_menu=retry',
           return_url: origin + '/?stripe_menu=return',
         },
