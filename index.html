@@ -16653,11 +16653,24 @@ function mdRenderDeliveryForm(){
     </div>
     ${(d.on !== null && !pin) ? `<p class="md-del-falta">${icon('alert')} Marca en el mapa dónde está tu negocio para poder guardar.</p>` : ''}
   `, { dismissible:true });
-  if(d.on !== null){
-    mdMapMount('biz', document.getElementById('mdDelMap'), { editable:true, pin, center:pin, tip:'Toca el mapa donde está tu negocio',
+  const mapEl = document.getElementById('mdDelMap');
+  if(!mapEl) return;
+  // Deja pintar la hoja antes de cargar Leaflet o inicializar el mapa.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const isCurrent = () => mdDelDraft === d && mapEl === document.getElementById('mdDelMap');
+    if(!isCurrent()) return;
+    const startPin = mdValidLatLng(d.lat, d.lng);
+    mdMapMount('biz', mapEl, { editable:true, pin:startPin, center:startPin, tip:'Toca el mapa donde está tu negocio',
       errText:'Sin mapa, usa el botón de abajo para tomar tu ubicación.',
-      onPick:p => { mdDelDraft.lat = p.lat; mdDelDraft.lng = p.lng; mdDelPaintSave(); } });
-  }
+      onPick:p => { d.lat = p.lat; d.lng = p.lng; mdDelPaintSave(); }
+    }).then(map => {
+      if(!map || !isCurrent()) return;
+      const currentPin = mdValidLatLng(d.lat, d.lng);
+      if(currentPin && (currentPin.lat !== startPin?.lat || currentPin.lng !== startPin?.lng)){
+        map.setPin(currentPin, 17);
+      }
+    });
+  }));
 }
 /* Prende o apaga el botón Guardar según si ya hay ubicación. Se usa en vez
    de volver a pintar toda la hoja, para que el mapa no parpadee. */
