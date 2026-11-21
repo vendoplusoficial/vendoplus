@@ -4,7 +4,7 @@
 }
 .vp-floor-services .opt-card { min-width: 0; }
 .vp-floor-services svg, .vp-floor-quick svg { width: 20px; height: 20px; }
-.sale-tools .vp-floor-quick { position: relative; overflow: visible; color: var(--brand-ink); }
+.sale-tools .vp-floor-quick { position: relative; overflow: visible; }
 .vp-floor-count {
   position: absolute;
   left: 50%;

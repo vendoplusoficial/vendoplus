@@ -5349,8 +5349,8 @@ body.vp-restoring #vpSessionRestore{
   padding:24px; text-align:center; color:var(--ink-soft);
 }
 </style>
-<link rel="stylesheet" href="vendo-mesas.css?v=2">
-<script src="vendo-mesas.js?v=2"></script>
+<link rel="stylesheet" href="vendo-mesas.css?v=3">
+<script src="vendo-mesas.js?v=3"></script>
 </head>
 <body class="vp-starting">
 <div id="vpSessionRestore" role="status">Recuperando tu sesión…</div>
@@ -7587,6 +7587,10 @@ function openModal(html, opts){
     }
   }
   document.documentElement.classList.add('modal-open');
+  if(opts.restoreScroll){
+    layer.querySelector('.modal-sheet').scrollTop = opts.restoreScroll.sheet;
+    layer.querySelector('.modal-overlay').scrollTop = opts.restoreScroll.overlay;
+  }
   if(opts.dismissible !== false){
     document.getElementById('modalOverlay').addEventListener('click', function(e){
       if(e.target.id === 'modalOverlay') closeModal();
@@ -7614,9 +7618,9 @@ function closeModal(){
   setTimeout(() => { if(ov.parentNode) ov.parentNode.removeChild(ov); }, 260);
 }
 
-function openCartSheet(step){
+function openCartSheet(step, restoreScroll){
   if(cart.length === 0 && step !== 'cart'){ step = 'cart'; }
-  openModal(cartSheetHTML(step), { dismissible:true });
+  openModal(cartSheetHTML(step), { dismissible:true, restoreScroll:step === 'checkout' ? restoreScroll : null });
 }
 
 /* Texto de la cantidad de una línea: "2", "1.5 kg", "3 × Litro" */
@@ -28560,7 +28564,7 @@ function cartSanitize(){
       var r = _om.apply(this, arguments);
       try{
         var L = layer();
-        if(L && L.querySelector('.pay2')){ if(pre) post(pre); last = snap() || null; }
+        if(L && L.querySelector('.pay2')){ if(pre && !arguments[1]?.restoreScroll) post(pre); last = snap() || null; }
         else if(!(L && L.querySelector('.modal-overlay'))) last = null;
       }catch(e){}
       return r;
