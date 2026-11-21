@@ -4375,12 +4375,20 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .vp-pf .section-title{ font-size:14px; margin:18px 0 10px; }
 @media (max-width:699px){
   body:has(.vp-pf) .bottomnav, body:has(.vp-pf) .cartbar{ display:none !important; }
-  .modal-overlay:has(.vp-pf){ background:#fff; }
   .navbtn[data-view="sale"] .navicon{ width:54px; height:54px; border-width:4px; }
   .navbtn[data-view="sale"]{ margin-top:-26px; }
   .navbtn[data-view="sale"] .navicon svg{ width:24px; height:24px; }
 }
 @media (min-width:700px){ .modal-sheet.vp-pf{ max-width:520px; } }
+
+@media (prefers-reduced-motion:no-preference){
+  .modal-overlay.is-swap:not(.is-closing) .modal-sheet.vp-pf-enter{
+    animation:sheetUp .42s var(--ease-sheet) both;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  .modal-sheet.vp-pf{ animation:none !important; }
+}
 
 /* ---- Inventarios vacío ---- */
 .fab-row.vp-cat-only{ justify-content:flex-end; }
@@ -4393,8 +4401,8 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 
 /* ---- Formulario: llenar TODA la pantalla (compensa el zoom de la app en celular) ---- */
 @media (max-width:699px){
-  body:has(.vp-pf) #modal-layer .modal-overlay{ background:#fff !important; position:fixed; inset:0; height:calc(100dvh / var(--z,1)); min-height:calc(100dvh / var(--z,1)); padding:0; align-items:stretch; }
-  .modal-sheet.vp-pf{ height:calc(100dvh / var(--z,1)) !important; max-height:calc(100dvh / var(--z,1)) !important; min-height:calc(100dvh / var(--z,1)); width:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; box-shadow:none; animation:none; }
+  body:has(.vp-pf) #modal-layer .modal-overlay{ position:fixed; inset:0; height:calc(100dvh / var(--z,1)); min-height:calc(100dvh / var(--z,1)); padding:0; align-items:stretch; }
+  .modal-sheet.vp-pf{ height:calc(100dvh / var(--z,1)) !important; max-height:calc(100dvh / var(--z,1)) !important; min-height:calc(100dvh / var(--z,1)); width:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; box-shadow:none; }
   /* Solo se bloquea la página (html): bloquear también el body la regresaba hasta arriba */
   html:has(.vp-pf){ overflow:hidden; }
 }
@@ -5294,8 +5302,37 @@ body.pg-mode:has(.pg-result){ background:#fff; }
 @media (prefers-reduced-motion: reduce){ .pg-load i{ animation:none; } }
 
 </style>
+<style>
+/* ===== Nueva venta: índice ===== */
+.topbar-index .chip-row{ scroll-behavior:auto !important; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x; }
+.chip-row.sticky-index{ -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
+.chip-row.sticky-index .chip{ flex:none; }
+
+#view .chip-row.sticky-index .cat-dot, .topbar-index .cat-dot{ display:none !important; }
+/* Índice sin verde: ni seleccionado ni al presionar */
+#view .chip-row.sticky-index .chip, .topbar-index .chip,
+#view .chip-row.sticky-index .chip.active, .topbar-index .chip.active,
+#view .chip-row.sticky-index .chip:active, .topbar-index .chip:active,
+#view .chip-row.sticky-index .chip:focus, .topbar-index .chip:focus,
+#view .chip-row.sticky-index .chip:hover, .topbar-index .chip:hover{
+  background:var(--surface, #fff) !important; color:var(--ink-soft) !important; border:1.5px solid var(--border) !important;
+  box-shadow:none !important; outline:none; -webkit-tap-highlight-color:transparent;
+}
+/* PC (mouse): las categorías se acomodan en renglones, la barra no se corre de lado */
+@media (hover:hover) and (pointer:fine){
+  #view .chip-row.sticky-index, .topbar-index .chip-row{ flex-wrap:wrap; overflow-x:hidden !important; overflow-y:visible; row-gap:8px; }
+}
+
+body.vp-starting .app, body.vp-starting > .bottomnav{ visibility:hidden; }
+#vpSessionRestore{ display:none; }
+body.vp-restoring #vpSessionRestore{
+  display:grid; place-items:center; min-height:100dvh;
+  padding:24px; text-align:center; color:var(--ink-soft);
+}
+</style>
 </head>
-<body>
+<body class="vp-starting">
+<div id="vpSessionRestore" role="status">Recuperando tu sesión…</div>
 <noscript>
   <h1>Vendo Plus · Punto de venta (POS)</h1>
   <p>Vendo Plus es un punto de venta para negocios pequeños: ventas, inventario, caja y gastos, clientes y crédito e impresión de tickets. Gratis, sin tarjeta.</p>
@@ -7516,6 +7553,7 @@ function openModal(html, opts){
      ejemplo al elegir Efectivo/Tarjeta o al cambiar una cantidad). */
   const prevSheet = layer.querySelector('.modal-overlay:not(.is-closing) .modal-sheet');
   const swap = !!prevSheet;
+  const productEnter = opts.sheetClass === 'vp-pf' && swap && !prevSheet.classList.contains('vp-pf');
   const paymentMotion = opts.sheetClass === 'md-card-sheet' ||
     opts.sheetClass === 'mp-link-sheet' || opts.sheetClass === 'mp-linked-sheet';
   const animatePaymentSwap = paymentMotion && swap && !prevSheet.classList.contains(opts.sheetClass);
@@ -7523,7 +7561,7 @@ function openModal(html, opts){
   const prevY = swap ? prevSheet.scrollTop : 0;
   const prevKeep = swap ? Array.from(prevSheet.querySelectorAll('[data-keep-scroll]')).map(e => [e.getAttribute('data-keep-scroll'), e.scrollTop]) : [];
   layer.innerHTML = `<div class="modal-overlay ${opts.center?'modal-center':''} ${swap?'is-swap':''}" id="modalOverlay" ${opts.dismissible === false ? 'data-lock="1"' : ''}>
-      <div class="modal-sheet ${opts.card?'modal-card':''} ${opts.sheetClass || ''} ${paymentMotion ? 'payment-motion' : ''} ${animatePaymentSwap ? 'payment-motion-enter' : ''}">
+      <div class="modal-sheet ${opts.card?'modal-card':''} ${opts.sheetClass || ''} ${productEnter ? 'vp-pf-enter' : ''} ${paymentMotion ? 'payment-motion' : ''} ${animatePaymentSwap ? 'payment-motion-enter' : ''}">
         ${opts.grip !== false ? '<div class="sheet-grip"></div>' : ''}
         ${html}
       </div>
@@ -12166,7 +12204,7 @@ function openProductForm(productId){
 
     <button class="btn primary block" style="margin-top:18px;" onclick="saveProductForm('${editing ? editing.id : ''}')">${editing ? 'Guardar cambios' : 'Agregar producto'}</button>
   `;
-  openModal(html, { dismissible:true });
+  openModal(html, { dismissible:true, sheetClass:'vp-pf' });
   updateProductFormWarnings();
   updateStockFieldLabels();
   if(typeof mdOnUnitChange === 'function') mdOnUnitChange();
@@ -15786,8 +15824,9 @@ function bootApp(){
   if(!AUTH.isLogged()){
     /* Sin sesión (primera vez o sesión cerrada): siempre empieza en la bienvenida,
        con "Empezar" y "Ya tengo una cuenta". */
-    authState.mode = 'signup';
-    showAuth('welcome');
+    const pantalla = authState.screen === 'login' ? 'login' : 'welcome';
+    authState.mode = pantalla === 'login' ? 'login' : 'signup';
+    showAuth(pantalla);
   }else if(multiUser()){
     const me = activeUser();
     /* Respaldo: si el aparato perdió la marca de "sesión abierta" pero este
@@ -24398,12 +24437,10 @@ function cloudSesionMuerta(e){
 /** ¿Hay una sesión guardada de Supabase en este aparato? */
 function cloudHayTokenGuardado(){
   try{
-    for(let i = 0; i < localStorage.length; i++){
-      const k = localStorage.key(i);
-      if(k && /^sb-.*-auth-token$/.test(k) && (localStorage.getItem(k) || '').length > 20) return true;
-    }
-  }catch(e){}
-  return false;
+    const project = new URL(VENDO_CONFIG.SUPABASE_URL).hostname.split('.')[0];
+    const sesion = JSON.parse(localStorage.getItem('sb-' + project + '-auth-token'));
+    return !!sesion?.refresh_token;
+  }catch(e){ return false; }
 }
 
 const SYNC_PEND_KEY = 'mesa_sync_pending';
@@ -25325,7 +25362,11 @@ doDeleteAccount = async function(){
    ===================================================================== */
 const _bootApp = bootApp;
 bootApp = async function(){
-  if(!Cloud.ready) return _bootApp();
+  if(!Cloud.ready){
+    _bootApp();
+    document.body.classList.remove('vp-starting');
+    return;
+  }
   /* Si la sesión se renueva más tarde (volvió el internet), se retoma sola */
   if(!Cloud._authWatch){
     Cloud._authWatch = true;
@@ -25353,6 +25394,7 @@ bootApp = async function(){
       if(ev === 'SIGNED_OUT' || ev === 'USER_DELETED'){
         if(Cloud._saliendoAProposito) return;      /* lo pidió el usuario: ya se atendió */
         Cloud.gen++; Cloud.uid = null;
+        if(document.body.classList.contains('vp-restoring')) authState.screen = 'login';
         if(AUTH.isLogged()){
           AUTH.closeSession();
           try{ toast('Tu sesión se cerró', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') }); }catch(e){}
@@ -25385,128 +25427,84 @@ bootApp = async function(){
     /* Y un reintento tranquilo cada minuto mientras falte la sesión */
     setInterval(reintentar, 60000);
   }
-  const tuvoSesion = localStorage.getItem('mesa_session') === '1';
-  let vencida = false;
-
-  /* ---------------------------------------------------------------
-     CUENTA YA INICIADA: SE ABRE DE INMEDIATO
-     La app no espera nada de la nube para pintar. Si en este aparato
-     ya había una cuenta dentro (mesa_session + mesa_user), se abre al
-     instante con lo que está guardado aquí: con datos móviles lentos,
-     con internet a medias o sin internet, se ve igual de rápido.
-     La nube sigue por detrás y la pantalla se actualiza sola cuando
-     contesta. Nada de pantallas en blanco ni cargas infinitas.
-  --------------------------------------------------------------- */
   const yaEstabaDentro = AUTH.isLogged();
-  const LIMITE = 12000;
-
-  let abierta = false;
-  const estabaDentro = yaEstabaDentro;
   const abrir = () => {
-    if(abierta) return;
-    abierta = true;
     _bootApp();
+    document.body.classList.remove('vp-starting', 'vp-restoring');
     Cloud.gate();
     Cloud.afterPayment();
     Cloud.confetiBienvenida();
   };
-
-  /* Cuenta ya iniciada -> se abre YA. Nadie dentro -> se le da un ratito
-     a la nube por si hay una sesión guardada que todavía no se leyó
-     (así no aparece la pantalla de "entrar" y luego se va). */
   if(yaEstabaDentro) abrir();
-  const reloj = yaEstabaDentro ? null : setTimeout(abrir, cloudHayTokenGuardado() ? 2500 : 400);
+  else if(cloudHayTokenGuardado()) document.body.classList.add('vp-restoring');
 
-  /* Lo de la nube se hace en segundo plano: ni un paso de aquí detiene
-     la pantalla cuando la cuenta ya estaba dentro. */
-  const trabajoNube = (async () => {
-    let sesion = null, error = null;
-    try{
-      const r = await conLimiteCloud(Cloud.sb.auth.getSession(), 9000);
-      sesion = r && r.data ? r.data.session : null;
-      error = r ? r.error : null;
-    }catch(e){ error = e; }
+  const restaurar = async () => {
+    let sesion, error;
+    do{
+      try{
+        const r = await conLimiteCloud(Cloud.sb.auth.getSession(), 9000);
+        sesion = r?.data?.session;
+        error = r?.error;
+      }catch(e){ error = e; }
+      if(sesion?.user || cloudSesionMuerta(error) || yaEstabaDentro || !cloudHayTokenGuardado()) break;
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }while(true);
 
-    if(sesion && sesion.user){
-      const dueno = localStorage.getItem('mesa_cloud_uid');
-      if(dueno && dueno !== sesion.user.id){
-        /* El token es de otra cuenta y en el aparato están los datos de
-           otra: NO se mezclan. Se cierra la sesión local y se pide entrar. */
-        console.warn('[auth] el token es de otra cuenta: no se mezclan datos');
-        Cloud.gen++; Cloud.uid = null;
+    if(!sesion?.user){
+      if(cloudSesionMuerta(error)){
+        Cloud.gen++;
+        Cloud.uid = null;
         AUTH.closeSession();
-        vencida = tuvoSesion;
-        return;
+        authState.screen = 'login';
+        if(yaEstabaDentro && !document.body.classList.contains('auth-open')) showAuth('login');
+      }else if(yaEstabaDentro && !Cloud.uid){
+        setTimeout(() => Cloud.reintentarSesion(), 3000);
       }
+      return false;
+    }
+
+    const dueno = localStorage.getItem('mesa_cloud_uid');
+    if(dueno && dueno !== sesion.user.id){
       Cloud.gen++;
-      Cloud.uid = sesion.user.id;
-      try{ localStorage.setItem('mesa_cloud_uid', Cloud.uid); }catch(e){}
-      Cloud.syncEmail(sesion.user);
-      if(AUTH.getUser()) AUTH.openSession();
-      /* Primero se sube lo que quedó pendiente de la vez pasada (ventas
-         hechas sin internet), y después se baja la copia. En ese orden no
-         se pierde nada: hydrate() respeta las claves pendientes. */
-      Cloud.pendResume();
-      try{ await Cloud.flush(); }catch(e){}
-      Cloud._lastHyd = Date.now();
-      try{ await conLimiteCloud(Cloud.hydrate(), LIMITE); }
-      catch(e){ console.warn('[nube] no bajó la copia ahorita; se usa la de este aparato', e); setTimeout(() => Cloud.hydrateSoon(), 4000); }
-      try{ await conLimiteCloud(Cloud.refreshSub(), 8000); }
-      catch(e){ console.warn('[plan] no se pudo revisar ahorita', e); }
-      return;
-    }
-
-    /* No vino sesión. ¿De verdad murió, o nomás no se pudo confirmar? */
-    if(cloudSesionMuerta(error)){
-      /* Supabase confirmó que esta sesión ya no existe (token revocado,
-         cuenta borrada). Este sí es motivo para pedir entrar de nuevo. */
-      console.warn('[auth] Supabase confirmó que la sesión ya no existe', error);
-      Cloud.gen++; Cloud.uid = null;
+      Cloud.uid = null;
       AUTH.closeSession();
-      vencida = tuvoSesion;
-      return;
+      authState.screen = 'login';
+      if(yaEstabaDentro) showAuth('login');
+      return false;
     }
-    /* Todo lo demás (sin internet, tiempo agotado, 500, 429, el candado
-       de Supabase ocupado, el token a medio renovar) NO cierra nada.
-       La cuenta sigue dentro con sus datos y se reintenta sola. */
-    if(error) console.warn('[auth] no se pudo confirmar la sesión ahorita; se conserva y se reintenta', error);
-    else if(tuvoSesion) console.warn('[auth] getSession() no devolvió sesión; se conserva la cuenta y se reintenta');
-    Cloud.uid = null;        /* sin token no se sincroniza; los cambios quedan apuntados */
-    if(tuvoSesion && AUTH.getUser()) AUTH.openSession();   /* la cuenta NO se cierra */
-    setTimeout(() => { if(Cloud.reintentarSesion) Cloud.reintentarSesion(); }, 3000);
-  })();
+    if(Cloud.uid !== sesion.user.id) Cloud.gen++;
+    Cloud.uid = sesion.user.id;
+    localStorage.setItem('mesa_cloud_uid', Cloud.uid);
+    Cloud.syncEmail(sesion.user);
+    if(AUTH.getUser()) AUTH.openSession();
+    return true;
+  };
 
-  Cloud.startupSync = trabajoNube;
+  const sincronizar = async () => {
+    Cloud.pendResume();
+    try{ await Cloud.flush(); }catch(e){}
+    Cloud._lastHyd = Date.now();
+    try{ await conLimiteCloud(Cloud.hydrate(), 12000); }
+    catch(e){ console.warn('[nube] no bajó la copia ahorita', e); setTimeout(() => Cloud.hydrateSoon(), 4000); }
+    try{ await conLimiteCloud(Cloud.refreshSub(), 8000); }catch(e){}
+  };
 
-  /* Si nadie estaba dentro, se espera a la nube (con tope) porque de eso
-     depende qué pantalla se pinta. Si ya estaba dentro, no se espera. */
+  const restauracion = restaurar();
+  Cloud.startupSync = restauracion.then(ok => ok && sincronizar());
   if(!yaEstabaDentro){
-    try{ await conLimiteCloud(trabajoNube, 10000); }catch(e){}
-  }
-  if(reloj) clearTimeout(reloj);
-
-  if(!abierta){
+    const restaurada = await restauracion;
+    if(restaurada && !AUTH.getUser()){
+      await Cloud.startupSync;
+      if(Cloud.uid && AUTH.getUser()) AUTH.openSession();
+    }
     abrir();
-  }else{
-    /* La app ya estaba abierta con la copia local. Si cambió quién está
-       dentro, se rehace el arranque; si no, basta repintar. */
-    if(AUTH.isLogged() !== estabaDentro){ _bootApp(); }
-    else { try{ paintChrome(); render(); }catch(e){} }
-    Cloud.gate();
-    Cloud.afterPayment();
-    Cloud.confetiBienvenida();
   }
-  if(vencida) toast('Tu sesión se cerró', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') });
-
-  /* Cuando la cuenta ya estaba dentro, el trabajo de la nube siguió solo.
-     Al terminar se repinta para que se vean los datos que bajaron. */
-  if(yaEstabaDentro) trabajoNube.then(() => {
-    if(AUTH.isLogged() !== estabaDentro){ _bootApp(); return; }
+  Cloud.startupSync.then(() => {
+    if(!AUTH.isLogged()) return;
     try{ paintChrome(); render(); }catch(e){}
     Cloud.gate();
-    Cloud.confetiBienvenida();   /* hasta aquí ya se sabe quién entró */
-    if(vencida) toast('Tu sesión se cerró', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') });
-  }).catch(() => {});
+    Cloud.confetiBienvenida();
+  }).catch(e => console.warn('[nube] arranque', e));
 };
 
 </script>
@@ -27580,110 +27578,7 @@ function mdSaveDesign(abrir){
 /* Dentro de la app de Android: Google Play, botón Atrás e impresora nativa. */
 if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.write('<script src="vendo-app.js"><\/script>'); }
 </script>
-<script>
-/* =========================================================================
-   ARRANQUE (va al final para que todo lo anterior ya esté cargado)
-========================================================================= */
-(function(){
-  applyGiroLabels();
-  muMigrateDemo();
-  const oldAccessKey = 'vp_staff_driver_access';
-  if(localStorage.getItem(oldAccessKey) || location.hash === '#reparto'){
-    localStorage.removeItem(oldAccessKey);
-    AUTH.closeSession();
-    closeOpenShifts();
-    closeUserSession();
-    clearAppUnlocked();
-    const project = new URL(VENDO_CONFIG.SUPABASE_URL).hostname.split('.')[0];
-    localStorage.removeItem('sb-' + project + '-auth-token');
-    localStorage.removeItem('sb-' + project + '-auth-token-code-verifier');
-    history.replaceState(null,'',location.pathname + location.search);
-    location.reload();
-    return;
-  }
-  const route = dmRoute();
-  if(route){ bootMenu(route); return; }
 
-  /* Link de pago con tarjeta que el negocio le mandó a su cliente */
-  const rutaPago = pgRoute();
-  if(rutaPago){ bootPago(rutaPago); return; }
-
-  /* Link "registrar en caja" de mensajes de WhatsApp anteriores */
-  let llegado = null, malo = false;
-  const m = location.hash.match(/^#pedido\/([A-Za-z0-9_-]+)/);
-  if(m){
-    try{ llegado = mdiReceive(mdiDecode(m[1]), 'link'); }catch(e){ malo = true; }
-    try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){ location.hash = ''; }
-  }
-
-  const arranque = bootApp();
-  mdiWatch();
-  const regreso = new URL(location.href);
-  const stripeReturn = regreso.searchParams.get('stripe_menu');
-  if(stripeReturn === 'return' || stripeReturn === 'retry'){
-    regreso.searchParams.delete('stripe_menu');
-    history.replaceState(null, '', regreso);
-    const openStripeSettings = () => {
-      goTo('menu');
-      mdOpenCardForm();
-    };
-    Promise.resolve(arranque).then(() => {
-      if(document.body.classList.contains('auth-open')) mdiPendingOpen = openStripeSettings;
-      else openStripeSettings();
-    }).catch(error => console.warn('VendoPlus · regreso de Stripe', error));
-  }
-  const enlace = regreso.searchParams.get('mp_enlace');
-  if(enlace){
-    regreso.searchParams.delete('mp_enlace');
-    history.replaceState(null, '', regreso);
-    const abrirPagoTarjeta = async () => {
-      if(!mpVisible() || !mpCanLink()) return;
-      goTo('menu');
-      mdPayKind = 'card';
-      if(enlace === 'ok') mdCardChoice = true;
-      const borrador = mdPayDraft = { on:mdCardChoice ?? mdCfg().payments.card };
-      mdRenderPayForm();
-      if(enlace !== 'ok'){
-        toast('No se completó el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Puedes intentarlo de nuevo aquí' });
-        return;
-      }
-      // El POS puede abrir con datos locales mientras aún restaura la sesión.
-      // Consulta Mercado Pago después de hidratar la configuración del negocio.
-      await Cloud.startupSync;
-      const estado = await mpSyncStatus(true);
-      if(currentView !== 'menu' || mdPayDraft !== borrador ||
-         !document.querySelector('#modal-layer .md-card-sheet')) return;
-      if(estado) mdRenderPayForm();
-      if(estado && mpLinked()) toast('Mercado Pago enlazado', { icon:icon('check'), variant:'toast-success' });
-      else toast('No pudimos confirmar el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Vuelve a abrir Pago con tarjeta para consultar el enlace' });
-    };
-    Promise.resolve(arranque).then(() => {
-      if(document.body.classList.contains('auth-open')) mdiPendingOpen = abrirPagoTarjeta;
-      else abrirPagoTarjeta();
-    }).catch(error => console.warn('Vendo plus · regreso de Mercado Pago', error));
-  }
-  try{
-    MpWatch.start();
-    if(enlace !== 'ok') setTimeout(() => mpSyncStatus(true), 4000);
-  }catch(e){}
-  mdiPaintBadge();
-  /* "hace 5 min" se mantiene al día */
-  setInterval(() => { if(currentView === 'menu' && !document.querySelector('#modal-layer .modal-sheet')){ const y = window.scrollY; render(); window.scrollTo(0, y); } }, 60000);
-
-  if(malo) setTimeout(() => toast('Ese link de pedido no es válido', { icon:icon('alert'), variant:'toast-danger', subtitle:'Pide al cliente que lo reenvíe o pega su mensaje' }), 400);
-  if(llegado){
-    const abrir = () => {
-      mdiFilter = 'nuevo';
-      goTo('menu');
-      mdiOpen(llegado.order.id);
-      toast(llegado.isNew ? 'Pedido ' + llegado.order.code + ' registrado' : 'Este pedido ya estaba registrado', { icon:icon('inbox'), variant:'toast-success toast-top', subtitle:'Revísalo y confírmalo o recházalo' });
-    };
-    if(document.body.classList.contains('auth-open')) mdiPendingOpen = abrir;
-    else setTimeout(abrir, 60);
-  }
-})();
-
-</script>
 <script id="vp-redesign-js">
 (function(){
   var S='fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
@@ -28659,26 +28554,6 @@ function cartSanitize(){
 .vp-pf .field:has(.photo-upload){ margin-bottom:12px; }
 .vp-pf .field:has(.photo-upload) > label:not(.photo-upload){ margin-bottom:6px; }
 
-/* ===== Nueva venta: índice ===== */
-.topbar-index .chip-row{ scroll-behavior:auto !important; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x; }
-.chip-row.sticky-index{ -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
-.chip-row.sticky-index .chip{ flex:none; }
-
-#view .chip-row.sticky-index .cat-dot, .topbar-index .cat-dot{ display:none !important; }
-/* Índice sin verde: ni seleccionado ni al presionar */
-#view .chip-row.sticky-index .chip, .topbar-index .chip,
-#view .chip-row.sticky-index .chip.active, .topbar-index .chip.active,
-#view .chip-row.sticky-index .chip:active, .topbar-index .chip:active,
-#view .chip-row.sticky-index .chip:focus, .topbar-index .chip:focus,
-#view .chip-row.sticky-index .chip:hover, .topbar-index .chip:hover{
-  background:var(--surface, #fff) !important; color:var(--ink-soft) !important; border:1.5px solid var(--border) !important;
-  box-shadow:none !important; outline:none; -webkit-tap-highlight-color:transparent;
-}
-/* PC (mouse): las categorías se acomodan en renglones, la barra no se corre de lado */
-@media (hover:hover) and (pointer:fine){
-  #view .chip-row.sticky-index, .topbar-index .chip-row{ flex-wrap:wrap; overflow-x:hidden !important; overflow-y:visible; row-gap:8px; }
-}
-
 /* ===== Nueva venta en PC/tablet: fotos del mismo tamaño que en el celular, sin recortar ===== */
 @media (min-width:700px){
   .product-grid{ grid-template-columns:repeat(auto-fill, 170px) !important; justify-content:start; gap:14px !important; }
@@ -28945,5 +28820,111 @@ html{ -webkit-text-size-adjust:100%; }
 .dm-sheet:has(.dm-steps) .dm-pi-copy{ background:#EAF9F0; color:#0E7A3D; }
 .dm-sheet:has(.dm-steps) .dm-pi-money:focus-within, .dm-sheet:has(.dm-steps) .field input:focus{ border-color:#16C15B; box-shadow:none; }
 </style>
+<script>
+/* =========================================================================
+   ARRANQUE (va al final para que todo lo anterior ya esté cargado)
+========================================================================= */
+(function(){
+  applyGiroLabels();
+  muMigrateDemo();
+  const oldAccessKey = 'vp_staff_driver_access';
+  if(localStorage.getItem(oldAccessKey) || location.hash === '#reparto'){
+    localStorage.removeItem(oldAccessKey);
+    AUTH.closeSession();
+    closeOpenShifts();
+    closeUserSession();
+    clearAppUnlocked();
+    const project = new URL(VENDO_CONFIG.SUPABASE_URL).hostname.split('.')[0];
+    localStorage.removeItem('sb-' + project + '-auth-token');
+    localStorage.removeItem('sb-' + project + '-auth-token-code-verifier');
+    history.replaceState(null,'',location.pathname + location.search);
+    location.reload();
+    return;
+  }
+  const route = dmRoute();
+  if(route){ bootMenu(route); return; }
+
+  /* Link de pago con tarjeta que el negocio le mandó a su cliente */
+  const rutaPago = pgRoute();
+  if(rutaPago){ bootPago(rutaPago); return; }
+
+  /* Link "registrar en caja" de mensajes de WhatsApp anteriores */
+  let llegado = null, malo = false;
+  const m = location.hash.match(/^#pedido\/([A-Za-z0-9_-]+)/);
+  if(m){
+    try{ llegado = mdiReceive(mdiDecode(m[1]), 'link'); }catch(e){ malo = true; }
+    try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){ location.hash = ''; }
+  }
+
+  const arranque = bootApp();
+  mdiWatch();
+  const regreso = new URL(location.href);
+  const stripeReturn = regreso.searchParams.get('stripe_menu');
+  if(stripeReturn === 'return' || stripeReturn === 'retry'){
+    regreso.searchParams.delete('stripe_menu');
+    history.replaceState(null, '', regreso);
+    const openStripeSettings = () => {
+      goTo('menu');
+      mdOpenCardForm();
+    };
+    Promise.resolve(arranque).then(() => {
+      if(document.body.classList.contains('auth-open')) mdiPendingOpen = openStripeSettings;
+      else openStripeSettings();
+    }).catch(error => console.warn('VendoPlus · regreso de Stripe', error));
+  }
+  const enlace = regreso.searchParams.get('mp_enlace');
+  if(enlace){
+    regreso.searchParams.delete('mp_enlace');
+    history.replaceState(null, '', regreso);
+    const abrirPagoTarjeta = async () => {
+      if(!mpVisible() || !mpCanLink()) return;
+      goTo('menu');
+      mdPayKind = 'card';
+      if(enlace === 'ok') mdCardChoice = true;
+      const borrador = mdPayDraft = { on:mdCardChoice ?? mdCfg().payments.card };
+      mdRenderPayForm();
+      if(enlace !== 'ok'){
+        toast('No se completó el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Puedes intentarlo de nuevo aquí' });
+        return;
+      }
+      // El POS puede abrir con datos locales mientras aún restaura la sesión.
+      // Consulta Mercado Pago después de hidratar la configuración del negocio.
+      await Cloud.startupSync;
+      const estado = await mpSyncStatus(true);
+      if(currentView !== 'menu' || mdPayDraft !== borrador ||
+         !document.querySelector('#modal-layer .md-card-sheet')) return;
+      if(estado) mdRenderPayForm();
+      if(estado && mpLinked()) toast('Mercado Pago enlazado', { icon:icon('check'), variant:'toast-success' });
+      else toast('No pudimos confirmar el enlace con Mercado Pago', { icon:icon('alert'), subtitle:'Vuelve a abrir Pago con tarjeta para consultar el enlace' });
+    };
+    Promise.resolve(arranque).then(() => {
+      if(document.body.classList.contains('auth-open')) mdiPendingOpen = abrirPagoTarjeta;
+      else abrirPagoTarjeta();
+    }).catch(error => console.warn('Vendo plus · regreso de Mercado Pago', error));
+  }
+  try{
+    MpWatch.start();
+    if(enlace !== 'ok') setTimeout(() => mpSyncStatus(true), 4000);
+  }catch(e){}
+  mdiPaintBadge();
+  /* "hace 5 min" se mantiene al día */
+  setInterval(() => { if(currentView === 'menu' && !document.querySelector('#modal-layer .modal-sheet')){ const y = window.scrollY; render(); window.scrollTo(0, y); } }, 60000);
+
+  if(malo) setTimeout(() => toast('Ese link de pedido no es válido', { icon:icon('alert'), variant:'toast-danger', subtitle:'Pide al cliente que lo reenvíe o pega su mensaje' }), 400);
+  if(llegado){
+    const abrir = () => {
+      mdiFilter = 'nuevo';
+      goTo('menu');
+      mdiOpen(llegado.order.id);
+      toast(llegado.isNew ? 'Pedido ' + llegado.order.code + ' registrado' : 'Este pedido ya estaba registrado', { icon:icon('inbox'), variant:'toast-success toast-top', subtitle:'Revísalo y confírmalo o recházalo' });
+    };
+    Promise.resolve(arranque).then(() => {
+      if(document.body.classList.contains('auth-open')) mdiPendingOpen = abrir;
+      else abrir();
+    }).catch(error => console.warn('VendoPlus · enlace de pedido', error));
+  }
+})();
+
+</script>
 </body>
 </html>
