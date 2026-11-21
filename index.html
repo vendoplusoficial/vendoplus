@@ -5349,6 +5349,8 @@ body.vp-restoring #vpSessionRestore{
   padding:24px; text-align:center; color:var(--ink-soft);
 }
 </style>
+<link rel="stylesheet" href="vendo-mesas.css">
+<script src="vendo-mesas.js"></script>
 </head>
 <body class="vp-starting">
 <div id="vpSessionRestore" role="status">Recuperando tu sesión…</div>
@@ -5980,6 +5982,7 @@ const SERVICE_TYPES = [
   { id:'comer',     name:'Comer aquí',  ico:'dine' },
   { id:'llevar',    name:'Para llevar', ico:'shop' },
   { id:'domicilio', name:'Domicilio',   ico:'truck' },
+  { id:'mesa',      name:'Mesa',       ico:'dine' },
 ];
 
 const PAYMENT_METHODS = [
@@ -6214,7 +6217,7 @@ const DB = {
   getCategories(){ return Store.list('mesa_categories'); },
   saveCategories(list){ Store.set('mesa_categories', list); },
   getSales(){ return Store.list('mesa_sales'); },
-  saveSales(list){ Store.set('mesa_sales', list); },
+  saveSales(list){ return Store.set('mesa_sales', list); },
   nextSaleNumber(){ return DB.nextCounter('mesa_counter'); },
   nextCounter(key){
     let n = (parseInt(localStorage.getItem(key) || '0', 10) || 0) + 1;
@@ -6245,7 +6248,7 @@ const DB = {
   getMoves(){ return Store.list('mesa_inv_moves'); },
   saveMoves(list){ Store.set('mesa_inv_moves', list.slice(-3000)); },
   getParked(){ return Store.list('mesa_parked'); },
-  saveParked(list){ Store.set('mesa_parked', list); }
+  saveParked(list){ return Store.set('mesa_parked', list); }
 };
 
 function initDB(){
@@ -6992,17 +6995,7 @@ function renderSale(){
       </div>
       <button class="tool-btn" onclick="openScanner()" title="Escanear con la cámara" aria-label="Escanear con la cámara">${icon('barcode')}</button>
       <button class="tool-btn" onclick="openCustomItem()" title="Venta libre (F8)" aria-label="Venta libre">${icon('pen')}</button>
-      ${(() => {
-        const isApp = !!window.VendoNative;
-        const sess = (typeof cashCurrent === 'function') ? cashCurrent() : null;
-        if(isApp){
-          /* Android: solo "Cerrar caja" (si hay caja abierta y tiene permiso) */
-          if(!sess || !can('manejarCaja')) return '';
-          const vieja = (typeof cashIsStale === 'function') && cashIsStale(sess);
-          return `<button class="tool-btn md-quick cash-quick close" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}" title="Cerrar caja" aria-label="Cerrar caja">${icon('check')}<span class="mdq-txt">Cerrar caja</span></button>`;
-        }
-        return `<button class="tool-btn md-quick cash-quick" onclick="goTo('cash')" title="Caja" aria-label="Caja">${icon('cashbox')}<span class="mdq-txt">Caja</span></button>`;
-      })()}
+      ${window.VPMesas?.quickButton() || ''}
     </div>
     ${typeof parkedBarHTML === 'function' ? parkedBarHTML() : ''}
     ${chips}
@@ -7748,17 +7741,17 @@ function cartSheetHTML(step){
         <svg class="svc-dbl" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6"/></svg>
       </button>
       <div class="svc-body ${window.__vpSvcOpen ? 'open' : ''}">
-      <div class="opt-grid">
-        ${SERVICE_TYPES.map(s => `
-          <button class="opt-card ${checkout.serviceType===s.id?'active':''}" onclick="setServiceType('${s.id}')">
-            <span class="opt-emoji">${icon(s.ico)}</span>${s.name}
+      <div class="opt-grid vp-floor-services">
+        ${SERVICE_TYPES.filter(s => s.id !== 'mesa' || (window.VPMesas && !checkout.menuOrderId && !checkout.vpcCuenta)).map(s => `
+          <button class="opt-card ${checkout.serviceType===s.id?'active':''}" onclick="setServiceType('${s.id}')" ${checkout.floorOrderId && s.id !== 'mesa' ? 'disabled' : ''}>
+            <span class="opt-emoji">${s.id === 'mesa' ? VPMesas.tableIcon : icon(s.ico)}</span>${s.name}
           </button>
         `).join('')}
       </div>
       <div class="two-fields co-extra">
         <div class="field">
-          <label for="coTable">${tableFieldLabel()}</label>
-          <input id="coTable" type="text" maxlength="60" value="${escapeHtml(checkout.table)}" placeholder="${checkout.serviceType === 'comer' && bizIsFood() ? 'Ej. 4' : 'Ej. Sr. López'}" oninput="checkout.table=this.value">
+          <label for="coTable">${checkout.floorTableId ? 'Mesa asignada' : tableFieldLabel()}</label>
+          <input id="coTable" type="text" maxlength="60" value="${escapeHtml(checkout.table)}" placeholder="${checkout.serviceType === 'comer' && bizIsFood() ? 'Ej. 4' : 'Ej. Sr. López'}" oninput="checkout.table=this.value" ${checkout.floorTableId ? 'readonly' : ''}>
         </div>
         <div class="field">
           <label>Cliente (opcional)</label>
@@ -7781,6 +7774,7 @@ function cartSheetHTML(step){
 
       ${(totals.discount > 0 || showsTax(tax) || totals.tip > 0) ? totalRows(true) : ''}
 
+      ${checkout.floorTableId ? `<button class="btn ghost block" onclick="VPMesas.park()">${icon('pause')} ${checkout.floorOrderId ? 'Guardar cambios' : 'Dejar mesa abierta'}</button>` : ''}
       <div class="p2-actions" data-fx="actions">
         <button class="btn ghost" onclick="openCartSheet('cart')">Volver</button>
         <button class="btn whatsapp block" id="btnCobrar" onclick="confirmarCobro()">${icon('check')} Cobrar ${formatMoney(toPay)}</button>
@@ -8094,7 +8088,13 @@ function saveOrderDiscount(){
 }
 
 /* ---------- Cobro: servicio, pago, efectivo, propina ---------- */
-function setServiceType(id){ checkout.serviceType = id; openCartSheet('checkout'); }
+function setServiceType(id){
+  if(id === 'mesa'){ VPMesas.open('checkout'); return; }
+  if(checkout.floorOrderId) return;
+  if(checkout.floorTableId){ delete checkout.floorTableId; checkout.table = ''; }
+  checkout.serviceType = id;
+  openCartSheet('checkout');
+}
 function toggleSvcTypes(){
   const open = !window.__vpSvcOpen; window.__vpSvcOpen = open;
   const b = document.querySelector('.svc-toggle'), c = document.querySelector('.svc-body');
@@ -8295,6 +8295,11 @@ function confirmarCobro(){
     return;
   }
 
+  const floorOrderId = checkout.floorOrderId;
+  if(checkout.floorTableId && !VPMesas.canCharge()){
+    toast('Revisa la mesa antes de cobrar', { icon:icon('alert') });
+    return;
+  }
   const cust = checkoutCustomer();
   const tax = taxInfo();
   const number = DB.nextSaleNumber();
@@ -8329,6 +8334,7 @@ function confirmarCobro(){
     origin: 'caja',
     deviceId: Store.meta().deviceId
   };
+  if(floorOrderId) sale.floorOrderId = floorOrderId;
   if(!sale.payments) delete sale.payments;
 
   /* Si el negocio tiene varios usuarios, la venta queda a nombre de
@@ -8349,7 +8355,9 @@ function confirmarCobro(){
 
   const sales = DB.getSales();
   sales.push(sale);
-  DB.saveSales(sales);
+  const saved = DB.saveSales(sales);
+  if(checkout.floorTableId && !saved){ toast('No se pudo guardar la venta'); return; }
+  if(floorOrderId) DB.saveParked(DB.getParked().filter(p => p.id !== floorOrderId));
 
   // Se descuenta lo vendido del inventario (piezas, kilos, litros o metros).
   if(typeof invContext === 'function') invContext({ type:'venta', ref:orderNumberLabel(number) });
@@ -22412,6 +22420,7 @@ function parkedBarHTML(){
 }
 function parkCurrentSale(){
   if(!cart.length){ toast('El carrito está vacío'); return; }
+  if(checkout.floorTableId){ VPMesas.park(); return; }
   const food = bizIsFood();
   const sug = checkout.table ? (food && checkout.serviceType === 'comer' ? 'Mesa ' + checkout.table : checkout.table) : (checkoutCustomer() ? checkoutCustomer().name : '');
   askConfirm({
@@ -22422,20 +22431,28 @@ function parkCurrentSale(){
   }, card => {
     if(!cart.length) return;   /* ya se guardó: no se deja una venta en espera vacía */
     const name = ((((card && card.querySelector('#pkName')) || {}).value) || '').trim().slice(0, 40) || ('Pedido ' + fmtTime(new Date().toISOString()));
-    parkNow(name);
+    if(!parkNow(name)){ toast('No se pudo guardar el pedido'); return; }
     closeModal();
     render();
     toast('Guardado: ' + name, { icon:icon('pause'), variant:'toast-success', subtitle:'Lo encuentras en ' + parkedLabel().toLowerCase() });
   });
 }
-function parkNow(name){
+function parkNow(name, orderId){
   const t = computeTotals();
   const list = DB.getParked();
-  list.push({ id:uid('e'), name, at:new Date().toISOString(), by:meName(), byId:meId(),
-              cart:JSON.parse(JSON.stringify(cart)), customItems:JSON.parse(JSON.stringify(customItems)),
-              checkout:Object.assign({}, checkout, { cash:'' }), total:t.total, units:cartUnitsCount() });
-  DB.saveParked(list);
+  const existing = orderId ? list.findIndex(p => p.id === orderId) : -1;
+  if(orderId && existing < 0) return false;
+  const entry = {
+    id: orderId || uid('e'), name, at:new Date().toISOString(), by:meName(), byId:meId(),
+    cart:JSON.parse(JSON.stringify(cart)), customItems:JSON.parse(JSON.stringify(customItems)),
+    checkout:Object.assign({}, checkout, { cash:'' }), total:t.total, units:cartUnitsCount()
+  };
+  if(entry.checkout.floorTableId) entry.checkout.floorOrderId = entry.id;
+  if(existing < 0) list.push(entry);
+  else list[existing] = entry;
+  if(!DB.saveParked(list)) return false;
   cart = []; customItems = {}; checkout = newCheckout();
+  return true;
 }
 function openParkedList(){
   const list = DB.getParked().slice().reverse();
@@ -22462,8 +22479,9 @@ function resumeParked(id){
   /* Retomar una venta en espera también es empezar a vender */
   if(!saleStartGate(() => resumeParked(id))) return;
   const doIt = () => {
-    const list = DB.getParked().filter(x => x.id !== id);
-    DB.saveParked(list);
+    const list = DB.getParked();
+    if(!list.some(x => x.id === id)) return;
+    if(!p.checkout?.floorTableId && !DB.saveParked(list.filter(x => x.id !== id))) return;
     cart = (p.cart || []).slice();
     customItems = Object.assign({}, p.customItems || {});
     checkout = Object.assign(newCheckout(), p.checkout || {}, { cash:'' });
@@ -22472,9 +22490,12 @@ function resumeParked(id){
     openCartSheet('cart');
     toast('Retomaste: ' + p.name, { icon:icon('cart'), variant:'toast-success toast-top' });
   };
+  if(cart.length && checkout.floorOrderId === id){ openCartSheet('cart'); return; }
   if(cart.length){
     askConfirm({ title:'Ya tienes productos en el carrito', text:'Lo que tienes ahorita se guarda en espera y retomas "' + escapeHtml(p.name) + '".', ok:'Cambiar', icon:icon('pause') }, () => {
-      parkNow('Pedido ' + fmtTime(new Date().toISOString()));
+      if(!parkNow(checkout.floorTableId ? checkout.table : 'Pedido ' + fmtTime(new Date().toISOString()), checkout.floorOrderId)){
+        toast('No se pudo guardar el pedido actual'); return;
+      }
       doIt();
     });
     return;
