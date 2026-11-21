@@ -24825,13 +24825,37 @@ const Cloud = {
 
   /* ---------- Membresía (la escribe SOLO el servidor / Stripe) ---------- */
   async refreshSub(){
-    try{
-      const { data } = await this.sb.from('profiles').select('trial_start,trial_end,paid_until').maybeSingle();
-      if(data) this.sub = data;
-    }catch(e){}
-    return this.sub;
+    const uid = this.uid, gen = this.gen;
+    if(!uid) return null;
+    if(this.subRequest?.uid === uid && this.subRequest.gen === gen) return this.subRequest.promise;
+    const request = { uid, gen };
+    this.subRequest = request;
+    request.promise = (async () => {
+      for(const delay of [0, 500, 1500]){
+        if(delay) await new Promise(resolve => setTimeout(resolve, delay));
+        if(this.uid !== uid || this.gen !== gen) return null;
+        try{
+          const { data, error } = await this.sb.from('profiles')
+            .select('user_id,trial_start,trial_end,paid_until,web_paid_until,play_paid_until,vp_web_pagado_hasta,vp_play_pagado_hasta')
+            .eq('user_id', uid).abortSignal(AbortSignal.timeout(5000)).maybeSingle();
+          if(this.uid !== uid || this.gen !== gen) return null;
+          if(!error && data?.user_id === uid){
+            this.sub = data;
+            return data;
+          }
+        }catch(e){}
+      }
+      return this.sub?.user_id === uid ? this.sub : null;
+    })().finally(() => { if(this.subRequest === request) this.subRequest = null; });
+    return request.promise;
   },
-  paidNow(){ return !!(this.sub && this.sub.paid_until && new Date(this.sub.paid_until) > new Date()); },
+  paidNow(){
+    const s = this.sub;
+    if(!this.uid || s?.user_id !== this.uid) return false;
+    const now = Date.now();
+    return [s.paid_until,s.web_paid_until,s.play_paid_until,s.vp_web_pagado_hasta,s.vp_play_pagado_hasta]
+      .some(until => until && Date.parse(until) > now);
+  },
   /* Vendo Plus es GRATIS: vender, tickets, historial, caja, clientes,
      inventario y tu perfil no se bloquean nunca, pague o no pague.
      Lo que se vende es Premium (ver vendo-premium.js), y eso solo bloquea
@@ -25058,7 +25082,7 @@ if(Cloud.ready){
 /* ---------- Membresía: 1 mes de prueba (fechas de Supabase) y pago con Stripe ---------- */
 const _trialInfo = trialInfo;
 trialInfo = function(u){
-  if(!Cloud.ready || !Cloud.sub) return _trialInfo(u);
+  if(!Cloud.ready || !Cloud.uid || Cloud.sub?.user_id !== Cloud.uid) return _trialInfo(u);
   const s = Cloud.sub, start = new Date(s.trial_start), end = new Date(s.trial_end), now = new Date();
   const paid = Cloud.paidNow();
   const total = Math.max(1, Math.round((end - start) / 864e5));
@@ -28827,7 +28851,7 @@ function cartSanitize(){
 <script src="vendo-mascota.js"></script>
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
-<script src="vendo-premium.js?v=20261030"></script>
+<script src="vendo-premium.js?v=20261121-premium"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
