@@ -311,20 +311,17 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .btn.block{ width:100%; }
   #stripeMenuTest [hidden], .md-mp-card[hidden], .md-yn-txt small[hidden]{ display:none; }
   .md-stripe-reveal{
-    display:grid; grid-template-rows:0fr; visibility:hidden;
-    transition:grid-template-rows .26s cubic-bezier(.25,.85,.35,1), visibility 0s .26s;
+    display:grid; grid-template-rows:0fr; opacity:0; visibility:hidden;
+    transition:grid-template-rows .34s cubic-bezier(.25,.65,.3,1),
+      opacity .2s ease, visibility 0s .34s;
   }
-  .md-stripe-reveal.is-open{
-    grid-template-rows:1fr; visibility:visible; transition-delay:0s;
+  .md-stripe-reveal.is-open.is-ready{
+    grid-template-rows:1fr; opacity:1; visibility:visible;
+    transition-delay:0s;
   }
   .md-stripe-reveal > div{ min-height:0; overflow:hidden; }
-  .md-stripe-reveal #stripeMenuTest{
-    animation:none; opacity:0; transform:translateY(-5px);
-    transition:opacity .16s ease, transform .22s ease;
-  }
-  .md-stripe-reveal.is-open #stripeMenuTest{ opacity:1; transform:none; }
   @media (prefers-reduced-motion:reduce){
-    .md-stripe-reveal, .md-stripe-reveal #stripeMenuTest{ transition:none; transform:none; }
+    .md-stripe-reveal{ transition:none; }
   }
   .btn.ghost{ background:transparent; border:1.5px solid var(--border); }
   .btn:disabled{ opacity:.45; }
@@ -5195,8 +5192,8 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
   border-color:#1abc32; background:radial-gradient(circle, #1abc32 0 3px, #fff 3.5px);
   box-shadow:none;
 }
-.md-card-sheet .sheet-actions { margin:21px 0 0; gap:8px; }
-.md-card-sheet .sheet-actions .btn { min-height:37px; border-radius:999px; font-size:13px; font-weight:800; }
+.md-card-sheet .sheet-actions { margin:27px 2px 0; }
+.md-card-sheet .sheet-actions .btn { min-height:40px; border-radius:999px; font-weight:800; }
 .md-card-sheet .sheet-actions .ghost { border:1px solid #ececf1; color:inherit; }
 body[data-section="menu"] .md-card-sheet .sheet-actions .primary:not(:disabled) {
   color:#fff; background:#1bbd30; box-shadow:0 6px 12px -7px #1bbd3080;
@@ -16416,22 +16413,29 @@ async function stripeMenuStatus(){
   panel.dataset.statusRequested = '1';
   const status = panel.querySelector('.md-stripe-status');
   const button = panel.querySelector('.md-stripe-connect');
+  const reveal = panel.closest('.md-stripe-reveal');
   try{
     let result = await stripeMenuRequest('status');
+    if(reveal.closest('#modal-layer') === null) return;
+    stripeMenuRenderStatus(panel, result);
+    reveal.classList.add('is-ready');
+    const canRefresh = () => !!reveal.closest('#modal-layer') &&
+      panel.dataset.statusRequested === '1' && !button.disabled;
+
     for(const delay of [1500, 3000]){
-      if(!panel.isConnected) return;
       if(!result.linked || result.ready || result.statusUnavailable) break;
       await new Promise(resolve => setTimeout(resolve, delay));
-      if(!panel.isConnected) return;
-      result = await stripeMenuRequest('status');
+      if(!canRefresh()) return;
+      result = await stripeMenuRequest('status').catch(() => null);
+      if(!result || !canRefresh()) return;
+      stripeMenuRenderStatus(panel, result);
     }
-    if(!panel.isConnected) return;
-    stripeMenuRenderStatus(panel, result);
   }catch(error){
-    if(panel.isConnected){
+    if(reveal.closest('#modal-layer')){
       delete panel.dataset.statusRequested;
       status.textContent = error.message;
       button.disabled = false;
+      reveal.classList.add('is-ready');
     }
   }
 }
@@ -16455,6 +16459,7 @@ async function stripeMenuUnlink(button){
   const panel = button.closest('#stripeMenuTest');
   const status = panel.querySelector('.md-stripe-status');
   const connect = panel.querySelector('.md-stripe-connect');
+  panel.dataset.statusRequested = 'settled';
   button.disabled = true;
   connect.disabled = true;
   try{
@@ -16560,7 +16565,7 @@ function mdRenderPayForm(){
       <button class="btn primary block" onclick="mdSavePay()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
     </div>
   `, { dismissible:true, sheetClass:card ? 'md-card-sheet' : '' });
-  if(card && d.on === true) stripeMenuStatus();
+  if(card) stripeMenuStatus();
 }
 function mdSavePay(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
