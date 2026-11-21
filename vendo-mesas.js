@@ -14,12 +14,11 @@ window.VPMesas = (() => {
   ].map(([id, name, x, y]) => ({ id, name, x, y }));
   const layout = () => Store.get(key, defaults());
   function openOrders() {
-    const pending = DB.getParked().filter(p => p.checkout?.floorTableId);
+    const pending = DB.getTableOrders();
     if (!pending.length) return new Map();
     const paid = new Set(DB.getSales().map(sale => sale.floorOrderId).filter(Boolean));
     return new Map(pending.filter(p => !paid.has(p.id)).map(p => [p.checkout.floorTableId, p]));
   }
-  const hasActive = () => openOrders().size > 0;
   const currentTable = () => layout().find(t => t.id === checkout.floorTableId);
 
   function open(from) {
@@ -178,7 +177,7 @@ window.VPMesas = (() => {
         toast('Esta mesa ya tiene una cuenta abierta', { subtitle:'Puedes editarla desde Mesas en Nueva venta.' });
         return;
       }
-      resumeParked(order.id);
+      resumeSavedSale(order.id, true);
       return;
     }
     if (source !== 'checkout' && !order) return;
@@ -216,7 +215,10 @@ window.VPMesas = (() => {
   }
 
   function quickButton() {
-    return hasActive() ? `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="Mesas">${tableIcon}</button>` : '';
+    const count = openOrders().size;
+    if (!count) return '';
+    const label = count === 1 ? '1 mesa abierta' : count + ' mesas abiertas';
+    return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="Mesas, ${label}">${tableIcon}<span class="vp-floor-count" aria-hidden="true">${count}</span></button>`;
   }
 
   return { open, back, edit, add, remove, reset, save, park, canCharge, quickButton, tableIcon };
