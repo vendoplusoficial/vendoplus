@@ -309,7 +309,19 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .btn.dark{ background:var(--ink); color:#fff; }
   .btn.danger{ background:var(--danger-bg); color:var(--accent-2); }
   .btn.block{ width:100%; }
-  #stripeMenuTest [hidden]{ display:none; }
+  #stripeMenuTest [hidden], .md-mp-card[hidden], .md-yn-txt small[hidden]{ display:none; }
+  .md-stripe-reveal{
+    display:grid; grid-template-rows:0fr; opacity:0; visibility:hidden;
+    transition:grid-template-rows .32s cubic-bezier(.22,1,.36,1), opacity .24s ease, visibility 0s .32s;
+  }
+  .md-stripe-reveal.is-open{
+    grid-template-rows:1fr; opacity:1; visibility:visible; transition-delay:0s;
+  }
+  .md-stripe-reveal > div{ min-height:0; overflow:hidden; }
+  .md-stripe-reveal #stripeMenuTest{ animation:none; }
+  @media (prefers-reduced-motion:reduce){
+    .md-stripe-reveal{ transition:none; }
+  }
   .btn.ghost{ background:transparent; border:1.5px solid var(--border); }
   .btn:disabled{ opacity:.45; }
   .btn svg{ width:16px; height:16px; }
@@ -4311,7 +4323,7 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 @media (min-width:700px){ .vp-sheet-bg{ display:none !important; } }
 
 /* ===== Formulario Nuevo producto ===== */
-.modal-overlay:has(.vp-pf){ padding:0; align-items:stretch; }
+.modal-overlay:has(.vp-pf){ padding:0; align-items:stretch; overflow:hidden; }
 .modal-sheet.vp-pf{ width:100%; max-width:none; height:100dvh; max-height:100dvh; margin:0; border-radius:0; background:#fff; padding:max(16px,env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom)); }
 .vp-pf .sheet-grip{ display:none; }
 .vp-pf .sheet-header{ display:flex; flex-direction:column; align-items:flex-start; gap:20px; margin-bottom:22px; }
@@ -4381,10 +4393,8 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 }
 @media (min-width:700px){ .modal-sheet.vp-pf{ max-width:520px; } }
 
-@media (prefers-reduced-motion:no-preference){
-  .modal-overlay.is-swap:not(.is-closing) .modal-sheet.vp-pf-enter{
-    animation:sheetUp .42s var(--ease-sheet) both;
-  }
+.modal-overlay:not(.is-closing) .modal-sheet.vp-pf{
+  animation:vpSheetIn .46s cubic-bezier(.22,1,.36,1) both;
 }
 @media (prefers-reduced-motion:reduce){
   .modal-sheet.vp-pf{ animation:none !important; }
@@ -7553,7 +7563,6 @@ function openModal(html, opts){
      ejemplo al elegir Efectivo/Tarjeta o al cambiar una cantidad). */
   const prevSheet = layer.querySelector('.modal-overlay:not(.is-closing) .modal-sheet');
   const swap = !!prevSheet;
-  const productEnter = opts.sheetClass === 'vp-pf' && swap && !prevSheet.classList.contains('vp-pf');
   const paymentMotion = opts.sheetClass === 'md-card-sheet' ||
     opts.sheetClass === 'mp-link-sheet' || opts.sheetClass === 'mp-linked-sheet';
   const animatePaymentSwap = paymentMotion && swap && !prevSheet.classList.contains(opts.sheetClass);
@@ -7561,7 +7570,7 @@ function openModal(html, opts){
   const prevY = swap ? prevSheet.scrollTop : 0;
   const prevKeep = swap ? Array.from(prevSheet.querySelectorAll('[data-keep-scroll]')).map(e => [e.getAttribute('data-keep-scroll'), e.scrollTop]) : [];
   layer.innerHTML = `<div class="modal-overlay ${opts.center?'modal-center':''} ${swap?'is-swap':''}" id="modalOverlay" ${opts.dismissible === false ? 'data-lock="1"' : ''}>
-      <div class="modal-sheet ${opts.card?'modal-card':''} ${opts.sheetClass || ''} ${productEnter ? 'vp-pf-enter' : ''} ${paymentMotion ? 'payment-motion' : ''} ${animatePaymentSwap ? 'payment-motion-enter' : ''}">
+      <div class="modal-sheet ${opts.card?'modal-card':''} ${opts.sheetClass || ''} ${paymentMotion ? 'payment-motion' : ''} ${animatePaymentSwap ? 'payment-motion-enter' : ''}">
         ${opts.grip !== false ? '<div class="sheet-grip"></div>' : ''}
         ${html}
       </div>
@@ -16275,9 +16284,28 @@ function mdPaySet(on){
   if(!mdPayDraft) return;
   mdPayGrab();
   mdPayDraft.on = on;
-  if(mdPayKind === 'card') mdCardChoice = on;
   vibrate(8);
-  mdRenderPayForm();
+  if(mdPayKind !== 'card'){ mdRenderPayForm(); return; }
+  mdCardChoice = on;
+  const sheet = document.querySelector('#modal-layer .md-card-sheet');
+  if(!sheet){ mdRenderPayForm(); return; }
+  const mercadoPago = sheet.querySelector('.md-mp-card');
+  if(mercadoPago) mercadoPago.hidden = !on;
+  const hideHelp = on && !!mercadoPago?.classList.contains('is-linked');
+  sheet.querySelectorAll('.md-yn-opt').forEach(button => {
+    const active = button.dataset.choice === String(on);
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+    const help = button.querySelector('small');
+    if(help) help.hidden = hideHelp;
+  });
+  sheet.querySelector('.sheet-actions .primary').disabled = false;
+  const stripe = sheet.querySelector('.md-stripe-reveal');
+  if(stripe){
+    stripe.classList.toggle('is-open', on);
+    stripe.inert = !on;
+    if(on) stripeMenuStatus();
+  }
 }
 function mdCancelPay(){
   if(mdPayKind === 'card') mdCardChoice = undefined;
@@ -16313,7 +16341,8 @@ async function stripeMenuRequest(action){
 }
 async function stripeMenuStatus(){
   const panel = document.getElementById('stripeMenuTest');
-  if(!panel) return;
+  if(!panel || panel.dataset.statusRequested) return;
+  panel.dataset.statusRequested = '1';
   const status = panel.querySelector('small');
   const button = panel.querySelector('button');
   try{
@@ -16334,6 +16363,7 @@ async function stripeMenuStatus(){
     panel.querySelector('button[onclick="stripeMenuUnlink(this)"]').hidden = !result.linked;
   }catch(error){
     if(panel.isConnected){
+      delete panel.dataset.statusRequested;
       status.textContent = error.message;
       button.hidden = false;
     }
@@ -16377,12 +16407,12 @@ async function stripeMenuStart(button){
 function mdRenderPayForm(){
   const d = mdPayDraft; if(!d) return;
   const card = mdPayKind === 'card';
-  const showMercadoPago = card && d.on === true && mpVisible();
+  const showMercadoPago = card && mpVisible();
   const linked = showMercadoPago && mpLinked();
   const opt = (on, ico, title, sub) => `
-    <button type="button" class="md-yn-opt ${d.on === on ? 'active' : ''}" onclick="mdPaySet(${on})" aria-pressed="${d.on === on}">
+    <button type="button" class="md-yn-opt ${d.on === on ? 'active' : ''}" data-choice="${on}" onclick="mdPaySet(${on})" aria-pressed="${d.on === on}">
       <span class="md-yn-ico">${icon(ico)}</span>
-      <span class="md-yn-txt"><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</span>
+      <span class="md-yn-txt"><b>${title}</b>${sub ? `<small ${card && linked && d.on === true ? 'hidden' : ''}>${sub}</small>` : ''}</span>
       <span class="md-yn-radio"></span>
     </button>`;
   openModal(`
@@ -16393,13 +16423,13 @@ function mdRenderPayForm(){
     <p class="md-yn-q">${card ? '¿Tu negocio cobra con tarjeta?' : '¿Tu negocio acepta transferencias?'}</p>
     <div class="md-yn">
       ${card
-        ? opt(true, 'card', 'Sí', linked ? '' : 'Tus clientes pueden pagar con tarjeta.')
-          + opt(false, 'cash', 'No', linked ? '' : 'La opción Tarjeta no le aparece al cliente.')
+        ? opt(true, 'card', 'Sí', 'Tus clientes pueden pagar con tarjeta.')
+          + opt(false, 'cash', 'No', 'La opción Tarjeta no le aparece al cliente.')
         : opt(true, 'transfer', 'Sí, acepto transferencias', 'El cliente verá tu CLABE y el número de su pedido como concepto')
           + opt(false, 'cash', 'No, transferencia no', 'La opción Transferencia no le aparece al cliente')}
     </div>
     ${showMercadoPago ? `
-      <div class="md-mp-card ${linked ? 'is-linked' : ''}">
+      <div class="md-mp-card ${linked ? 'is-linked' : ''}" ${d.on === true ? '' : 'hidden'}>
         <span class="md-mp-brand" role="img" aria-label="Mercado Pago">
           <img src="${MP_SHEET_LOGO}" alt=""><b aria-hidden="true">mercado<br>pago</b>
         </span>
@@ -16412,12 +16442,16 @@ function mdRenderPayForm(){
           <button type="button" class="md-mp-action" onclick="mpOpenForm()">Enlazar</button>`}
       </div>` : ''}
     ${card && location.origin === 'https://vendoplusoficial.com' ? `
-      <div id="stripeMenuTest" class="md-pay-fields">
-        <div class="field">
-          <label>Stripe · Modo de prueba</label>
-          <small role="status">Consultando el estado de Stripe…</small>
-          <button type="button" class="btn ghost block" onclick="stripeMenuStart(this)" hidden>Enlazar Stripe</button>
-          <button type="button" class="btn ghost block" onclick="stripeMenuUnlink(this)" hidden>Desenlazar Stripe</button>
+      <div class="md-stripe-reveal ${d.on === true ? 'is-open' : ''}" ${d.on === true ? '' : 'inert'}>
+        <div>
+          <div id="stripeMenuTest" class="md-pay-fields">
+            <div class="field">
+              <label>Stripe · Modo de prueba</label>
+              <small role="status">Consultando el estado de Stripe…</small>
+              <button type="button" class="btn ghost block" onclick="stripeMenuStart(this)" hidden>Enlazar Stripe</button>
+              <button type="button" class="btn ghost block" onclick="stripeMenuUnlink(this)" hidden>Desenlazar Stripe</button>
+            </div>
+          </div>
         </div>
       </div>` : ''}
     ${!card && d.on === true ? `
@@ -16436,7 +16470,7 @@ function mdRenderPayForm(){
       <button class="btn primary block" onclick="mdSavePay()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
     </div>
   `, { dismissible:true, sheetClass:card ? 'md-card-sheet' : '' });
-  if(card) stripeMenuStatus();
+  if(card && d.on === true) stripeMenuStatus();
 }
 function mdSavePay(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
