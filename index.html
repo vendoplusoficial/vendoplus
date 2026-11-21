@@ -311,15 +311,15 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .btn.block{ width:100%; }
   #stripeMenuTest [hidden], .md-mp-card[hidden], .md-yn-txt small[hidden]{ display:none; }
   .md-stripe-reveal{
-    display:grid; grid-template-rows:0fr; opacity:0; visibility:hidden;
-    transition:grid-template-rows .34s cubic-bezier(.25,.65,.3,1),
-      opacity .2s ease, visibility 0s .34s;
+    display:grid; grid-template-rows:0fr; visibility:hidden;
+    transition:grid-template-rows .26s cubic-bezier(.22,.61,.36,1), visibility 0s .26s;
   }
   .md-stripe-reveal.is-open.is-ready{
-    grid-template-rows:1fr; opacity:1; visibility:visible;
+    grid-template-rows:1fr; visibility:visible;
     transition-delay:0s;
   }
-  .md-stripe-reveal > div{ min-height:0; overflow:hidden; }
+  .md-stripe-reveal > div{ min-height:0; overflow:clip; }
+  .md-card-sheet{ overflow-anchor:none; }
   @media (prefers-reduced-motion:reduce){
     .md-stripe-reveal{ transition:none; }
   }
@@ -5160,10 +5160,9 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
 .md-card-sheet .md-yn-txt b { font-size:16px; line-height:1.1; }
 .md-card-sheet .md-yn-txt small { font-size:clamp(11px,3.05vw,12px); margin-top:0; line-height:1.2; }
 .md-card-sheet .md-yn-radio { width:20px; height:20px; }
-.md-card-sheet .sheet-actions { margin:26px 2px 0; }
 .md-card-sheet .sheet-actions .primary { border-radius:999px; }
 .md-card-sheet .sheet-actions .primary:disabled { opacity:1; background:#bce9d2; color:white; box-shadow:0 6px 18px -6px #bce9d2; }
-.md-card-sheet .sheet-actions .btn, .mp-link-sheet .sheet-actions .btn {
+.mp-link-sheet .sheet-actions .btn {
   flex:1 1 0; min-width:0; min-height:45px; padding:8px 6px; font-size:14px; line-height:1.2;
 }
 /* Estado de Mercado Pago dentro de Pago con tarjeta */
@@ -5192,12 +5191,19 @@ body[data-section="account"] #view .acc-ico svg{ color:#5B6275 !important; }
   border-color:#1abc32; background:radial-gradient(circle, #1abc32 0 3px, #fff 3.5px);
   box-shadow:none;
 }
-.md-card-sheet .sheet-actions { margin:27px 2px 0; }
-.md-card-sheet .sheet-actions .btn { min-height:40px; border-radius:999px; font-weight:800; }
-.md-card-sheet .sheet-actions .ghost { border:1px solid #ececf1; color:inherit; }
+.md-card-sheet .sheet-actions .ghost { border:1.5px solid var(--border); border-radius:var(--radius-btn); }
 body[data-section="menu"] .md-card-sheet .sheet-actions .primary:not(:disabled) {
-  color:#fff; background:#1bbd30; box-shadow:0 6px 12px -7px #1bbd3080;
+  background:#16C15B; box-shadow:0 6px 16px rgba(var(--brand-rgb),.22);
 }
+@media (max-width:699px){
+  html:has(.md-config-sheet), body:has(.md-config-sheet) { background:#fff; }
+  .modal-sheet.md-config-sheet { background:#fff; padding-bottom:0; }
+  .md-config-footer {
+    margin-top:18px; padding-bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+    background:#fff;
+  }
+}
+@media (min-width:700px){ .md-config-footer { margin-top:18px; } }
 .md-stripe-mode, .md-stripe-status { color:#62667b; font-size:11px; font-weight:600; }
 .md-stripe-mode { margin:6px 0 9px; }
 .md-stripe-status { margin:0; overflow-wrap:anywhere; }
@@ -5282,14 +5288,14 @@ body[data-section="menu"] .md-card-sheet .sheet-actions .primary:not(:disabled) 
 /* Transiciones de las hojas de tarjeta y Mercado Pago */
 @media (prefers-reduced-motion:no-preference) {
   .modal-overlay:not(.is-swap):not(.is-closing) .modal-sheet.payment-motion {
-    animation:sheetUp .36s cubic-bezier(.22,.75,.23,1) both;
+    animation:paymentSheetIn .24s cubic-bezier(.22,.61,.36,1) both;
   }
   .modal-overlay.is-swap:not(.is-closing) .modal-sheet.payment-motion-enter {
-    animation:paymentSheetIn .3s cubic-bezier(.22,.75,.23,1) both;
+    animation:paymentSheetIn .22s cubic-bezier(.22,.61,.36,1) both;
   }
   @keyframes paymentSheetIn {
-    from { transform:translateY(38px); opacity:.75; }
-    to { transform:translateY(0); opacity:1; }
+    from { transform:translate3d(0,16px,0); opacity:.85; }
+    to { transform:translate3d(0,0,0); opacity:1; }
   }
 }
 
@@ -7606,7 +7612,7 @@ function openModal(html, opts){
      ejemplo al elegir Efectivo/Tarjeta o al cambiar una cantidad). */
   const prevSheet = layer.querySelector('.modal-overlay:not(.is-closing) .modal-sheet');
   const swap = !!prevSheet;
-  const paymentMotion = opts.sheetClass === 'md-card-sheet' ||
+  const paymentMotion = opts.sheetClass === 'md-card-sheet' || opts.sheetClass === 'md-transfer-sheet' ||
     opts.sheetClass === 'mp-link-sheet' || opts.sheetClass === 'mp-linked-sheet';
   const animatePaymentSwap = paymentMotion && swap && !prevSheet.classList.contains(opts.sheetClass);
   const prevTitle = swap ? sheetTitleOf(prevSheet) : '';
@@ -16564,7 +16570,7 @@ function mdRenderPayForm(){
       <button class="btn ghost block" onclick="mdCancelPay()">Cancelar</button>
       <button class="btn primary block" onclick="mdSavePay()" ${d.on === null ? 'disabled' : ''}>Guardar</button>
     </div>
-  `, { dismissible:true, sheetClass:card ? 'md-card-sheet' : '' });
+  `, { dismissible:true, sheetClass:card ? 'md-card-sheet' : 'md-transfer-sheet' });
   if(card) stripeMenuStatus();
 }
 function mdSavePay(){
@@ -20015,7 +20021,9 @@ function mdCfgSheetHTML(){
       <button class="sheet-close" onclick="mdSetCfgVisible(false)" aria-label="Cerrar">${icon('close')}</button>
     </div>
     ${mdConfigHTML(mdCfg())}
-    <button type="button" class="btn primary block" style="margin-top:18px;" onclick="mdSetCfgVisible(false)">Listo</button>`;
+    <div class="md-config-footer">
+      <button type="button" class="btn primary block" onclick="mdSetCfgVisible(false)">Listo</button>
+    </div>`;
 }
 /* ---- Volver de una subsección sin perder el lugar ----
    Al entrar a "Servicio a domicilio", "Horarios", etc., la hoja de
@@ -20035,16 +20043,10 @@ openModal = function(html, opts){
 function mdOpenCfgSheet(){
   if(!mdCfg().active){ mdCfgSheetOn = false; return; }
   mdCfgSheetOn = true;
-  openModal(mdCfgSheetHTML(), { dismissible:true });
-  if(mdCfgScrollY){
-    const sh = document.querySelector('#modal-layer .modal-sheet');
-    if(sh){
-      sh.scrollTop = mdCfgScrollY;
-      /* El alto real se conoce hasta que termina de pintarse, así que se
-         vuelve a acomodar en el siguiente cuadro. */
-      requestAnimationFrame(() => { if(sh.isConnected && mdCfgScrollY) sh.scrollTop = mdCfgScrollY; });
-    }
-  }
+  openModal(mdCfgSheetHTML(), {
+    dismissible:true, sheetClass:'md-config-sheet',
+    restoreScroll:{ sheet:mdCfgScrollY, overlay:0 }
+  });
 }
 function mdCfgSheetShowing(){
   const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
@@ -20065,20 +20067,18 @@ function mdCfgSheetSync(){
     if(mdCfgSheetShowing()) _mdCloseModalBase();
     return;
   }
-  if(mdCfgSheetShowing()) openModal(mdCfgSheetHTML(), { dismissible:true });
+  if(mdCfgSheetShowing()) openModal(mdCfgSheetHTML(), { dismissible:true, sheetClass:'md-config-sheet' });
 }
 var _mdCloseModalBase = closeModal;
 closeModal = function(){
   const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
   const eraCfg = !!sh && sheetTitleOf(sh) === MD_CFG_TITLE;
   const eraSetup = !!sh && sheetTitleOf(sh) === MD_SETUP_TITLE;
+  if(eraCfg){ mdCfgSheetOn = false; mdCfgScrollY = 0; }
+  else if(eraSetup){ mdSetupOn = false; }
+  else if(mdSetupOn && currentView === 'menu' && !mdCfg().active){ mdOpenSetup(); return; }
+  else if(mdCfgSheetOn && currentView === 'menu' && mdCfg().active){ mdOpenCfgSheet(); return; }
   _mdCloseModalBase();
-  if(eraCfg){ mdCfgSheetOn = false; mdCfgScrollY = 0; return; }
-  if(eraSetup){ mdSetupOn = false; return; }
-  /* se cerró un formulario que estaba sobre la configuración inicial */
-  if(mdSetupOn && currentView === 'menu' && !mdCfg().active){ mdOpenSetup(); return; }
-  /* se cerró un formulario o confirmación que estaba sobre la configuración */
-  if(mdCfgSheetOn && currentView === 'menu' && mdCfg().active) mdOpenCfgSheet();
 };
 function mdSetCfgVisible(v){
   vibrate(8);
