@@ -25556,6 +25556,18 @@ doDeleteAccount = async function(){
       · Usuario activo .......... mesa_active_user, mesa_user_session, NIP.
       Cambiar de usuario dentro del negocio no toca las otras dos.
    ===================================================================== */
+function cloudRequiereInicio(sesion, error, enLinea, tokenGuardado){
+  return !sesion?.user && (cloudSesionMuerta(error) || (!error && enLinea && !tokenGuardado));
+}
+function cloudPedirInicio(){
+  Cloud.gen++;
+  Cloud.uid = null;
+  Cloud.sub = null;
+  authState.screen = 'login';
+  if(!AUTH.isLogged()) return;
+  AUTH.closeSession();
+  if(!document.body.classList.contains('auth-open')) showAuth('login');
+}
 const _bootApp = bootApp;
 bootApp = async function(){
   if(!Cloud.ready){
@@ -25589,23 +25601,22 @@ bootApp = async function(){
       /* Cierre de verdad: Supabase dice que esta sesión ya no existe. */
       if(ev === 'SIGNED_OUT' || ev === 'USER_DELETED'){
         if(Cloud._saliendoAProposito) return;      /* lo pidió el usuario: ya se atendió */
-        Cloud.gen++; Cloud.uid = null;
-        if(document.body.classList.contains('vp-restoring')) authState.screen = 'login';
-        if(AUTH.isLogged()){
-          AUTH.closeSession();
-          try{ toast('Tu sesión se cerró', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') }); }catch(e){}
-          try{ showAuth('login'); }catch(e){}
-        }
+        cloudPedirInicio();
       }
     });
     /* Reintento de recuperación: al volver el internet o la app al frente */
     const reintentar = async () => {
-      if(Cloud.uid || !AUTH.isLogged()) return;
-      if(document.visibilityState !== 'visible' && navigator.onLine === false) return;
+      if(!AUTH.isLogged() || navigator.onLine === false) return;
+      const gen = Cloud.gen;
       try{
         const r = await conLimiteCloud(Cloud.sb.auth.getSession(), 9000);
-        const s = r && r.data && r.data.session;
-        if(s && s.user){
+        if(Cloud.gen !== gen || !AUTH.isLogged()) return;
+        const s = r?.data?.session;
+        if(cloudRequiereInicio(s, r?.error, navigator.onLine !== false, cloudHayTokenGuardado())){
+          cloudPedirInicio();
+          return;
+        }
+        if(s?.user && Cloud.uid !== s.user.id){
           const dueno = localStorage.getItem('mesa_cloud_uid');
           if(dueno && dueno !== s.user.id) return;
           Cloud.gen++; Cloud.uid = s.user.id;
@@ -25621,7 +25632,7 @@ bootApp = async function(){
     document.addEventListener('visibilitychange', reintentar);
     window.addEventListener('online', reintentar);
     /* Y un reintento tranquilo cada minuto mientras falte la sesión */
-    setInterval(reintentar, 60000);
+    setInterval(() => { if(!Cloud.uid) reintentar(); }, 60000);
   }
   const yaEstabaDentro = AUTH.isLogged();
   const abrir = () => {
@@ -25647,13 +25658,9 @@ bootApp = async function(){
     }while(true);
 
     if(!sesion?.user){
-      if(cloudSesionMuerta(error)){
-        Cloud.gen++;
-        Cloud.uid = null;
-        AUTH.closeSession();
-        authState.screen = 'login';
-        if(yaEstabaDentro && !document.body.classList.contains('auth-open')) showAuth('login');
-      }else if(yaEstabaDentro && !Cloud.uid){
+      if(cloudRequiereInicio(sesion, error, navigator.onLine !== false, cloudHayTokenGuardado())){
+        cloudPedirInicio();
+      } else if(yaEstabaDentro && !Cloud.uid){
         setTimeout(() => Cloud.reintentarSesion(), 3000);
       }
       return false;
@@ -25677,12 +25684,13 @@ bootApp = async function(){
   };
 
   const sincronizar = async () => {
+    const membresia = Cloud.refreshSub().catch(() => null);
     Cloud.pendResume();
     try{ await Cloud.flush(); }catch(e){}
     Cloud._lastHyd = Date.now();
     try{ await conLimiteCloud(Cloud.hydrate(), 12000); }
     catch(e){ console.warn('[nube] no bajó la copia ahorita', e); setTimeout(() => Cloud.hydrateSoon(), 4000); }
-    try{ await conLimiteCloud(Cloud.refreshSub(), 8000); }catch(e){}
+    try{ await conLimiteCloud(membresia, 8000); }catch(e){}
   };
 
   const restauracion = restaurar();
