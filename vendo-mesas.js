@@ -4,6 +4,7 @@ window.VPMesas = (() => {
   const key = 'mesa_plano';
   const tableIcon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 10h18M5 10v8m14-8v8M3 7h18v3H3z"/></svg>';
   let source;
+  let checkoutScroll;
   let draft;
   let selected;
   let drag;
@@ -23,6 +24,8 @@ window.VPMesas = (() => {
 
   function open(from) {
     source = from;
+    const overlay = from === 'checkout' ? document.querySelector('#modal-layer .modal-overlay:has(.pay2)') : null;
+    checkoutScroll = overlay ? { sheet:overlay.querySelector('.modal-sheet').scrollTop, overlay:overlay.scrollTop } : null;
     draft = null;
     selected = null;
     draw(true);
@@ -33,7 +36,7 @@ window.VPMesas = (() => {
       draft = null;
       draw();
     } else if (source === 'checkout') {
-      openCartSheet('checkout');
+      returnToCheckout();
     } else {
       closeModal();
     }
@@ -188,7 +191,13 @@ window.VPMesas = (() => {
     checkout.floorTableId = table.id;
     checkout.serviceType = 'mesa';
     checkout.table = table.name;
-    openCartSheet('checkout');
+    returnToCheckout();
+  }
+
+  function returnToCheckout() {
+    const scroll = checkoutScroll;
+    checkoutScroll = null;
+    openCartSheet('checkout', scroll);
   }
 
   function canCharge() {
@@ -216,9 +225,9 @@ window.VPMesas = (() => {
 
   function quickButton() {
     const count = openOrders().size;
-    if (!count) return '';
-    const label = count === 1 ? '1 mesa abierta' : count + ' mesas abiertas';
-    return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="Mesas, ${label}">${tableIcon}<span class="vp-floor-count" aria-hidden="true">${count}</span></button>`;
+    const label = count === 1 ? 'Mesas, 1 mesa abierta' : count ? 'Mesas, ' + count + ' mesas abiertas' : 'Mesas';
+    const badge = count ? `<span class="vp-floor-count" aria-hidden="true">${count}</span>` : '';
+    return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="${label}">${tableIcon}${badge}</button>`;
   }
 
   return { open, back, edit, add, remove, reset, save, park, canCharge, quickButton, tableIcon };
