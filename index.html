@@ -5350,7 +5350,7 @@ body.vp-restoring #vpSessionRestore{
 }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=3">
-<script src="vendo-mesas.js?v=3"></script>
+<script src="vendo-mesas.js?v=4"></script>
 </head>
 <body class="vp-starting">
 <div id="vpSessionRestore" role="status">Recuperando tu sesión…</div>
@@ -7794,7 +7794,7 @@ function cartSheetHTML(step){
   return `
     <div class="sheet-header">
       <div class="sheet-header-left">
-        <h2>Carrito</h2>
+        <h2>${checkout.floorOrderId ? escapeHtml(checkout.table) : 'Carrito'}</h2>
         ${cart.length > 0 ? `
           <div class="cart-total-pill">
             <span class="ctp-icon">${icon('cart')}</span>
@@ -7807,10 +7807,11 @@ function cartSheetHTML(step){
     ${cart.length === 0 ? `
       <div class="empty-state">
         ${illustration('cartEmpty')}
-        <div class="empty-title">Carrito vacío</div>
+        <div class="empty-title">${checkout.floorOrderId ? 'Mesa sin productos' : 'Carrito vacío'}</div>
         <div class="empty-text">Agrega productos desde el catálogo.</div>
       </div>
-      ${typeof parkedCount === 'function' && parkedCount() ? `<button class="btn ghost block" onclick="openParkedList()">${icon('pause')} Ver ventas en espera (${parkedCount()})</button>` : ''}
+      ${checkout.floorOrderId ? `<button class="btn ghost block" onclick="VPMesas.park()">Guardar cambios</button>` : ''}
+      ${!checkout.floorOrderId && typeof parkedCount === 'function' && parkedCount() ? `<button class="btn ghost block" onclick="openParkedList()">${icon('pause')} Ver ventas en espera (${parkedCount()})</button>` : ''}
     ` : '<i class="cart-marker" hidden></i><div class="cart-list" data-keep-scroll="cart">' + cart.map((c, i) => {
       const p = findProduct(c.productId);
       if(!p) return '';
@@ -7864,9 +7865,10 @@ function cartSheetHTML(step){
           : `<button class="btn ghost" onclick="parkCurrentSale()" title="Guardar para cobrar después">${icon('pause')} En espera</button>`}
         <button class="btn primary block" onclick="openCartSheet('checkout')">Continuar · ${formatMoney(totals.total)}</button>
       </div>
-      <button class="link-danger" onclick="clearCart()">Vaciar carrito</button>
+      ${!checkout.floorOrderId ? '<button class="link-danger" onclick="clearCart()">Vaciar carrito</button>' : ''}
       </div>
     ` : ''}
+    ${checkout.floorOrderId ? '<button class="link-danger" onclick="VPMesas.discard()">Borrar pedido de mesa</button>' : ''}
   `;
 }
 
@@ -7911,8 +7913,10 @@ function removeLine(i){
 }
 function clearCart(){
   askConfirm({ title:'¿Vaciar el carrito?', text:'Se quitan todos los productos de esta venta.', ok:'Vaciar', danger:true, icon:icon('trash') }, () => {
-    cart = []; customItems = {}; checkout = newCheckout();
-    closeModal(); render();
+    cart = []; customItems = {};
+    if(checkout.floorOrderId) openCartSheet('cart');
+    else { checkout = newCheckout(); closeModal(); }
+    render();
     toast('Carrito vacío');
   });
 }
@@ -22501,7 +22505,7 @@ function resumeSavedSale(id, isTableOrder){
     openCartSheet('cart');
     toast('Retomaste: ' + p.name, { icon:icon('cart'), variant:'toast-success toast-top' });
   };
-  if(cart.length && checkout.floorOrderId === id){ openCartSheet('cart'); return; }
+  if(isTableOrder && checkout.floorOrderId === id){ openCartSheet('cart'); return; }
   if(cart.length){
     askConfirm({ title:'Ya tienes productos en el carrito', text:'Lo que tienes ahorita se guarda en espera y retomas "' + escapeHtml(order.name) + '".', ok:'Cambiar', icon:icon('pause') }, () => {
       if(!parkNow(checkout.floorTableId ? checkout.table : 'Pedido ' + fmtTime(new Date().toISOString()), checkout.floorOrderId)){
@@ -28354,7 +28358,10 @@ function cartSanitize(){
   if(!Array.isArray(cart) || !cart.length) return;
   var antes = cart.length;
   cart = cart.filter(function(c){ return c && findProduct(c.productId); });
-  if(cart.length !== antes && !cart.length){ customItems = {}; checkout = newCheckout(); }
+  if(cart.length !== antes && !cart.length){
+    customItems = {};
+    if(!checkout.floorOrderId) checkout = newCheckout();
+  }
 }
 </script>
 <script id="vp-sale-panel">
@@ -28391,7 +28398,7 @@ function cartSanitize(){
     if(!on){ if(panel.innerHTML) panel.innerHTML = ''; fxKeys = []; fxHad = false; return; }
     var lista = panel.querySelector('.cart-list');
     var y = lista ? lista.scrollTop : 0;
-    var html = cart.length ? cartSheetHTML('cart').replace(/<button class="sheet-close"[^>]*>[\s\S]*?<\/button>/, '') : vacioHTML();
+    var html = (cart.length || checkout.floorOrderId) ? cartSheetHTML('cart').replace(/<button class="sheet-close"[^>]*>[\s\S]*?<\/button>/, '') : vacioHTML();
     panel.innerHTML = '<div class="sp-card">' + html + '</div>';
     var l2 = panel.querySelector('.cart-list'); if(l2 && y) l2.scrollTop = y;
     try{ spFx(); }catch(e){}
