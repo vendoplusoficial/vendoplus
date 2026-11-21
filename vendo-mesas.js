@@ -175,15 +175,15 @@ window.VPMesas = (() => {
     const table = layout().find(t => t.id === id);
     if (!table) return;
     const order = openOrders().get(id);
-    if (order && order.id !== checkout.floorOrderId) {
-      if (source === 'checkout') {
-        toast('Esta mesa ya tiene una cuenta abierta', { subtitle:'Puedes editarla desde Mesas en Nueva venta.' });
-        return;
-      }
+    if (source === 'sale' && order) {
       resumeSavedSale(order.id, true);
       return;
     }
-    if (source !== 'checkout' && !order) return;
+    if (order && order.id !== checkout.floorOrderId) {
+      toast('Esta mesa ya tiene una cuenta abierta', { subtitle:'Puedes editarla desde Mesas en Nueva venta.' });
+      return;
+    }
+    if (source !== 'checkout') return;
     if (checkout.floorOrderId && checkout.floorTableId !== table.id) {
       toast('Esta cuenta ya está asignada a ' + checkout.table);
       return;
@@ -208,7 +208,7 @@ window.VPMesas = (() => {
   }
 
   function park() {
-    if (!cart.length) return;
+    if (!cart.length && !checkout.floorOrderId) return;
     const table = currentTable();
     if (!table) { open('checkout'); return; }
     if (checkout.menuOrderId || checkout.vpcCuenta) return;
@@ -223,6 +223,34 @@ window.VPMesas = (() => {
     toast('Pedido guardado en ' + table.name, { variant:'toast-success' });
   }
 
+  function discard() {
+    const id = checkout.floorOrderId;
+    const table = currentTable();
+    if (!id || !table || !canCharge()) return;
+    askConfirm({
+      title:'¿Borrar el pedido de ' + table.name + '?',
+      text:'Se descartará el pedido y la mesa quedará libre.',
+      ok:'Borrar pedido',
+      danger:true,
+      icon:icon('trash')
+    }, () => {
+      const orders = DB.getTableOrders();
+      if (!orders.some(order => order.id === id)) return;
+      if (!DB.saveTableOrders(orders.filter(order => order.id !== id))) {
+        toast('No se pudo borrar el pedido');
+        return;
+      }
+      if (checkout.floorOrderId === id) {
+        cart = [];
+        customItems = {};
+        checkout = newCheckout();
+      }
+      closeModal();
+      render();
+      open('sale');
+    });
+  }
+
   function quickButton() {
     const count = openOrders().size;
     const label = count === 1 ? 'Mesas, 1 mesa abierta' : count ? 'Mesas, ' + count + ' mesas abiertas' : 'Mesas';
@@ -230,5 +258,5 @@ window.VPMesas = (() => {
     return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="${label}">${tableIcon}${badge}</button>`;
   }
 
-  return { open, back, edit, add, remove, reset, save, park, canCharge, quickButton, tableIcon };
+  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon };
 })();
