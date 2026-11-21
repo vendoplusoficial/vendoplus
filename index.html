@@ -311,16 +311,25 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .btn.block{ width:100%; }
   #stripeMenuTest [hidden], .md-mp-card[hidden], .md-yn-txt small[hidden]{ display:none; }
   .md-stripe-reveal{
-    display:grid; grid-template-rows:0fr; opacity:0; visibility:hidden;
-    transition:grid-template-rows .32s cubic-bezier(.22,1,.36,1), opacity .24s ease, visibility 0s .32s;
+    display:grid; grid-template-rows:0fr; visibility:hidden;
+    transition:grid-template-rows .26s cubic-bezier(.25,.85,.35,1), visibility 0s .26s;
   }
   .md-stripe-reveal.is-open{
-    grid-template-rows:1fr; opacity:1; visibility:visible; transition-delay:0s;
+    grid-template-rows:1fr; visibility:visible; transition-delay:0s;
   }
   .md-stripe-reveal > div{ min-height:0; overflow:hidden; }
-  .md-stripe-reveal #stripeMenuTest{ animation:none; }
+  .md-stripe-reveal #stripeMenuTest{
+    animation:none; opacity:0; transform:translateY(-5px);
+    transition:opacity .16s ease, transform .22s ease;
+  }
+  .md-stripe-reveal.is-open #stripeMenuTest{ opacity:1; transform:none; }
+  #stripeMenuTest small{ display:block; min-height:2.6em; }
+  .md-stripe-actions{
+    display:flex; gap:8px; min-height:44px; margin-top:6px;
+  }
+  .md-stripe-actions .btn{ flex:1; width:auto; min-width:0; }
   @media (prefers-reduced-motion:reduce){
-    .md-stripe-reveal{ transition:none; }
+    .md-stripe-reveal, .md-stripe-reveal #stripeMenuTest{ transition:none; transform:none; }
   }
   .btn.ghost{ background:transparent; border:1.5px solid var(--border); }
   .btn:disabled{ opacity:.45; }
@@ -16261,7 +16270,7 @@ let mdCardChoice;
 function mdOpenCardForm(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
   mdPayKind = 'card';
-  const borrador = mdPayDraft = { on:mdCardChoice ?? mdCfg().payments.card };
+  const borrador = mdPayDraft = { on:(mpVisible() ? mdCardChoice : undefined) ?? mdCfg().payments.card };
   mdRenderPayForm();
   if(!mpVisible() || borrador.on !== true) return;
   mpSyncStatus(true).then(estado => {
@@ -16397,12 +16406,18 @@ async function stripeMenuStart(button){
     const result = await stripeMenuRequest('start');
     const link = new URL(result.url);
     if(!['https://accounts.stripe.com', 'https://connect.stripe.com'].includes(link.origin)) throw new Error('Stripe devolvió un enlace inválido.');
-    location.assign(link.href);
+    if(mdPayKind !== 'card' || mdPayDraft?.on !== true || !button.isConnected) return;
+    const cfg = mdCfg();
+    if(cfg.payments.card !== true){
+      cfg.payments.card = true;
+      if(!mdSaveCfg(cfg)) throw new Error('No pudimos guardar que aceptas tarjeta.');
+      await MenuPub.run();
+    }
+    if(button.isConnected && mdPayDraft?.on === true) location.assign(link.href);
   }catch(error){
-    button.disabled = false;
     const status = button.closest('#stripeMenuTest')?.querySelector('small');
     if(status) status.textContent = error.message;
-  }
+  }finally{ button.disabled = false; }
 }
 function mdRenderPayForm(){
   const d = mdPayDraft; if(!d) return;
@@ -16418,7 +16433,7 @@ function mdRenderPayForm(){
   openModal(`
     <div class="sheet-header">
       <h2>${card ? 'Pago con tarjeta' : 'Pago por transferencia'}</h2>
-      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
+      <button class="sheet-close" onclick="mdCancelPay()" aria-label="Cerrar">${icon('close')}</button>
     </div>
     <p class="md-yn-q">${card ? '¿Tu negocio cobra con tarjeta?' : '¿Tu negocio acepta transferencias?'}</p>
     <div class="md-yn">
@@ -16448,8 +16463,10 @@ function mdRenderPayForm(){
             <div class="field">
               <label>Stripe · Modo de prueba</label>
               <small role="status">Consultando el estado de Stripe…</small>
-              <button type="button" class="btn ghost block" onclick="stripeMenuStart(this)" hidden>Enlazar Stripe</button>
-              <button type="button" class="btn ghost block" onclick="stripeMenuUnlink(this)" hidden>Desenlazar Stripe</button>
+              <div class="md-stripe-actions">
+                <button type="button" class="btn ghost block" onclick="stripeMenuStart(this)" hidden>Enlazar Stripe</button>
+                <button type="button" class="btn ghost block" onclick="stripeMenuUnlink(this)" hidden>Desenlazar Stripe</button>
+              </div>
             </div>
           </div>
         </div>
@@ -20110,7 +20127,7 @@ dmConfirmHTML = function(){
   const step = co.step === 2 ? 2 : 1;
   const check = `<span class="dm-opt-check">${icon('check')}</span>`;
   const pcfg = mdCfg().payments;
-  const payList = basicPayMethods().filter(pm => pm.id === 'efectivo' || (pm.id === 'tarjeta' && (pcfg.card || dm.stripeTest) && !co.cardFallback) || (pm.id === 'transferencia' && pcfg.transfer && mdClabeOk(pcfg.clabe)));
+  const payList = basicPayMethods().filter(pm => pm.id === 'efectivo' || (pm.id === 'tarjeta' && pcfg.card === true && !co.cardFallback) || (pm.id === 'transferencia' && pcfg.transfer && mdClabeOk(pcfg.clabe)));
   if(co.pay && !payList.some(pm => pm.id === co.pay)) co.pay = null;
   if(payList.length === 1) co.pay = payList[0].id;
   const svcBtn = id => { const sv = MD_SERVICES[id]; return `
@@ -20201,23 +20218,31 @@ function dmCoNext(){
   if(!dmDeliveryOn()) co.svc = 'llevar';
   if(!co.svc){ dmCoNeed('dmCoSvc', 'Elige el tipo de servicio'); return; }
   if(co.svc === 'domicilio' && !co.loc){ dmCoNeed('dmCoDel', 'Marca en el mapa dónde te lo llevamos'); return; }
-  dm.stripeTest = false;
-  const check = !co.cardFallback && mdCfg().payments.card && Cloud.sb
-    ? dmStripeTestRequest({ action:'availability' }, 13000).catch(() => null)
-    : null;
-  co.stripeCheck = check;
+  dmCheckStripe(co);
   co.step = 2; dmVib(8);
   dmOpenSheet('confirm'); dmCoStepAnim(1);
-  if(check) check.then(result => {
+}
+function dmCheckStripe(co){
+  dm.stripeTest = false;
+  co.stripeError = false;
+  co.stripeCheck = null;
+  if(co.cardFallback || mdCfg().payments.card !== true || !Cloud.sb) return;
+  const check = dmStripeTestRequest({ action:'availability' }, 13000);
+  co.stripeCheck = check;
+  const update = result => {
     if(co.stripeCheck !== check) return;
     co.stripeCheck = null;
     if(dm.co !== co || dm.sheet !== 'confirm' || co.step !== 2) return;
     dm.stripeTest = result?.available === true;
-    if(co.pay !== 'tarjeta') return;
-    dmCoPay('tarjeta');
-    const info = document.getElementById('dmPayInfo');
-    if(info) info.innerHTML = dmPayInfoHTML();
-  });
+    co.stripeError = result === null;
+    if(co.pay === 'tarjeta') dmCoPay('tarjeta', true);
+  };
+  check.then(update, () => update(null));
+}
+function dmRetryStripe(){
+  const co = dmCoState();
+  dmCheckStripe(co);
+  dmCoPay('tarjeta', true);
 }
 function dmCoBack(){
   const co = dmCoState(); co.step = 1; dmVib(8);
@@ -20238,7 +20263,7 @@ function dmCoSvc(id){
     setTimeout(() => { try{ del.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'start' }); }catch(e){} }, 90);
   }
 }
-function dmCoPay(id){
+function dmCoPay(id, refresh = false){
   const co = dmCoState();
   if(co.cardFallback && id === 'tarjeta') return;
   const changed = co.pay !== id;
@@ -20247,14 +20272,15 @@ function dmCoPay(id){
   document.querySelectorAll('#dmCoPay .dm-opt[data-pay]').forEach(b => { const on = b.dataset.pay === id; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
   const box = document.getElementById('dmCoPay'); if(box) box.classList.remove('need');
   const info = document.getElementById('dmPayInfo');
-  if(info && changed){ info.innerHTML = dmPayInfoHTML(); }
+  if(info && (changed || refresh)){ info.innerHTML = dmPayInfoHTML(); }
   const btn = document.getElementById('dmSendBtn');
   if(btn){
     btn.innerHTML = dmMpButton(co);
     btn.disabled = !!dm.sending || !!(co.stripeCheck && co.pay === 'tarjeta');
   }
   const whatsapp = document.getElementById('dmCheckoutWhatsApp');
-  if(whatsapp) whatsapp.hidden = dmStripeTestCheckout(co) || dmMpCheckout(co);
+  if(whatsapp) whatsapp.hidden = dmStripeTestCheckout(co) || dmMpCheckout(co) ||
+    (co.pay === 'tarjeta' && !!(co.stripeCheck || co.stripeError));
 }
 function dmMpCheckout(co){
   const pm = mdCfg().payments;
@@ -20265,6 +20291,7 @@ function dmStripeTestCheckout(co){
 }
 function dmMpButton(co){
   if(co.stripeCheck && co.pay === 'tarjeta') return 'Verificando tarjeta…';
+  if(co.stripeError && co.pay === 'tarjeta') return 'Reintentar pago con tarjeta';
   if(dmStripeTestCheckout(co)) return icon('card') + ' Pagar con tarjeta';
   if(!dmMpCheckout(co)) return icon('whatsapp') + ' Enviar pedido';
   return icon('card') + ' Pagar con tarjeta';
@@ -20285,10 +20312,11 @@ function dmPayInfoHTML(){
     </div>`;
   }
   if(co.pay === 'tarjeta'){
+    if(co.stripeError) return `<div class="dm-pi">${head('card', 'Pago con tarjeta', 'No pudimos consultar Stripe. Vuelve a intentarlo o elige otro método.')}</div>`;
     if(co.stripeCheck) return `<div class="dm-pi">${head('card', 'Pago con tarjeta', 'Verificando la disponibilidad del pago en línea…')}</div>`;
     if(dmStripeTestCheckout(co)) return `<div class="dm-pi">
       ${head('card', 'Pago con tarjeta', 'Se abrirá Stripe para pagar tu pedido.')}
-      <small class="dm-pi-note">Modo de prueba. No se hará ningún cobro real ni se enviará el pedido al negocio.</small>
+      <small class="dm-pi-note">Modo de prueba. Stripe no hará un cobro real.</small>
     </div>`;
     const mpOn = mpVisible() && !!(pm.mp && pm.mp.on);
     if(mpOn){
@@ -20362,6 +20390,7 @@ function dmCoNeed(id, msg){
 async function dmStripeTestRequest(payload, timeout = 35000){
   const auth = await Cloud.sb?.auth.getSession();
   const token = auth?.data?.session?.access_token;
+  if(!token && payload.action === 'availability') return { available:false };
   if(!token) throw new Error('Inicia sesión en VendoPlus con la cuenta del negocio.');
   const response = await fetch(mpBase() + '/functions/v1/stripe-menu-test-checkout', {
     method:'POST',
@@ -20369,6 +20398,7 @@ async function dmStripeTestRequest(payload, timeout = 35000){
     body:JSON.stringify({ ...payload, menuId:dm.id }),
     signal:AbortSignal.timeout(timeout)
   });
+  if(payload.action === 'availability' && response.status === 403) return { available:false };
   const result = await response.json();
   if(!response.ok) throw new Error(result.error || 'No se pudo abrir Stripe.');
   return result;
@@ -20422,6 +20452,7 @@ async function dmStripeTestReturn(){
 }
 dmSendWhatsApp = async function(){
   if(dm.sending || (dm.co?.stripeCheck && dm.co.pay === 'tarjeta')) return;
+  if(dm.co?.stripeError && dm.co.pay === 'tarjeta'){ dmRetryStripe(); return; }
   const cfg = mdCfg();
   if(!cfg.active || cfg.id !== dm.id || cfg.paused){ dmToast('El negocio no está recibiendo pedidos'); return; }
   if(mdClosedNow(cfg)){ dmToast('Estamos cerrados en este momento'); dmRender(); dmCloseSheet(); return; }
