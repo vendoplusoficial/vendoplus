@@ -4,7 +4,25 @@
 }
 .vp-floor-services .opt-card { min-width: 0; }
 .vp-floor-services svg, .vp-floor-quick svg { width: 20px; height: 20px; }
-.vp-floor-quick { color: var(--brand-ink); }
+.sale-tools .vp-floor-quick { position: relative; overflow: visible; color: var(--brand-ink); }
+.vp-floor-count {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -50%);
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--surface, #fff);
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
 .vp-floor-sheet { width: min(100%, 460px); }
 .vp-floor-header { display: grid; grid-template-columns: 38px 1fr 38px; text-align: center; }
 .vp-floor-header h2 { margin: 0; }

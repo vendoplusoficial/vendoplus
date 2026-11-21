@@ -5349,8 +5349,8 @@ body.vp-restoring #vpSessionRestore{
   padding:24px; text-align:center; color:var(--ink-soft);
 }
 </style>
-<link rel="stylesheet" href="vendo-mesas.css">
-<script src="vendo-mesas.js"></script>
+<link rel="stylesheet" href="vendo-mesas.css?v=2">
+<script src="vendo-mesas.js?v=2"></script>
 </head>
 <body class="vp-starting">
 <div id="vpSessionRestore" role="status">Recuperando tu sesión…</div>
@@ -6247,8 +6247,10 @@ const DB = {
   saveExpenses(list){ Store.set('mesa_expenses', list); },
   getMoves(){ return Store.list('mesa_inv_moves'); },
   saveMoves(list){ Store.set('mesa_inv_moves', list.slice(-3000)); },
-  getParked(){ return Store.list('mesa_parked'); },
-  saveParked(list){ return Store.set('mesa_parked', list); }
+  getParked(){ return Store.list('mesa_parked').filter(p => !p.checkout?.floorTableId); },
+  saveParked(list){ return Store.set('mesa_parked', DB.getTableOrders().concat(list)); },
+  getTableOrders(){ return Store.list('mesa_parked').filter(p => p.checkout?.floorTableId); },
+  saveTableOrders(list){ return Store.set('mesa_parked', DB.getParked().concat(list)); }
 };
 
 function initDB(){
@@ -7774,7 +7776,7 @@ function cartSheetHTML(step){
 
       ${(totals.discount > 0 || showsTax(tax) || totals.tip > 0) ? totalRows(true) : ''}
 
-      ${checkout.floorTableId ? `<button class="btn ghost block" onclick="VPMesas.park()">${icon('pause')} ${checkout.floorOrderId ? 'Guardar cambios' : 'Dejar mesa abierta'}</button>` : ''}
+      ${checkout.floorTableId ? `<button class="btn ghost block" onclick="VPMesas.park()">${VPMesas.tableIcon} ${checkout.floorOrderId ? 'Guardar cambios' : 'Dejar mesa abierta'}</button>` : ''}
       <div class="p2-actions" data-fx="actions">
         <button class="btn ghost" onclick="openCartSheet('cart')">Volver</button>
         <button class="btn whatsapp block" id="btnCobrar" onclick="confirmarCobro()">${icon('check')} Cobrar ${formatMoney(toPay)}</button>
@@ -7853,7 +7855,9 @@ function cartSheetHTML(step){
       </div>
       ${totalRows(false)}
       <div class="cart-actions">
-        <button class="btn ghost" onclick="parkCurrentSale()" title="Guardar para cobrar después">${icon('pause')} En espera</button>
+        ${checkout.floorTableId
+          ? `<button class="btn ghost" onclick="VPMesas.park()">${VPMesas.tableIcon} ${checkout.floorOrderId ? 'Guardar cambios' : 'Dejar mesa abierta'}</button>`
+          : `<button class="btn ghost" onclick="parkCurrentSale()" title="Guardar para cobrar después">${icon('pause')} En espera</button>`}
         <button class="btn primary block" onclick="openCartSheet('checkout')">Continuar · ${formatMoney(totals.total)}</button>
       </div>
       <button class="link-danger" onclick="clearCart()">Vaciar carrito</button>
@@ -8357,7 +8361,7 @@ function confirmarCobro(){
   sales.push(sale);
   const saved = DB.saveSales(sales);
   if(checkout.floorTableId && !saved){ toast('No se pudo guardar la venta'); return; }
-  if(floorOrderId) DB.saveParked(DB.getParked().filter(p => p.id !== floorOrderId));
+  if(floorOrderId) DB.saveTableOrders(DB.getTableOrders().filter(p => p.id !== floorOrderId));
 
   // Se descuenta lo vendido del inventario (piezas, kilos, litros o metros).
   if(typeof invContext === 'function') invContext({ type:'venta', ref:orderNumberLabel(number) });
@@ -22407,7 +22411,7 @@ function deleteExpense(id){
    Guarda el carrito con un nombre (mesa 4, Sr. López) para
    cobrarlo después, y atiende a otro cliente mientras tanto.
 ========================================================= */
-function parkedLabel(){ return bizIsFood() ? 'Cuentas abiertas' : 'Ventas en espera'; }
+function parkedLabel(){ return 'Ventas en espera'; }
 function parkedCount(){ return DB.getParked().length; }
 function parkedBarHTML(){
   const n = parkedCount();
@@ -22439,7 +22443,8 @@ function parkCurrentSale(){
 }
 function parkNow(name, orderId){
   const t = computeTotals();
-  const list = DB.getParked();
+  const isTableOrder = !!checkout.floorTableId;
+  const list = isTableOrder ? DB.getTableOrders() : DB.getParked();
   const existing = orderId ? list.findIndex(p => p.id === orderId) : -1;
   if(orderId && existing < 0) return false;
   const entry = {
@@ -22450,7 +22455,7 @@ function parkNow(name, orderId){
   if(entry.checkout.floorTableId) entry.checkout.floorOrderId = entry.id;
   if(existing < 0) list.push(entry);
   else list[existing] = entry;
-  if(!DB.saveParked(list)) return false;
+  if(!(isTableOrder ? DB.saveTableOrders(list) : DB.saveParked(list))) return false;
   cart = []; customItems = {}; checkout = newCheckout();
   return true;
 }
@@ -22474,14 +22479,16 @@ function openParkedList(){
     : `<div class="empty-state">${illustration('cartEmpty')}<div class="empty-title">No hay nada en espera</div><div class="empty-text">En el carrito toca “En espera” para guardar un pedido y cobrarlo después.</div></div>`}
   `, { dismissible:true });
 }
-function resumeParked(id){
-  const p = DB.getParked().find(x => x.id === id); if(!p) return;
-  /* Retomar una venta en espera también es empezar a vender */
-  if(!saleStartGate(() => resumeParked(id))) return;
+function resumeParked(id){ resumeSavedSale(id, false); }
+function resumeSavedSale(id, isTableOrder){
+  const getOrders = isTableOrder ? DB.getTableOrders : DB.getParked;
+  const order = getOrders().find(x => x.id === id); if(!order) return;
+  if(!saleStartGate(() => resumeSavedSale(id, isTableOrder))) return;
   const doIt = () => {
-    const list = DB.getParked();
-    if(!list.some(x => x.id === id)) return;
-    if(!p.checkout?.floorTableId && !DB.saveParked(list.filter(x => x.id !== id))) return;
+    const list = getOrders();
+    const p = list.find(x => x.id === id);
+    if(!p) return;
+    if(!isTableOrder && !DB.saveParked(list.filter(x => x.id !== id))) return;
     cart = (p.cart || []).slice();
     customItems = Object.assign({}, p.customItems || {});
     checkout = Object.assign(newCheckout(), p.checkout || {}, { cash:'' });
@@ -22492,7 +22499,7 @@ function resumeParked(id){
   };
   if(cart.length && checkout.floorOrderId === id){ openCartSheet('cart'); return; }
   if(cart.length){
-    askConfirm({ title:'Ya tienes productos en el carrito', text:'Lo que tienes ahorita se guarda en espera y retomas "' + escapeHtml(p.name) + '".', ok:'Cambiar', icon:icon('pause') }, () => {
+    askConfirm({ title:'Ya tienes productos en el carrito', text:'Lo que tienes ahorita se guarda en espera y retomas "' + escapeHtml(order.name) + '".', ok:'Cambiar', icon:icon('pause') }, () => {
       if(!parkNow(checkout.floorTableId ? checkout.table : 'Pedido ' + fmtTime(new Date().toISOString()), checkout.floorOrderId)){
         toast('No se pudo guardar el pedido actual'); return;
       }
@@ -24408,7 +24415,7 @@ function homeAlertsHTML(){
   const n = parkedCount();
   if(n) h += `<button class="alert-card" onclick="goTo('sale'); setTimeout(openParkedList, 60);" style="margin-top:16px;">
       <span class="alert-ico">${icon('pause')}</span>
-      <span class="alert-txt"><span class="alert-title">${n} ${n === 1 ? (bizIsFood() ? 'cuenta abierta' : 'venta en espera') : parkedLabel().toLowerCase()}</span><span class="alert-sub">${DB.getParked().slice(-3).map(p => escapeHtml(p.name)).join(' · ')}</span></span>
+      <span class="alert-txt"><span class="alert-title">${n} ${n === 1 ? 'venta en espera' : parkedLabel().toLowerCase()}</span><span class="alert-sub">${DB.getParked().slice(-3).map(p => escapeHtml(p.name)).join(' · ')}</span></span>
       <span class="acc-chev">${icon('chevronRight')}</span></button>`;
   const debe = totalReceivable();
   if(debe > 0.004 && can('darCredito')){
