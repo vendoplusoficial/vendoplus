@@ -1057,17 +1057,16 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
     overflow-y:auto;
     animation:authEnter .3s cubic-bezier(.22,.9,.3,1);
   }
-  /* El acceso y las hojas de NIP se ajustan al espacio que deja el teclado. */
+  /* El área visible está en píxeles del navegador. Las capas del POS usan zoom. */
   html:has(body.auth-open), html:has(#modal-layer .vp-pin-sheet){
     overflow:hidden;
     overscroll-behavior:none;
   }
   .auth-layer,
   #modal-layer .modal-overlay:has(.vp-pin-sheet){
-    top:var(--vp-viewport-top, 0px);
+    top:calc(var(--vp-viewport-top, 0px) / var(--z, 1));
     bottom:auto;
-    height:100vh;
-    height:var(--vp-viewport-height, 100dvh);
+    height:calc(var(--vp-viewport-height, 100vh) / var(--z, 1));
     overflow:hidden;
     overscroll-behavior:none;
   }
@@ -1080,7 +1079,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
     box-sizing:border-box;
   }
   .auth-screen[key="userpin"] > .auth-body{ flex-shrink:0; }
-  #modal-layer .vp-pin-sheet input{ font-size: max(16px, 1em); }
+  #modal-layer .vp-pin-sheet input{ font-size:calc(16px / var(--z, 1)); }
 
   .auth-screen::-webkit-scrollbar{ width:0; }
 
@@ -5393,6 +5392,33 @@ body.vp-restoring #vpSessionRestore{
   display:grid; place-items:center; min-height:100dvh;
   padding:24px; text-align:center; color:var(--ink-soft);
 }
+  @media (pointer:coarse){
+    html.vp-keyboard:has(#modal-layer .vp-keyboard-form){
+      overflow:hidden;
+      overscroll-behavior:none;
+    }
+    html.vp-keyboard .auth-layer.show,
+    html.vp-keyboard #modal-layer .modal-overlay:has(.vp-keyboard-form){
+      top:calc(var(--vp-viewport-top, 0px) / var(--z, 1));
+      bottom:auto;
+      height:calc(var(--vp-viewport-height, 100vh) / var(--z, 1));
+      min-height:0;
+      box-sizing:border-box;
+      overflow:hidden;
+      background:var(--surface);
+      box-shadow:0 0 0 100vmax var(--surface);
+      padding-bottom:calc(48px / var(--z, 1));
+    }
+    html.vp-keyboard .auth-screen{ bottom:calc(48px / var(--z, 1)); }
+    html.vp-keyboard #modal-layer .vp-keyboard-form{
+      min-height:0;
+      max-height:100% !important;
+      overflow-y:auto;
+      overscroll-behavior:none;
+      scroll-padding-block:16px;
+    }
+  }
+
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=3">
 <link rel="stylesheet" href="vendo-comandas.css?v=1">
@@ -5558,6 +5584,9 @@ body.vp-restoring #vpSessionRestore{
   }
   function medir(){
     var viewport = window.visualViewport;
+    var root = document.documentElement;
+    var keyboard = !!viewport && viewport.scale === 1 && window.innerHeight - viewport.height > 150;
+    root.classList.toggle('vp-keyboard', keyboard);
     if(viewport && viewport.scale === 1){
       poner('--vp-viewport-height', viewport.height + 'px');
       poner('--vp-viewport-top', viewport.offsetTop + 'px');
@@ -7642,6 +7671,10 @@ function openModal(html, opts){
       if(prevY) sh.scrollTop = prevY;
       prevKeep.forEach(([k, y]) => { const e = sh.querySelector('[data-keep-scroll="' + k + '"]'); if(e && y) e.scrollTop = y; });
     }
+  }
+  const sheet = layer.querySelector('.modal-sheet');
+  if(sheet.querySelector('textarea, [contenteditable="true"], input:not([readonly]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"])')){
+    sheet.classList.add('vp-keyboard-form');
   }
   document.documentElement.classList.add('modal-open');
   if(opts.restoreScroll){
