@@ -99,6 +99,7 @@
       texto: 'Toma una foto de tu carta y la IA carga los productos y precios por ti.',
       ico: 'camera'
     },
+    comandas: { titulo: 'Comandas', ico: 'receipt' },
     usuarios: { titulo: 'Acceso para tus empleados', texto: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.', ico: 'users' },
   stats: {
       titulo: 'Reportes de ventas y ganancias',
@@ -1012,6 +1013,7 @@
     chat: 'Pregúntale a la IA cuánto vendiste, cuánto ganaste o qué productos se están agotando.',
     escaner: 'Toma una foto de tu carta y la IA carga los productos y precios por ti.',
     stats: 'Consulta cuánto vendes, cuánto ganas y cuáles son tus productos más vendidos.',
+    comandas: 'Toma pedidos en mesas, bar o venta libre y envíalos a cocina.',
     usuarios: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.'
   };
   /* Esta lista es la de la pantalla "Funciones premium". */
@@ -1035,6 +1037,8 @@
       '.vp-pr-v2 .vp-prf-card:nth-child(5),.vp-pr-v2 .vp-prf-card:nth-child(6){animation-delay:.43s}',
       '@media (prefers-reduced-motion: reduce){.vp-pr-v2 .vp-prf-card{animation:none;}}',
       '@media (min-width:700px){.vp-pr-v2{max-height:calc(100vh - 120px);max-height:calc(100dvh - 120px);}.vp-pr-v2 .vp-prf-grid{gap:12px;}}',
+      '.vp-prf-comandas-icon{display:grid;place-items:center;width:100%;height:100%;color:var(--brand-ink);background:var(--brand-soft);}',
+      '.vp-prf-comandas-icon svg{width:42px;height:42px;}',
       '.vp-prf{max-width:900px;margin:0 auto;}',
       '.vp-prf-banner{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);',
       'padding:12px 14px;margin:0 0 16px;box-shadow:var(--shadow-card);}',
@@ -1067,10 +1071,12 @@
   }
 
   function tarjetasImagenHTML() {
-    return ORDEN_SECCION.map(function (k) {
+    var orden = window.VPComandas ? ORDEN_SECCION.concat('comandas') : ORDEN_SECCION;
+    var icono = fn('icon');
+    return orden.map(function (k) {
       var f = FUNCIONES[k];
       return '<button type="button" class="vp-prf-card" onclick="VPPremium.irA(\'' + k + '\')">' +
-        '<span class="vp-prf-img">' + IMAGENES[k] + '</span>' +
+        '<span class="vp-prf-img">' + (IMAGENES[k] || (icono ? '<span class="vp-prf-comandas-icon">' + icono(f.ico) + '</span>' : '')) + '</span>' +
         '<span class="vp-prf-body"><b>' + esc(f.titulo) + '</b><span>' + esc(DESC_CORTA[k]) + '</span></span>' +
       '</button>';
     }).join('');
@@ -1096,13 +1102,7 @@
         '<div class="vp-prf-banner-txt"><b>' + esc(precioTxt()) + ' al mes</b><span>Cancela cuando quieras</span></div>' +
         '<button type="button" onclick="VPPremium.abrir()">Contratar</button></div>';
     }
-    var tarjetas = ORDEN_SECCION.map(function (k) {
-      var f = FUNCIONES[k];
-      return '<button type="button" class="vp-prf-card" onclick="VPPremium.irA(\'' + k + '\')">' +
-        '<span class="vp-prf-img">' + IMAGENES[k] + '</span>' +
-        '<span class="vp-prf-body"><b>' + esc(f.titulo) + '</b><span>' + esc(DESC_CORTA[k]) + '</span></span>' +
-      '</button>';
-    }).join('');
+    var tarjetas = tarjetasImagenHTML();
     return '<div class="vp-prf">' + cab + banner + '<div class="vp-prf-grid">' + tarjetas + '</div></div>';
   }
 
@@ -1257,6 +1257,7 @@
       setTimeout(function () { irA(clave); }, 320);
       return;
     }
+    if (clave === 'comandas') { if (window.VPComandas) VPComandas.abrir(); return; }
     if (clave === 'menu') { if (ir) ir('menu'); return; }
     if (clave === 'chat') {
       puerta('chat', function () { if (window.VPMascota && typeof VPMascota.abrir === 'function') VPMascota.abrir(); });
