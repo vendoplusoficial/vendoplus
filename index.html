@@ -4686,6 +4686,12 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 .p2-actions{ display:flex; gap:10px; margin-top:6px; }
 .p2-actions .btn.ghost{ border:none; background:none; color:var(--p2-mute); font-weight:700; }
 .p2-actions .btn.block{ border-radius:14px; }
+.p2-actions.with-kitchen{ flex-wrap:wrap; align-items:center; }
+.p2-actions.with-kitchen > .btn.ghost{ flex:0 0 auto; }
+.p2-kitchen-actions{ flex:1 1 250px; min-width:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.p2-kitchen-actions > .btn{ padding-inline:8px; min-width:0; min-height:44px; font-size:clamp(12px,3.6vw,16px); }
+.p2-kitchen-actions > .btn svg{ flex-shrink:0; }
+@media(max-width:400px){ .p2-kitchen-actions > .btn svg{ display:none; } }
 @keyframes svcIn{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce){ .svc-body.open{ animation:none; } .svc-dbl{ transition:none; } }
 .pay2 .quick-cash{ justify-content:center; }
@@ -7821,6 +7827,7 @@ function cartSheetHTML(step){
   if(step === 'checkout'){
     const pm = checkout.paymentMethod;
     const toPay = totals.toPay;
+    const conCocina = !!window.VPComandas?.cocinaEnCaja();
     const cashNum = parseFloat(checkout.cash) || 0;
     const puedeFiar = cfg.creditOn && can('darCredito');
     const methods = basicPayMethods().concat(puedeFiar ? [paymentOf('credito')] : []);
@@ -7932,10 +7939,13 @@ function cartSheetHTML(step){
 
       ${(totals.discount > 0 || showsTax(tax) || totals.tip > 0) ? totalRows(true) : ''}
 
-      ${checkout.floorTableId ? `<button class="btn ghost block" onclick="VPMesas.park()">${VPMesas.tableIcon} ${checkout.floorOrderId ? 'Guardar cambios' : 'Dejar mesa abierta'}</button>` : ''}
-      <div class="p2-actions" data-fx="actions">
+      ${checkout.floorTableId && !checkout.vpcCuenta ? `<button class="btn ghost block" data-park-table onclick="VPMesas.park()">${VPMesas.tableIcon} ${checkout.floorOrderId ? 'Guardar cambios' : 'Dejar mesa abierta'}</button>` : ''}
+      <div class="p2-actions ${conCocina ? 'with-kitchen' : ''}" data-fx="actions">
         <button class="btn ghost" onclick="openCartSheet('cart')">Volver</button>
-        <button class="btn whatsapp block" id="btnCobrar" onclick="confirmarCobro()">${icon('check')} Cobrar ${formatMoney(toPay)}</button>
+        ${conCocina ? `<div class="p2-kitchen-actions">
+          <button class="btn outline block" id="btnEnviarCocina" onclick="confirmarEnvioCocina()" ${checkout.menuOrderId ? 'title="Los pedidos del menú digital se envían al aceptarlos"' : ''} ${checkout.cocinaEnviada || checkout.menuOrderId || checkout.enviandoCocina ? 'disabled' : ''}>${checkout.cocinaEnviada ? 'Enviada a cocina' : 'Enviar a cocina'}</button>` : ''}
+        <button class="btn whatsapp block" id="btnCobrar" onclick="solicitarCobro()" ${checkout.enviandoCocina ? 'disabled' : ''}>${icon('check')} Cobrar ${formatMoney(toPay)}</button>
+        ${conCocina ? '</div>' : ''}
       </div>
       </div>
     `;
@@ -8432,9 +8442,85 @@ function saleItemFromCart(c){
   return it;
 }
 
+function solicitarCobro(){
+  if(checkout.enviandoCocina || !cart.length) return;
+  if(!window.VPComandas?.cocinaEnCaja()) return confirmarCobro();
+  const cobro = checkout;
+  askConfirm({
+    title:'¿Confirmar cobro?',
+    text:'Se registrará el pago de ' + formatMoney(computeTotals().toPay) + '.',
+    ok:'Cobrar', icon:icon('check')
+  }, () => { if(checkout === cobro) confirmarCobro(); });
+}
+
+function confirmarEnvioCocina(){
+  if(!window.VPComandas?.cocinaEnCaja() || !cart.length || checkout.menuOrderId || checkout.cocinaEnviada || checkout.enviandoCocina) return;
+  if(!checkout.vpcCuenta && cart.some(linea => !findProduct(linea.productId) || findProduct(linea.productId).custom)){
+    toast('Hay artículos fuera del catálogo', { subtitle:'Usa productos del catálogo para enviar a cocina', variant:'toast-danger', icon:icon('alert') });
+    return;
+  }
+  const cobro = checkout;
+  askConfirm({
+    title:'¿Enviar a cocina?',
+    text:'La comanda aparecerá en cocina. Puedes cobrar después.',
+    ok:'Enviar a cocina'
+  }, async () => {
+    if(checkout !== cobro || cobro.enviandoCocina || !VPComandas.cocinaEnCaja()) return;
+    const lineas = cart.map(linea => ({
+      productId:linea.productId, qty:linea.qty, sizeId:linea.sizeId,
+      sizeLabel:linea.sizeLabel, nota:linea.note, combo:linea.combo
+    }));
+    const firma = JSON.stringify(cart);
+    const firmaEnvio = JSON.stringify([cobro.floorTableId, cobro.table, lineas]);
+    if(cobro.firmaEnvioCocina !== firmaEnvio){
+      cobro.firmaEnvioCocina = firmaEnvio;
+      cobro.idEnvioCocina = uid('cocina');
+    }
+    const envio = document.getElementById('btnEnviarCocina');
+    const botonCobro = document.getElementById('btnCobrar');
+    if(envio){ envio.disabled = true; envio.textContent = 'Enviando…'; }
+    if(botonCobro) botonCobro.disabled = true;
+    cobro.enviandoCocina = true;
+    const gen = Cloud.gen;
+    let resultado;
+    try{
+      if(!cobro.vpcCuenta && !await Cloud.flush()){
+        Cloud.fail('No se pudo enviar a cocina', 'Revisa tu conexión e inténtalo otra vez');
+        return;
+      }
+      if(gen !== Cloud.gen || checkout !== cobro || JSON.stringify(cart) !== firma) return;
+      resultado = await VPComandas.enviarDesdeCaja({
+        cuenta:cobro.vpcCuenta || null, plano:cobro.floorTableId || null,
+        referencia:cobro.table || SERVICE_TYPES.find(t => t.id === cobro.serviceType)?.name || '',
+        lineas, id:cobro.idEnvioCocina
+      });
+      if(!resultado?.cuenta || gen !== Cloud.gen) return;
+      cobro.vpcCuenta = resultado.cuenta;
+      cobro.cocinaEnviada = true;
+      cobro.carritoEnviadoCocina = firma;
+      if(cobro.floorOrderId){
+        DB.saveTableOrders(DB.getTableOrders().filter(pedido => pedido.id !== cobro.floorOrderId));
+      }
+      if(checkout === cobro) document.querySelector('.pay2 [data-park-table]')?.remove();
+      toast('Comanda enviada a cocina', { icon:icon('check'), variant:'toast-success' });
+    }finally{
+      cobro.enviandoCocina = false;
+      const boton = checkout === cobro && document.getElementById('btnEnviarCocina');
+      if(boton){ boton.disabled = !!cobro.cocinaEnviada; boton.textContent = cobro.cocinaEnviada ? 'Enviada a cocina' : 'Enviar a cocina'; }
+      const pagar = checkout === cobro && document.getElementById('btnCobrar');
+      if(pagar) pagar.disabled = false;
+    }
+  });
+}
+
 function confirmarCobro(){
   if(modoNavegacionPOS()) return;
   if(cart.length === 0){ toast('El carrito está vacío'); return; }
+  if(checkout.enviandoCocina) return;
+  if(checkout.cocinaEnviada && checkout.carritoEnviadoCocina !== JSON.stringify(cart)){
+    Cloud.fail('El pedido cambió', 'Abre la cuenta en Comandas para actualizarla y cobrar');
+    return;
+  }
 
   /* Caja obligatoria: para cobrar siempre tiene que estar abierta la caja del día */
   if(!cashReadyForSale()){
@@ -8466,7 +8552,7 @@ function confirmarCobro(){
     toast('Solo caja puede cobrar esta cuenta');
     return;
   }
-  if(checkout.floorTableId && !VPMesas.canCharge()){
+  if(checkout.floorTableId && !cuentaComanda && !VPMesas.canCharge()){
     toast('Revisa la mesa antes de cobrar', { icon:icon('alert') });
     return;
   }
@@ -22884,7 +22970,7 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'F8'){ e.preventDefault(); openCustomItem(); return; }
   if(e.key === 'F9'){
     e.preventDefault();
-    if(document.getElementById('btnCobrar')) confirmarCobro();
+    if(document.getElementById('btnCobrar')) solicitarCobro();
     else if(cart.length) openCartSheet('checkout');
     return;
   }
@@ -29059,7 +29145,7 @@ function cartSanitize(){
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261121-comandas"></script>
-<script src="vendo-comandas.js?v=11"></script>
+<script src="vendo-comandas.js?v=12"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
