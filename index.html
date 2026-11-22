@@ -5431,17 +5431,26 @@ body.vp-restoring #vpSessionRestore{
   body[data-puesto-pos="pendiente"] .bottomnav,
   body[data-puesto-pos="pendiente"] .topbar-right,
   .comandas-switch-user,
-  body[data-puesto-pos="mesero"] .topbar-right > :not(.comandas-switch-user),
-  body[data-section="comandas_cocina"] .topbar-right > :not(.comandas-switch-user),
+  body[data-puesto-pos="mesero"] .topbar-right,
+  body[data-section="comandas_cocina"] .topbar-right,
   body[data-puesto-pos="mesero"] .bottomnav > :not([data-view="history"]),
   body[data-puesto-pos="mesero"] .nav-open-btn,
   body[data-puesto-pos="mesero"] .nav-backdrop,
   body[data-puesto-pos="mesero"] .vp-sheet-bg,
   body[data-puesto-pos="mesero"] .cartbar{ display:none !important; }
-  body[data-puesto-pos="mesero"] .topbar-right > .comandas-switch-user,
-  body[data-section="comandas_cocina"] .topbar-right > .comandas-switch-user{
-    display:inline-flex !important; white-space:nowrap;
+  body[data-puesto-pos="mesero"] .comandas-switch-user,
+  body[data-section="comandas_cocina"] .comandas-switch-user{
+    display:block !important;
+    position:fixed; z-index:62; left:12px;
+    bottom:calc(var(--nav-h, 0px) + 8px);
+    width:min(300px, calc(100% - 24px));
+    margin:0;
   }
+  @media (min-width:700px){
+    body[data-puesto-pos="mesero"] .comandas-switch-user{ bottom:calc(68px + env(safe-area-inset-bottom)); }
+  }
+  body[data-section="comandas_cocina"] #view,
+  body[data-puesto-pos="mesero"] #view{ padding-bottom:calc(156px + env(safe-area-inset-bottom)); }
   body[data-puesto-pos="mesero"] .app{ grid-template-columns:minmax(0,1fr) !important; grid-template-areas:"topbar" "view" !important; }
   body[data-puesto-pos="mesero"] .bottomnav.bottomnav{
     position:fixed !important; inset:auto 0 0 !important; width:100% !important; height:auto !important;
@@ -5449,7 +5458,6 @@ body.vp-restoring #vpSessionRestore{
     padding:8px 12px calc(8px + env(safe-area-inset-bottom));
   }
   body[data-puesto-pos="mesero"] .bottomnav [data-view="history"]{ flex:0 0 auto; min-width:66px; }
-  body[data-puesto-pos="mesero"] #view{ padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=3">
 <link rel="stylesheet" href="vendo-comandas.css?v=1">
@@ -5569,7 +5577,6 @@ body.vp-restoring #vpSessionRestore{
       </span>
     </div>
     <div class="topbar-right">
-      <button type="button" class="btn ghost comandas-switch-user" onclick="switchUser()">Cambiar de usuario</button>
       <button type="button" class="vp-top-prem" id="topPremium" data-view="premium" onclick="goTo('premium')" aria-label="Funciones premium" title="Funciones premium"><span class="vp-top-prem-ico"></span></button>
       <div class="topbar-clock" id="clock"></div>
       <button class="user-chip" id="userChip" onclick="goTo('account')" aria-label="Mi cuenta">
@@ -5580,6 +5587,7 @@ body.vp-restoring #vpSessionRestore{
   </header>
 
   <main class="view" id="view"></main>
+  <div class="acc-list comandas-switch-user no-print" id="comandasSwitchUser"></div>
 
   <nav class="bottomnav no-print">
     <button class="navbtn" data-view="sale" data-icon="cart" onclick="goTo('sale')"><span class="navicon"></span><span>Nueva venta</span></button>
@@ -12833,6 +12841,8 @@ function tickClock(){
 }
 
 function paintChrome(){
+  const cambiar = document.getElementById('comandasSwitchUser');
+  if(cambiar && !cambiar.firstChild) cambiar.innerHTML = switchUserRowHTML();
   const mark = document.getElementById('brandMark');
   if(mark) mark.innerHTML = ICONS.fork;
   document.querySelectorAll('.navbtn').forEach(btn => {
@@ -14126,14 +14136,7 @@ function renderAccount(){
     <div class="section-title">Sesión</div>
     <div class="acc-list">
       ${me ? `
-        <button class="acc-row" onclick="switchUser()">
-          <span class="acc-ico">${icon('swap')}</span>
-          <span class="acc-txt">
-            <span class="acc-label">Cambiar de usuario</span>
-            <span class="acc-sub">Cierra tu turno y vuelve a la selección</span>
-          </span>
-          <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>` : ''}
+        ${switchUserRowHTML()}` : ''}
       ${soyDueno ? `
         <button class="acc-row" onclick="confirmLogout()">
           <span class="acc-ico">${icon('logout')}</span>
@@ -15114,6 +15117,17 @@ function enterAsUser(u){
 }
 
 /** Cierra el turno actual y vuelve a la selección de usuario. */
+function switchUserRowHTML(){
+  return `<button class="acc-row" onclick="switchUser()">
+          <span class="acc-ico">${icon('swap')}</span>
+          <span class="acc-txt">
+            <span class="acc-label">Cambiar de usuario</span>
+            <span class="acc-sub">Cierra tu turno y vuelve a la selección</span>
+          </span>
+          <span class="acc-chev">${icon('chevronRight')}</span>
+        </button>`;
+}
+
 function switchUser(){
   authState.cambioDesdeComandas = modoNavegacionPOS() === 'mesero' || currentView === 'comandas_cocina';
   const sh = currentShift();
@@ -15209,14 +15223,7 @@ function openUsersSheet(){
       </button>`) : ''}
 
     ${multi ? `<div class="acc-list" style="margin-top:14px;">
-        <button class="acc-row" onclick="switchUser()">
-          <span class="acc-ico">${icon('swap')}</span>
-          <span class="acc-txt">
-            <span class="acc-label">Cambiar de usuario</span>
-            <span class="acc-sub">Cierra tu turno y vuelve a la selección</span>
-          </span>
-          <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>
+        ${switchUserRowHTML()}
     </div>` : ''}
 
     <div class="sheet-actions">
