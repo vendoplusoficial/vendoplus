@@ -476,8 +476,8 @@
     var h = '<div class="vpc">' + volverHTML("VPComandas.ir('comandas')", 'Comandas') + tituloHTML(area.nombre);
 
     if (dueno) {
-      h += '<button type="button" class="vpc-btn is-main is-block" aria-expanded="' + !!S.mostrarDisponibles +
-        '" onclick="VPComandas.mostrarDisponibles()">Agregar usuarios</button>';
+      h += '<div class="fab-row" style="justify-content:flex-end"><button type="button" class="btn primary" aria-expanded="' + !!S.mostrarDisponibles +
+        '" onclick="VPComandas.mostrarDisponibles()">' + ico('plus') + ' Nuevo usuario</button></div>';
       if (S.mostrarDisponibles) {
         var libres = lista.filter(function (u) { return !puestoAsignado(u); });
         h += '<div class="vpc-spacer"></div>' + (libres.length
