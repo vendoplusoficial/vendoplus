@@ -3702,7 +3702,26 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
     .tool-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); }
   }
 
-  /* ---------- Nueva venta agrupada por categoría ----------
+  function saleCartBarHTML(cartCount, total, cartThumbs, action, extraClass = ''){
+  return cartCount > 0 ? `
+      <div class="cartbar no-print ${extraClass}">
+        <button class="cartbar-inner" onclick="${action}">
+          <span class="cartbar-pics">
+            ${cartThumbs.map(p => `<span class="cartbar-thumb">${p.image ? `<img src="${p.image}" alt="">` : icon('plate')}</span>`).join('')}
+            <i class="cartbar-count">${cartCount}</i>
+          </span>
+          <span class="cartbar-sep"></span>
+          <span class="cartbar-info">
+            <small>${cartCount} producto${cartCount === 1 ? '' : 's'}</small>
+            <b class="cartbar-total">${formatMoney(total)}</b>
+          </span>
+          <span class="cartbar-go">Ver carrito ${icon('chevronRight')}</span>
+        </button>
+      </div>
+    ` : '';
+}
+
+/* ---------- Nueva venta agrupada por categoría ----------
      Un título por categoría (emoji, nombre y cuántos productos tiene)
      y debajo sus productos, con la misma cuadrícula de siempre. */
   .sale-sec{ margin-bottom:24px; }
@@ -5443,7 +5462,10 @@ body.vp-restoring #vpSessionRestore{
   body[data-puesto-pos="mesero"] .nav-open-btn,
   body[data-puesto-pos="mesero"] .nav-backdrop,
   body[data-puesto-pos="mesero"] .vp-sheet-bg,
-  body[data-puesto-pos="mesero"] .cartbar{ display:none !important; }
+  body[data-puesto-pos="mesero"] .cartbar:not(.vpc-cartbar){ display:none !important; }
+  body[data-puesto-pos="mesero"] .vpc-cartbar{ pointer-events:none; bottom:calc(var(--nav-h, 0px) + 64px); }
+  .vpc-cartbar .cartbar-inner{ pointer-events:auto; }
+  body:has(.vpc-cartbar) #view{ padding-bottom:125px; }
   body[data-puesto-pos="mesero"] .comandas-switch-user,
   body[data-section="comandas_cocina"] .comandas-switch-user{
     display:block !important;
@@ -7156,22 +7178,7 @@ function renderSale(){
     ${chips}
     ${(typeof cashStalePanelHTML === 'function' && cashStalePanelHTML()) || grid}
     <p class="kbd-hint no-print"><b>F2</b> buscar · <b>F4</b> carrito · <b>F8</b> venta libre · <b>F9</b> cobrar · <b>Esc</b> cerrar</p>
-    ${cartCount > 0 ? `
-      <div class="cartbar no-print">
-        <button class="cartbar-inner" onclick="openCartSheet('cart')">
-          <span class="cartbar-pics">
-            ${cartThumbs.map(p => `<span class="cartbar-thumb">${p.image ? `<img src="${p.image}" alt="">` : icon('plate')}</span>`).join('')}
-            <i class="cartbar-count">${cartCount}</i>
-          </span>
-          <span class="cartbar-sep"></span>
-          <span class="cartbar-info">
-            <small>${cartCount} producto${cartCount === 1 ? '' : 's'}</small>
-            <b class="cartbar-total">${formatMoney(totals.total)}</b>
-          </span>
-          <span class="cartbar-go">Ver carrito ${icon('chevronRight')}</span>
-        </button>
-      </div>
-    ` : ''}
+    ${saleCartBarHTML(cartCount, totals.total, cartThumbs, "openCartSheet('cart')")}
   `;
 }
 
@@ -7186,28 +7193,30 @@ function saleGroups(list, categories){
   if(sueltos.length) groups.push({ cat:UNCATEGORIZED, items:sueltos });
   return groups.filter(g => g.items.length);
 }
-function saleSectionHTML(cat, items){
+function saleSectionHTML(cat, items, renderCard = saleCardHTML){
   return `<section class="sale-sec" data-cat="${escapeHtml(String(cat.id))}">
     <div class="sale-sec-head">
       <span class="sale-sec-ico" style="--cat:${cat.color || '#8A93AC'}"></span>
       <h2 class="sale-sec-name">${escapeHtml(cat.name)}</h2>
       <span class="sale-sec-count">${items.length}</span>
     </div>
-    <div class="product-grid">${items.map(saleCardHTML).join('')}</div>
+    <div class="product-grid">${items.map(p => renderCard(p)).join('')}</div>
   </section>`;
 }
 /** Tarjeta de un producto en Nueva venta (la misma de siempre). */
-function saleCardHTML(p){
+function saleCardHTML(p, pedido){
   const cat = categoryOf(p.category);
   const sized = hasSizes(p);
   const frac = isFracProduct(p);
-  const qty = inCartQty(p.id);
-  const usado = cartStockUse(p.id);   // lo que de verdad se descontará (con tamaños: 0.5 L, 2 L…)
+  const qty = pedido ? pedido.qty : inCartQty(p.id);
+  const usado = pedido ? pedido.stockUse : cartStockUse(p.id);   // lo que de verdad se descontará (con tamaños: 0.5 L, 2 L…)
   const st = stockInfo(p);
   const agotado = st.level === 'out';
   const step = frac ? productStep(p) : 1;
   const sinMas = !sized && st.control && (st.stock - usado) < step - 1e-9;   // ya no quedan libres
-  const tapAction = sized ? `openSizePicker('${p.id}')` : (frac ? `openQtyPad('${p.id}')` : `addToCart('${p.id}')`);
+  const tapAction = pedido ? pedido.tap : sized ? `openSizePicker('${p.id}')` : (frac ? `openQtyPad('${p.id}')` : `addToCart('${p.id}')`);
+  const changeQty = pedido ? pedido.change : `changeQtyFromGrid('${p.id}',`;
+  const amount = qty > 0 ? (pedido ? pedido.amount : cartAmountForProduct(p.id)) : 0;
   const wp = Number(p.wholesalePrice), wm = Number(p.wholesaleMin);
   return `<div class="product-card ${qty > 0 ? 'in-cart' : ''} ${agotado ? 'is-out' : ''}" data-pid="${p.id}">
     ${agotado ? `<span class="pc-flag">Agotado</span>`
@@ -7220,24 +7229,24 @@ function saleCardHTML(p){
       <div class="pc-inner">
         <div class="pc-name">${escapeHtml(p.name)}</div>
         ${st.control ? `<div class="pc-stock ${st.level}">${agotado ? 'Sin existencias' : fmtStock(p, st.stock) + ' en existencia'}</div>` : ''}
-        ${(wp > 0 && wm > 0 && !sized) ? `<div class="pc-stock whole">Mayoreo ${formatMoney(wp)} desde ${fmtNum(wm)}</div>` : ''}
+        ${(!pedido && wp > 0 && wm > 0 && !sized) ? `<div class="pc-stock whole">Mayoreo ${formatMoney(wp)} desde ${fmtNum(wm)}</div>` : ''}
       </div>
     </div>
     ${sized ? `
-      <div class="pc-pricebar" onclick="openSizePicker('${p.id}')" style="cursor:pointer;">
+      <div class="pc-pricebar" onclick="${tapAction}" style="cursor:pointer;">
         ${qty > 0
-          ? `<div class="pc-qty-total">${st.control ? fmtStock(p, usado) : fmtNum(qty)} · ${formatMoney(cartAmountForProduct(p.id))}</div>`
+          ? `<div class="pc-qty-total">${st.control ? fmtStock(p, usado) : fmtNum(qty)} · ${formatMoney(amount)}</div>`
           : `<div class="pc-price">Desde ${formatMoney(Math.min.apply(null, p.sizes.map(s => s.price)))}</div>`}
         <div class="qty-control mini ghost" aria-hidden="true"><button class="qty-btn" tabindex="-1">−</button><span class="qty-val">0</span><button class="qty-btn" tabindex="-1">+</button></div>
       </div>
     ` : qty > 0 ? `
       <div class="pc-qtybar">
         <div class="qty-control mini">
-          <button class="qty-btn" onclick="changeQtyFromGrid('${p.id}', -1)">−</button>
-          <span class="qty-val" ${frac ? `onclick="openQtyPad('${p.id}')" style="cursor:pointer"` : ''}>${frac ? fmtQty(qty, productUnit(p).id) : fmtNum(qty)}</span>
-          <button class="qty-btn" ${sinMas ? 'disabled style="opacity:.35"' : ''} onclick="changeQtyFromGrid('${p.id}', 1)">+</button>
+          <button class="qty-btn" onclick="${changeQty}-1)">−</button>
+          <span class="qty-val" ${frac ? `onclick="${tapAction}" style="cursor:pointer"` : ''}>${frac ? fmtQty(qty, productUnit(p).id) : fmtNum(qty)}</span>
+          <button class="qty-btn" ${sinMas ? 'disabled style="opacity:.35"' : ''} onclick="${changeQty}1)">+</button>
         </div>
-        <div class="pc-qty-total">${formatMoney(cartAmountForProduct(p.id))}</div>
+        <div class="pc-qty-total">${formatMoney(amount)}</div>
       </div>
     ` : `
       <div class="pc-pricebar">
@@ -7989,26 +7998,9 @@ function cartSheetHTML(step){
       else if(wholesaleApplies(c, p)) tags.push(`<span class="ci-tag ok">Mayoreo</span>`);
       if(d > 0) tags.push(`<span class="ci-tag disc">−${formatMoney(d)}${c.disc.type === 'pct' ? ' (' + fmtPct(c.disc.value) + '%)' : ''}</span>`);
       if(p.custom) tags.push(`<span class="ci-tag">Venta libre</span>`);
-      return `
-        <div class="cart-item">
-          <div class="cart-item-photo" onclick="openLineEditor(${i})">
-            ${p.image ? `<img src="${p.image}" alt="">` : `<span class="cart-item-photo-ph">${icon('plate')}</span>`}
-          </div>
-          <div class="cart-item-info" onclick="openLineEditor(${i})" role="button" title="Editar cantidad, precio, descuento o nota">
-            <div class="cart-item-name">${escapeHtml(label)} <span class="ci-edit">${icon('edit')}</span></div>
-            <div class="cart-item-price">${formatMoney(base)} ${c.sizeLabel || !isFracProduct(p) ? 'c/u' : 'por ' + productUnit(p).short}${stockNote}</div>
-            ${tags.length ? `<div class="ci-tags">${tags.join('')}</div>` : ''}
-            ${c.note ? `<div class="ci-note">${icx('note')}${escapeHtml(c.note)}</div>` : ''}
-          </div>
-          <div class="qty-control">
-            <button class="qty-btn" onclick="changeLineQty(${i}, -1)">−</button>
-            <span class="qty-val" onclick="openLineEditor(${i})">${cartQtyText(c, p)}</span>
-            <button class="qty-btn" ${blockInc ? 'disabled style="opacity:.35"' : ''} onclick="changeLineQty(${i}, 1)">+</button>
-          </div>
-          <div class="cart-item-subtotal">${formatMoney(cartLineAmount(c))}</div>
-          <button class="cart-item-remove" onclick="removeLine(${i})" aria-label="Quitar">${icon('trash')}</button>
-        </div>
-      `;
+      return saleCartItemHTML({c,p,base,label,stockNote,tags,blockInc,amount:cartLineAmount(c),
+        edit:`openLineEditor(${i})`, minus:`changeLineQty(${i}, -1)`, plus:`changeLineQty(${i}, 1)`,
+        remove:`removeLine(${i})`, editTitle:'Editar cantidad, precio, descuento o nota'});
     }).join('') + '</div>'}
     ${cart.length > 0 ? `
       <div class="cart-foot">
@@ -8032,6 +8024,29 @@ function cartSheetHTML(step){
     ` : ''}
     ${checkout.floorOrderId ? '<button class="link-danger" onclick="VPMesas.discard()">Borrar pedido de mesa</button>' : ''}
   `;
+}
+
+function saleCartItemHTML({c,p,base,label,stockNote,tags,blockInc,amount,edit,minus,plus,remove,editTitle,readOnly}){
+  return `
+        <div class="cart-item">
+          <div class="cart-item-photo" onclick="${edit}">
+            ${p.image ? `<img src="${p.image}" alt="">` : `<span class="cart-item-photo-ph">${icon('plate')}</span>`}
+          </div>
+          <div class="cart-item-info" ${edit ? `onclick="${edit}" role="button" title="${editTitle}"` : ''}>
+            <div class="cart-item-name">${escapeHtml(label)} ${edit ? `<span class="ci-edit">${icon('edit')}</span>` : ''}</div>
+            <div class="cart-item-price">${formatMoney(base)} ${c.sizeLabel || !isFracProduct(p) ? 'c/u' : 'por ' + productUnit(p).short}${stockNote}</div>
+            ${tags.length ? `<div class="ci-tags">${tags.join('')}</div>` : ''}
+            ${c.note ? `<div class="ci-note">${icx('note')}${escapeHtml(c.note)}</div>` : ''}
+          </div>
+          ${readOnly ? '' : `<div class="qty-control">
+            <button class="qty-btn" onclick="${minus}">−</button>
+            <span class="qty-val" onclick="${edit}">${cartQtyText(c, p)}</span>
+            <button class="qty-btn" ${blockInc ? 'disabled style="opacity:.35"' : ''} onclick="${plus}">+</button>
+          </div>`}
+          <div class="cart-item-subtotal">${readOnly ? `<small>${cartQtyText(c, p)} × </small>` : ''}${formatMoney(amount)}</div>
+          ${readOnly ? '' : `<button class="cart-item-remove" onclick="${remove}" aria-label="Quitar">${icon('trash')}</button>`}
+        </div>
+      `;
 }
 
 /* ---------- Cambios en las líneas del carrito ---------- */
@@ -29145,7 +29160,7 @@ function cartSanitize(){
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261121-comandas"></script>
-<script src="vendo-comandas.js?v=12"></script>
+<script src="vendo-comandas.js?v=13"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,

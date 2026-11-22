@@ -168,6 +168,7 @@
   var ERRORES = {
     sin_sesion: 'Entra a tu cuenta para usar Comandas',
     sin_premium: 'Comandas es una función Premium',
+    mesero_apagado: 'Activa Mesero en Comandas para enviar pedidos',
     cocina_apagada: 'Activa Cocinero en Comandas para enviar pedidos',
     mesa_ocupada: 'Esa mesa ya la abrió alguien más',
     mesa_no_existe: 'Esa mesa ya no existe',
@@ -273,7 +274,10 @@
   }
   function cargarCuenta(id, callback) {
     if (!nube()) return;
+    var nubeActual = nube(), turno = S.turno, gen = nubeActual.gen;
+    var solicitud = S.solicitudCuenta = {};
     rpc('vp_com_cuenta', { p_cuenta: id }).then(function (d) {
+      if (S.solicitudCuenta !== solicitud || turno !== S.turno || gen !== nubeActual.gen) return;
       S.cuenta = d || null;
       if (callback) callback(); else repintar();
     }).catch(function (e) { console.warn('Vendo plus · comandas', e); });
@@ -657,7 +661,7 @@
     if (puedeArea('mesero') && !S.on.mesero) return envoltura('Mesas', '',
       vacioHTML(mi('vpcTray'), 'Mesero está desactivado', 'Pídele al dueño que active esta área.'));
     if (!puedeArea('mesero')) return sinPermisoHTML();
-    if (S.cuenta) return vistaCuenta('comandas_mesero');
+    if (S.cuenta) return S.verCuentaMesero ? vistaCuenta('comandas_mesero') : catalogoMesero();
 
     if (S.errorTablero) return errorTableroHTML();
     if (!S.tablero) { cargarTablero(); return envoltura('Mesas', 'Toca una mesa para abrirla o para seguir atendiéndola.', cargandoHTML(6)); }
@@ -745,7 +749,7 @@
     if (porEnviar.length) {
       h += '<div class="section-title">Por enviar</div><div class="vpc-com"><div class="vpc-com-body">' +
         porEnviar.map(function (p) { return prodHTML(p, 'cuenta'); }).join('') + '</div></div>';
-      if (puedeArea('mesero')) h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.enviar()">' + mi('vpcSend') + ' Enviar comanda (' + porEnviar.length + ')</button>';
+      if (puedeArea('mesero')) h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.carritoMesero()">' + mi('vpcSend') + ' Enviar comanda (' + porEnviar.length + ')</button>';
     }
 
     if (enviados.length) {
@@ -768,7 +772,7 @@
 
     h += '<div class="vpc-pie">';
     if (c.estado !== 'cobrada') {
-      h += '<button type="button" class="vpc-btn is-soft" onclick="VPComandas.elegirProductos()">' + ico('plus') + ' Agregar</button>';
+      h += '<button type="button" class="vpc-btn is-soft" onclick="' + (cobra ? 'VPComandas.elegirProductos()' : 'VPComandas.productosMesero()') + '">' + ico('plus') + ' Agregar</button>';
       if (c.estado === 'abierta') h += '<button type="button" class="vpc-btn" onclick="VPComandas.pedirCuenta()">Pedir la cuenta</button>';
       if (cobra) h += '<button type="button" class="vpc-btn is-main" onclick="VPComandas.cobrar()">' + ico('cash') + ' Cobrar</button>';
     }
@@ -960,7 +964,7 @@
       p_mesero_id: (u && u.id) || '', p_mesero: nombreActor(), p_idem: llave()
     }, function (d) {
       cerrarModal();
-      if (d && d.cuenta) cargarCuenta(d.cuenta);
+      if (d && d.cuenta) abrirCuenta(d.cuenta);
     }).then(function () { if (btn) btn.disabled = false; });
   }
 
@@ -976,23 +980,290 @@
     }, function (d) {
       if (d && d.cuenta) {
         ventaLibrePendiente = null;
-        cargarCuenta(d.cuenta);
+        abrirCuenta(d.cuenta);
       }
     }).finally(function () { abriendoVentaLibre = false; });
   }
 
-  function abrirCuenta(id) { cargarCuenta(id); }
-  function cerrarCuenta(vista) { S.cuenta = null; S.borrador = {}; cargarTablero(function () { irA(vista || 'comandas_mesero'); }); }
-
-  function enviar() {
-    if (!habilitado() || !S.on.mesero || !puedeArea('mesero')) return;
-    if (!S.cuenta) return;
-    var id = S.cuenta.id;
-    accion('vp_com_enviar', { p_cuenta: id, p_actor: nombreActor(), p_idem: llave() }, function (d) {
-      avisar('Comanda ' + (d && d.comanda) + ' enviada', { icon: mi('vpcSend'), variant: 'toast-success', subtitle: 'A ' + (((d && d.areas) || ['Cocina']).join(' y ')) });
-      cargarCuenta(id);
+  function abrirCuenta(id) {
+    S.verCuentaMesero = false;
+    S.buscaMesero = '';
+    S.cuenta = null;
+    cargarCuenta(id, function () {
+      repintar();
+      if (puedeArea('mesero')) window.scrollTo(0, 0);
     });
   }
+  function cerrarCuenta(vista) {
+    S.solicitudCuenta = null;
+    S.cuenta = null;
+    S.borrador = {};
+    repintar();
+    cargarTablero();
+  }
+
+  var canastasMesero = new Map();
+  var generacionCanastas;
+  function pedidoMesero() {
+    if (!habilitado() || !S.on.mesero || !puedeArea('mesero') ||
+        ref('currentView') !== 'comandas_mesero' || !S.cuenta) return null;
+    var sesion = nube().gen + ':' + S.turno;
+    if (generacionCanastas !== sesion) {
+      canastasMesero.clear();
+      generacionCanastas = sesion;
+    }
+    var id = S.cuenta.id;
+    if (!canastasMesero.has(id)) canastasMesero.set(id, { lineas: [], id: llave(), enviando: false });
+    return canastasMesero.get(id);
+  }
+
+  function productosMesero() {
+    if (!pedidoMesero()) return;
+    S.verCuentaMesero = false;
+    cerrarModal();
+    repintar();
+  }
+
+  function detalleMesero() {
+    if (!pedidoMesero()) return;
+    S.verCuentaMesero = true;
+    repintar();
+  }
+
+  function buscarMesero(texto) { S.buscaMesero = texto; repintar(); }
+  function categoriaMesero(id) {
+    var seccion = Array.from(document.querySelectorAll('#view .sale-sec')).find(function (el) { return el.dataset.cat === id; });
+    if (seccion) seccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function lineasGuardadasMesero() {
+    return (S.cuenta.productos || []).filter(function (p) {
+      return !p.comanda && p.estado !== 'cancelado';
+    }).map(function (p) {
+      return { productId: p.producto_id, qty: Number(p.cantidad), unitPrice: Number(p.precio),
+        sizeLabel: p.size, note: p.nota, name: p.nombre, guardada: true };
+    });
+  }
+
+  function catalogoMesero() {
+    var pedido = pedidoMesero();
+    if (!pedido) return sinPermisoHTML();
+    var DB = ref('DB'), q = (S.buscaMesero || '').trim();
+    var ps = DB.getProducts().filter(function (p) { return p.active && (!q || fn('saleMatches')(p, q)); });
+    var grupos = fn('saleGroups')(ps, DB.getCategories());
+    var lineas = pedido.lineas.concat(lineasGuardadasMesero());
+    var total = lineas.reduce(function (suma, l) { return suma + l.qty * l.unitPrice; }, 0);
+    var cantidad = lineas.reduce(function (suma, l) { return suma + (Number.isInteger(l.qty) ? l.qty : 1); }, 0);
+    var fotos = lineas.slice(0, 2).map(function (l) { return fn('findProduct')(l.productId); }).filter(Boolean);
+    return volverHTML("VPComandas.cerrarCuenta()", 'Mesas') +
+      '<h1 class="page-title">' + esc(S.cuenta.mesa) + '</h1>' +
+      '<p class="page-sub">' + Number(S.cuenta.personas || 1) + ' personas · Toca un producto para agregarlo</p>' +
+      '<div class="sale-tools no-print"><div class="search-box sale-search">' + ico('search') +
+      '<input type="search" placeholder="Buscar producto" aria-label="Buscar producto" value="' + esc(S.buscaMesero || '') +
+      '" oninput="VPComandas.buscarMesero(this.value)"></div>' +
+      '<button type="button" class="btn ghost" onclick="VPComandas.detalleMesero()">Ver cuenta</button></div>' +
+      (q ? '' : '<div class="chip-row sticky-index">' + grupos.map(function (g) {
+        return '<button type="button" class="chip" onclick="VPComandas.categoriaMesero(' + js(g.cat.id) + ')">' + esc(g.cat.name) + '</button>';
+      }).join('') + '</div>') +
+      (grupos.length ? grupos.map(function (g) {
+        return fn('saleSectionHTML')(g.cat, g.items, function (p) {
+          var seleccion = pedido.lineas.filter(function (l) { return l.productId === p.id; });
+          return fn('saleCardHTML')(p, {
+            qty: seleccion.reduce(function (n, l) { return n + l.qty; }, 0),
+            stockUse: usoPedido(pedido, p),
+            amount: seleccion.reduce(function (n, l) { return n + l.qty * l.unitPrice; }, 0),
+            tap: 'VPComandas.tocarMesero(' + js(p.id) + ')',
+            change: 'VPComandas.cantidadMesero(' + js(p.id) + ', null,'
+          });
+        });
+      }).join('') : '<div class="empty-state"><div class="empty-title">Sin productos</div></div>') +
+      fn('saleCartBarHTML')(cantidad, total, fotos, 'VPComandas.carritoMesero()', 'vpc-cartbar');
+  }
+
+  function usoPedido(pedido, p) {
+    return pedido.lineas.filter(function (l) { return l.productId === p.id; })
+      .reduce(function (n, l) { return n + fn('lineStockUse')(p, l); }, 0);
+  }
+
+  function permiteCantidad(pedido, p, linea, cambio) {
+    var stock = fn('stockInfo')(p);
+    return !stock.control || usoPedido(pedido, p) + fn('lineStockUse')(p, { sizeId: linea.sizeId, qty: cambio }) <= stock.stock + 1e-9;
+  }
+
+  function tocarMesero(id) {
+    var pedido = pedidoMesero(), p = fn('findProduct')(id);
+    if (!pedido || pedido.enviando || pedido.incierto || !p || p.active === false) return;
+    if (fn('hasSizes')(p)) {
+      abrirModal('<div class="sheet-header"><h2>' + esc(p.name) +
+        '</h2><button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div>' +
+        '<div class="acc-list">' + p.sizes.map(function (t) {
+          return '<button class="acc-row" onclick="VPComandas.cantidadMesero(' + js(p.id) + ',' + js(t.id) + ',1,true)">' +
+            '<span class="acc-txt"><span class="acc-label">' + esc(t.label) + '</span></span>' + money(t.price) + '</button>';
+        }).join('') + '</div>');
+      return;
+    }
+    if (fn('isFracProduct')(p)) {
+      var l = pedido.lineas.find(function (l) { return l.productId === id; });
+      editarCantidadMesero(p, l, false);
+      return;
+    }
+    cantidadMesero(id, null, 1);
+  }
+
+  function cantidadMesero(id, sizeId, dir, cerrar, desdeCarrito) {
+    var pedido = pedidoMesero(), p = fn('findProduct')(id);
+    if (!pedido || pedido.enviando || pedido.incierto || !p || p.active === false) return;
+    var size = sizeId == null ? null : (p.sizes || []).find(function (t) { return t.id === sizeId; });
+    if (sizeId != null && !size) return;
+    var l = pedido.lineas.find(function (l) { return l.productId === id && l.sizeId === sizeId; });
+    var incremento = dir * (size ? 1 : fn('productStep')(p));
+    if (incremento > 0 && !permiteCantidad(pedido, p, {sizeId: sizeId}, incremento)) {
+      avisar('No hay existencias suficientes', { variant: 'toast-danger', icon: ico('alert') });
+      return;
+    }
+    if (!l && incremento < 0) return;
+    if (!l) {
+      l = { productId: id, sizeId: sizeId, sizeLabel: size && size.label, qty: 0, unitPrice: Number(size ? size.price : p.price), note: '' };
+      pedido.lineas.push(l);
+    }
+    l.qty = fn('r3')(l.qty + incremento);
+    if (l.qty <= 0) pedido.lineas.splice(pedido.lineas.indexOf(l), 1);
+    if (cerrar) cerrarModal();
+    if (desdeCarrito) carritoMesero(); else repintar();
+  }
+
+  function editarCantidadMesero(p, l, desdeCarrito) {
+    var pedido = pedidoMesero();
+    if (!pedido || pedido.enviando || pedido.incierto) return;
+    var fraccion = fn('isFracProduct')(p);
+    fn('askConfirm')({
+      title: esc(p.name), ok: 'Guardar',
+      extraHTML: '<div class="field"><label for="vpcQty">Cantidad</label><input id="vpcQty" type="number" inputmode="' +
+        (fraccion ? 'decimal' : 'numeric') + '" min="0.001" max="9999" step="any" value="' + (l ? l.qty : fn('productStep')(p)) +
+        '"></div><div class="field"><label for="vpcNota">Nota para cocina</label><input id="vpcNota" maxlength="200" value="' +
+        esc(l && l.note) + '"></div>',
+      validate: function (card) {
+        var n = Number(card.querySelector('#vpcQty').value);
+        if (!(n >= 0.001 && n <= 9999) || (!fraccion && !Number.isInteger(n)) ||
+            !permiteCantidad(pedido, p, l || {}, n - (l ? l.qty : 0))) {
+          avisar('Revisa la cantidad y las existencias', { variant: 'toast-danger', icon: ico('alert') });
+          return false;
+        }
+        return true;
+      }
+    }, function (card) {
+      if (pedidoMesero() !== pedido || pedido.enviando || pedido.incierto) return;
+      if (!l) {
+        l = { productId: p.id, sizeId: null, sizeLabel: null, unitPrice: Number(p.price) };
+        pedido.lineas.push(l);
+      }
+      l.qty = fn('r3')(Number(card.querySelector('#vpcQty').value));
+      l.note = card.querySelector('#vpcNota').value.trim();
+      if (desdeCarrito) carritoMesero(); else repintar();
+    });
+  }
+
+  function editarLineaMesero(i) {
+    var pedido = pedidoMesero(), l = pedido?.lineas[i];
+    var p = l && fn('findProduct')(l.productId);
+    if (p) editarCantidadMesero(p, l, true);
+  }
+
+  function quitarLineaMesero(i) {
+    var pedido = pedidoMesero();
+    if (!pedido || pedido.enviando || pedido.incierto) return;
+    if (i < 0 || i >= pedido.lineas.length) return;
+    pedido.lineas.splice(i, 1);
+    carritoMesero();
+  }
+
+  function carritoMesero() {
+    var pedido = pedidoMesero();
+    if (!pedido) return;
+    var guardadas = lineasGuardadasMesero();
+    var lineas = pedido.lineas.concat(guardadas);
+    var total = lineas.reduce(function (n, l) { return n + l.qty * l.unitPrice; }, 0);
+    var filas = lineas.map(function (l, i) {
+      var p = fn('findProduct')(l.productId) || { name: l.name || 'Producto' };
+      var st = fn('stockInfo')(p), step = l.sizeId ? 1 : fn('productStep')(p);
+      var args = js(l.productId) + ',' + (l.sizeId == null ? 'null' : js(l.sizeId));
+      return fn('saleCartItemHTML')({
+        c: l, p: p, base: l.unitPrice, amount: l.unitPrice * l.qty,
+        label: p.name + (l.sizeLabel ? ' · ' + l.sizeLabel : ''),
+        stockNote: st.control ? ' · ' + fn('fmtStock')(p, st.stock) + ' en existencia' : '',
+        tags: l.guardada ? ['<span class="ci-tag">Pendiente de envío</span>'] : [],
+        readOnly: l.guardada || pedido.enviando || pedido.incierto,
+        blockInc: !permiteCantidad(pedido, p, l, step),
+        edit: l.guardada || pedido.enviando || pedido.incierto ? '' : 'VPComandas.editarLineaMesero(' + i + ')', editTitle: 'Editar cantidad o nota',
+        minus: 'VPComandas.cantidadMesero(' + args + ',-1,false,true)',
+        plus: 'VPComandas.cantidadMesero(' + args + ',1,false,true)',
+        remove: 'VPComandas.quitarLineaMesero(' + i + ')'
+      });
+    }).join('');
+    abrirModal('<div class="sheet-header"><div class="sheet-header-left"><h2>Carrito</h2>' +
+      '<div class="cart-total-pill"><span class="ctp-icon">' + ico('cart') + '</span><span>' + money(total) + '</span></div></div>' +
+      '<button class="sheet-close" onclick="VPComandas.cerrarCarritoMesero()">' + ico('close') + '</button></div>' +
+      (filas ? '<i class="cart-marker" hidden></i><div class="cart-list" data-keep-scroll="cart">' + filas + '</div>' :
+        '<div class="empty-state">' + fn('illustration')('cartEmpty') + '<div class="empty-title">Carrito vacío</div></div>') +
+      '<div class="cart-foot"><div class="cart-actions"><button class="btn ghost" onclick="VPComandas.productosMesero()">Volver</button>' +
+      '<button class="btn primary block" onclick="VPComandas.enviarMesero()" ' + (!lineas.length || pedido.enviando ? 'disabled' : '') + '>' +
+      (pedido.enviando ? 'Enviando…' : 'Enviar a cocina') + '</button></div></div>', { dismissible: !pedido.enviando, sheetClass: 'vpc-waiter-cart' });
+  }
+
+  function cerrarCarritoMesero() { cerrarModal(); repintar(); }
+
+  function enviarMesero() {
+    var pedido = pedidoMesero();
+    if (!pedido || pedido.enviando || (!pedido.lineas.length && !lineasGuardadasMesero().length)) return;
+    var id = S.cuenta.id;
+    fn('askConfirm')({
+      title: '¿Enviar a cocina?', text: 'Se enviarán los productos pendientes de ' + esc(S.cuenta.mesa) + '.',
+      ok: 'Enviar a cocina', icon: mi('vpcSend')
+    }, async function () {
+      if (pedidoMesero() !== pedido || pedido.enviando) return;
+      pedido.enviando = true;
+      carritoMesero();
+      try {
+        var c = nube();
+        if (pedido.lineas.length && !await c.flush()) {
+          avisar('No se pudo enviar a cocina', { variant: 'toast-danger', icon: ico('alert') });
+          return;
+        }
+        if (pedidoMesero() !== pedido) return;
+        pedido.incierto = true;
+        var resultado = await rpc('vp_com_enviar_desde_mesero', {
+          p_cuenta: id, p_actor: nombreActor(), p_idem: pedido.id,
+          p_lineas: pedido.lineas.map(function (l) {
+            return { productId: l.productId, sizeId: l.sizeId, sizeLabel: l.sizeLabel, qty: l.qty, nota: l.note };
+          })
+        });
+        pedido.incierto = false;
+        if (!resultado?.ok) {
+          if (pedidoMesero() === pedido) {
+            avisar(mensajeError(resultado?.error), { variant: 'toast-danger', icon: ico('alert') });
+            if (resultado?.error === 'nada_por_enviar') cargarCuenta(id, carritoMesero);
+          }
+          return;
+        }
+        pedido.lineas = [];
+        pedido.id = llave();
+        if (pedidoMesero() !== pedido) return;
+        S.cuenta.productos = (S.cuenta.productos || []).filter(function (p) { return p.comanda || p.estado === 'cancelado'; });
+        cerrarCarritoMesero();
+        cargarCuenta(id);
+        avisar('Comanda ' + resultado.comanda + ' enviada', { variant: 'toast-success', icon: ico('check') });
+      } catch (e) {
+        console.warn('Vendo plus · enviar comanda', e);
+        if (pedidoMesero() === pedido) avisar('No se pudo confirmar el envío', {
+          variant: 'toast-danger', icon: ico('alert'), subtitle: 'Vuelve a tocar Enviar a cocina para verificarlo'
+        });
+      } finally {
+        pedido.enviando = false;
+        if (pedidoMesero() === pedido && document.querySelector('.vpc-waiter-cart')) carritoMesero();
+      }
+    });
+  }
+
   function pedirCuenta() {
     if (!S.cuenta) return;
     var id = S.cuenta.id;
@@ -1420,6 +1691,9 @@
     window.openUserSession = function () {
       var r = original.apply(this, arguments);
       S.asignacion = null;
+      S.cuenta = null;
+      S.solicitudCuenta = null;
+      canastasMesero.clear();
       S.verificandoPuesto = null;
       S.turno = (S.turno || 0) + 1;
       setTimeout(abrirAreaAsignada, 0);
@@ -1445,6 +1719,7 @@
   }
 
   function ir(vista) {
+    S.solicitudCuenta = null;
     S.cuenta = null;
     S.errorTablero = false;
     if (vista === 'comandas_cocina') S.cocina = null; else S.tablero = null;
@@ -1493,7 +1768,10 @@
     toggle: toggle, verUsuarios: verUsuarios, mostrarDisponibles: mostrarDisponibles, editarIntegrante: editarIntegrante,
     abrirMesa: abrirMesa, confirmarMesa: confirmarMesa, ventaLibre: ventaLibre,
     abrirCuenta: abrirCuenta, cerrarCuenta: cerrarCuenta,
-    enviar: enviar, pedirCuenta: pedirCuenta, cancelarCuenta: cancelarCuenta,
+    carritoMesero: carritoMesero, cerrarCarritoMesero: cerrarCarritoMesero,
+    productosMesero: productosMesero, detalleMesero: detalleMesero, buscarMesero: buscarMesero, categoriaMesero: categoriaMesero,
+    tocarMesero: tocarMesero, cantidadMesero: cantidadMesero, editarLineaMesero: editarLineaMesero,
+    quitarLineaMesero: quitarLineaMesero, enviarMesero: enviarMesero, pedirCuenta: pedirCuenta, cancelarCuenta: cancelarCuenta,
     cobrar: cobrar, puedeCobrar: puedeCobrar, cocinaEnCaja: cocinaEnCaja, enviarDesdeCaja: enviarDesdeCaja, cerrarPorVenta: cerrarPorVenta, marcar: marcar, todoListo: todoListo,
     reportar: reportar, mandarProblema: mandarProblema,
     verProblemas: verProblemas, resolver: resolver,
