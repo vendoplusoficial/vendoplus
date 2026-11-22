@@ -5506,7 +5506,6 @@ body.vp-restoring #vpSessionRestore{
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
-    <button class="navbtn nav-pc" data-view="comandas" data-icon="cashbox" onclick="VPComandas.abrir()"><span class="navicon"></span><span>Comandas</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -27916,7 +27915,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
           : '<button class="btn primary block" onclick="closeModal(); afterSaleNew();">'+icon('plus')+' Nueva venta</button>')+
       '</div>';
   };
-  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['comandas','vpcTray','Comandas'],['account','person','Mi cuenta']];
+  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
     if(!bg){
@@ -28877,8 +28876,8 @@ function cartSanitize(){
 <script src="vendo-mascota.js"></script>
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
-<script src="vendo-premium.js?v=20261121-premium"></script>
-<script src="vendo-comandas.js?v=1"></script>
+<script src="vendo-premium.js?v=20261121-comandas"></script>
+<script src="vendo-comandas.js?v=2"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,

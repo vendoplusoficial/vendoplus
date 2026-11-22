@@ -174,7 +174,11 @@
     if (a === 'caja' || S.on[a]) return a;
     return 'caja';
   }
-  function puedeCobrar() { return soyDueno() || areaDe(usuarioActivo()) === 'caja'; }
+  function habilitado() {
+    var c = nube();
+    return !!(c && c.uid === S.negocio && S.premium && S.activo);
+  }
+  function puedeCobrar() { return habilitado() && (soyDueno() || areaDe(usuarioActivo()) === 'caja'); }
 
   /* =======================================================================
      4.  SERVIDOR
@@ -221,9 +225,18 @@
      5.  CARGAS
   ======================================================================= */
   function estadoServidor() {
-    if (!nube()) { S.listo = true; return Promise.resolve(); }
+    var c = nube();
+    if (!c) { S.listo = false; return Promise.resolve(); }
+    var negocio = c.uid, generacion = c.gen;
+    function mismaSesion() { return nube() && c.uid === negocio && c.gen === generacion; }
     return rpc('vp_com_estado').then(function (d) {
+      if (!mismaSesion()) return;
       d = d || {};
+      if (S.negocio !== negocio || !d.premium) {
+        S.tablero = null; S.cuenta = null; S.cocina = null;
+        if (S.canal) { c.sb.removeChannel(S.canal); S.canal = null; }
+      }
+      S.negocio = negocio;
       S.activo = !!d.activo;
       S.premium = !!d.premium;
       S.on = { caja: true, mesero: !!d.mesero, cocina: !!d.cocina };
@@ -232,11 +245,11 @@
       escuchar();
     }).catch(function (e) {
       console.warn('Vendo plus · comandas', e);
-      S.listo = true;
+      if (mismaSesion()) { S.negocio = negocio; S.activo = false; S.premium = false; S.listo = true; }
     });
   }
   function cargarTablero(callback) {
-    if (!nube() || !S.activo || S.cargandoTablero) return;
+    if (!habilitado() || S.cargandoTablero) return;
     S.cargandoTablero = true;
     S.cargando = true;
     rpc('vp_com_sincronizar_plano').then(function () {
@@ -256,7 +269,7 @@
     });
   }
   function cargarCocina() {
-    if (!nube() || !S.activo) return;
+    if (!habilitado()) return;
     S.cargando = true;
     rpc('vp_com_cocina', { p_area: S.area || null }).then(function (d) {
       S.cargando = false; S.cocina = Array.isArray(d) ? d : []; repintar();
@@ -329,7 +342,10 @@
       if (document.hidden) return;
       var v = ref('currentView');
       if (String(v || '').indexOf('comandas') !== 0) return;
-      refrescarLoQueSeVe();
+      estadoServidor().then(function () {
+        if (habilitado()) refrescarLoQueSeVe();
+        else repintar();
+      });
     }, 20000);
   }
   document.addEventListener('visibilitychange', function () {
@@ -373,7 +389,7 @@
       return '<div class="vpc">' + tituloHTML('Comandas') +
         vacioHTML(mi('vpcTray'), 'Necesitas internet', 'Comandas trabaja en vivo entre el mesero, la cocina y la caja. Conéctate y vuelve a entrar.') + '</div>';
     }
-    if (!S.listo) { estadoServidor().then(repintar); return '<div class="vpc">' + tituloHTML('Comandas') + cargandoHTML(3) + '</div>'; }
+    if (!S.listo || (S.negocio && S.negocio !== nube().uid)) { estadoServidor().then(repintar); return '<div class="vpc">' + tituloHTML('Comandas') + cargandoHTML(3) + '</div>'; }
 
     var dueno = soyDueno();
     var h = '<div class="vpc">';
@@ -554,7 +570,7 @@
 
   /** Se pregunta UNA VEZ por usuario. Después se queda guardado. */
   function quizaElegirArea() {
-    if (!S.activo || S.preguntando || soyDueno()) return;
+    if (!habilitado() || S.preguntando || soyDueno()) return;
     if (document.body.classList.contains('auth-open')) return;
     if (document.querySelector('#modal-layer .modal-sheet')) return;
 
@@ -852,8 +868,8 @@
   ======================================================================= */
   function listoParaPintar() {
     if (!nube()) return false;
-    if (!S.listo) { estadoServidor().then(repintar); return false; }
-    return S.activo;
+    if (!S.listo || (S.negocio && S.negocio !== nube().uid)) { estadoServidor().then(repintar); return false; }
+    return habilitado();
   }
   function esperandoHTML() {
     if (!nube()) {
@@ -1404,7 +1420,7 @@
     irA(vista);
     setTimeout(refrescarLoQueSeVe, 0);
   }
-  function abrir() { ir('comandas'); }
+  function abrir() { S.listo = false; ir('comandas'); }
   function verPremium() {
     if (window.VPPremium && VPPremium.abrir) VPPremium.abrir();
     else avisar('Activa Premium desde Mi cuenta');
@@ -1435,7 +1451,7 @@
   ======================================================================= */
   window.VPComandas = {
     abrir: abrir, ir: ir,
-    activo: function () { return S.activo; },
+    activo: habilitado,
     area: miArea,
     verPremium: verPremium,
     encender: encender, apagar: apagar,
