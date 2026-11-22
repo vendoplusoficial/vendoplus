@@ -174,7 +174,7 @@
     if (a === 'caja' || S.on[a]) return a;
     return 'caja';
   }
-  function puedeCobrar() { return soyDueno() || miArea() === 'caja'; }
+  function puedeCobrar() { return soyDueno() || areaDe(usuarioActivo()) === 'caja'; }
 
   /* =======================================================================
      4.  SERVIDOR
@@ -236,13 +236,24 @@
     });
   }
   function cargarTablero(callback) {
-    if (!nube() || !S.activo) return;
+    if (!nube() || !S.activo || S.cargandoTablero) return;
+    S.cargandoTablero = true;
     S.cargando = true;
-    rpc('vp_com_tablero').then(function (d) {
+    rpc('vp_com_sincronizar_plano').then(function () {
+      return rpc('vp_com_tablero');
+    }).then(function (d) {
+      S.cargandoTablero = false;
       S.cargando = false; S.tablero = d || {};
       if (d && Array.isArray(d.areas)) S.areas = d.areas;
       if (callback) callback(); else repintar();
-    }).catch(function (e) { S.cargando = false; console.warn('Vendo plus · comandas', e); repintar(); });
+    }).catch(function (e) {
+      S.cargandoTablero = false;
+      S.cargando = false;
+      S.tablero = null;
+      S.errorTablero = true;
+      console.warn('Vendo plus · comandas', e);
+      repintar();
+    });
   }
   function cargarCocina() {
     if (!nube() || !S.activo) return;
@@ -410,7 +421,7 @@
 
     if (dueno) {
       h += '<div class="vpc-spacer"></div><div class="section-title">Administrar</div><div class="vpc-list">' +
-        filaHTML(mi('vpcTable'), 'Mesas', 'Crear, editar o quitar mesas', 'VPComandas.verMesas()') +
+        filaHTML(mi('vpcTable'), 'Mesas y bar', 'Editar el plano de mesas del POS', "VPMesas.open('comandas')") +
         filaHTML(mi('vpcPot'), 'Áreas de preparación', 'Cocina, Barra, Postres…', 'VPComandas.verAreas()') +
         '</div>';
       h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-block" onclick="VPComandas.apagar()">Apagar Comandas</button>';
@@ -543,7 +554,7 @@
 
   /** Se pregunta UNA VEZ por usuario. Después se queda guardado. */
   function quizaElegirArea() {
-    if (!S.activo || S.preguntando) return;
+    if (!S.activo || S.preguntando || soyDueno()) return;
     if (document.body.classList.contains('auth-open')) return;
     if (document.querySelector('#modal-layer .modal-sheet')) return;
 
@@ -552,9 +563,9 @@
 
     var puede = on.filter(function (s) { return puedeArea(s.id); });
     if (puede.length < 2) {                          /* solo una le toca: entra directo */
-      if (puede.length === 1 && areaGuardada() !== puede[0].id) {
+      if (puede.length === 1) {
         guardarArea(puede[0].id);
-        if (puede[0].id !== 'caja') irA(puede[0].vista);
+        if (puede[0].id !== 'caja' && ref('currentView') !== puede[0].vista) ir(puede[0].vista);
       }
       return;
     }
@@ -592,23 +603,40 @@
   /* =======================================================================
      10.  PANTALLA: MESERO
   ======================================================================= */
+  function errorTableroHTML() {
+    return envoltura('Comandas', '', '<button type="button" class="vpc-btn is-main" onclick="VPComandas.ir(currentView)">Reintentar</button>');
+  }
+
+  function ventasLibresHTML(t) {
+    var ventas = (t.menu || []).filter(function (m) { return m.tipo === 'libre'; });
+    if (!ventas.length) return '';
+    return '<div class="vpc-spacer"></div><div class="section-title">Ventas libres abiertas</div><div class="vpc-list">' +
+      ventas.map(function (m) {
+        return filaHTML(mi('vpcTray'), m.nombre, (m.cliente || '') + ' · ' + desdeHace(m.abierta_en),
+          'VPComandas.abrirCuenta(' + js(m.id) + ')', money(m.total));
+      }).join('') + '</div>';
+  }
+
   function vistaMesero() {
     if (!listoParaPintar()) return esperandoHTML();
-    if (!puedeArea('mesero') && !soyDueno()) return sinPermisoHTML();
+    if (!S.on.mesero || !puedeArea('mesero')) return sinPermisoHTML();
     if (S.cuenta) return vistaCuenta('comandas_mesero');
 
+    if (S.errorTablero) return errorTableroHTML();
     if (!S.tablero) { cargarTablero(); return envoltura('Mesas', 'Toca una mesa para abrirla o para seguir atendiéndola.', cargandoHTML(6)); }
 
     var mesas = S.tablero.mesas || [];
     var cuerpo;
     if (!mesas.length) {
       cuerpo = vacioHTML(mi('vpcTable'), 'Todavía no hay mesas',
-        soyDueno() ? 'Créalas desde Comandas → Mesas y aquí aparecen.' : 'Pídele al dueño que registre las mesas del negocio.');
-      if (soyDueno()) cuerpo += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.verMesas()">Crear mesas</button>';
+        soyDueno() ? 'Edítalas desde Comandas → Mesas y bar.' : 'Pídele al dueño que registre las mesas del negocio.');
+
     } else {
       cuerpo = '<div class="vpc-mesas">' + mesas.map(mesaHTML).join('') + '</div>';
     }
-    var menu = S.tablero.menu || [];
+    cuerpo += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-soft is-block" onclick="VPComandas.ventaLibre()">' + ico('plus') + ' Venta libre</button>';
+    cuerpo += ventasLibresHTML(S.tablero);
+    var menu = (S.tablero.menu || []).filter(function (m) { return m.tipo !== 'libre'; });
     if (menu.length) {
       cuerpo += '<div class="vpc-spacer"></div><div class="section-title">Pedidos del Menú Digital</div><div class="vpc-list">' +
         menu.map(function (m) {
@@ -621,6 +649,10 @@
 
   function mesaHTML(m) {
     var c = m.cuenta;
+    if (!c && m.plano_id && window.VPMesas && VPMesas.openOrders().has(m.plano_id)) {
+      return '<button type="button" class="vpc-mesa is-ocupada" disabled><b>' + esc(m.nombre) +
+        '</b><small>Cuenta abierta desde caja</small></button>';
+    }
     var clase = 'is-libre', accion = 'VPComandas.abrirMesa(' + js(m.id) + ',' + js(m.nombre) + ')';
     if (c) {
       accion = 'VPComandas.abrirCuenta(' + js(c.id) + ')';
@@ -772,11 +804,12 @@
     if (!listoParaPintar()) return esperandoHTML();
     if (!puedeCobrar()) return sinPermisoHTML();
     if (S.cuenta) return vistaCuenta('comandas_caja');
+    if (S.errorTablero) return errorTableroHTML();
     if (!S.tablero) { cargarTablero(); return envoltura('Caja', 'Mesas abiertas, cuentas por cobrar y avisos de cocina.', cargandoHTML(6)); }
 
     var t = S.tablero;
     var mesas = (t.mesas || []).filter(function (m) { return m.cuenta; });
-    var menu = t.menu || [];
+    var menu = (t.menu || []).filter(function (m) { return m.tipo !== 'libre'; });
     var cuerpo = '';
 
     if (Number(t.problemas) > 0) {
@@ -789,7 +822,7 @@
       cuerpo += notaHTML('is-ok', t.pedidas + (Number(t.pedidas) === 1 ? ' cuenta pedida' : ' cuentas pedidas'), 'El mesero ya pidió la cuenta. Ábrela y cóbrala.');
     }
 
-    if (!mesas.length && !menu.length) {
+    if (!mesas.length && !(t.menu || []).length) {
       cuerpo += vacioHTML(ico('cashbox'), 'No hay mesas abiertas', 'Cuando un mesero abra una mesa, la vas a ver aquí con su consumo.');
     } else {
       if (mesas.length) cuerpo += '<div class="section-title">Mesas abiertas</div><div class="vpc-mesas">' + mesas.map(mesaHTML).join('') + '</div>';
@@ -802,6 +835,10 @@
       }
     }
 
+    cuerpo += ventasLibresHTML(t);
+    if (window.VPMesas && VPMesas.openOrders().size) {
+      cuerpo += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-soft" onclick="VPMesas.open(\'sale\')">Mesas abiertas desde caja</button>';
+    }
     cuerpo += '<div class="vpc-spacer"></div><div class="vpc-list">' +
       filaHTML(mi('vpcTable'), 'Todas las mesas', 'Ver también las que están libres', "VPComandas.ir('comandas_mesero')") +
       filaHTML(mi('vpcPot'), 'Pantalla de cocina', 'Ver qué se está preparando', "VPComandas.ir('comandas_cocina')") +
@@ -877,6 +914,23 @@
       cerrarModal();
       if (d && d.cuenta) cargarCuenta(d.cuenta);
     }).then(function () { if (btn) btn.disabled = false; });
+  }
+
+  var ventaLibrePendiente = null;
+  var abriendoVentaLibre = false;
+  function ventaLibre() {
+    if (abriendoVentaLibre || !S.on.mesero || !puedeArea('mesero')) return;
+    var u = usuarioActivo();
+    abriendoVentaLibre = true;
+    ventaLibrePendiente = ventaLibrePendiente || llave();
+    accion('vp_com_venta_libre', {
+      p_mesero_id: (u && u.id) || '', p_mesero: nombreActor(), p_idem: ventaLibrePendiente
+    }, function (d) {
+      if (d && d.cuenta) {
+        ventaLibrePendiente = null;
+        cargarCuenta(d.cuenta);
+      }
+    }).finally(function () { abriendoVentaLibre = false; });
   }
 
   function abrirCuenta(id) { cargarCuenta(id); }
@@ -1132,7 +1186,8 @@
       var base = nuevo();
       for (var x in checkout) delete checkout[x];
       for (var y in base) checkout[y] = base[y];
-      checkout.table = String(c.mesa || '').slice(0, 60);
+      checkout.table = c.mesa === 'Venta libre' ? '' : String(c.mesa || '').slice(0, 60);
+      if (checkout.table) checkout.serviceType = 'mesa';
       checkout.vpcCuenta = c.id;
 
       ps.forEach(function (p) {
@@ -1289,32 +1344,6 @@
   /* =======================================================================
      19.  ENGANCHES (siempre llaman primero a la función original)
   ======================================================================= */
-  function engancharCobro() {
-    var original = window.confirmarCobro;
-    if (typeof original !== 'function' || original.vpcEnvuelta) return;
-    var envuelta = function () {
-      var checkout = ref('checkout');
-      var cuenta = checkout && checkout.vpcCuenta;
-      var DB = ref('DB');
-      var antes = (DB && DB.getSales) ? DB.getSales().length : -1;
-      var r = original.apply(this, arguments);
-      if (cuenta && DB && antes >= 0) {
-        var ventas = DB.getSales();
-        if (ventas.length > antes) {
-          var v = ventas[ventas.length - 1];
-          v.origin = 'comanda';
-          v.vpcCuenta = cuenta;
-          DB.saveSales(ventas);
-          try { delete checkout.vpcCuenta; } catch (e) { }
-          cerrarPorVenta(cuenta, v);
-        }
-      }
-      return r;
-    };
-    envuelta.vpcEnvuelta = true;
-    window.confirmarCobro = envuelta;
-  }
-
   function engancharMenu() {
     var original = window.mdiConfirm;
     if (typeof original !== 'function' || original.vpcEnvuelta) return;
@@ -1370,6 +1399,7 @@
 
   function ir(vista) {
     S.cuenta = null;
+    S.errorTablero = false;
     if (vista === 'comandas_cocina') S.cocina = null; else S.tablero = null;
     irA(vista);
     setTimeout(refrescarLoQueSeVe, 0);
@@ -1387,8 +1417,6 @@
   function arrancar() {
     ponIconos();
     if (!registrar()) { setTimeout(arrancar, 300); return; }
-    engancharCobro();
-    engancharMenu();
     engancharSesion();
     sondear();
     setTimeout(function () {
@@ -1413,10 +1441,10 @@
     encender: encender, apagar: apagar,
     toggle: toggle, verUsuarios: verUsuarios, asignar: asignar, irAUsuarios: irAUsuarios,
     cambiarArea: cambiarArea, entrarA: entrarA,
-    abrirMesa: abrirMesa, confirmarMesa: confirmarMesa,
+    abrirMesa: abrirMesa, confirmarMesa: confirmarMesa, ventaLibre: ventaLibre,
     abrirCuenta: abrirCuenta, cerrarCuenta: cerrarCuenta,
     enviar: enviar, pedirCuenta: pedirCuenta, cancelarCuenta: cancelarCuenta,
-    cobrar: cobrar, marcar: marcar, todoListo: todoListo,
+    cobrar: cobrar, puedeCobrar: puedeCobrar, cerrarPorVenta: cerrarPorVenta, marcar: marcar, todoListo: todoListo,
     reportar: reportar, mandarProblema: mandarProblema,
     verProblemas: verProblemas, resolver: resolver,
     elegirProductos: elegirProductos, verTamanos: verTamanos, volverProductos: volverProductos,
