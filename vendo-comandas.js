@@ -458,14 +458,12 @@
   function verUsuarios(areaId) {
     if (!habilitado()) return;
     S.equipo = seccion(areaId).id;
-    S.mostrarDisponibles = false;
     ir('comandas_usuarios');
   }
 
   function mostrarDisponibles() {
     if (!habilitado() || !soyDueno()) return;
-    S.mostrarDisponibles = !S.mostrarDisponibles;
-    repintar();
+    ir('comandas_disponibles');
   }
 
   function vistaUsuarios() {
@@ -476,17 +474,8 @@
     var h = '<div class="vpc">' + volverHTML("VPComandas.ir('comandas')", 'Comandas') + tituloHTML(area.nombre);
 
     if (dueno) {
-      h += '<div class="fab-row" style="justify-content:flex-end"><button type="button" class="btn primary" aria-expanded="' + !!S.mostrarDisponibles +
-        '" onclick="VPComandas.mostrarDisponibles()">' + ico('plus') + ' Nuevo usuario</button></div>';
-      if (S.mostrarDisponibles) {
-        var libres = lista.filter(function (u) { return !puestoAsignado(u); });
-        h += '<div class="vpc-spacer"></div>' + (libres.length
-          ? '<div class="vpc-list">' + libres.map(function (u) {
-            return '<button type="button" class="vpc-li" onclick="VPComandas.editarIntegrante(' + js(u.id) +
-              ',true)"><span class="vpc-li-txt"><b>' + esc(u.name || 'Usuario') + '</b></span></button>';
-          }).join('') + '</div>'
-          : '<p class="vpc-sub">No hay usuarios disponibles.</p>');
-      }
+      h += '<div class="fab-row" style="justify-content:flex-end"><button type="button" class="btn primary" onclick="VPComandas.mostrarDisponibles()">' +
+        ico('plus') + ' Nuevo usuario</button></div>';
       h += '<div class="vpc-spacer"></div>';
     }
 
@@ -497,6 +486,22 @@
           ? '<button type="button" class="vpc-mini is-warn" aria-label="Eliminar a ' + esc(u.name || 'Usuario') +
             ' de ' + esc(area.nombre) + '" onclick="VPComandas.editarIntegrante(' + js(u.id) + ',false)">Eliminar</button>'
           : '') + '</div>';
+    }).join('') + '</div></div>';
+  }
+
+  function vistaDisponibles() {
+    if (!listoParaPintar()) return esperandoHTML();
+    if (!soyDueno()) return sinPermisoHTML();
+    var area = seccion(S.equipo);
+    var libres = usuarios().filter(function (u) { return !puestoAsignado(u); });
+    var h = '<div class="vpc">' + volverHTML("VPComandas.ir('comandas_usuarios')", area.nombre) +
+      tituloHTML('Usuarios disponibles');
+    if (!libres.length) return h + '<p class="vpc-sub">No hay usuarios disponibles.</p></div>';
+    return h + '<div class="vpc-list">' + libres.map(function (u) {
+      var nombre = esc(u.name || 'Usuario');
+      return '<div class="vpc-li is-plain"><span class="vpc-li-txt"><b>' + nombre + '</b></span>' +
+        '<button type="button" class="vpc-mini is-main" aria-label="Agregar a ' + nombre +
+        '" onclick="VPComandas.editarIntegrante(' + js(u.id) + ',true)">+</button></div>';
     }).join('') + '</div></div>';
   }
 
@@ -521,7 +526,6 @@
       if (agregar) u.comandaArea = area;
       else delete u.comandaArea;
       guardarUsuarios(lista);
-      S.mostrarDisponibles = false;
       repintar();
       if (!await c.flush() && c.gen === gen) avisar('El cambio se sincronizará cuando vuelva la conexión');
     } finally {
@@ -1360,6 +1364,7 @@
       if (!EV) return false;
       EV.comandas = vistaElegir;
       EV.comandas_usuarios = vistaUsuarios;
+      EV.comandas_disponibles = vistaDisponibles;
       EV.comandas_mesero = vistaMesero;
       EV.comandas_cocina = vistaCocina;
       EV.comandas_caja = vistaCaja;
