@@ -25635,9 +25635,9 @@ nipCheckCode = function(){
    Salir a propósito (botón "Cerrar sesión", cambiar de correo, eliminar
    la cuenta) también dispara SIGNED_OUT. Con esta marca el vigilante no
    vuelve a avisar encima: cada flujo ya hace lo suyo. */
-Cloud.salirDeSupabase = async function(){
+Cloud.salirDeSupabase = async function(scope = 'local'){
   this._saliendoAProposito = true;
-  try{ await this.sb.auth.signOut(); }
+  try{ await this.sb.auth.signOut({ scope }); }
   catch(e){ console.warn('Vendo plus · cerrar sesión', e); }
   finally{ setTimeout(() => { Cloud._saliendoAProposito = false; }, 1500); }
 };
@@ -25676,7 +25676,7 @@ const _doDeleteAccount = doDeleteAccount;
 doDeleteAccount = async function(){
   if(Cloud.ready && Cloud.uid && (document.getElementById('delWord').value || '').trim().toUpperCase() === 'ELIMINAR'){
     if(document.getElementById('wipeRow').classList.contains('checked')) await Cloud.sb.from('user_data').delete().eq('user_id', Cloud.uid);
-    await Cloud.salirDeSupabase(); Cloud.uid = null; Cloud.sub = null; Cloud.email = '';
+    await Cloud.salirDeSupabase('global'); Cloud.uid = null; Cloud.sub = null; Cloud.email = '';
     _doDeleteAccount(); Cloud.wipeLocal(); Cloud.gate(); return;
   }
   _doDeleteAccount();
