@@ -252,11 +252,14 @@ window.VPMesas = (() => {
   }
 
   function quickButton() {
+    if (window.VPComandas?.activo()) {
+      return `<button class="tool-btn vp-floor-quick" onclick="VPComandas.ir('comandas_caja')" title="Mesas" aria-label="Mesas">${tableIcon}</button>`;
+    }
     const count = openOrders().size;
     const label = count === 1 ? 'Mesas, 1 mesa abierta' : count ? 'Mesas, ' + count + ' mesas abiertas' : 'Mesas';
     const badge = count ? `<span class="vp-floor-count" aria-hidden="true">${count}</span>` : '';
     return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="${label}">${tableIcon}${badge}</button>`;
   }
 
-  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon };
+  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon, openOrders };
 })();

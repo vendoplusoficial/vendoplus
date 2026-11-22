@@ -5370,7 +5370,8 @@ body.vp-restoring #vpSessionRestore{
 }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=3">
-<script src="vendo-mesas.js?v=4"></script>
+<link rel="stylesheet" href="vendo-comandas.css?v=1">
+<script src="vendo-mesas.js?v=5"></script>
 </head>
 <body class="vp-starting">
 <div id="vpSessionRestore" role="status">Recuperando tu sesión…</div>
@@ -5505,6 +5506,7 @@ body.vp-restoring #vpSessionRestore{
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
+    <button class="navbtn nav-pc" data-view="comandas" data-icon="cashbox" onclick="VPComandas.abrir()"><span class="navicon"></span><span>Comandas</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -7768,7 +7770,7 @@ function cartSheetHTML(step){
       </button>
       <div class="svc-body ${window.__vpSvcOpen ? 'open' : ''}">
       <div class="opt-grid vp-floor-services">
-        ${SERVICE_TYPES.filter(s => s.id !== 'mesa' || (window.VPMesas && !checkout.menuOrderId && !checkout.vpcCuenta)).map(s => `
+        ${SERVICE_TYPES.filter(s => s.id !== 'mesa' || (window.VPMesas && !checkout.menuOrderId && !checkout.vpcCuenta && (checkout.floorTableId || !window.VPComandas?.activo()))).map(s => `
           <button class="opt-card ${checkout.serviceType===s.id?'active':''}" onclick="setServiceType('${s.id}')" ${checkout.floorOrderId && s.id !== 'mesa' ? 'disabled' : ''}>
             <span class="opt-emoji">${s.id === 'mesa' ? VPMesas.tableIcon : icon(s.ico)}</span>${s.name}
           </button>
@@ -8328,6 +8330,11 @@ function confirmarCobro(){
   }
 
   const floorOrderId = checkout.floorOrderId;
+  const cuentaComanda = checkout.vpcCuenta;
+  if(cuentaComanda && !VPComandas.puedeCobrar()){
+    toast('Solo caja puede cobrar esta cuenta');
+    return;
+  }
   if(checkout.floorTableId && !VPMesas.canCharge()){
     toast('Revisa la mesa antes de cobrar', { icon:icon('alert') });
     return;
@@ -8367,6 +8374,16 @@ function confirmarCobro(){
     deviceId: Store.meta().deviceId
   };
   if(floorOrderId) sale.floorOrderId = floorOrderId;
+  if(cuentaComanda){
+    sale.origin = 'comanda';
+    sale.vpcCuenta = cuentaComanda;
+    const anterior = DB.getSales().find(s => s.vpcCuenta === cuentaComanda);
+    if(anterior){
+      VPComandas.cerrarPorVenta(cuentaComanda, anterior);
+      toast('Esta cuenta ya se cobró');
+      return;
+    }
+  }
   if(!sale.payments) delete sale.payments;
 
   /* Si el negocio tiene varios usuarios, la venta queda a nombre de
@@ -8388,7 +8405,8 @@ function confirmarCobro(){
   const sales = DB.getSales();
   sales.push(sale);
   const saved = DB.saveSales(sales);
-  if(checkout.floorTableId && !saved){ toast('No se pudo guardar la venta'); return; }
+  if((checkout.floorTableId || cuentaComanda) && !saved){ toast('No se pudo guardar la venta'); return; }
+  if(cuentaComanda) VPComandas.cerrarPorVenta(cuentaComanda, sale);
   if(floorOrderId) DB.saveTableOrders(DB.getTableOrders().filter(p => p.id !== floorOrderId));
 
   // Se descuenta lo vendido del inventario (piezas, kilos, litros o metros).
@@ -27898,7 +27916,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
           : '<button class="btn primary block" onclick="closeModal(); afterSaleNew();">'+icon('plus')+' Nueva venta</button>')+
       '</div>';
   };
-  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['account','person','Mi cuenta']];
+  var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['comandas','vpcTray','Comandas'],['account','person','Mi cuenta']];
   function openMore(){
     var bg=q('.vp-sheet-bg');
     if(!bg){
@@ -28860,6 +28878,7 @@ function cartSanitize(){
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261121-premium"></script>
+<script src="vendo-comandas.js?v=1"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
