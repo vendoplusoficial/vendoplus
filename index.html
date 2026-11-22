@@ -5428,6 +5428,22 @@ body.vp-restoring #vpSessionRestore{
     }
   }
 
+  body[data-puesto-pos="pendiente"] .bottomnav,
+  body[data-puesto-pos="pendiente"] .topbar-right,
+  body[data-puesto-pos="mesero"] .topbar-right,
+  body[data-puesto-pos="mesero"] .bottomnav > :not([data-view="history"]),
+  body[data-puesto-pos="mesero"] .nav-open-btn,
+  body[data-puesto-pos="mesero"] .nav-backdrop,
+  body[data-puesto-pos="mesero"] .vp-sheet-bg,
+  body[data-puesto-pos="mesero"] .cartbar{ display:none !important; }
+  body[data-puesto-pos="mesero"] .app{ grid-template-columns:minmax(0,1fr) !important; grid-template-areas:"topbar" "view" !important; }
+  body[data-puesto-pos="mesero"] .bottomnav.bottomnav{
+    position:fixed !important; inset:auto 0 0 !important; width:100% !important; height:auto !important;
+    transform:none !important; visibility:visible !important; display:flex !important; justify-content:flex-start;
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  }
+  body[data-puesto-pos="mesero"] .bottomnav [data-view="history"]{ flex:0 0 auto; min-width:66px; }
+  body[data-puesto-pos="mesero"] #view{ padding-bottom:calc(76px + env(safe-area-inset-bottom)); }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=3">
 <link rel="stylesheet" href="vendo-comandas.css?v=1">
@@ -6678,7 +6694,20 @@ try{ Object.defineProperty(navigator, 'vibrate', { value:function(){ return fals
    función de pintado. En el celular se abren desde Inicio; en PC también
    tienen su botón en el menú lateral. */
 const EXTRA_VIEWS = {};
+function modoNavegacionPOS(){
+  const usuario = activeUser();
+  if(!usuario || usuario.role === 'dueno') return '';
+  const puesto = window.VPComandas?.puestoVerificado?.();
+  if(!puesto) return 'pendiente';
+  return puesto === 'mesero' ? 'mesero' : '';
+}
+function vistaPermitidaPOS(vista, modo){
+  if(modo === 'pendiente') return 'puesto_pendiente';
+  return modo === 'mesero' && vista !== 'history' ? 'comandas_mesero' : vista;
+}
+
 function goTo(view){
+  view = vistaPermitidaPOS(view, modoNavegacionPOS());
   if(view === 'home') view = 'sale';              /* Inicio ya no existe: se abre Nueva venta */
   if(view === 'reports') view = 'stats';          /* Reportes ahora vive dentro de Ventas */
   if(view === 'premium'){ if(window.VPPremium){ if(VPPremium.funciones) VPPremium.funciones(); else VPPremium.abrir(); } return; }  /* Funciones premium = pantalla "Todo lo que incluye Premium" */
@@ -6699,6 +6728,9 @@ function goTo(view){
 }
 
 function render(){
+  const modo = modoNavegacionPOS();
+  document.body.dataset.puestoPos = modo;
+  currentView = vistaPermitidaPOS(currentView, modo);
   document.body.dataset.section = currentView;
   document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
   { const tp = document.getElementById('topPremium'); if(tp){ tp.classList.toggle('active', currentView === 'premium'); const h = tp.querySelector('.vp-top-prem-ico'); if(h && !h.firstChild) h.innerHTML = icon('vpCrown'); } }
@@ -6710,7 +6742,11 @@ function render(){
   render.fresh = false;
   el.dataset.v = currentView;
   const put = html => { if(same) morphHTML(el, html); else el.innerHTML = html; };
-  if(currentView === 'home') put(renderHome());
+  if(currentView === 'puesto_pendiente'){
+    put('<h1 class="page-title">Preparando tu acceso</h1><button type="button" class="btn ghost" onclick="VPComandas.verificarPuesto()">Reintentar</button>');
+    window.VPComandas?.verificarPuesto?.();
+  }
+  else if(currentView === 'home') put(renderHome());
   else if(currentView === 'sale') put(renderSale());
   else if(currentView === 'history'){ put(renderHistoryShell()); renderHistoryList(); }
   else if(currentView === 'stats') put(renderStats());
@@ -6718,6 +6754,7 @@ function render(){
   else if(currentView === 'account') put(renderAccount());
   else if(currentView === 'menu') put(renderMenuDigital());
   else if(EXTRA_VIEWS[currentView]) put(EXTRA_VIEWS[currentView]());
+  else if(modo === 'mesero') put('');
   else { currentView = 'sale'; document.body.dataset.section = 'sale'; put(renderSale()); }
   const chip = document.getElementById('userChip');
   if(chip) chip.classList.toggle('active', currentView === 'account');
@@ -7718,6 +7755,7 @@ function closeModal(){
 }
 
 function openCartSheet(step, restoreScroll){
+  if(modoNavegacionPOS()) return;
   if(cart.length === 0 && step !== 'cart'){ step = 'cart'; }
   openModal(cartSheetHTML(step), { dismissible:true, restoreScroll:step === 'checkout' ? restoreScroll : null });
 }
@@ -8380,6 +8418,7 @@ function saleItemFromCart(c){
 }
 
 function confirmarCobro(){
+  if(modoNavegacionPOS()) return;
   if(cart.length === 0){ toast('El carrito está vacío'); return; }
 
   /* Caja obligatoria: para cobrar siempre tiene que estar abierta la caja del día */
@@ -10781,6 +10820,7 @@ function renderSaleRow(sale){
 function renderHistoryShell(){
   const activeCount = ['period','status','service','payment'].filter(k => historyFilters[k] !== (k === 'period' ? 'week' : 'all')).length;
   return `
+    ${modoNavegacionPOS() === 'mesero' ? `<button type="button" class="sheet-back" aria-label="Regresar a Mesas" onclick="goTo('comandas_mesero')">${icon('chevronLeft')}</button>` : ''}
     <h1 class="page-title">Historial</h1>
     <p class="page-sub">${historyFilters.period === 'week' ? (can('verTodasVentas') ? 'Las ventas de esta semana' : 'Tus ventas de esta semana') : (can('verTodasVentas') ? 'Todas las ventas registradas' : 'Tus ventas registradas')}</p>
 
@@ -11061,7 +11101,7 @@ function openSaleDetail(saleId){
   lastTicketSale = sale;
   const ret = saleIsReturn(sale);
   const puedeDevolver = !ret && !sale.cancelled && can('hacerDevoluciones') && typeof returnableLeft === 'function' && returnableLeft(sale).some(x => x.left > 0);
-  const debe = !ret && !sale.cancelled && sale.customerId && sale.credit > 0 && typeof customerBalance === 'function' && customerBalance(sale.customerId) > 0.004;
+  const debe = !modoNavegacionPOS() && !ret && !sale.cancelled && sale.customerId && sale.credit > 0 && typeof customerBalance === 'function' && customerBalance(sale.customerId) > 0.004;
   const tieneDev = (sale.returns || []).length > 0;
   const html = `
     <div class="sheet-header no-print">
@@ -14861,6 +14901,7 @@ function syncOwnerName(){
 /* ---------- Permisos ---------- */
 /** Con un solo usuario no hay restricciones: todo es del Dueño. */
 function can(perm){
+  if(modoNavegacionPOS() && perm !== 'verTodasVentas') return false;
   if(!multiUser()) return true;
   const u = activeUser();
   if(!u) return true;
@@ -21064,6 +21105,7 @@ function saleOriginHTML(sale){
    8. COBRAR
 ========================================================= */
 function muRealCobro(){
+  if(modoNavegacionPOS()) return;
   if(cart.length === 0){ toast('El carrito está vacío'); return; }
   /* ¿Este carrito es un pedido del Menú Digital? Lo es mientras traiga su folio
      (se quita solo si el carrito se vacía, se vacía a mano o se cobra). */
@@ -21111,6 +21153,7 @@ const _muConfirmarCobro = confirmarCobro;
 /* Opciones de la caja obligatoria al momento de cobrar */
 const COBRO_CASH_GATE = { ok:'Abrir caja y cobrar', what:'cobrar', after:() => openCartSheet('checkout') };
 confirmarCobro = function(){
+  if(modoNavegacionPOS()) return;
   if(cart.length === 0){ toast('El carrito está vacío'); return; }
   if(!cashGate(muRealCobro, COBRO_CASH_GATE)) return;
   muRealCobro();
@@ -21622,6 +21665,7 @@ function pickCustomer(id, returnTo){
 /* ---------- Abonos ---------- */
 let payFormMethod = 'efectivo';
 function openPaymentForm(customerId){
+  if(modoNavegacionPOS()) return;
   if(!requirePerm('darCredito', 'No tienes permiso para recibir abonos')) return;
   const c = customerById(customerId); if(!c) return;
   const b = customerBalance(customerId);
@@ -22200,6 +22244,7 @@ function openCashCutSheet(){
 EXTRA_VIEWS.cash = renderCash;
 
 function openCashOpen(){
+  if(modoNavegacionPOS()) return;
   if(!requirePerm('manejarCaja', 'No tienes permiso para abrir la caja')) return;
   const cur = cashCurrent();
   if(cur && cashIsStale(cur)){ toast('Primero haz el corte de la caja ' + cashDayName(cur.openedAt), { icon:icon('cashbox') }); cashCloseOld(); return; }
@@ -22696,6 +22741,7 @@ function deleteParked(id){
    VENTA LIBRE (algo que no está en el catálogo)
 ========================================================= */
 function openCustomItem(){
+  if(modoNavegacionPOS()) return;
   openModal(`
     <div class="sheet-header">
       <h2>Venta libre</h2>
@@ -22814,6 +22860,7 @@ document.addEventListener('keydown', function(e){
   const tg = e.target;
   const typing = tg && (/INPUT|TEXTAREA|SELECT/.test(tg.tagName) || tg.isContentEditable);
   /* ---- Atajos de teclado (PC) ---- */
+  if(modoNavegacionPOS() && ['F2','F4','F8','F9'].includes(e.key)){ e.preventDefault(); return; }
   if(e.key === 'F2'){ e.preventDefault(); if(currentView !== 'sale') goTo('sale'); closeModal(); setTimeout(() => { const s = document.getElementById('saleSearch'); if(s){ s.focus(); s.select(); } }, 60); return; }
   if(e.key === 'F4'){ e.preventDefault(); if(cart.length) openCartSheet('cart'); else toast('El carrito está vacío'); return; }
   if(e.key === 'F8'){ e.preventDefault(); openCustomItem(); return; }
@@ -27995,6 +28042,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
   };
   var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['account','person','Mi cuenta']];
   function openMore(){
+    if(modoNavegacionPOS()) return;
     var bg=q('.vp-sheet-bg');
     if(!bg){
       bg=document.createElement('div'); bg.className='vp-sheet-bg';
@@ -28955,7 +29003,7 @@ function cartSanitize(){
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261121-comandas"></script>
-<script src="vendo-comandas.js?v=10"></script>
+<script src="vendo-comandas.js?v=11"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,

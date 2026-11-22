@@ -581,28 +581,46 @@
     });
   }
 
+  function puestoVerificado() {
+    var u = usuarioActivo(), c = nube();
+    var asignacion = S.asignacion;
+    return asignacion && u && c && asignacion.id === u.id &&
+      asignacion.gen === c.gen && asignacion.negocio === c.uid ? asignacion.area : '';
+  }
+
   async function abrirAreaAsignada() {
-    if (!habilitado() || soyDueno() || document.body.classList.contains('auth-open')) return;
     var c = nube(), u = usuarioActivo();
-    if (!u) return;
-    var gen = c.gen, negocio = c.uid;
-    var areaLocal = areaDe(u);
-    if (!c.dirty.has('mesa_users')) {
-      try {
-        var r = await c.sb.from('user_data').select('value').eq('user_id', negocio).eq('key', 'mesa_users').maybeSingle();
-        if (!r.error && Array.isArray(r.data?.value?.j)) {
-          var guardado = r.data.value.j.find(function (empleado) { return empleado.id === u.id; });
-          areaLocal = areaDe(guardado || u);
-        }
-      } catch (e) { console.warn('Vendo plus · asignación de Comandas', e); }
-    }
-    if (c.gen !== gen || c.uid !== negocio || usuarioActivo()?.id !== u.id ||
+    if (!c || !u || soyDueno() || S.verificandoPuesto ||
         document.body.classList.contains('auth-open')) return;
-    S.asignacion = { id: u.id, gen: gen, area: areaLocal };
-    var area = miArea();
-    if (area === 'caja' || !S.on[area]) return;
-    var vista = seccion(area).vista;
-    if (ref('currentView') !== vista) ir(vista);
+    var gen = c.gen, negocio = c.uid, turno = S.turno;
+    var solicitud = {};
+    S.verificandoPuesto = solicitud;
+    try {
+      var area = areaDe(u);
+      var limitar = fn('conLimiteCloud');
+      if (area !== 'mesero' || !c.dirty.has('mesa_users')) {
+        var consulta = c.sb.from('user_data').select('value').eq('user_id', negocio).eq('key', 'mesa_users').maybeSingle();
+        var r = await (limitar ? limitar(consulta) : consulta);
+        if (r.error) throw r.error;
+        var guardado = r.data?.value?.j?.find(function (empleado) { return empleado.id === u.id; });
+        if (!guardado) throw new Error('puesto_no_verificado');
+        area = areaDe(guardado);
+      }
+      var estado = estadoServidor();
+      await (limitar ? limitar(estado) : estado);
+      if (c.gen !== gen || c.uid !== negocio || S.turno !== turno || usuarioActivo()?.id !== u.id ||
+          document.body.classList.contains('auth-open')) return;
+      S.asignacion = { id: u.id, gen: gen, negocio: negocio, area: area };
+      var destino = ref('currentView');
+      if (area === 'mesero' && destino !== 'history') destino = 'comandas_mesero';
+      else if (area === 'cocina' && habilitado() && S.on.cocina) destino = 'comandas_cocina';
+      else if (destino === 'puesto_pendiente') destino = 'sale';
+      irA(destino);
+    } catch (e) {
+      console.warn('Vendo plus · asignación de Comandas', e);
+    } finally {
+      if (S.verificandoPuesto === solicitud) S.verificandoPuesto = null;
+    }
   }
 
   /* =======================================================================
@@ -624,7 +642,9 @@
 
   function vistaMesero() {
     if (!listoParaPintar()) return esperandoHTML();
-    if (!S.on.mesero || !puedeArea('mesero')) return sinPermisoHTML();
+    if (puedeArea('mesero') && !S.on.mesero) return envoltura('Mesas', '',
+      vacioHTML(mi('vpcTray'), 'Mesero está desactivado', 'Pídele al dueño que active esta área.'));
+    if (!puedeArea('mesero')) return sinPermisoHTML();
     if (S.cuenta) return vistaCuenta('comandas_mesero');
 
     if (S.errorTablero) return errorTableroHTML();
@@ -869,6 +889,10 @@
     if (!nube()) {
       return '<div class="vpc">' + tituloHTML('Comandas') +
         vacioHTML(mi('vpcTray'), 'Necesitas internet', 'Comandas trabaja en vivo. Conéctate y vuelve a entrar.') + '</div>';
+    }
+    if (puestoVerificado() === 'mesero' && S.listo && !habilitado()) {
+      return '<div class="vpc">' + tituloHTML('Mesas') +
+        vacioHTML(mi('vpcTray'), 'Comandas no está disponible', 'Pídele al dueño que revise el acceso a Comandas.') + '</div>';
     }
     if (S.listo && !S.activo) { setTimeout(function () { irA('comandas'); }, 0); }
     return '<div class="vpc">' + cargandoHTML(3) + '</div>';
@@ -1384,9 +1408,9 @@
     window.openUserSession = function () {
       var r = original.apply(this, arguments);
       S.asignacion = null;
-      setTimeout(function () {
-        if (!document.body.classList.contains('auth-open')) estadoServidor().then(abrirAreaAsignada);
-      }, 0);
+      S.verificandoPuesto = null;
+      S.turno = (S.turno || 0) + 1;
+      setTimeout(abrirAreaAsignada, 0);
       return r;
     };
   }
@@ -1430,11 +1454,13 @@
     if (!registrar()) { setTimeout(arrancar, 300); return; }
     engancharSesion();
     sondear();
+    window.addEventListener('online', abrirAreaAsignada);
+    window.addEventListener('pageshow', function (e) { if (e.persisted) { S.asignacion = null; var f = fn('render'); if (f) f(); } });
     setTimeout(function () {
-      if (nube()) estadoServidor().then(function () { setTimeout(abrirAreaAsignada, 400); });
+      if (nube()) { estadoServidor(); abrirAreaAsignada(); }
       else {
         var t = setInterval(function () {
-          if (nube()) { clearInterval(t); estadoServidor().then(function () { setTimeout(abrirAreaAsignada, 400); }); }
+          if (nube()) { clearInterval(t); estadoServidor(); abrirAreaAsignada(); }
         }, 1500);
         setTimeout(function () { clearInterval(t); }, 30000);
       }
@@ -1449,7 +1475,7 @@
     cuentasDelPlano: cuentasDelPlano, cuentasDelPlanoGuardadas: cuentasDelPlanoGuardadas,
     seleccionarMesaDelPlano: seleccionarMesaDelPlano,
     activo: habilitado,
-    area: miArea,
+    area: miArea, puestoVerificado: puestoVerificado, verificarPuesto: abrirAreaAsignada,
     verPremium: verPremium,
     encender: encender, apagar: apagar,
     toggle: toggle, verUsuarios: verUsuarios, mostrarDisponibles: mostrarDisponibles, editarIntegrante: editarIntegrante,
