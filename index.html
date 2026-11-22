@@ -744,6 +744,13 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
 
   .two-fields{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .two-fields .field{ margin-bottom:0; }
+  #modal-layer .period-sheet{ overflow-x:hidden; }
+  .period-sheet .period-dates{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .period-sheet .period-dates .field{ min-width:0; }
+  .period-sheet .period-dates input[type="date"]{
+    width:100%; min-width:0; max-width:100%; box-sizing:border-box;
+  }
+  .period-sheet input[type="date"]::-webkit-date-and-time-value{ min-width:0; }
 
   /* Aviso (existencias bajas) */
   .alert-card{
@@ -23667,12 +23674,12 @@ function openPeriodSheet(o){
         <div class="field"><label for="psTo">Hasta</label><input id="psTo" type="date" value="${p.to || p.from || dayKey(new Date())}"></div>
       </div>
       <button class="btn primary block" onclick="periodSheetCustom()">${icon('check')} Ver estas fechas</button>` : ''}
-  `, { dismissible:true });
+  `, { dismissible:true, sheetClass:'period-sheet' });
 }
 function periodSheetPick(id){
   const p = periodSheet; if(!p) return;
   vibrate(8);
-  if(id === 'custom'){ p.custom = true; openPeriodSheet(p); setTimeout(() => { const e = document.getElementById('psFrom'); if(e) e.scrollIntoView({ block:'center' }); }, 60); return; }
+  if(id === 'custom'){ p.custom = true; openPeriodSheet(p); setTimeout(() => { const e = document.getElementById('psFrom'); if(e) e.scrollIntoView({ block:'center', inline:'nearest' }); }, 60); return; }
   p.apply(id, '', '');
   closeModal(); render();
 }
