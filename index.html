@@ -5371,7 +5371,7 @@ body.vp-restoring #vpSessionRestore{
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=3">
 <link rel="stylesheet" href="vendo-comandas.css?v=1">
-<script src="vendo-mesas.js?v=5"></script>
+<script src="vendo-mesas.js?v=6"></script>
 </head>
 <body class="vp-starting">
 <div id="vpSessionRestore" role="status">Recuperando tu sesión…</div>
@@ -7769,7 +7769,7 @@ function cartSheetHTML(step){
       </button>
       <div class="svc-body ${window.__vpSvcOpen ? 'open' : ''}">
       <div class="opt-grid vp-floor-services">
-        ${SERVICE_TYPES.filter(s => s.id !== 'mesa' || (window.VPMesas && !checkout.menuOrderId && !checkout.vpcCuenta && (checkout.floorTableId || !window.VPComandas?.activo()))).map(s => `
+        ${SERVICE_TYPES.filter(s => s.id !== 'mesa' || (window.VPMesas && !checkout.menuOrderId && !checkout.vpcCuenta)).map(s => `
           <button class="opt-card ${checkout.serviceType===s.id?'active':''}" onclick="setServiceType('${s.id}')" ${checkout.floorOrderId && s.id !== 'mesa' ? 'disabled' : ''}>
             <span class="opt-emoji">${s.id === 'mesa' ? VPMesas.tableIcon : icon(s.ico)}</span>${s.name}
           </button>
@@ -28877,7 +28877,7 @@ function cartSanitize(){
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261121-comandas"></script>
-<script src="vendo-comandas.js?v=5"></script>
+<script src="vendo-comandas.js?v=6"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,

@@ -197,16 +197,51 @@
       if (mismaSesion()) { S.negocio = negocio; S.activo = false; S.premium = false; S.listo = true; }
     });
   }
+  async function consultarTablero() {
+    var c = nube(), gen = c.gen, negocio = c.uid;
+    await rpc('vp_com_sincronizar_plano');
+    var d = await rpc('vp_com_tablero');
+    if (c.gen !== gen || c.uid !== negocio || !habilitado()) throw new Error('sesion_cambiada');
+    return d || {};
+  }
+
+  function cuentasDelPlanoGuardadas() {
+    return new Map((S.tablero?.mesas || []).filter(function (m) {
+      return m.plano_id && m.cuenta;
+    }).map(function (m) { return [m.plano_id, m.cuenta.id]; }));
+  }
+
+  async function cuentasDelPlano() {
+    if (!puedeCobrar()) return new Map();
+    try {
+      S.tablero = await consultarTablero();
+    } catch (e) {
+      console.warn('Vendo plus · plano de Comandas', e);
+    }
+    return cuentasDelPlanoGuardadas();
+  }
+
+  function abrirDesdePlano(id) {
+    if (!puedeCobrar()) return;
+    ir('comandas_caja');
+    cargarCuenta(id);
+  }
+
   function cargarTablero(callback) {
     if (!habilitado() || S.cargandoTablero) return;
     S.cargandoTablero = true;
     S.cargando = true;
-    rpc('vp_com_sincronizar_plano').then(function () {
-      return rpc('vp_com_tablero');
-    }).then(function (d) {
+    consultarTablero().then(async function (d) {
+      if (ref('currentView') === 'comandas_mesero') {
+        var c = nube();
+        if (!c.dirty.has('mesa_plano')) {
+          var r = await c.sb.from('user_data').select('value').eq('user_id', c.uid).eq('key', 'mesa_plano').maybeSingle();
+          if (!r.error && Array.isArray(r.data?.value?.j)) d.plano = r.data.value.j;
+        }
+      }
       S.cargandoTablero = false;
-      S.cargando = false; S.tablero = d || {};
-      if (d && Array.isArray(d.areas)) S.areas = d.areas;
+      S.cargando = false; S.tablero = d;
+      if (Array.isArray(d.areas)) S.areas = d.areas;
       if (callback) callback(); else repintar();
     }).catch(function (e) {
       S.cargandoTablero = false;
@@ -556,14 +591,17 @@
     if (!S.tablero) { cargarTablero(); return envoltura('Mesas', 'Toca una mesa para abrirla o para seguir atendiéndola.', cargandoHTML(6)); }
 
     var mesas = S.tablero.mesas || [];
-    var cuerpo;
-    if (!mesas.length) {
-      cuerpo = vacioHTML(mi('vpcTable'), 'Todavía no hay mesas',
-        soyDueno() ? 'Revisa el plano de mesas del POS.' : 'Pídele al dueño que registre las mesas del negocio.');
-
-    } else {
-      cuerpo = '<div class="vpc-mesas">' + mesas.map(mesaHTML).join('') + '</div>';
-    }
+    var porId = new Map(mesas.filter(function (m) { return m.plano_id; }).map(function (m) { return [m.plano_id, m]; }));
+    var antiguas = VPMesas.openOrders();
+    var plano = (S.tablero.plano || VPMesas.layout()).filter(function (t) { return porId.has(t.id); });
+    var cuerpo = VPMesas.planoHTML(plano, function (t) {
+      return { active: antiguas.has(t.id) || !!porId.get(t.id).cuenta,
+        action: 'VPComandas.seleccionarMesaDelPlano(this.dataset.floorId)' };
+    });
+    var fueraDelPlano = mesas.filter(function (m) {
+      return !plano.some(function (t) { return t.id === m.plano_id; });
+    });
+    if (fueraDelPlano.length) cuerpo += '<div class="vpc-mesas">' + fueraDelPlano.map(mesaHTML).join('') + '</div>';
     cuerpo += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-soft is-block" onclick="VPComandas.ventaLibre()">' + ico('plus') + ' Venta libre</button>';
     cuerpo += ventasLibresHTML(S.tablero);
     var menu = (S.tablero.menu || []).filter(function (m) { return m.tipo !== 'libre'; });
@@ -575,6 +613,15 @@
         }).join('') + '</div>';
     }
     return envoltura('Mesas', 'Toca una mesa para abrirla o para seguir atendiéndola.', cuerpo);
+  }
+
+  function seleccionarMesaDelPlano(id) {
+    if (!habilitado() || !S.on.mesero || !puedeArea('mesero')) return;
+    var mesa = S.tablero?.mesas?.find(function (m) { return m.plano_id === id; });
+    if (!mesa) return;
+    if (mesa.cuenta) abrirCuenta(mesa.cuenta.id);
+    else if (VPMesas.openOrders().has(id)) avisar('Esta mesa tiene una cuenta abierta en Caja');
+    else abrirMesa(mesa.id, mesa.nombre);
   }
 
   function mesaHTML(m) {
@@ -1357,7 +1404,9 @@
      22.  LO QUE QUEDA DISPONIBLE PARA EL RESTO DE VENDO PLUS
   ======================================================================= */
   window.VPComandas = {
-    abrir: abrir, ir: ir,
+    abrir: abrir, ir: ir, abrirDesdePlano: abrirDesdePlano,
+    cuentasDelPlano: cuentasDelPlano, cuentasDelPlanoGuardadas: cuentasDelPlanoGuardadas,
+    seleccionarMesaDelPlano: seleccionarMesaDelPlano,
     activo: habilitado,
     area: miArea,
     verPremium: verPremium,
