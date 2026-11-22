@@ -383,7 +383,7 @@
   /** Una sección con su interruptor y su flecha para ver a su gente. */
   function seccionHTML(s, dueno, bloqueada) {
     var on = s.fija ? true : !!S.on[s.id];
-    var cuantos = usuarios().filter(function (u) { return areaDe(u) === s.id; }).length;
+    var cuantos = usuarios().filter(function (u) { return puestoAsignado(u) === s.id; }).length;
     var sub = s.fija
       ? 'Siempre encendida · ' + cuantos + (cuantos === 1 ? ' usuario' : ' usuarios')
       : (on ? 'Encendida · ' + cuantos + (cuantos === 1 ? ' usuario' : ' usuarios') : 'Apagada');
@@ -415,78 +415,83 @@
       '</button>';
   }
 
-  /* ---- Quién trabaja en cada sección ---- */
+  function puestoAsignado(u) {
+    if (u.role === 'dueno') return 'caja';
+    return SECCIONES.some(function (s) { return s.id === u.comandaArea; }) ? u.comandaArea : null;
+  }
+
   function verUsuarios(areaId) {
-    var s = seccion(areaId), dueno = soyDueno();
     if (!habilitado()) return;
+    S.equipo = seccion(areaId).id;
+    S.mostrarDisponibles = false;
+    ir('comandas_usuarios');
+  }
+
+  function mostrarDisponibles() {
+    if (!habilitado() || !soyDueno()) return;
+    S.mostrarDisponibles = !S.mostrarDisponibles;
+    repintar();
+  }
+
+  function vistaUsuarios() {
+    if (!listoParaPintar()) return esperandoHTML();
+    var area = seccion(S.equipo), dueno = soyDueno();
     var lista = usuarios();
-    var dentro = lista.filter(function (u) { return areaDe(u) === areaId; });
-    var fuera = lista.filter(function (u) { return u.role !== 'dueno' && areaDe(u) !== areaId; });
-
-    var h = '<div class="modal-sheet"><div class="sheet-header"><h2>' + esc(s.nombre) + '</h2>' +
-      '<button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div><div class="vpc">' +
-      '<p class="vpc-sub">' + esc(s.texto) + '</p>';
-
-    if (!dueno) h += notaHTML('', 'Solo puedes ver', 'Nada más el Dueño puede mover a la gente de área.');
-
-    h += '<div class="section-title">En esta sección</div>';
-    h += dentro.length
-      ? '<div class="vpc-list">' + dentro.map(function (u) { return usuarioHTML(u, areaId, dueno, true); }).join('') + '</div>'
-      : vacioHTML(ico('users'), 'Nadie todavía', dueno ? 'Toca a alguien de la lista de abajo para ponerlo aquí.' : 'El dueño aún no asigna a nadie.');
-
-    if (dueno && fuera.length) {
-      h += '<div class="vpc-spacer"></div><div class="section-title">Pasar a ' + esc(s.nombre) + '</div>' +
-        '<div class="vpc-list">' + fuera.map(function (u) { return usuarioHTML(u, areaId, dueno, false); }).join('') + '</div>';
-    }
+    var miembros = lista.filter(function (u) { return puestoAsignado(u) === area.id; });
+    var h = '<div class="vpc">' + volverHTML("VPComandas.ir('comandas')", 'Comandas') + tituloHTML(area.nombre);
 
     if (dueno) {
-      h += '<div class="vpc-spacer"></div>' +
-        notaHTML('', '¿Te falta gente?', 'Los usuarios se crean donde siempre: Mi cuenta → Usuarios. Aquí nada más les dices en qué área trabajan.') +
-        '<button type="button" class="vpc-btn is-block" onclick="VPComandas.irAUsuarios()">Ir a Usuarios</button>';
+      h += '<button type="button" class="vpc-btn is-main is-block" aria-expanded="' + !!S.mostrarDisponibles +
+        '" onclick="VPComandas.mostrarDisponibles()">Agregar usuarios</button>';
+      if (S.mostrarDisponibles) {
+        var libres = lista.filter(function (u) { return !puestoAsignado(u); });
+        h += '<div class="vpc-spacer"></div>' + (libres.length
+          ? '<div class="vpc-list">' + libres.map(function (u) {
+            return '<button type="button" class="vpc-li" onclick="VPComandas.editarIntegrante(' + js(u.id) +
+              ',true)"><span class="vpc-li-txt"><b>' + esc(u.name || 'Usuario') + '</b></span></button>';
+          }).join('') + '</div>'
+          : '<p class="vpc-sub">No hay usuarios disponibles.</p>');
+      }
+      h += '<div class="vpc-spacer"></div>';
     }
-    abrirModal(h + '</div></div>', { dismissible: true });
+
+    if (!miembros.length) return h + '<p class="vpc-sub">Sin usuarios asignados.</p></div>';
+    return h + '<div class="vpc-list">' + miembros.map(function (u) {
+      return '<div class="vpc-li is-plain"><span class="vpc-li-txt"><b>' + esc(u.name || 'Usuario') + '</b></span>' +
+        (dueno && u.role !== 'dueno'
+          ? '<button type="button" class="vpc-mini is-warn" aria-label="Eliminar a ' + esc(u.name || 'Usuario') +
+            ' de ' + esc(area.nombre) + '" onclick="VPComandas.editarIntegrante(' + js(u.id) + ',false)">Eliminar</button>'
+          : '') + '</div>';
+    }).join('') + '</div></div>';
   }
 
-  function usuarioHTML(u, areaId, dueno, dentro) {
-    var suArea = seccion(areaDe(u));
-    var sub = (u.role === 'dueno' ? 'Dueño' : u.role === 'admin' ? 'Administrador' : 'Empleado') +
-      (dentro ? '' : ' · hoy en ' + suArea.nombre);
-    var fin = dentro
-      ? (dueno && areaId !== 'caja' && u.role !== 'dueno'
-        ? '<button type="button" class="vpc-mini is-warn" onclick="VPComandas.asignar(' + js(u.id) + ',' + js('caja') + ',' + js(areaId) + ')">Quitar</button>'
-        : '<span class="vpc-tag is-listo">Aquí</span>')
-      : '<button type="button" class="vpc-mini is-main" onclick="VPComandas.asignar(' + js(u.id) + ',' + js(areaId) + ',' + js(areaId) + ')">Poner aquí</button>';
-    return '<div class="vpc-li is-plain"><span class="vpc-li-ico">' + ico('users') + '</span>' +
-      '<span class="vpc-li-txt"><b>' + esc(u.name || 'Usuario') + '</b><small>' + esc(sub) + '</small></span>' + fin + '</div>';
-  }
-
-  async function asignar(userId, areaNueva, volverA) {
-    if (!soyDueno()) { avisar('Solo el Dueño puede cambiar esto', { icon: ico('alert') }); return; }
+  async function editarIntegrante(userId, agregar) {
+    if (!habilitado() || !soyDueno() || S.guardandoIntegrante) return;
+    var area = seccion(S.equipo).id, c = nube(), gen = c.gen;
     var lista = usuarios();
-    var u = null;
-    for (var i = 0; i < lista.length; i++) if (lista[i].id === userId) u = lista[i];
-    if (!habilitado() || !u || u.role === 'dueno') return;
-    var destino = seccion(areaNueva).id;
-    if (destino !== 'caja' && !S.on[destino]) {
-      var mesero = S.on.mesero || destino === 'mesero', cocina = S.on.cocina || destino === 'cocina';
-      var resultado = await accion('vp_com_secciones', { p_mesero: mesero, p_cocina: cocina });
-      if (!resultado || !habilitado() || !soyDueno()) return;
-      S.on.mesero = mesero; S.on.cocina = cocina;
-      lista = usuarios();
-      u = lista.find(function (empleado) { return empleado.id === userId && empleado.role !== 'dueno'; });
-      if (!u) return;
+    var u = lista.find(function (empleado) { return empleado.id === userId; });
+    if (!u || u.role === 'dueno' || puestoAsignado(u) !== (agregar ? null : area)) return;
+    S.guardandoIntegrante = true;
+    try {
+      if (agregar && !S.on[area]) {
+        var mesero = S.on.mesero || area === 'mesero', cocina = S.on.cocina || area === 'cocina';
+        var resultado = await accion('vp_com_secciones', { p_mesero: mesero, p_cocina: cocina });
+        if (!resultado || c.gen !== gen || !habilitado() || !soyDueno()) return;
+        S.on.mesero = mesero;
+        S.on.cocina = cocina;
+        lista = usuarios();
+        u = lista.find(function (empleado) { return empleado.id === userId && !puestoAsignado(empleado); });
+        if (!u) return;
+      }
+      if (agregar) u.comandaArea = area;
+      else delete u.comandaArea;
+      guardarUsuarios(lista);
+      S.mostrarDisponibles = false;
+      repintar();
+      if (!await c.flush() && c.gen === gen) avisar('El cambio se sincronizará cuando vuelva la conexión');
+    } finally {
+      S.guardandoIntegrante = false;
     }
-    u.comandaArea = destino;
-    guardarUsuarios(lista);
-    nube().flush();
-    avisar(esc(u.name) + ' → ' + seccion(u.comandaArea).nombre, { icon: ico('check'), variant: 'toast-success' });
-    verUsuarios(volverA);
-  }
-
-  function irAUsuarios() {
-    cerrarModal();
-    var f = fn('openUsersSheet');
-    if (f) f(); else irA('account');
   }
 
   function toggle(id) {
@@ -1307,6 +1312,7 @@
       var EV = ref('EXTRA_VIEWS');
       if (!EV) return false;
       EV.comandas = vistaElegir;
+      EV.comandas_usuarios = vistaUsuarios;
       EV.comandas_mesero = vistaMesero;
       EV.comandas_cocina = vistaCocina;
       EV.comandas_caja = vistaCaja;
@@ -1356,7 +1362,7 @@
     area: miArea,
     verPremium: verPremium,
     encender: encender, apagar: apagar,
-    toggle: toggle, verUsuarios: verUsuarios, asignar: asignar, irAUsuarios: irAUsuarios,
+    toggle: toggle, verUsuarios: verUsuarios, mostrarDisponibles: mostrarDisponibles, editarIntegrante: editarIntegrante,
     abrirMesa: abrirMesa, confirmarMesa: confirmarMesa, ventaLibre: ventaLibre,
     abrirCuenta: abrirCuenta, cerrarCuenta: cerrarCuenta,
     enviar: enviar, pedirCuenta: pedirCuenta, cancelarCuenta: cancelarCuenta,
