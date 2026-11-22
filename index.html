@@ -1057,6 +1057,31 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
     overflow-y:auto;
     animation:authEnter .3s cubic-bezier(.22,.9,.3,1);
   }
+  /* El acceso y las hojas de NIP se ajustan al espacio que deja el teclado. */
+  html:has(body.auth-open), html:has(#modal-layer .vp-pin-sheet){
+    overflow:hidden;
+    overscroll-behavior:none;
+  }
+  .auth-layer,
+  #modal-layer .modal-overlay:has(.vp-pin-sheet){
+    top:var(--vp-viewport-top, 0px);
+    bottom:auto;
+    height:100vh;
+    height:var(--vp-viewport-height, 100dvh);
+    overflow:hidden;
+    overscroll-behavior:none;
+  }
+  .auth-screen, #modal-layer .vp-pin-sheet{
+    overscroll-behavior:none;
+    scroll-padding-block:16px;
+  }
+  #modal-layer .vp-pin-sheet{
+    max-height:100%;
+    box-sizing:border-box;
+  }
+  .auth-screen[key="userpin"] > .auth-body{ flex-shrink:0; }
+  #modal-layer .vp-pin-sheet input{ font-size: max(16px, 1em); }
+
   .auth-screen::-webkit-scrollbar{ width:0; }
 
   /* ---- Acceso sencillo (elegir usuario y su NIP) ----
@@ -5532,6 +5557,14 @@ body.vp-restoring #vpSessionRestore{
     document.documentElement.style.setProperty(nombre, valor);
   }
   function medir(){
+    var viewport = window.visualViewport;
+    if(viewport && viewport.scale === 1){
+      poner('--vp-viewport-height', viewport.height + 'px');
+      poner('--vp-viewport-top', viewport.offsetTop + 'px');
+    } else {
+      poner('--vp-viewport-height', CSS.supports('height', '100dvh') ? '100dvh' : '100vh');
+      poner('--vp-viewport-top', '0px');
+    }
     var top = document.querySelector('.topbar');
     var nav = document.querySelector('.bottomnav');
     if(top && top.offsetHeight) poner('--topbar-h', top.offsetHeight + 'px');
@@ -5561,7 +5594,10 @@ body.vp-restoring #vpSessionRestore{
     }
     window.addEventListener('resize', medirLuego);
     window.addEventListener('orientationchange', medirLuego);
-    if(window.visualViewport) window.visualViewport.addEventListener('resize', medirLuego);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', medirLuego);
+      window.visualViewport.addEventListener('scroll', medirLuego, { passive:true });
+    }
     window.addEventListener('scroll', revisarScroll, { passive:true });
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
@@ -15134,7 +15170,7 @@ function openOwnerPinSheet(){
       <button class="btn ghost block" onclick="openUsersSheet()">Cancelar</button>
       <button class="btn primary block" onclick="saveOwnerPin()">Guardar y continuar</button>
     </div>
-  `, { dismissible:true });
+  `, { dismissible:true, sheetClass:'vp-pin-sheet' });
 }
 
 function saveOwnerPin(){
@@ -15189,7 +15225,7 @@ function openUserForm(){
       <button class="btn ghost block" onclick="openUsersSheet()">Cancelar</button>
       <button class="btn primary block" onclick="saveNewUser()">Crear usuario</button>
     </div>
-  `, { dismissible:true });
+  `, { dismissible:true, sheetClass:'vp-pin-sheet' });
   const acts = document.querySelector('#modal-layer .sheet-actions');
   if(acts) acts.insertAdjacentHTML('beforebegin', nipRecoveryNoteHTML(false));
 }
@@ -15590,7 +15626,7 @@ function openSetPinForm(id, mine){
       <button class="btn ghost block" onclick="backToUser('${u.id}')">Cancelar</button>
       <button class="btn primary block" onclick="saveSetPin('${u.id}', ${esMio ? 'true' : 'false'})">Guardar NIP</button>
     </div>
-  `, { dismissible:true });
+  `, { dismissible:true, sheetClass:'vp-pin-sheet' });
 }
 
 function saveSetPin(id, esMio){
@@ -15801,7 +15837,7 @@ function renderNipRecovery(){
         <button class="btn ghost block" onclick="closeNipRecovery()">Cancelar</button>
         <button class="btn primary block" id="nrCheckBtn" onclick="nipCheckCode()">Verificar</button>
       </div>
-    `, { dismissible:true });
+    `, { dismissible:true, sheetClass:'vp-pin-sheet' });
     setTimeout(() => { const el = document.getElementById('nrCode'); if(el) el.focus(); }, 80);
     return;
   }
@@ -15821,7 +15857,7 @@ function renderNipRecovery(){
       <button class="btn ghost block" onclick="closeNipRecovery()">Cancelar</button>
       <button class="btn primary block" onclick="nipSaveNewPin()">Guardar NIP</button>
     </div>
-  `, { dismissible:true });
+  `, { dismissible:true, sheetClass:'vp-pin-sheet' });
 }
 
 function nipPickUser(id){ nipRecover.userId = id; nipRecover.step = 2; renderNipRecovery(); }
