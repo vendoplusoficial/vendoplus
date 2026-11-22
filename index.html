@@ -5430,12 +5430,18 @@ body.vp-restoring #vpSessionRestore{
 
   body[data-puesto-pos="pendiente"] .bottomnav,
   body[data-puesto-pos="pendiente"] .topbar-right,
-  body[data-puesto-pos="mesero"] .topbar-right,
+  .comandas-switch-user,
+  body[data-puesto-pos="mesero"] .topbar-right > :not(.comandas-switch-user),
+  body[data-section="comandas_cocina"] .topbar-right > :not(.comandas-switch-user),
   body[data-puesto-pos="mesero"] .bottomnav > :not([data-view="history"]),
   body[data-puesto-pos="mesero"] .nav-open-btn,
   body[data-puesto-pos="mesero"] .nav-backdrop,
   body[data-puesto-pos="mesero"] .vp-sheet-bg,
   body[data-puesto-pos="mesero"] .cartbar{ display:none !important; }
+  body[data-puesto-pos="mesero"] .topbar-right > .comandas-switch-user,
+  body[data-section="comandas_cocina"] .topbar-right > .comandas-switch-user{
+    display:inline-flex !important; white-space:nowrap;
+  }
   body[data-puesto-pos="mesero"] .app{ grid-template-columns:minmax(0,1fr) !important; grid-template-areas:"topbar" "view" !important; }
   body[data-puesto-pos="mesero"] .bottomnav.bottomnav{
     position:fixed !important; inset:auto 0 0 !important; width:100% !important; height:auto !important;
@@ -5563,6 +5569,7 @@ body.vp-restoring #vpSessionRestore{
       </span>
     </div>
     <div class="topbar-right">
+      <button type="button" class="btn ghost comandas-switch-user" onclick="switchUser()">Cambiar de usuario</button>
       <button type="button" class="vp-top-prem" id="topPremium" data-view="premium" onclick="goTo('premium')" aria-label="Funciones premium" title="Funciones premium"><span class="vp-top-prem-ico"></span></button>
       <div class="topbar-clock" id="clock"></div>
       <button class="user-chip" id="userChip" onclick="goTo('account')" aria-label="Mi cuenta">
@@ -15032,6 +15039,10 @@ function pickUser(id){
   const u = userById(id);
   if(!u) return;
   authState.pickedUser = id;
+  if(!u.pin && authState.cambioDesdeComandas){
+    toast('Este usuario necesita un NIP para iniciar sesión desde Comandas');
+    return;
+  }
   if(!u.pin){                      // Usuario sin NIP: entra directo.
     enterAsUser(u);
     return;
@@ -15088,6 +15099,7 @@ function onUserPinInput(el){
 }
 
 function enterAsUser(u){
+  authState.cambioDesdeComandas = false;
   setActiveUser(u.id);
   openUserSession();
   markAppUnlocked();
@@ -15103,6 +15115,7 @@ function enterAsUser(u){
 
 /** Cierra el turno actual y vuelve a la selección de usuario. */
 function switchUser(){
+  authState.cambioDesdeComandas = modoNavegacionPOS() === 'mesero' || currentView === 'comandas_cocina';
   const sh = currentShift();
   let resumen = '';
   if(sh){
