@@ -5398,7 +5398,7 @@ body.vp-restoring #vpSessionRestore{
       overscroll-behavior:none;
     }
     html.vp-keyboard .auth-layer.show,
-    html.vp-keyboard #modal-layer .modal-overlay:has(.vp-keyboard-form){
+    html.vp-keyboard :is(#modal-layer, #modal-ghost) .modal-overlay:has(.vp-keyboard-form){
       top:calc(var(--vp-viewport-top, 0px) / var(--z, 1));
       bottom:auto;
       height:calc(var(--vp-viewport-height, 100vh) / var(--z, 1));
@@ -5407,10 +5407,12 @@ body.vp-restoring #vpSessionRestore{
       overflow:hidden;
       background:var(--surface);
       box-shadow:0 0 0 100vmax var(--surface);
-      padding-bottom:calc(48px / var(--z, 1));
     }
-    html.vp-keyboard .auth-screen{ bottom:calc(48px / var(--z, 1)); }
-    html.vp-keyboard #modal-layer .vp-keyboard-form{
+    /* El fondo blanco ya cubre la app mientras está abierto el teclado. */
+    html.vp-keyboard :is(#modal-layer, #modal-ghost) .modal-overlay:has(.vp-keyboard-form)::before{
+      content:none;
+    }
+    html.vp-keyboard :is(#modal-layer, #modal-ghost) .vp-keyboard-form{
       min-height:0;
       max-height:100% !important;
       overflow-y:auto;
