@@ -16038,9 +16038,7 @@ function bootApp(){
   if(!AUTH.isLogged()){
     /* Sin sesión (primera vez o sesión cerrada): siempre empieza en la bienvenida,
        con "Empezar" y "Ya tengo una cuenta". */
-    const pantalla = authState.screen === 'login' ? 'login' : 'welcome';
-    authState.mode = pantalla === 'login' ? 'login' : 'signup';
-    showAuth(pantalla);
+    showAuth('welcome');
   }else if(multiUser()){
     const me = activeUser();
     /* Respaldo: si el aparato perdió la marca de "sesión abierta" pero este
@@ -25721,14 +25719,47 @@ doDeleteAccount = async function(){
 function cloudRequiereInicio(sesion, error, enLinea, tokenGuardado){
   return !sesion?.user && (cloudSesionMuerta(error) || (!error && enLinea && !tokenGuardado));
 }
-function cloudPedirInicio(){
+let avisoSesionExpirada = false;
+function cloudAvisarSesionExpirada(){
+  if(!avisoSesionExpirada || document.hidden) return;
+  avisoSesionExpirada = false;
+  if(!AUTH.isLogged() && authState.screen === 'welcome'){
+    Cloud.fail('Sesión expirada', 'Vuelve a iniciar sesión para continuar');
+  }
+}
+function cloudPedirInicio(sesionExpirada = false){
   Cloud.gen++;
+  clearTimeout(Cloud._t);
   Cloud.uid = null;
   Cloud.sub = null;
-  authState.screen = 'login';
-  if(!AUTH.isLogged()) return;
+  Cloud.email = '';
   AUTH.closeSession();
-  if(!document.body.classList.contains('auth-open')) showAuth('login');
+  closeUserSession();
+  clearAppUnlocked();
+  clearInterval(authResendTimer);
+  currentView = 'sale';
+  Object.assign(authState, {
+    mode:'signup', phone:'', email:'', password:'', terms:false, code:'',
+    resendIn:0, pickedUser:null, pinBuffer:''
+  });
+  showAuth('welcome');
+  Cloud.gate();
+  avisoSesionExpirada = sesionExpirada;
+  cloudAvisarSesionExpirada();
+}
+
+async function cloudComprobarSesion(){
+  const r = await conLimiteCloud(Cloud.sb.auth.getSession(), 9000);
+  const sesion = r?.data?.session;
+  if(sesion?.user && navigator.onLine !== false){
+    try{
+      const { error } = await conLimiteCloud(Cloud.sb.auth.getUser(), 8000);
+      if(cloudSesionMuerta(error)) return { error };
+    }catch(e){
+      if(cloudSesionMuerta(e)) return { error:e };
+    }
+  }
+  return { sesion, error:r?.error };
 }
 const _bootApp = bootApp;
 bootApp = async function(){
@@ -25762,25 +25793,29 @@ bootApp = async function(){
       }
       /* Cierre de verdad: Supabase dice que esta sesión ya no existe. */
       if(ev === 'SIGNED_OUT' || ev === 'USER_DELETED'){
-        if(Cloud._saliendoAProposito) return;      /* lo pidió el usuario: ya se atendió */
-        cloudPedirInicio();
+        if(Cloud._saliendoAProposito || !AUTH.isLogged()) return;
+        cloudPedirInicio(true);
       }
     });
     /* Reintento de recuperación: al volver el internet o la app al frente */
+    let comprobandoSesion = false;
     const reintentar = async () => {
-      if(!AUTH.isLogged() || navigator.onLine === false) return;
+      if(comprobandoSesion || Cloud._saliendoAProposito || !AUTH.isLogged() || document.hidden || navigator.onLine === false) return;
       const gen = Cloud.gen;
+      comprobandoSesion = true;
       try{
-        const r = await conLimiteCloud(Cloud.sb.auth.getSession(), 9000);
-        if(Cloud.gen !== gen || !AUTH.isLogged()) return;
-        const s = r?.data?.session;
-        if(cloudRequiereInicio(s, r?.error, navigator.onLine !== false, cloudHayTokenGuardado())){
+        const { sesion:s, error } = await cloudComprobarSesion();
+        if(Cloud.gen !== gen || !AUTH.isLogged() || Cloud._saliendoAProposito) return;
+        if(cloudRequiereInicio(s, error, navigator.onLine !== false, cloudHayTokenGuardado())){
+          cloudPedirInicio(true);
+          return;
+        }
+        const dueno = localStorage.getItem('mesa_cloud_uid');
+        if(s?.user && dueno && dueno !== s.user.id){
           cloudPedirInicio();
           return;
         }
         if(s?.user && Cloud.uid !== s.user.id){
-          const dueno = localStorage.getItem('mesa_cloud_uid');
-          if(dueno && dueno !== s.user.id) return;
           Cloud.gen++; Cloud.uid = s.user.id;
           Cloud.pendResume(); Cloud.flush();
           Cloud._lastHyd = Date.now(); Cloud.hydrateSoon();
@@ -25788,13 +25823,18 @@ bootApp = async function(){
           Cloud.gate();
           try{ MdiCloud.wake(true); }catch(e){}
         }
-      }catch(e){ /* sigue sin internet: se reintenta al siguiente evento */ }
+      }catch(e){ /* se reintenta al siguiente evento */ }
+      finally{ comprobandoSesion = false; }
     };
     Cloud.reintentarSesion = reintentar;
-    document.addEventListener('visibilitychange', reintentar);
+    document.addEventListener('visibilitychange', () => {
+      cloudAvisarSesionExpirada();
+      reintentar();
+    });
+    window.addEventListener('focus', reintentar);
+    window.addEventListener('pageshow', event => { if(event.persisted) reintentar(); });
     window.addEventListener('online', reintentar);
-    /* Y un reintento tranquilo cada minuto mientras falte la sesión */
-    setInterval(() => { if(!Cloud.uid) reintentar(); }, 60000);
+    setInterval(reintentar, 60000);
   }
   const yaEstabaDentro = AUTH.isLogged();
   const abrir = () => {
@@ -25804,24 +25844,24 @@ bootApp = async function(){
     Cloud.afterPayment();
     Cloud.confetiBienvenida();
   };
+  const teniaToken = cloudHayTokenGuardado();
   if(yaEstabaDentro) abrir();
-  else if(cloudHayTokenGuardado()) document.body.classList.add('vp-restoring');
+  else if(teniaToken) document.body.classList.add('vp-restoring');
 
   const restaurar = async () => {
     let sesion, error;
     do{
       try{
-        const r = await conLimiteCloud(Cloud.sb.auth.getSession(), 9000);
-        sesion = r?.data?.session;
-        error = r?.error;
+        ({ sesion, error } = await cloudComprobarSesion());
       }catch(e){ error = e; }
       if(sesion?.user || cloudSesionMuerta(error) || yaEstabaDentro || !cloudHayTokenGuardado()) break;
       await new Promise(resolve => setTimeout(resolve, 2000));
     }while(true);
 
+    if(yaEstabaDentro && !AUTH.isLogged()) return false;
     if(!sesion?.user){
-      if(cloudRequiereInicio(sesion, error, navigator.onLine !== false, cloudHayTokenGuardado())){
-        cloudPedirInicio();
+      if((yaEstabaDentro || teniaToken) && cloudRequiereInicio(sesion, error, navigator.onLine !== false, cloudHayTokenGuardado())){
+        cloudPedirInicio(true);
       } else if(yaEstabaDentro && !Cloud.uid){
         setTimeout(() => Cloud.reintentarSesion(), 3000);
       }
@@ -25830,11 +25870,7 @@ bootApp = async function(){
 
     const dueno = localStorage.getItem('mesa_cloud_uid');
     if(dueno && dueno !== sesion.user.id){
-      Cloud.gen++;
-      Cloud.uid = null;
-      AUTH.closeSession();
-      authState.screen = 'login';
-      if(yaEstabaDentro) showAuth('login');
+      cloudPedirInicio();
       return false;
     }
     if(Cloud.uid !== sesion.user.id) Cloud.gen++;
