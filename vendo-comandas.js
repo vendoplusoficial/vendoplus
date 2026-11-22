@@ -436,10 +436,6 @@
     }
 
     if (dueno) {
-      h += '<div class="vpc-spacer"></div><div class="section-title">Administrar</div><div class="vpc-list">' +
-        filaHTML(mi('vpcTable'), 'Mesas y bar', 'Editar el plano de mesas del POS', "VPMesas.open('comandas')") +
-        filaHTML(mi('vpcPot'), 'Áreas de preparación', 'Cocina, Barra, Postres…', 'VPComandas.verAreas()') +
-        '</div>';
       h += '<div class="vpc-spacer"></div><button type="button" class="vpc-btn is-block" onclick="VPComandas.apagar()">Apagar Comandas</button>';
     }
     return h + '</div>';
@@ -645,7 +641,7 @@
     var cuerpo;
     if (!mesas.length) {
       cuerpo = vacioHTML(mi('vpcTable'), 'Todavía no hay mesas',
-        soyDueno() ? 'Edítalas desde Comandas → Mesas y bar.' : 'Pídele al dueño que registre las mesas del negocio.');
+        soyDueno() ? 'Revisa el plano de mesas del POS.' : 'Pídele al dueño que registre las mesas del negocio.');
 
     } else {
       cuerpo = '<div class="vpc-mesas">' + mesas.map(mesaHTML).join('') + '</div>';
