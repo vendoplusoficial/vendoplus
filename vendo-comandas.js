@@ -505,7 +505,27 @@
     }).join('') + '</div></div>';
   }
 
-  async function editarIntegrante(userId, agregar) {
+  function editarIntegrante(userId, agregar) {
+    if (!habilitado() || !soyDueno() || S.guardandoIntegrante) return;
+    var confirmar = fn('askConfirm');
+    var area = seccion(S.equipo), c = nube(), gen = c.gen;
+    var u = usuarios().find(function (empleado) { return empleado.id === userId; });
+    if (!confirmar || !u || u.role === 'dueno' || puestoAsignado(u) !== (agregar ? null : area.id)) return;
+    var nombre = esc(u.name || 'Usuario'), destino = esc(area.nombre);
+    confirmar({
+      title: agregar ? '¿Agregar integrante?' : '¿Quitar integrante?',
+      text: agregar ? nombre + ' se agregará a ' + destino + '.'
+        : nombre + ' saldrá de ' + destino + ' y quedará disponible para otra área.',
+      ok: agregar ? 'Agregar' : 'Eliminar',
+      danger: !agregar,
+      icon: ico(agregar ? 'plus' : 'trash')
+    }, function () {
+      if (nube() !== c || c.gen !== gen || S.equipo !== area.id) return;
+      guardarIntegrante(userId, agregar);
+    });
+  }
+
+  async function guardarIntegrante(userId, agregar) {
     if (!habilitado() || !soyDueno() || S.guardandoIntegrante) return;
     var area = seccion(S.equipo).id, c = nube(), gen = c.gen;
     var lista = usuarios();
