@@ -128,6 +128,17 @@
     return !!(c && c.uid === S.negocio && S.premium && S.activo);
   }
   function puedeCobrar() { return habilitado() && (soyDueno() || miArea() === 'caja'); }
+  function cocinaEnCaja() { return puedeCobrar() && S.on.cocina; }
+
+  function enviarDesdeCaja(datos) {
+    if (!cocinaEnCaja()) return Promise.resolve(null);
+    var usuario = usuarioActivo();
+    return accion('vp_com_enviar_desde_caja', {
+      p_cuenta: datos.cuenta, p_plano: datos.plano, p_referencia: datos.referencia,
+      p_lineas: datos.lineas, p_actor_id: (usuario && usuario.id) || '',
+      p_actor: nombreActor(), p_idem: datos.id
+    }, function () { cargarTablero(); });
+  }
 
   /* =======================================================================
      4.  SERVIDOR
@@ -157,6 +168,7 @@
   var ERRORES = {
     sin_sesion: 'Entra a tu cuenta para usar Comandas',
     sin_premium: 'Comandas es una función Premium',
+    cocina_apagada: 'Activa Cocinero en Comandas para enviar pedidos',
     mesa_ocupada: 'Esa mesa ya la abrió alguien más',
     mesa_no_existe: 'Esa mesa ya no existe',
     cuenta_no_existe: 'Esa cuenta ya no existe',
@@ -1482,7 +1494,7 @@
     abrirMesa: abrirMesa, confirmarMesa: confirmarMesa, ventaLibre: ventaLibre,
     abrirCuenta: abrirCuenta, cerrarCuenta: cerrarCuenta,
     enviar: enviar, pedirCuenta: pedirCuenta, cancelarCuenta: cancelarCuenta,
-    cobrar: cobrar, puedeCobrar: puedeCobrar, cerrarPorVenta: cerrarPorVenta, marcar: marcar, todoListo: todoListo,
+    cobrar: cobrar, puedeCobrar: puedeCobrar, cocinaEnCaja: cocinaEnCaja, enviarDesdeCaja: enviarDesdeCaja, cerrarPorVenta: cerrarPorVenta, marcar: marcar, todoListo: todoListo,
     reportar: reportar, mandarProblema: mandarProblema,
     verProblemas: verProblemas, resolver: resolver,
     elegirProductos: elegirProductos, verTamanos: verTamanos, volverProductos: volverProductos,
