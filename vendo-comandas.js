@@ -291,7 +291,7 @@
     var v = ref('currentView');
     if (String(v || '').indexOf('comandas') !== 0) return;
     if (v === 'comandas_cocina') cargarCocina();
-    else if (S.cuenta) cargarCuenta(S.cuenta.id);
+    else if (S.cuenta && !S.cuenta.local) cargarCuenta(S.cuenta.id);
     else cargarTablero();
   }
   function cambio(p) {
@@ -945,27 +945,25 @@
 
   function abrirMesa(mesaId, nombre) {
     if (!habilitado() || !S.on.mesero || !puedeArea('mesero')) return;
-    var h = '<div class="modal-sheet"><div class="sheet-header"><h2>' + esc(nombre) + '</h2>' +
+    var h = '<div class="sheet-header"><h2>' + esc(nombre) + '</h2>' +
       '<button class="sheet-close" onclick="closeModal()">' + ico('close') + '</button></div>' +
-      '<div class="vpc"><div class="vpc-field"><label>¿Cuántas personas?</label>' +
+      '<div class="vpc"><div class="vpc-field"><label for="vpcPersonas">¿Cuántas personas?</label>' +
       '<input id="vpcPersonas" type="number" inputmode="numeric" min="1" max="99" value="2"></div>' +
-      '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.confirmarMesa(' + js(mesaId) + ')">Abrir la mesa</button></div></div>';
+      '<button type="button" class="vpc-btn is-main is-block" onclick="VPComandas.confirmarMesa(' + js(mesaId) + ',' + js(nombre) + ')">Aceptar</button></div>';
     abrirModal(h, { dismissible: true });
     setTimeout(function () { var i = document.getElementById('vpcPersonas'); if (i && i.select) i.select(); }, 150);
   }
-  function confirmarMesa(mesaId) {
-    if (!habilitado() || !S.on.mesero || !puedeArea('mesero')) return;
+  function confirmarMesa(mesaId, nombre) {
+    if (!habilitado() || !S.on.mesero || !puedeArea('mesero') || ref('currentView') !== 'comandas_mesero') return;
     var i = document.getElementById('vpcPersonas');
-    var n = Math.max(1, Math.min(99, parseInt((i && i.value) || '1', 10) || 1));
-    var u = usuarioActivo();
-    var btn = document.querySelector('#modal-layer .vpc-btn.is-main'); if (btn) btn.disabled = true;
-    accion('vp_com_mesa_abrir', {
-      p_mesa: mesaId, p_personas: n,
-      p_mesero_id: (u && u.id) || '', p_mesero: nombreActor(), p_idem: llave()
-    }, function (d) {
-      cerrarModal();
-      if (d && d.cuenta) abrirCuenta(d.cuenta);
-    }).then(function () { if (btn) btn.disabled = false; });
+    if (!i) return;
+    var n = Math.max(1, Math.min(99, parseInt(i.value || '1', 10) || 1));
+    S.solicitudCuenta = null;
+    S.verCuentaMesero = false;
+    S.buscaMesero = '';
+    S.cuenta = { id: 'mesa:' + mesaId, mesa_id: mesaId, mesa: nombre, personas: n, productos: [], local: true };
+    cerrarModal();
+    irA('comandas_mesero');
   }
 
   var ventaLibrePendiente = null;
@@ -1025,7 +1023,7 @@
   }
 
   function detalleMesero() {
-    if (!pedidoMesero()) return;
+    if (!pedidoMesero() || S.cuenta.local) return;
     S.verCuentaMesero = true;
     repintar();
   }
@@ -1061,7 +1059,9 @@
       '<div class="sale-tools no-print"><div class="search-box sale-search">' + ico('search') +
       '<input type="search" placeholder="Buscar producto" aria-label="Buscar producto" value="' + esc(S.buscaMesero || '') +
       '" oninput="VPComandas.buscarMesero(this.value)"></div>' +
-      '<button type="button" class="btn ghost" onclick="VPComandas.detalleMesero()">Ver cuenta</button></div>' +
+      (S.cuenta.local
+        ? '<button type="button" class="btn ghost" onclick="VPComandas.carritoMesero()">Ver carrito</button>'
+        : '<button type="button" class="btn ghost" onclick="VPComandas.detalleMesero()">Ver cuenta</button>') + '</div>' +
       (q ? '' : '<div class="chip-row sticky-index">' + grupos.map(function (g) {
         return '<button type="button" class="chip" onclick="VPComandas.categoriaMesero(' + js(g.cat.id) + ')">' + esc(g.cat.name) + '</button>';
       }).join('') + '</div>') +
@@ -1205,20 +1205,26 @@
       '<button class="sheet-close" onclick="VPComandas.cerrarCarritoMesero()">' + ico('close') + '</button></div>' +
       (filas ? '<i class="cart-marker" hidden></i><div class="cart-list" data-keep-scroll="cart">' + filas + '</div>' :
         '<div class="empty-state">' + fn('illustration')('cartEmpty') + '<div class="empty-title">Carrito vacío</div></div>') +
-      '<div class="cart-foot"><div class="cart-actions"><button class="btn ghost" onclick="VPComandas.productosMesero()">Volver</button>' +
-      '<button class="btn primary block" onclick="VPComandas.enviarMesero()" ' + (!lineas.length || pedido.enviando ? 'disabled' : '') + '>' +
+      '<div class="cart-foot"><div class="cart-actions">' +
+      (S.cuenta.mesa_id ? '<button class="btn ghost" onclick="VPComandas.guardarMesero(false)" ' +
+        (pedido.enviando || pedido.incierto === 'enviar' ? 'disabled' : '') + '>Dejar mesa abierta</button>' : '') +
+      '<button class="btn primary block" onclick="VPComandas.guardarMesero(true)" ' + (!lineas.length || pedido.enviando || pedido.incierto === 'guardar' ? 'disabled' : '') + '>' +
       (pedido.enviando ? 'Enviando…' : 'Enviar a cocina') + '</button></div></div>', { dismissible: !pedido.enviando, sheetClass: 'vpc-waiter-cart' });
   }
 
   function cerrarCarritoMesero() { cerrarModal(); repintar(); }
 
-  function enviarMesero() {
-    var pedido = pedidoMesero();
-    if (!pedido || pedido.enviando || (!pedido.lineas.length && !lineasGuardadasMesero().length)) return;
-    var id = S.cuenta.id;
+  function guardarMesero(enviar) {
+    var pedido = pedidoMesero(), cuenta = S.cuenta;
+    var accionPedido = enviar ? 'enviar' : 'guardar';
+    if (!pedido || pedido.enviando || (pedido.incierto && pedido.incierto !== accionPedido)) return;
+    if (enviar ? !pedido.lineas.length && !lineasGuardadasMesero().length : !cuenta.mesa_id) return;
     fn('askConfirm')({
-      title: '¿Enviar a cocina?', text: 'Se enviarán los productos pendientes de ' + esc(S.cuenta.mesa) + '.',
-      ok: 'Enviar a cocina', icon: mi('vpcSend')
+      title: enviar ? '¿Enviar a cocina?' : '¿Dejar mesa abierta?',
+      text: enviar ? 'Se enviarán los productos pendientes de ' + esc(cuenta.mesa) + '.' :
+        'La mesa quedará ocupada y los productos seguirán pendientes de envío.',
+      ok: enviar ? 'Enviar a cocina' : 'Dejar mesa abierta',
+      icon: enviar ? mi('vpcSend') : mi('vpcTable')
     }, async function () {
       if (pedidoMesero() !== pedido || pedido.enviando) return;
       pedido.enviando = true;
@@ -1226,36 +1232,46 @@
       try {
         var c = nube();
         if (pedido.lineas.length && !await c.flush()) {
-          avisar('No se pudo enviar a cocina', { variant: 'toast-danger', icon: ico('alert') });
+          avisar('No se pudo guardar el pedido', { variant: 'toast-danger', icon: ico('alert') });
           return;
         }
         if (pedidoMesero() !== pedido) return;
-        pedido.incierto = true;
-        var resultado = await rpc('vp_com_enviar_desde_mesero', {
-          p_cuenta: id, p_actor: nombreActor(), p_idem: pedido.id,
+        var u = usuarioActivo();
+        pedido.incierto = accionPedido;
+        var resultado = await rpc('vp_com_guardar_mesa_mesero', {
+          p_mesa: cuenta.local ? cuenta.mesa_id : null, p_cuenta: cuenta.local ? null : cuenta.id,
+          p_personas: cuenta.personas || 1, p_actor_id: (u && u.id) || '',
+          p_actor: nombreActor(), p_idem: pedido.id, p_enviar: enviar,
           p_lineas: pedido.lineas.map(function (l) {
             return { productId: l.productId, sizeId: l.sizeId, sizeLabel: l.sizeLabel, qty: l.qty, nota: l.note };
           })
         });
-        pedido.incierto = false;
+        pedido.incierto = null;
         if (!resultado?.ok) {
           if (pedidoMesero() === pedido) {
             avisar(mensajeError(resultado?.error), { variant: 'toast-danger', icon: ico('alert') });
-            if (resultado?.error === 'nada_por_enviar') cargarCuenta(id, carritoMesero);
+            if (!cuenta.local && resultado?.error === 'nada_por_enviar') cargarCuenta(cuenta.id, carritoMesero);
           }
           return;
         }
         pedido.lineas = [];
         pedido.id = llave();
         if (pedidoMesero() !== pedido) return;
-        S.cuenta.productos = (S.cuenta.productos || []).filter(function (p) { return p.comanda || p.estado === 'cancelado'; });
+        if (!enviar) {
+          cerrarModal();
+          cerrarCuenta();
+          avisar('Mesa guardada', { variant: 'toast-success', icon: ico('check') });
+          return;
+        }
+        S.cuenta = Object.assign({}, cuenta, { id: resultado.cuenta, local: false,
+          productos: (cuenta.productos || []).filter(function (p) { return p.comanda || p.estado === 'cancelado'; }) });
         cerrarCarritoMesero();
-        cargarCuenta(id);
+        cargarCuenta(resultado.cuenta);
         avisar('Comanda ' + resultado.comanda + ' enviada', { variant: 'toast-success', icon: ico('check') });
       } catch (e) {
-        console.warn('Vendo plus · enviar comanda', e);
-        if (pedidoMesero() === pedido) avisar('No se pudo confirmar el envío', {
-          variant: 'toast-danger', icon: ico('alert'), subtitle: 'Vuelve a tocar Enviar a cocina para verificarlo'
+        console.warn('Vendo plus · guardar pedido del mesero', e);
+        if (pedidoMesero() === pedido) avisar('No se pudo confirmar la operación', {
+          variant: 'toast-danger', icon: ico('alert'), subtitle: 'Vuelve a pulsar el mismo botón para verificarla'
         });
       } finally {
         pedido.enviando = false;
@@ -1771,7 +1787,7 @@
     carritoMesero: carritoMesero, cerrarCarritoMesero: cerrarCarritoMesero,
     productosMesero: productosMesero, detalleMesero: detalleMesero, buscarMesero: buscarMesero, categoriaMesero: categoriaMesero,
     tocarMesero: tocarMesero, cantidadMesero: cantidadMesero, editarLineaMesero: editarLineaMesero,
-    quitarLineaMesero: quitarLineaMesero, enviarMesero: enviarMesero, pedirCuenta: pedirCuenta, cancelarCuenta: cancelarCuenta,
+    quitarLineaMesero: quitarLineaMesero, guardarMesero: guardarMesero, pedirCuenta: pedirCuenta, cancelarCuenta: cancelarCuenta,
     cobrar: cobrar, puedeCobrar: puedeCobrar, cocinaEnCaja: cocinaEnCaja, enviarDesdeCaja: enviarDesdeCaja, cerrarPorVenta: cerrarPorVenta, marcar: marcar, todoListo: todoListo,
     reportar: reportar, mandarProblema: mandarProblema,
     verProblemas: verProblemas, resolver: resolver,
