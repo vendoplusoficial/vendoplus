@@ -5216,6 +5216,14 @@ body[data-section="menu"] .md-card-sheet .sheet-actions .primary:not(:disabled) 
   }
 }
 @media (min-width:700px){ .md-config-footer { margin-top:18px; } }
+/* La configuración sigue visible detrás de sus formularios. */
+#modal-layer > .md-config-backdrop {
+  z-index:399;
+  background:var(--bg);
+  pointer-events:none;
+}
+#modal-layer > .md-config-backdrop::before { display:none; }
+
 .md-stripe-mode, .md-stripe-status { color:#62667b; font-size:11px; font-weight:600; }
 .md-stripe-mode { margin:6px 0 9px; }
 .md-stripe-status { margin:0; overflow-wrap:anywhere; }
@@ -20290,20 +20298,40 @@ function mdCfgSheetHTML(){
       <button type="button" class="btn primary block" onclick="mdSetCfgVisible(false)">Listo</button>
     </div>`;
 }
-/* ---- Volver de una subsección sin perder el lugar ----
-   Al entrar a "Servicio a domicilio", "Horarios", etc., la hoja de
-   Configuración del Menú Digital se reemplaza por el formulario. Antes, al
-   regresar, la configuración se volvía a abrir hasta arriba y había que
-   buscar otra vez dónde ibas. Aquí se guarda a qué altura estaba y se
-   regresa a esa misma altura. */
+/* Conserva la hoja de configuración debajo del formulario y su posición al volver. */
 var mdCfgScrollY = 0;
 var _mdOpenModalBase = openModal;
 openModal = function(html, opts){
-  try{
-    const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
-    if(sh && sheetTitleOf(sh) === MD_CFG_TITLE) mdCfgScrollY = sh.scrollTop || 0;
-  }catch(e){}
-  return _mdOpenModalBase.apply(this, arguments);
+  const layer = document.getElementById('modal-layer');
+  const foreground = layer.querySelector('#modalOverlay');
+  const sheet = foreground?.querySelector('.modal-sheet');
+  const title = sheet ? sheetTitleOf(sheet) : '';
+  const configOpen = currentView === 'menu' && (mdCfgSheetOn || mdSetupOn);
+  const parent = configOpen
+    ? (title === MD_CFG_TITLE || title === MD_SETUP_TITLE
+      ? foreground
+      : layer.querySelector('.md-config-backdrop'))
+    : null;
+  const parentSheet = parent?.querySelector('.modal-sheet');
+  const parentY = parentSheet?.scrollTop || 0;
+  if(title === MD_CFG_TITLE) mdCfgScrollY = parentY;
+
+  _mdOpenModalBase(html, opts);
+  if(!parent) return;
+
+  const nextSheet = layer.querySelector('#modalOverlay > .modal-sheet');
+  const nextTitle = sheetTitleOf(nextSheet);
+  if(nextTitle === MD_CFG_TITLE || nextTitle === MD_SETUP_TITLE){
+    nextSheet.scrollTop = parentY;
+    return;
+  }
+
+  parent.removeAttribute('id');
+  parent.setAttribute('inert', '');
+  parent.setAttribute('aria-hidden', 'true');
+  parent.classList.add('is-swap', 'md-config-backdrop');
+  layer.appendChild(parent);
+  parentSheet.scrollTop = parentY;
 };
 function mdOpenCfgSheet(){
   if(!mdCfg().active){ mdCfgSheetOn = false; return; }
@@ -20324,6 +20352,7 @@ function mdCfgSheetSync(){
     if(currentView !== 'menu' || mdCfg().active){
       mdSetupOn = false;
       if(mdSetupShowing()) _mdCloseModalBase();
+      else document.querySelector('#modal-layer > .md-config-backdrop')?.remove();
     }else if(mdSetupShowing()) openModal(mdSetupHTML(), { dismissible:true });
   }
   if(!mdCfgSheetOn) return;
@@ -20331,6 +20360,7 @@ function mdCfgSheetSync(){
     mdCfgSheetOn = false;
     mdCfgScrollY = 0;   /* se salió de la configuración: la próxima vez, desde arriba */
     if(mdCfgSheetShowing()) _mdCloseModalBase();
+    else document.querySelector('#modal-layer > .md-config-backdrop')?.remove();
     return;
   }
   if(mdCfgSheetShowing()) openModal(mdCfgSheetHTML(), { dismissible:true, sheetClass:'md-config-sheet' });
