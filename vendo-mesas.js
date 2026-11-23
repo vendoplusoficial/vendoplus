@@ -8,9 +8,6 @@ window.VPMesas = (() => {
   let draft;
   let selected;
   let drag;
-  let comandasAbiertas = new Map();
-  let apertura = 0;
-  let verificandoCuentas = false;
   const defaults = () => [
     ['m1', 'Mesa 1', 18, 17], ['m2', 'Mesa 2', 82, 17],
     ['m3', 'Mesa 3', 50, 43], ['m4', 'Mesa 4', 18, 72],
@@ -25,28 +22,16 @@ window.VPMesas = (() => {
   }
   const currentTable = () => layout().find(t => t.id === checkout.floorTableId);
 
-  async function open(from) {
-    const solicitud = ++apertura;
+  function open(from) {
     source = from;
     const overlay = from === 'checkout' ? document.querySelector('#modal-layer .modal-overlay:has(.pay2)') : null;
     checkoutScroll = overlay ? { sheet:overlay.querySelector('.modal-sheet').scrollTop, overlay:overlay.scrollTop } : null;
     draft = null;
     selected = null;
-    verificandoCuentas = !!window.VPComandas?.puedeCobrar();
-    comandasAbiertas = verificandoCuentas ? VPComandas.cuentasDelPlanoGuardadas() : new Map();
     draw(true);
-    if (!verificandoCuentas) return;
-    const cuentas = await VPComandas.cuentasDelPlano();
-    if (solicitud !== apertura || !document.querySelector('#modal-layer .vp-floor-sheet')) return;
-    verificandoCuentas = false;
-    const cambio = cuentas.size !== comandasAbiertas.size ||
-      [...cuentas].some(([id, cuenta]) => comandasAbiertas.get(id) !== cuenta);
-    comandasAbiertas = cuentas;
-    if (cambio) draw();
   }
 
   function back() {
-    if (!draft) { apertura++; verificandoCuentas = false; }
     if (draft) {
       draft = null;
       draw();
@@ -68,16 +53,20 @@ window.VPMesas = (() => {
         <h2>${editing ? 'Editar mesas' : 'Mesas'}</h2>
         ${editing ? '<span></span>' : `<button class="sheet-back" onclick="VPMesas.edit()" aria-label="Editar plano">${icon('pen')}</button>`}
       </div>
-      ${planoHTML(tables, t => ({
-        active: orders.has(t.id) || comandasAbiertas.has(t.id),
-        selected: editing && selected === t.id
-      }), editing)}
-      ${!editing && source === 'sale' && window.VPComandas?.puedeCobrar()
-        ? '<button class="btn ghost block" onclick="closeModal(); VPComandas.ir(\'comandas_caja\')">Cuentas de Comandas</button>' : ''}
+      <div class="vp-floor ${editing ? 'is-editing' : ''}" aria-label="Plano de mesas">
+        ${tables.map(t => {
+          const order = orders.get(t.id);
+          const active = !!order;
+          return `<button type="button" class="vp-floor-table ${t.id === 'bar' ? 'is-bar' : ''} ${active ? 'is-occupied' : ''} ${editing && selected === t.id ? 'is-selected' : ''}"
+            data-floor-id="${escapeHtml(t.id)}" style="--x:${t.x}%;--y:${t.y}%"
+            aria-label="${escapeHtml(t.name)} · ${active ? 'Ocupada' : 'Libre'}"><b>${escapeHtml(t.name)}</b>
+            <small>${active ? 'Ocupada' : 'Libre'}</small></button>`;
+        }).join('')}
+      </div>
       ${editing ? `
         <div class="vp-floor-controls">
           <button class="btn ghost" onclick="VPMesas.add()" ${tables.length >= 16 ? 'disabled' : ''}>${icon('plus')} Agregar mesa</button>
-          ${chosen && chosen.id !== 'bar' && !orders.has(chosen.id) && !comandasAbiertas.has(chosen.id) ? '<button class="btn ghost" onclick="VPMesas.remove()">Eliminar mesa</button>' : ''}
+          ${chosen && chosen.id !== 'bar' && !orders.has(chosen.id) ? '<button class="btn ghost" onclick="VPMesas.remove()">Eliminar mesa</button>' : ''}
         </div>
         <div class="vp-floor-controls">
           <button class="btn ghost" onclick="VPMesas.reset()">Restablecer</button>
@@ -94,19 +83,6 @@ window.VPMesas = (() => {
       };
       if (editing) bindDrag(button, floor, tables.find(t => t.id === id));
     }
-  }
-
-  function planoHTML(tables, status, editing = false) {
-    return `<div class="vp-floor ${editing ? 'is-editing' : ''}" aria-label="Plano de mesas">
-      ${tables.map(t => {
-        const {active, selected, action, disabled} = status(t);
-        return `<button type="button" class="vp-floor-table ${t.id === 'bar' ? 'is-bar' : ''} ${active ? 'is-occupied' : ''} ${selected ? 'is-selected' : ''}"
-          data-floor-id="${escapeHtml(t.id)}" style="--x:${Number(t.x)}%;--y:${Number(t.y)}%"
-          ${action ? `onclick="${escapeHtml(action)}"` : ''} ${disabled ? 'disabled' : ''}
-          aria-label="${escapeHtml(t.name)} · ${active ? 'Ocupada' : 'Libre'}"><b>${escapeHtml(t.name)}</b>
-          <small>${active ? 'Ocupada' : 'Libre'}</small></button>`;
-      }).join('')}
-    </div>`;
   }
 
   function bindDrag(button, floor, table) {
@@ -165,15 +141,15 @@ window.VPMesas = (() => {
   }
 
   function remove() {
-    if (verificandoCuentas || !draft || selected === 'bar' || openOrders().has(selected) || comandasAbiertas.has(selected)) return;
+    if (!draft || selected === 'bar' || openOrders().has(selected)) return;
     draft = draft.filter(t => t.id !== selected);
     selected = null;
     draw();
   }
 
   function reset() {
-    if (verificandoCuentas || !draft) return;
-    const orders = new Map([...openOrders(), ...comandasAbiertas]);
+    if (!draft) return;
+    const orders = openOrders();
     const original = defaults();
     for (const base of original) {
       const occupied = draft.find(t => t.name === base.name && orders.has(t.id));
@@ -192,7 +168,6 @@ window.VPMesas = (() => {
     if (!Store.set(key, draft)) { toast('No se pudo guardar el plano'); return; }
     draft = null;
     draw();
-    if (window.VPComandas?.activo()) Cloud.flush();
     toast('Plano guardado');
   }
 
@@ -206,13 +181,6 @@ window.VPMesas = (() => {
     }
     if (order && order.id !== checkout.floorOrderId) {
       toast('Esta mesa ya tiene una cuenta abierta', { subtitle:'Puedes editarla desde Mesas en Nueva venta.' });
-      return;
-    }
-    if (verificandoCuentas) { toast('Consultando las mesas abiertas…'); return; }
-    const cuenta = comandasAbiertas.get(table.id);
-    if (cuenta) {
-      if (source === 'sale') { closeModal(); VPComandas.abrirDesdePlano(cuenta); }
-      else toast('Esta mesa tiene una comanda abierta', { subtitle:'Ábrela desde Mesas en Nueva venta.' });
       return;
     }
     if (source !== 'checkout') return;
@@ -234,7 +202,7 @@ window.VPMesas = (() => {
 
   function canCharge() {
     const table = currentTable();
-    if (!table || (window.VPComandas?.activo() && comandasAbiertas.has(table.id))) return false;
+    if (!table) return false;
     const id = openOrders().get(table.id)?.id;
     return checkout.floorOrderId ? id === checkout.floorOrderId : !id;
   }
@@ -243,7 +211,7 @@ window.VPMesas = (() => {
     if (!cart.length && !checkout.floorOrderId) return;
     const table = currentTable();
     if (!table) { open('checkout'); return; }
-    if (checkout.menuOrderId || checkout.vpcCuenta) return;
+    if (checkout.menuOrderId) return;
     const order = openOrders().get(table.id);
     if (!canCharge()) {
       toast('La cuenta de esta mesa cambió');
@@ -284,13 +252,12 @@ window.VPMesas = (() => {
   }
 
   function quickButton() {
-    const cuentas = window.VPComandas?.activo() ? VPComandas.cuentasDelPlanoGuardadas() : new Map();
-    const count = new Set([...openOrders().keys(), ...cuentas.keys()]).size;
+    const count = openOrders().size;
     if (!count) return '<span class="tool-btn vp-floor-placeholder" aria-hidden="true"></span>';
     const label = count === 1 ? 'Mesas, 1 mesa abierta' : 'Mesas, ' + count + ' mesas abiertas';
     const badge = `<span class="vp-floor-count" aria-hidden="true">${count}</span>`;
     return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="${label}">${tableIcon}${badge}</button>`;
   }
 
-  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon, openOrders, planoHTML, layout };
+  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon };
 })();

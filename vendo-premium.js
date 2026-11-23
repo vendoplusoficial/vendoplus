@@ -59,13 +59,16 @@
   ======================================================================= */
   function activo() {
     var c = nube();
-    if (c) return c.paidNow();
+    if (c) {
+      try { if (typeof c.paidNow === 'function' && c.paidNow()) return true; } catch (e) {}
+      try {
+        var s = c.sub;
+        if (s && s.vp_play_pagado_hasta && new Date(s.vp_play_pagado_hasta) > new Date()) return true;
+      } catch (e) {}
+      /* Con nube, la verdad la tiene el servidor: no se cree nada local. */
+      return false;
+    }
     try { var u = fn('currentUser') ? ref('currentUser')() : null; return !!(u && u.membershipPaid); } catch (e) { return false; }
-  }
-
-  function sinVerificar() {
-    var c = nube();
-    return !!(c && c.uid && (!c.sub || c.sub.user_id !== c.uid));
   }
 
   /* El precio tal como lo muestra la tienda (Google Play lo trae ya con la
@@ -99,7 +102,6 @@
       texto: 'Toma una foto de tu carta y la IA carga los productos y precios por ti.',
       ico: 'camera'
     },
-    comandas: { titulo: 'Comandas', ico: 'receipt' },
     usuarios: { titulo: 'Acceso para tus empleados', texto: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.', ico: 'users' },
   stats: {
       titulo: 'Reportes de ventas y ganancias',
@@ -467,16 +469,7 @@
   /* Desde "Agregar usuario" se llega aquí; al cerrar se regresa a Usuarios. */
   var origen = null;
 
-  async function abrir(clave, vistaInicial) {
-    if (sinVerificar()) {
-      var c = nube(), uid = c.uid, gen = c.gen;
-      await c.refreshSub();
-      if (c.uid !== uid || c.gen !== gen || activo()) return;
-      if (sinVerificar()) {
-        avisar('No pudimos verificar tu membresía. Intenta de nuevo.');
-        return;
-      }
-    }
+  function abrir(clave, vistaInicial) {
     estilos();
     estilosFunciones();
     origen = (clave === 'usuarios') ? 'usuarios' : null;
@@ -625,16 +618,12 @@
     if (typeof _rs === 'function' && !_rs.__vpPr) {
       var envuelto = async function () {
         var antes = activo();
-        var pendiente = sinVerificar();
-        var uid = this.uid, gen = this.gen;
         var r = await _rs.apply(this, arguments);
-        if (uid !== this.uid || gen !== this.gen) return r;
         if (!antes && activo()) {
           listoPremium();
           try { if (window.VPMascota && typeof VPMascota.revisar === 'function') VPMascota.revisar(); } catch (e) {}
-          if (!pendiente) avisar('Premium activo', { subtitle: 'Menú Digital, chat con IA, escaneos sin límite y estadísticas detalladas', variant: 'toast-success', icon: ico('check'), duration: 4600 });
+          avisar('Premium activo', { subtitle: 'Menú Digital, chat con IA, escaneos sin límite y estadísticas detalladas', variant: 'toast-success', icon: ico('check'), duration: 4600 });
         }
-        if (pendiente && r && !activo() && typeof window.render === 'function') window.render();
         pintarMascota();
         return r;
       };
@@ -736,7 +725,6 @@
     if (cfgh && !cfgh.__vpPr) {
       var env2 = function () {
         var html = cfgh.apply(this, arguments);
-        if (sinVerificar()) return '<h1 class="page-title">Estadísticas</h1><p class="page-sub">Verifica tu membresía para ver tus estadísticas.</p><button class="btn ghost" onclick="VPPremium.abrir(&quot;stats&quot;)">Verificar membresía</button>';
         if (activo() || typeof html !== 'string') return html;
         return html.replace('onclick="mdActivate()" disabled', 'onclick="mdActivate()"');
       };
@@ -836,7 +824,6 @@
     if (rs && !rs.__vpPr) {
       var envuelto = function () {
         var html = rs.apply(this, arguments);
-        if (sinVerificar()) return '<h1 class="page-title">Estadísticas</h1><p class="page-sub">Verifica tu membresía para ver tus estadísticas.</p><button class="btn ghost" onclick="VPPremium.abrir(&quot;stats&quot;)">Verificar membresía</button>';
         if (activo() || typeof html !== 'string') return html;
         return "<h1 class=\"page-title\">Estadísticas</h1><p class=\"page-sub\">Conoce cómo va tu negocio</p><style>.vp-stats-lock{max-width:740px;margin:20px auto;background:var(--surface,#fff);border:1px solid var(--border,#e4e9ee);border-radius:var(--radius-card,20px);overflow:hidden;font-family:inherit;color:var(--ink)}.vp-stats-lock-art{height:132px;padding:24px 26px 0;background:var(--surface-alt,#f6f8fa);border-bottom:1px solid var(--border,#e4e9ee);position:relative;overflow:hidden}.vp-stats-lock-badge{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}.vp-stats-lock-badge>span{width:54px;height:54px;background:var(--surface,#fff);border:1px solid var(--border,#e4e9ee);border-radius:17px;display:flex;align-items:center;justify-content:center;color:var(--whatsapp,#16c15b);box-shadow:0 4px 16px #142b1d09}.vp-stats-lock-badge svg{width:25px;height:25px}.vp-stats-lock-copy{padding:26px;text-align:center}.vp-stats-lock-tag{display:inline-block;color:var(--vp-pr-verde,#16A34A);background:var(--vp-pr-suave,#E8F9EF);padding:5px 10px;border-radius:8px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.vp-stats-lock-copy h2{font-size:20px;font-weight:800;line-height:1.3;margin:12px 0 8px;color:var(--ink)}.vp-stats-lock-copy p{font-size:14px;line-height:1.6;color:var(--ink-soft);max-width:400px;margin:0 auto 20px}.vp-stats-lock-copy .btn{font-family:inherit;min-height:44px;padding-left:24px;padding-right:24px}.vp-stats-lock-note{display:block;font-size:12px;color:var(--ink-soft);margin-top:13px}@media(max-width:480px){.vp-stats-lock{margin:14px 0}.vp-stats-lock-copy{padding:22px 18px}.vp-stats-lock-art{height:112px}.vp-stats-lock-copy .btn{width:100%}}</style><section class=\"vp-stats-lock\" aria-labelledby=\"vpStatsLockTitle\"><div class=\"vp-stats-lock-art\" aria-hidden=\"true\"><div class=\"vp-stats-lock-badge\"><span><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"5\" y=\"10\" width=\"14\" height=\"11\" rx=\"3\"/><path d=\"M8 10V7a4 4 0 0 1 8 0v3M12 14v3\"/></svg></span></div></div><div class=\"vp-stats-lock-copy\"><span class=\"vp-stats-lock-tag\">Función Premium</span><h2 id=\"vpStatsLockTitle\">Tu negocio, en números</h2><p>Consulta tus ventas, ganancias y gráficas.<br>Todas las estadísticas están incluidas en Premium.</p><button type=\"button\" class=\"btn primary\" onclick=\"VPPremium.abrir('stats')\">Contratar Premium</button><span class=\"vp-stats-lock-note\">Despliega el detalle cuando lo necesites.</span></div></section>";
       };
@@ -1013,7 +1000,6 @@
     chat: 'Pregúntale a la IA cuánto vendiste, cuánto ganaste o qué productos se están agotando.',
     escaner: 'Toma una foto de tu carta y la IA carga los productos y precios por ti.',
     stats: 'Consulta cuánto vendes, cuánto ganas y cuáles son tus productos más vendidos.',
-    comandas: 'Toma pedidos en mesas, bar o venta libre y envíalos a cocina.',
     usuarios: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.'
   };
   /* Esta lista es la de la pantalla "Funciones premium". */
@@ -1037,8 +1023,6 @@
       '.vp-pr-v2 .vp-prf-card:nth-child(5),.vp-pr-v2 .vp-prf-card:nth-child(6){animation-delay:.43s}',
       '@media (prefers-reduced-motion: reduce){.vp-pr-v2 .vp-prf-card{animation:none;}}',
       '@media (min-width:700px){.vp-pr-v2{max-height:calc(100vh - 120px);max-height:calc(100dvh - 120px);}.vp-pr-v2 .vp-prf-grid{gap:12px;}}',
-      '.vp-prf-comandas-icon{display:grid;place-items:center;width:100%;height:100%;color:var(--brand-ink);background:var(--brand-soft);}',
-      '.vp-prf-comandas-icon svg{width:42px;height:42px;}',
       '.vp-prf{max-width:900px;margin:0 auto;}',
       '.vp-prf-banner{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);',
       'padding:12px 14px;margin:0 0 16px;box-shadow:var(--shadow-card);}',
@@ -1071,12 +1055,10 @@
   }
 
   function tarjetasImagenHTML() {
-    var orden = window.VPComandas ? ORDEN_SECCION.concat('comandas') : ORDEN_SECCION;
-    var icono = fn('icon');
-    return orden.map(function (k) {
+    return ORDEN_SECCION.map(function (k) {
       var f = FUNCIONES[k];
       return '<button type="button" class="vp-prf-card" onclick="VPPremium.irA(\'' + k + '\')">' +
-        '<span class="vp-prf-img">' + (IMAGENES[k] || (icono ? '<span class="vp-prf-comandas-icon">' + icono(f.ico) + '</span>' : '')) + '</span>' +
+        '<span class="vp-prf-img">' + IMAGENES[k] + '</span>' +
         '<span class="vp-prf-body"><b>' + esc(f.titulo) + '</b><span>' + esc(DESC_CORTA[k]) + '</span></span>' +
       '</button>';
     }).join('');
@@ -1102,7 +1084,13 @@
         '<div class="vp-prf-banner-txt"><b>' + esc(precioTxt()) + ' al mes</b><span>Cancela cuando quieras</span></div>' +
         '<button type="button" onclick="VPPremium.abrir()">Contratar</button></div>';
     }
-    var tarjetas = tarjetasImagenHTML();
+    var tarjetas = ORDEN_SECCION.map(function (k) {
+      var f = FUNCIONES[k];
+      return '<button type="button" class="vp-prf-card" onclick="VPPremium.irA(\'' + k + '\')">' +
+        '<span class="vp-prf-img">' + IMAGENES[k] + '</span>' +
+        '<span class="vp-prf-body"><b>' + esc(f.titulo) + '</b><span>' + esc(DESC_CORTA[k]) + '</span></span>' +
+      '</button>';
+    }).join('');
     return '<div class="vp-prf">' + cab + banner + '<div class="vp-prf-grid">' + tarjetas + '</div></div>';
   }
 
@@ -1257,7 +1245,6 @@
       setTimeout(function () { irA(clave); }, 320);
       return;
     }
-    if (clave === 'comandas') { if (window.VPComandas) VPComandas.abrir(); return; }
     if (clave === 'menu') { if (ir) ir('menu'); return; }
     if (clave === 'chat') {
       puerta('chat', function () { if (window.VPMascota && typeof VPMascota.abrir === 'function') VPMascota.abrir(); });
