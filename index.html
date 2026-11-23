@@ -2485,6 +2485,8 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .md-del-info{ display:grid; gap:8px; background:var(--surface-alt); border-radius:14px; padding:11px 13px; margin-bottom:16px; }
   .md-del-info div{ display:flex; gap:9px; align-items:flex-start; font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.45; }
   .md-del-info svg{ width:16px; height:16px; flex-shrink:0; color:var(--ink-soft); margin-top:1px; }
+  .md-del-rates-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:16px 0; }
+  .md-del-rates-actions{ display:flex; flex-wrap:wrap; gap:8px; }
   .md-del-map-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin:0 2px 8px; }
   .md-del-map-head b{ display:block; font-size:14px; font-weight:800; }
   .md-del-map-head small{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-top:1px; }
@@ -15911,10 +15913,26 @@ function mdBizPin(cfg){
   const d = ((cfg || mdCfg()).delivery) || {};
   return mdValidLatLng(d.lat, d.lng);
 }
+const MD_DELIVERY_RATES = [25, 30, 35, 40, 45, 50, 55, 60, 65, 70];
+function mdDeliveryQuote(d, loc){
+  const origin = mdValidLatLng(d.lat, d.lng);
+  const target = loc && mdValidLatLng(loc.lat, loc.lng);
+  if(!origin || !target) return null;
+  const rad = Math.PI / 180;
+  const h = Math.sin((target.lat - origin.lat) * rad / 2) ** 2 +
+    Math.cos(origin.lat * rad) * Math.cos(target.lat * rad) * Math.sin((target.lng - origin.lng) * rad / 2) ** 2;
+  const km = Math.round(12742 * Math.asin(Math.sqrt(Math.min(1, h))) * 1000) / 1000;
+  const rates = d.rates;
+  const fee = km > rates.length ? rates[rates.length - 1] * km / rates.length : rates[Math.max(1, Math.ceil(km)) - 1];
+  return { km, fee:round2(fee) };
+}
 function mdCleanDelivery(d){
   d = d || {};
   const p = mdValidLatLng(d.lat, d.lng);
-  return { on: d.on === true ? true : (d.on === false ? false : null), lat: p ? p.lat : null, lng: p ? p.lng : null };
+  const rates = Array.isArray(d.rates) && d.rates.length > 0 && d.rates.length <= 100 &&
+    d.rates.every(value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 10000)
+    ? d.rates.map(round2) : MD_DELIVERY_RATES.slice();
+  return { on: d.on === true ? true : (d.on === false ? false : null), lat: p ? p.lat : null, lng: p ? p.lng : null, rates };
 }
 
 /* ---------- Mapa con el "monito" (Leaflet + OpenStreetMap) ----------
@@ -16185,7 +16203,7 @@ let mdDelDraft = null;
 function mdOpenDeliveryForm(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
   const d = mdCfg().delivery;
-  mdDelDraft = { on:d.on, lat:d.lat, lng:d.lng };
+  mdDelDraft = { on:d.on, lat:d.lat, lng:d.lng, rates:d.rates.slice() };
   mdRenderDeliveryForm();
 }
 function mdRenderDeliveryForm(){
@@ -16210,7 +16228,6 @@ function mdRenderDeliveryForm(){
     ${d.on === true ? `
       <div class="md-del-info">
         <div>${icon('monito')}<span>El cliente marca en un mapa dónde está.</span></div>
-        <div>${icon('whatsapp')}<span>El costo del envío lo pones tú al confirmar el pedido y le llega por WhatsApp.</span></div>
       </div>
     ` : ''}
     ${d.on === null ? '' : `
@@ -16222,17 +16239,36 @@ function mdRenderDeliveryForm(){
       <button type="button" class="btn ghost block md-del-gps" onclick="mdDelGps(this)">${icon('locate')} Usar mi ubicación actual</button>
       <button type="button" class="md-del-manual" onclick="mdDelManual()">O pega un link de Google Maps</button>
     `}
+    ${d.on === true ? `
+      <div class="md-del-rates-row">
+        <b>Editar tarifas por kilómetro</b>
+        <button type="button" class="btn ghost" onclick="mdOpenDeliveryRates()" aria-label="Editar tarifas por kilómetro">Editar</button>
+      </div>
+    ` : ''}
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="mdCloseDeliveryForm()">Cancelar</button>
       <button class="btn primary block" id="mdDelSave" onclick="mdSaveDelivery()" ${(d.on === null || !pin) ? 'disabled' : ''}>Guardar</button>
     </div>
     ${(d.on !== null && !pin) ? `<p class="md-del-falta">${icon('alert')} Marca en el mapa dónde está tu negocio para poder guardar.</p>` : ''}
   `, { dismissible:true });
-  if(d.on !== null){
-    mdMapMount('biz', document.getElementById('mdDelMap'), { editable:true, pin, center:pin, tip:'Toca el mapa donde está tu negocio',
+  const mapEl = document.getElementById('mdDelMap');
+  if(!mapEl) return;
+  // Deja pintar la hoja antes de cargar Leaflet o inicializar el mapa.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const isCurrent = () => mdDelDraft === d && mapEl === document.getElementById('mdDelMap');
+    if(!isCurrent()) return;
+    const startPin = mdValidLatLng(d.lat, d.lng);
+    mdMapMount('biz', mapEl, { editable:true, pin:startPin, center:startPin, tip:'Toca el mapa donde está tu negocio',
       errText:'Sin mapa, usa el botón de abajo para tomar tu ubicación.',
-      onPick:p => { mdDelDraft.lat = p.lat; mdDelDraft.lng = p.lng; mdDelPaintSave(); } });
-  }
+      onPick:p => { d.lat = p.lat; d.lng = p.lng; mdDelPaintSave(); }
+    }).then(map => {
+      if(!map || !isCurrent()) return;
+      const currentPin = mdValidLatLng(d.lat, d.lng);
+      if(currentPin && (currentPin.lat !== startPin?.lat || currentPin.lng !== startPin?.lng)){
+        map.setPin(currentPin, 17);
+      }
+    });
+  }));
 }
 /* Prende o apaga el botón Guardar según si ya hay ubicación. Se usa en vez
    de volver a pintar toda la hoja, para que el mapa no parpadee. */
@@ -16260,6 +16296,50 @@ function mdCloseDeliveryForm(){
   },
   () => { mdRenderDeliveryForm(); },
   () => { mdDelDraft = null; closeModal(); });
+}
+function mdOpenDeliveryRates(){
+  if(!mdDelDraft || mdDelDraft.on !== true) return;
+  openModal(`
+    <div class="sheet-header">
+      <div class="sheet-header-left">
+        <button type="button" class="sheet-back" aria-label="Volver a servicio a domicilio" onclick="mdBackFromDeliveryRates()">${icon('chevronLeft')}</button>
+        <h2>Tarifas por distancia</h2>
+      </div>
+    </div>
+    <p>Configura el precio hasta cada kilómetro. La distancia se mide en línea recta.</p>
+    <div class="field" id="mdDelRates">${mdDelRatesHTML()}</div>
+    <div class="md-del-rates-actions">
+      <button type="button" class="btn ghost" onclick="mdDelRateStep(1)">Agregar kilómetro</button>
+      <button type="button" class="btn ghost" onclick="mdDelRateStep(-1)">Quitar último</button>
+    </div>
+    <p>Si el cliente está más lejos, los kilómetros adicionales se cobran al precio promedio por kilómetro de la última tarifa.</p>
+    <div class="sheet-actions">
+      <button type="button" class="btn primary block" onclick="mdSaveDeliveryRates()">Guardar</button>
+    </div>
+  `, { dismissible:false });
+}
+function mdDeliveryRatesValid(rates){
+  return rates.every(rate => Number.isFinite(rate) && rate >= 0 && rate <= 10000);
+}
+function mdSaveDeliveryRates(){
+  if(!mdDeliveryRatesValid(mdDelDraft.rates)){
+    toast('Escribe un precio válido en cada kilómetro', { icon:icon('alert'), variant:'toast-danger' });
+    return;
+  }
+  mdBackFromDeliveryRates();
+}
+function mdBackFromDeliveryRates(){
+  mdRenderDeliveryForm();
+  document.querySelector('.md-del-rates-row button')?.focus({ preventScroll:true });
+}
+function mdDelRatesHTML(){
+  return mdDelDraft.rates.map((rate, i) => `<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0">Hasta ${i + 1} km <span style="display:flex;align-items:center;gap:6px">$ <input style="width:100px" aria-label="Precio hasta ${i + 1} km en pesos" type="number" min="0" max="10000" step="0.01" inputmode="decimal" value="${Number.isFinite(rate) ? rate : ''}" oninput="mdDelDraft.rates[${i}]=this.valueAsNumber"></span></label>`).join('');
+}
+function mdDelRateStep(dir){
+  const rates = mdDelDraft.rates;
+  if(dir > 0 && rates.length < 100) rates.push(Math.min(10000, round2((rates[rates.length - 1] || 0) + 5)));
+  if(dir < 0 && rates.length > 1) rates.pop();
+  document.getElementById('mdDelRates').innerHTML = mdDelRatesHTML();
 }
 function mdDelSet(on){ if(!mdDelDraft) return; mdDelDraft.on = on; vibrate(8); mdRenderDeliveryForm(); }
 function mdDelClear(){
@@ -16338,7 +16418,11 @@ function mdSaveDelivery(){
     return;
   }
   const cfg = mdCfg();
-  cfg.delivery = mdCleanDelivery({ on:d.on, lat:d.lat, lng:d.lng });
+  if(d.on && !mdDeliveryRatesValid(d.rates)){
+    toast('Escribe un precio válido en cada kilómetro', { icon:icon('alert'), variant:'toast-danger' });
+    return;
+  }
+  cfg.delivery = mdCleanDelivery(d);
   mdSaveCfg(cfg);
   mdDelDraft = null;
   closeModal();
@@ -18209,11 +18293,11 @@ function mdiServiceHTML(o){
 function mdiDeliveryHTML(o){
   if(!mdiIsDelivery(o)) return '';
   const loc = o.customer.loc;
-  const editable = o.status === 'nuevo';
+  const editable = o.status === 'nuevo' && o.autoDelivery !== true;
   const fee = mdiHasFee(o) ? mdiDeliveryFee(o) : null;
   return `
     <div class="mdi-deliv">
-      <div class="mdi-deliv-alert">${icon('truck')}<span><b>Este servicio es a domicilio</b>${editable ? 'Revisa la ubicación del cliente y escribe cuánto cobras por llevarlo.' : 'Llévalo a la ubicación que marcó el cliente.'}</span></div>
+      <div class="mdi-deliv-alert">${icon('truck')}<span><b>Este servicio es a domicilio</b>${editable ? 'Revisa la ubicación del cliente y escribe cuánto cobras por llevarlo.' : o.autoDelivery ? 'El envío se calculó por distancia.' : 'Llévalo a la ubicación que marcó el cliente.'}</span></div>
       ${loc ? `
         <div class="md-map mdi-map" id="mdiMap">${mdMapPH()}</div>
         ${loc.ref ? `<div class="mdi-ref">${icon('pin')}<span><small>Dirección o referencias</small>${escapeHtml(loc.ref)}</span></div>` : ''}
@@ -18366,7 +18450,7 @@ function mdiSetFee(id, v){
   const raw = String(v == null ? '' : v).trim().replace(',', '.');
   const n = raw === '' ? null : parseFloat(raw);
   MDI.update(id, o => {
-    if(o.status !== 'nuevo') return;
+    if(o.status !== 'nuevo' || o.autoDelivery === true) return;
     if(n == null || !isFinite(n) || n < 0) delete o.deliveryFee; else o.deliveryFee = round2(n);
   });
   mdiNeedClear('mdiFeeBox');
@@ -19711,6 +19795,7 @@ dmConfirmHTML = function(){
   const co = dmCoState();
   const del = dmDeliveryOn();
   if(!del) co.svc = 'llevar';
+  const envio = co.svc === 'domicilio' ? mdDeliveryQuote(mdCfg().delivery, co.loc) : null;
   const nombre = (bizData().name || '').trim();
   const t = mdTotals(dm.cart);
   const n = dm.cart.length;
@@ -19738,8 +19823,9 @@ dmConfirmHTML = function(){
     <button type="button" class="dm-co-sum" onclick="dmOpenSheet('cart')">
       <span class="dm-co-sum-ico">${icon('bag')}</span>
       <span class="dm-co-sum-txt"><b>${n} producto${n === 1 ? '' : 's'}</b><small>Toca para ver o cambiar tu pedido</small></span>
-      <b class="dm-co-sum-total">${formatMoney(t.total)}</b>
+      <b class="dm-co-sum-total">${formatMoney(t.total + (envio?.fee ?? 0))}</b>
     </button>
+    ${step === 2 && envio ? `<div class="dm-banner fee">${icon('truck')}<span>Envío incluido en el total · ${formatMoney(envio.fee)}</span></div>` : ''}
 
     ${step === 1 ? `
     <div class="dm-co-sec" id="dmCoSvc">
@@ -19763,7 +19849,7 @@ dmConfirmHTML = function(){
       <div class="field" style="margin:10px 0 0;">
         <input id="dmRef" type="text" maxlength="200" autocomplete="street-address" placeholder="Dirección o referencias (opcional)" value="${escapeHtml(co.ref)}" oninput="dmCoState().ref=this.value">
       </div>
-      <div class="dm-banner fee">${icon('truck')}<span><b>El costo de envío te lo damos en el chat</b>Al confirmar tu pedido, el negocio te dirá por WhatsApp cuánto cuesta llevarlo.</span></div>
+      <div class="dm-banner fee">${icon('truck')}<span id="dmDeliveryQuote" aria-live="polite">${dmDeliveryQuoteText(envio)}</span></div>
     </div>` : ''}
 
     <div class="field dm-co-sec" style="margin-bottom:0;">
@@ -19824,6 +19910,7 @@ function dmCoSvc(id){
   const del = document.getElementById('dmCoDel');
   if(!del) return;
   del.hidden = id !== 'domicilio';
+  dmCoLocPaint();
   if(id === 'domicilio'){
     dmCoMountMap();
     setTimeout(() => { try{ del.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'start' }); }catch(e){} }, 90);
@@ -19880,8 +19967,16 @@ function dmPayInfoHTML(){
   }
   return '';
 }
+function dmDeliveryQuoteText(envio){
+  return envio ? 'Envío: ' + formatMoney(envio.fee) + ' · ' + envio.km.toFixed(2) + ' km' : 'Marca tu ubicación para calcular el envío.';
+}
 function dmCoLocPaint(){
   const co = dmCoState();
+  const envio = co.svc === 'domicilio' ? mdDeliveryQuote(mdCfg().delivery, co.loc) : null;
+  const quote = document.getElementById('dmDeliveryQuote');
+  if(quote) quote.textContent = dmDeliveryQuoteText(envio);
+  const total = document.querySelector('.dm-co-sum-total');
+  if(total) total.textContent = formatMoney(mdTotals(dm.cart).total + (envio?.fee ?? 0));
   const st = document.getElementById('dmLocSt');
   if(st){ st.classList.toggle('ok', !!co.loc); st.innerHTML = co.loc ? icon('check') + 'Ubicación marcada' : 'Aún no marcas tu ubicación'; }
   if(co.loc){ const box = document.getElementById('dmCoDel'); if(box) box.classList.remove('need'); }
@@ -19938,13 +20033,18 @@ dmSendWhatsApp = async function(){
     service: co.svc, payment: co.pay, cashWith: co.pay === 'efectivo' ? co.cashWith : null,
     loc: co.svc === 'domicilio' && co.loc ? { lat:co.loc.lat, lng:co.loc.lng, ref:(co.ref || '').trim() } : null
   });
+  if(co.svc === 'domicilio'){
+    const envio = mdDeliveryQuote(cfg.delivery, co.loc);
+    if(!envio){ dmToast('No se pudo calcular el envío. Revisa la ubicación.', 'warn'); return; }
+    order.deliveryFee = envio.fee;
+    order.autoDelivery = true;
+  }
   if(co.code && co.pay === 'transferencia') order.code = co.code;   /* el mismo que vio como concepto */
   order.waText = mdiMessage(order);          /* solo el número de pedido */
   const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
-  /* En este mismo dispositivo el pedido entra solo a "Pedidos entrantes". */
-  mdiReceive(order, 'menu');
-  const enEsteAparato = !!MDI.get(order.id);
   const conNube = !!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY);
+  if(!conNube || !order.autoDelivery) mdiReceive(order, 'menu');
+  const enEsteAparato = !order.autoDelivery && !!MDI.get(order.id);
   const listo = msg => {
     dm.cart = [];
     dm.co = null;                 /* el nombre queda guardado en este celular */
@@ -19974,20 +20074,20 @@ dmSendWhatsApp = async function(){
   dm.sending = true;
   if(btn){ btn.disabled = true; btn.textContent = 'Enviando tu pedido…'; }
   if(errBox) errBox.style.display = 'none';
-  let ok = false;
+  let ok = false, sendError = '';
   try{
     ok = await Promise.race([
       typeof mdiCloudSend === 'function' ? mdiCloudSend(order) : Promise.resolve(false),
       new Promise(r => setTimeout(() => r(false), 15000))
     ]);
-  }catch(e){ ok = false; }
+  }catch(e){ sendError = e.message || ''; }
   dm.sending = false;
   if(!ok){
     try{ if(win && !win.closed) win.close(); }catch(e){}
     if(btn && btn.isConnected){ btn.disabled = false; btn.innerHTML = btnHTML; }
     if(errBox && errBox.isConnected) errBox.style.display = '';
     dmVib([20, 40, 20]);
-    dmToast('No pudimos enviar tu pedido. Revisa tu internet e inténtalo otra vez', 'warn');
+    dmToast(sendError || 'No pudimos enviar tu pedido. Revisa tu internet e inténtalo otra vez', 'warn');
     return;
   }
   dmVib([60, 40, 60]);
@@ -25032,7 +25132,7 @@ function mdPublicSnapshot(){
     v:1,
     cfg:{ paused:!!cfg.paused, color:cfg.color, design:mdValidDesign(cfg.design), hours:cfg.hours,
          /* Servicio a domicilio: si lo hay y dónde empieza el mapa del cliente */
-         delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null },
+         delivery:{ on: cfg.delivery.on === true, lat: cfg.delivery.on === true ? cfg.delivery.lat : null, lng: cfg.delivery.on === true ? cfg.delivery.lng : null, rates:cfg.delivery.rates },
          /* Formas de pago: la CLABE solo se publica si aceptas transferencias */
          /* El banner y las redes viajan junto con el resto del menú */
          banner: mdCleanBanner(cfg.banner),
@@ -25360,6 +25460,7 @@ function mdiCloudSend(order){
     p_menu_id: dm.id,
     p_order: {
       v:1, id:order.id, code:order.code, createdAt:order.createdAt,
+      deliveryQuote:order.autoDelivery ? order.deliveryFee : undefined,
       customer: mdiCleanCustomer(order.customer),   /* nombre, tipo de servicio, pago y ubicación */
       original:(order.original || []).slice(0, 150)
     }
@@ -25371,7 +25472,11 @@ function mdiCloudSend(order){
       keepalive: body.length < 60000,
       headers:{ apikey:key, Authorization:'Bearer ' + key, 'Content-Type':'application/json', Accept:'application/json' },
       body
-    }).then(r => r.ok).catch(() => false);
+    }).then(async r => {
+      const result = await r.json().catch(() => null);
+      if(result?.ok === false && order.autoDelivery) throw new Error(result.error || '');
+      return r.ok && result?.ok === true;
+    }).catch(error => { if(order.autoDelivery) throw error; return false; });
   }catch(e){ return Promise.resolve(false); }
 }
 
@@ -25404,7 +25509,8 @@ function mdiFromCloud(row){
       customer: customer,
       original: lines,
       lines: lines.map(l => Object.assign({}, l)),
-      status:'nuevo', service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true
+      status:'nuevo', service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true,
+      autoDelivery:d.autoDelivery === true, deliveryFee:d.autoDelivery === true ? d.deliveryFee : undefined
     };
   }catch(e){ return null; }
 }
