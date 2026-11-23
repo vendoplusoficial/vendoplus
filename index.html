@@ -6719,15 +6719,13 @@ try{ Object.defineProperty(navigator, 'vibrate', { value:function(){ return fals
    tienen su botón en el menú lateral. */
 const EXTRA_VIEWS = {};
 function modoNavegacionPOS(){
-  const usuario = activeUser();
-  if(!usuario || usuario.role === 'dueno') return '';
-  const puesto = window.VPComandas?.puestoVerificado?.();
-  if(!puesto) return 'pendiente';
-  return puesto === 'mesero' ? 'mesero' : '';
+  // Comandas temporalmente desactivadas: todos los usuarios mantienen la navegación POS normal.
+  return '';
 }
 function vistaPermitidaPOS(vista, modo){
-  if(modo === 'pendiente') return 'puesto_pendiente';
-  return modo === 'mesero' && vista !== 'history' ? 'comandas_mesero' : vista;
+  // No permitir pantallas de comandas ni rutas guardadas de mesero/cocina.
+  if(vista === 'puesto_pendiente' || String(vista).startsWith('comandas_')) return 'sale';
+  return vista;
 }
 
 function goTo(view){
@@ -29160,7 +29158,7 @@ function cartSanitize(){
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
 <script src="vendo-premium.js?v=20261121-comandas"></script>
-<script src="vendo-comandas.js?v=14"></script>
+<!-- Comandas desactivadas temporalmente: módulo no cargado. No afecta vendo-mesas.js. -->
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
