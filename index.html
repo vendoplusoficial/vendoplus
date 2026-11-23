@@ -16629,7 +16629,9 @@ function mdPayClabeInput(el){
   const b = document.getElementById('mdPayBank'); if(b){ const n = mdBankOf(raw); b.textContent = n; b.hidden = !n; }
   clearFieldError('mdPayClabeField');
 }
+const STRIPE_MENU_ENABLED = false;
 async function stripeMenuRequest(action){
+  if(!STRIPE_MENU_ENABLED) throw new Error('Stripe está desactivado en el Menú Digital.');
   const { data } = await Cloud.sb.auth.getSession();
   if(!data?.session?.access_token) throw new Error('Inicia sesión para enlazar Stripe.');
   const response = await fetch(mpBase() + '/functions/v1/stripe-menu-connect', {
@@ -16652,7 +16654,7 @@ async function stripeMenuRequest(action){
 // Reuse the result from Configuración briefly, scoped to the signed-in user.
 let stripeMenuSnapshot;
 function stripeMenuPrefetch(){
-  if(location.origin !== 'https://vendoplusoficial.com' || !Cloud.uid || !can('gestionarProductos')) return;
+  if(!STRIPE_MENU_ENABLED || location.origin !== 'https://vendoplusoficial.com' || !Cloud.uid || !can('gestionarProductos')) return;
   if(stripeMenuSnapshot?.uid === Cloud.uid && Date.now() < stripeMenuSnapshot.expires) return stripeMenuSnapshot;
   const snapshot = { uid:Cloud.uid, expires:Date.now() + 15000 };
   stripeMenuSnapshot = snapshot;
@@ -16668,7 +16670,7 @@ function stripeMenuPrefetch(){
 }
 async function stripeMenuStatus(){
   const panel = document.getElementById('stripeMenuTest');
-  if(!panel || panel.dataset.statusRequested) return;
+  if(!STRIPE_MENU_ENABLED || !panel || panel.dataset.statusRequested) return;
   panel.dataset.statusRequested = '1';
   const status = panel.querySelector('.md-stripe-status');
   const button = panel.querySelector('.md-stripe-connect');
@@ -16794,7 +16796,7 @@ function mdRenderPayForm(){
           <p class="md-mp-copy">Enlaza tu cuenta de Mercado Pago para que tus clientes puedan pagar con tarjeta.</p>
           <button type="button" class="md-mp-action" onclick="mpOpenForm()">Enlazar</button>`}
       </div>` : ''}
-    ${card && location.origin === 'https://vendoplusoficial.com' ? `
+    ${card && STRIPE_MENU_ENABLED && location.origin === 'https://vendoplusoficial.com' ? `
       <div class="md-stripe-reveal ${d.on === true ? 'is-open' : ''}" ${d.on === true ? '' : 'inert'}>
         <div>
           <div id="stripeMenuTest">
@@ -20619,7 +20621,7 @@ function dmCheckStripe(co){
   dm.stripeTest = false;
   co.stripeError = false;
   co.stripeCheck = null;
-  if(co.cardFallback || mdCfg().payments.card !== true || !Cloud.sb) return;
+  if(!STRIPE_MENU_ENABLED || co.cardFallback || mdCfg().payments.card !== true || !Cloud.sb) return;
   const check = dmStripeTestRequest({ action:'availability' }, 13000);
   co.stripeCheck = check;
   const update = result => {
@@ -20680,7 +20682,7 @@ function dmMpCheckout(co){
   return mpVisible() && !co.cardFallback && co.pay === 'tarjeta' && !!(pm.mp && pm.mp.on);
 }
 function dmStripeTestCheckout(co){
-  return dm.stripeTest && !co.cardFallback && co.pay === 'tarjeta';
+  return STRIPE_MENU_ENABLED && dm.stripeTest && !co.cardFallback && co.pay === 'tarjeta';
 }
 function dmMpButton(co){
   if(co.stripeCheck && co.pay === 'tarjeta') return 'Verificando tarjeta…';
@@ -20781,6 +20783,7 @@ function dmCoNeed(id, msg){
   try{ el.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'center' }); }catch(e){}
 }
 async function dmStripeTestRequest(payload, timeout = 35000){
+  if(!STRIPE_MENU_ENABLED) return null;
   const auth = await Cloud.sb?.auth.getSession();
   const token = auth?.data?.session?.access_token;
   if(!token && payload.action === 'availability') return { available:false };
@@ -20797,6 +20800,7 @@ async function dmStripeTestRequest(payload, timeout = 35000){
   return result;
 }
 async function dmStripeTestReturn(){
+  if(!STRIPE_MENU_ENABLED) return;
   const url = new URL(location.href);
   const sessionId = url.searchParams.get('stripe_test_session');
   const cancelled = url.searchParams.has('stripe_test_cancel');
@@ -29418,7 +29422,7 @@ html{ -webkit-text-size-adjust:100%; }
   mdiWatch();
   const regreso = new URL(location.href);
   const stripeReturn = regreso.searchParams.get('stripe_menu');
-  if(stripeReturn === 'return' || stripeReturn === 'retry'){
+  if(STRIPE_MENU_ENABLED && (stripeReturn === 'return' || stripeReturn === 'retry')){
     regreso.searchParams.delete('stripe_menu');
     history.replaceState(null, '', regreso);
     const openStripeSettings = () => {

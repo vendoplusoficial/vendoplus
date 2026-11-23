@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
+const STRIPE_MENU_ENABLED = false;
 const origin = 'https://vendoplusoficial.com';
 const headers = {
   'Access-Control-Allow-Origin': origin,
@@ -21,6 +22,7 @@ class StripeError extends Error {
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (request.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
+  if (!STRIPE_MENU_ENABLED) return json({ error: 'Stripe está desactivado en el Menú Digital.' }, 503);
 
   const token = request.headers.get('Authorization')?.match(/^Bearer (.+)$/i)?.[1];
   if (!token) return json({ error: 'Inicia sesión en VendoPlus' }, 401);

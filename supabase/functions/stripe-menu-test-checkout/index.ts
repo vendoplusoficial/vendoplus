@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
+const STRIPE_MENU_ENABLED = false;
 const origin = 'https://vendoplusoficial.com';
 const headers = {
   'Access-Control-Allow-Origin': origin,
@@ -12,6 +13,10 @@ const json = (data: object, status = 200) => Response.json(data, { status, heade
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
+  if (!STRIPE_MENU_ENABLED) {
+    if (req.headers.has('x-stripe-test-worker')) return json({ checked: 0, failures: 0 });
+    return json({ available: false, error: 'Stripe está desactivado en el Menú Digital.' }, 503);
+  }
   const token = req.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1];
   const key = Deno.env.get('STRIPE_MENU_TEST_SECRET_KEY') ?? '';
   if (!/^(sk|rk)_test_/.test(key)) return json({ error: 'Stripe de prueba no está configurado.' }, 503);
