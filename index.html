@@ -18532,7 +18532,7 @@ function mdiMarkGone(id){ const l = mdiGoneList(); if(l.indexOf(id) < 0){ l.push
 function mdiRank(o){
   if(!o) return 0;
   if(o.status === 'cancelado') return 7;
-  if(o.saleId) return 6;
+  if(mdiIsPaid(o)) return 6;
   if(o.status === 'confirmado') return o.pendingNext ? 3 : 4;
   if(o.status === 'rechazado') return o.pendingNext ? 2 : 5;
   return 1;
@@ -18548,7 +18548,7 @@ const MDI_STATUS = {
    Pendiente de pago = ya lo confirmaste pero el cliente aún no paga (no cuenta como venta).
    Finalizado = confirmaste el pago del cliente (ya es venta). */
 function mdiStage(o){
-  if(o && o.status === 'confirmado') return mdiIsPaid(o) ? { id:'finalizado', label:'Cobrado', cls:'ok' } : { id:'pendiente', label:'Por cobrar', cls:'pend' };
+  if(o && o.status === 'confirmado') return mdiIsPaid(o) ? { id:'finalizado', label:o.stripeTest ? 'Cobrado · prueba' : 'Cobrado', cls:'ok' } : { id:'pendiente', label:'Por cobrar', cls:'pend' };
   if(o && o.status === 'rechazado') return { id:'rechazado', label:'Rechazado', cls:'no' };
   if(o && o.status === 'cancelado') return { id:'cancelado', label:'Cancelado', cls:'cancel' };
   return { id:'nuevo', label:'Por aceptar', cls:'nuevo' };
@@ -19161,7 +19161,7 @@ function mdiDetailHTML(o){
   const st = mdiStage(o);
   const mod = mdiIsModified(o);
   const esNuevo = o.status === 'nuevo';
-  const editable = esNuevo && !(o.mpCheckout && (!mdiIsDelivery(o) || o.autoDelivery));
+  const editable = esNuevo && !o.stripeTest && !(o.mpCheckout && (!mdiIsDelivery(o) || o.autoDelivery));
   const pagoTarjeta = o.mp && o.mp.status === 'paid';
   const sale = o.saleId ? DB.getSales().find(s => s.id === o.saleId) : null;
   const srcTxt = { menu:'desde el Menú Digital', link:'con el link de WhatsApp', pegado:'pegado de WhatsApp' }[o.source] || 'desde el Menú Digital';
@@ -19220,7 +19220,7 @@ function mdiDetailHTML(o){
       <button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que lo aceptaste'}</button>` : ''}
     ${esNuevo && o.mpCheckout && mpVisible() ? `<div class="mdi-banner ${pagoTarjeta ? 'ok' : 'warn'}">${icon(pagoTarjeta ? 'check' : 'card')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pago con tarjeta pendiente'}</b>${pagoTarjeta ? 'Mercado Pago confirmó el pago.' : (mdiIsDelivery(o) && !o.autoDelivery ? 'Confirma el pedido y el costo de envío para habilitar el pago en el menú.' : 'Esperando la confirmación de Mercado Pago.')}</span></div>` : ''}
     ${o.status === 'confirmado' && !o.pendingNext ? `
-      ${mdiIsPaid(o) ? `<div class="mdi-banner ok">${icon('check')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pedido cobrado'}</b>${sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : ''}
+      ${mdiIsPaid(o) ? `<div class="mdi-banner ok">${icon('check')}<span><b>${pagoTarjeta ? 'El cliente ya pagó con tarjeta' : 'Pedido cobrado'}</b>${o.stripeTest ? 'El pago de prueba quedó confirmado en el pedido.' : sale ? 'Se registró como venta ' + orderNumberLabel(sale.number) + ' en Historial y Ventas.' : 'Se registró en Historial y Ventas.'}</span></div>` : ''}
       ${mdiIsPaid(o)
         ? `<button class="btn whatsapp block mdi-notify" onclick="mdiNotify('${o.id}')">${icon('whatsapp')} ${o.notifiedAt ? 'Avisar otra vez al cliente' : 'Avisar al cliente que está confirmado'}</button>`
         : mdiCobroHTML(o)}` : ''}
@@ -19409,11 +19409,10 @@ function mdiRemoveLine(){
    (con el costo de envío si es a domicilio). Ya no hay botón "Cobrar"
    aquí: no crea venta ni toca la caja ni las existencias. (Los pedidos que
    se cobraron con la versión anterior siguen ligados a su venta.) */
-function mdiIsPaid(o){ return !!(o && o.saleId); }
+function mdiIsPaid(o){ return !!(o && (o.saleId || (o.stripeTest && o.stripeTestConfirmedAt))); }
 function mdiConfirm(id){
   const o = MDI.get(id);
   if(!o || o.status !== 'nuevo') return;
-  if(o.stripeTest){ toast('Pedido de prueba de Stripe', { subtitle:'Este pedido no se registra como venta.' }); return; }
   /* Si falta algo: no deja pasar, regresa a ese lugar y lo marca en rojo */
   const falta = !o.lines.length ? { id:'mdiLines', msg:'El pedido no tiene productos' }
     : mdiMissing(o) ? { id:'mdiLines', msg:'Elige el producto que falta en tu catálogo' }
@@ -19441,7 +19440,7 @@ function mdiConfirm(id){
   vibrate([15, 60, 15]);
   /* Pago con tarjeta: el total que se va a cobrar queda fijado EN EL SERVIDOR.
      Es el único monto que Mercado Pago puede cobrar por este pedido. */
-  try{ const oc = MDI.get(id); if(oc) mpArm(oc, true); }catch(e){}
+  try{ const oc = MDI.get(id); if(oc && !oc.stripeTest) mpArm(oc, true); }catch(e){}
   MpWatch.pull();
   mdiAfterDecision(id);
 }
@@ -19454,7 +19453,7 @@ function mdiCharge(id){
   if(!o || o.status !== 'confirmado') return;
   if(o.pendingNext){ toast('Primero avisa al cliente y toca “Siguiente”', { icon:icon('alert') }); return; }
   if(mdiIsPaid(o)){ toast('Este pedido ya se cobró', { icon:icon('alert'), subtitle:'Lo encuentras en Historial' }); return; }
-  if(mdiPayId(o) === 'tarjeta' && (o.mpCheckout || o.mp?.status === 'paid')){
+  if(o.stripeTest || (mdiPayId(o) === 'tarjeta' && (o.mpCheckout || o.mp?.status === 'paid'))){
     mdiAskPaid(id);
     return;
   }
@@ -19515,6 +19514,14 @@ function mdiPayId(o){
 
 /** Textos de la tarjeta de cobro, uno por método de pago. */
 function mdiCobroTextos(o){
+  if(o.stripeTest){
+    return {
+      titulo:'Cobro · Tarjeta (Stripe)', ico:'card', sub:'pendiente de confirmar en el POS',
+      texto:'Stripe procesó el pago en modo de prueba. Confírmalo para finalizar el pedido.',
+      boton:'Confirmar pago con tarjeta', pregunta:'¿Confirmar el pago de prueba?',
+      aviso:'El pago de prueba solo se registra en el pedido.'
+    };
+  }
   const dom = mdiIsDelivery(o);
   const pid = mdiPayId(o);
   if(pid === 'transferencia'){
@@ -19562,7 +19569,7 @@ function mdiCobroHTML(o){
   const c     = o.customer || {};
   /* Escondido: no se pinta ninguna pantalla de Mercado Pago. El pedido se
      cobra como tarjeta normal, con "Ya me pagó con tarjeta". */
-  const mp    = (pid === 'tarjeta' && (mpVisible() || o.mpCheckout || o.mp?.status === 'paid')) ? mpOrderState(o) : null;
+  const mp    = (!o.stripeTest && pid === 'tarjeta' && (mpVisible() || o.mpCheckout || o.mp?.status === 'paid')) ? mpOrderState(o) : null;
   const id    = o.id;
 
   /* Mercado Pago ya confirmó el pago pero falta registrarlo (casi siempre
@@ -19626,7 +19633,7 @@ function mdiCobroHTML(o){
       ${notas.join('')}
       <div class="mdi-pay-acts">
         <button type="button" class="mdi-pay-go" onclick="mdiAskPaid('${id}')">${icon('check')} ${t.boton}</button>
-        <button type="button" class="mdi-pay-alt" onclick="mdiChargeOther('${id}')">Pagó de otra forma · abrir el cobro</button>
+        ${o.stripeTest ? '' : `<button type="button" class="mdi-pay-alt" onclick="mdiChargeOther('${id}')">Pagó de otra forma · abrir el cobro</button>`}
       </div>
     </div>`;
 }
@@ -19648,7 +19655,7 @@ function mdiAskPaid(id){
   if(!o || o.status !== 'confirmado') return;
   if(mdiIsPaid(o)){ toast('Este pedido ya se cobró', { icon:icon('alert'), subtitle:'Lo encuentras en Historial' }); return; }
   const metodo = mdiPayId(o);
-  const mpConfirmado = metodo === 'tarjeta' && o.mp?.status === 'paid';
+  const mpConfirmado = !o.stripeTest && metodo === 'tarjeta' && o.mp?.status === 'paid';
   if(metodo === 'tarjeta' && o.mpCheckout && !mpConfirmado){
     toast(mpVisible() ? 'Mercado Pago aún no confirma el pago' : 'El pago en línea sigue pendiente', {icon:icon('alert')});
     MpWatch.pull();
@@ -19660,9 +19667,9 @@ function mdiAskPaid(id){
     title: mpConfirmado ? '¿Registrar el pago con tarjeta?' : t.pregunta,
     text: mpConfirmado
       ? (mpVisible() ? 'Mercado Pago confirmó el pago de <b>' : 'Se confirmó el pago con tarjeta de <b>') + formatMoney(total) + '</b>. Al confirmar se guardará como venta.'
-      : 'Son <b>' + formatMoney(total) + '</b>. ' + t.aviso + ' Al confirmar, el pedido ' + escapeHtml(o.code) + ' se cobra y se guarda como venta.',
-    ok:mpConfirmado ? 'Sí, registrar pago' : 'Sí, ya me pagaron', cancel:'Todavía no', icon:icon('check')
-  }, () => mdiChargeNow(id, metodo, mpConfirmado ? {ref:String(o.mp.paymentId || '').slice(0,40)} : undefined));
+      : 'Son <b>' + formatMoney(total) + '</b>. ' + t.aviso + (o.stripeTest ? '' : ' Al confirmar, el pedido ' + escapeHtml(o.code) + ' se cobra y se guarda como venta.'),
+    ok:o.stripeTest ? 'Sí, confirmar pago' : mpConfirmado ? 'Sí, registrar pago' : 'Sí, ya me pagaron', cancel:'Todavía no', icon:icon('check')
+  }, () => mdiChargeNow(id, o.stripeTest ? 'tarjeta' : metodo, mpConfirmado ? {ref:String(o.mp.paymentId || '').slice(0,40)} : undefined));
 }
 
 /* ---------- Cobrar el pedido sin salir de él ----------
@@ -19676,6 +19683,18 @@ function mdiChargeNow(id, metodo, opts){
   if(!o || o.status !== 'confirmado') return false;
   if(o.pendingNext){ toast('Primero avisa al cliente y toca «Siguiente»', { icon:icon('alert') }); return false; }
   if(mdiIsPaid(o)){ if(!opts.silencio) toast('Este pedido ya se cobró', { icon:icon('alert'), subtitle:'Lo encuentras en Historial' }); return false; }
+
+  if(o.stripeTest){
+    if(metodo !== 'tarjeta' || o.mp?.status !== 'paid' || opts.sinGate || opts.silencio) return false;
+    MDI.update(id, x => { x.stripeTestConfirmedAt = new Date().toISOString(); });
+    if(!mdiIsPaid(MDI.get(id))) return false;
+    const sale = { total:mdiOrderTotal(o), paymentMethod:'tarjeta', menuOrderId:id };
+    openModal(vpDoneHTML(sale, { stripeTest:true }), { dismissible:false });
+    const sheet = document.querySelector('#modal-layer .modal-sheet');
+    if(sheet) sheet.classList.add('vp-done-sheet');
+    mdiPaintBadge();
+    return true;
+  }
 
   const prods = DB.getProducts();
   if(!(o.lines || []).length || o.lines.some(l => !prods.some(p => p.id === l.productId))){
@@ -19975,7 +19994,7 @@ function mpSendLink(id){
 const MpWatch = {
   t:null, ch:null, chUid:null, busy:false,
   pendientes(){
-    return MDI.all().filter(o => (o.status === 'confirmado' || (o.status === 'nuevo' && o.mpCheckout)) && !o.pendingNext && !mdiIsPaid(o) && mdiPayId(o) === 'tarjeta');
+    return MDI.all().filter(o => !o.stripeTest && (o.status === 'confirmado' || (o.status === 'nuevo' && o.mpCheckout)) && !o.pendingNext && !mdiIsPaid(o) && mdiPayId(o) === 'tarjeta');
   },
   canRun(){ return mpReady() && Cloud.ready && !!Cloud.uid && !document.body.classList.contains('dm-mode'); },
   async pull(){
@@ -20199,7 +20218,7 @@ function mdiNotify(id, confirmed = false){
     }
     if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
     /* Con tarjeta y Mercado Pago enlazado, el link de pago va en el mismo aviso */
-    if(!o.mpCheckout && c.payment === 'tarjeta' && mpVisible() && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
+    if(!o.stripeTest && !o.mpCheckout && c.payment === 'tarjeta' && mpVisible() && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
       extra.push('Paga con tu tarjeta aquí: ' + mpPayUrl(o));
     }
     if(extra.length) msg += '\n\n' + extra.join('\n');
@@ -28199,27 +28218,30 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
     btn.textContent=on?'Ocultar ticket':'Ver ticket';
     if(on) setTimeout(function(){ var t=sh.querySelector('#ticket-print'); if(t&&t.scrollIntoView) t.scrollIntoView({behavior:'smooth',block:'nearest'}); },60);
   };
-  window.vpDoneHTML=function(sale){
+  window.vpDoneHTML=function(sale, opts){
+    var stripeTest = opts && opts.stripeTest;
+    var closeAction = stripeTest ? 'afterSaleMenu();' : "afterSaleClosed('" + sale.id + "');";
     var cols=['#16C15B','#16213E','#FFD666','#7BE0A4','#FF8A80','#8FB8FF'], c='';
     for(var i=0;i<18;i++){
       var l=Math.round(Math.random()*100), d=(Math.random()*.5).toFixed(2), sz=6+Math.round(Math.random()*5), r=Math.random()>.5?'50%':'2px';
       c+='<i style="left:'+l+'%;width:'+sz+'px;height:'+(sz+(r==='2px'?4:0))+'px;background:'+cols[i%cols.length]+';border-radius:'+r+';animation-delay:'+d+'s;--dx:'+(Math.round(Math.random()*60)-30)+'px"></i>';
     }
     return '<div class="vp-confetti no-print" aria-hidden="true">'+c+'</div>'+
-      '<button class="sheet-close vp-x no-print" onclick="closeModal(); afterSaleClosed(\''+sale.id+'\');" aria-label="Cerrar">'+icon('close')+'</button>'+
+      '<button class="sheet-close vp-x no-print" onclick="closeModal(); '+closeAction+'" aria-label="Cerrar">'+icon('close')+'</button>'+
       '<div class="vp-done-main">'+
         '<div class="vp-done-hero no-print">'+
           '<div class="vp-done-circle"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 12.5 4.2 4.2L18.5 7.8"/></svg></div>'+
           '<h2>Venta realizada</h2>'+
+          (stripeTest ? '<p>Stripe · Modo de prueba</p>' : '')+
           saleDoneBoxHTML(sale)+
         '</div>'+
-        stockAlertHTML()+
+        (stripeTest ? '' : stockAlertHTML()+
         '<button type="button" class="vp-ticket-btn no-print" onclick="vpToggleTicket(this)">Ver ticket</button>'+
-        '<div id="ticket-print">'+ticketHTML(sale)+'</div>'+
+        '<div id="ticket-print">'+ticketHTML(sale)+'</div>')+
       '</div>'+
       '<div class="ticket-actions vp-done-actions no-print">'+
-        '<button class="btn ghost" onclick="printTicket(\''+sale.id+'\')">'+icon('print')+' Imprimir</button>'+
-        '<button class="btn ghost" onclick="sendTicketWhatsApp(\''+sale.id+'\')">'+icon('whatsapp')+' WhatsApp</button>'+
+        (stripeTest ? '' : '<button class="btn ghost" onclick="printTicket(\''+sale.id+'\')">'+icon('print')+' Imprimir</button>'+
+        '<button class="btn ghost" onclick="sendTicketWhatsApp(\''+sale.id+'\')">'+icon('whatsapp')+' WhatsApp</button>')+
         (saleFromMenu(sale)
           ? '<button class="btn primary block" onclick="closeModal(); afterSaleMenu();">'+icon('mobile')+' Regresar al Menú Digital</button>'
           : '<button class="btn primary block" onclick="closeModal(); afterSaleNew();">'+icon('plus')+' Nueva venta</button>')+
