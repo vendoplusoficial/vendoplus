@@ -286,8 +286,9 @@ window.VPMesas = (() => {
   function quickButton() {
     const cuentas = window.VPComandas?.activo() ? VPComandas.cuentasDelPlanoGuardadas() : new Map();
     const count = new Set([...openOrders().keys(), ...cuentas.keys()]).size;
-    const label = count === 1 ? 'Mesas, 1 mesa abierta' : count ? 'Mesas, ' + count + ' mesas abiertas' : 'Mesas';
-    const badge = count ? `<span class="vp-floor-count" aria-hidden="true">${count}</span>` : '';
+    if (!count) return '<span class="tool-btn vp-floor-placeholder" aria-hidden="true"></span>';
+    const label = count === 1 ? 'Mesas, 1 mesa abierta' : 'Mesas, ' + count + ' mesas abiertas';
+    const badge = `<span class="vp-floor-count" aria-hidden="true">${count}</span>`;
     return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="${label}">${tableIcon}${badge}</button>`;
   }
 

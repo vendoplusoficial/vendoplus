@@ -5,6 +5,10 @@
 .vp-floor-services .opt-card { min-width: 0; }
 .vp-floor-services svg, .vp-floor-quick svg { width: 20px; height: 20px; }
 .sale-tools .vp-floor-quick { position: relative; overflow: visible; }
+.sale-tools .vp-floor-placeholder { visibility: hidden; pointer-events: none; }
+@media (min-width: 700px) {
+  .sale-tools .vp-floor-placeholder { display: none; }
+}
 .vp-floor-count {
   position: absolute;
   left: 50%;
