@@ -1325,7 +1325,7 @@
   var IMG = window.VP_PROMOS_IMG || {};     /* incrustadas en index.html */
   var PROMOS = [
     { vertical: IMG['asistente-v'], horizontal: IMG['asistente-h'] }   /* 1 · Asistente: "Tus ventas, en una pregunta" ($249 al mes) */
-    /* , { vertical: 'promos/premium-02-v.webp', horizontal: 'promos/premium-02-h.webp' } */
+    , { vertical: IMG['menu-v'], horizontal: IMG['menu-h'] }           /* 2 · Menú digital: "Tu menú en internet" (49 al mes) */
   ].filter(function (p) { return p && (p.vertical || p.horizontal); });
   function esHorizontal() { return (window.innerWidth || 0) > (window.innerHeight || 0); }
   function srcPromo(p) {

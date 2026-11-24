@@ -14,5 +14,6 @@ Luego se agregan a la lista PROMOS de vendo-premium.js.
 
 Anuncios actuales:
   1. asistente-v / asistente-h · "Tus ventas, en una pregunta" (con precio $249 al mes)
+  2. menu-v / menu-h · "Tu menú en internet. Recibe pedidos desde ahí." ($249 al mes)
 
 Vista previa sin esperar al día siguiente: https://vendoplusoficial.com/?promo=prueba
