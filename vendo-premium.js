@@ -478,7 +478,6 @@
         (window.PlayPay
           ? '<button type="button" class="vp-pr-link" id="restoreBtn" onclick="PlayPay.restore()">Ya pagué · Restaurar compra</button>'
           : '') +
-        '<button type="button" class="vp-pl-mas" onclick="VPPremium.masBeneficios()">Ver todo lo que incluye Premium' + ico('chevronRight') + '</button>' +
       '</div>';
   }
 
@@ -503,7 +502,7 @@
       '.vp-pl-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;flex:1 1 auto;}',
       '.vp-pl-fila{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;line-height:1.3;font-weight:400;color:var(--ink,#15181C);}',
       '.vp-pl-fila.no{color:#A3AAB5;}',
-      '.vp-pl-fila.foco{font-weight:600;}',
+      '.vp-pl-fila.foco{font-weight:600;}',   /* la función desde donde llegó */
       '.vp-pl-ico{flex:none;width:16px;height:16px;margin-top:0;color:var(--vp-pr-verde,#16A34A);}',
       '.vp-pl-fila.no .vp-pl-ico{color:#C3C8D1;}',
       '.vp-pl-ico svg{width:16px;height:16px;display:block;}',
@@ -524,6 +523,27 @@
       '.vp-pl-mas{display:flex;align-items:center;justify-content:center;gap:2px;width:100%;border:none;background:none;cursor:pointer;',
       'font-family:inherit;font-size:13.5px;font-weight:500;color:var(--vp-pr-verde,#16A34A);padding:14px 8px 4px;-webkit-tap-highlight-color:transparent;}',
       '.vp-pl-mas svg{width:15px;height:15px;}',
+      /* ---- Entrada: título, luego las dos columnas y sus filas en cascada ---- */
+      '@keyframes vp-pl-sube{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}',
+      '@keyframes vp-pl-fila{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}',
+      '@keyframes vp-pl-tag{from{opacity:0;transform:translateX(-50%) scale(.7)}to{opacity:1;transform:translateX(-50%) scale(1)}}',
+      '@keyframes vp-pl-sale{from{opacity:1;transform:none}to{opacity:0;transform:translateY(12px) scale(.98)}}',
+      '.vp-pl-h1{animation:vp-pl-sube .45s cubic-bezier(.22,1,.36,1) .10s both;}',
+      '.vp-pl-lead{animation:vp-pl-sube .45s cubic-bezier(.22,1,.36,1) .16s both;}',
+      '.vp-pl-col{animation:vp-pl-sube .55s cubic-bezier(.22,1,.36,1) .22s both;}',
+      '.vp-pl-col.pro{animation-delay:.30s;}',
+      '.vp-pl-tag{animation:vp-pl-tag .4s cubic-bezier(.34,1.56,.64,1) .62s both;}',
+      '.vp-pl-fila{animation:vp-pl-fila .35s ease-out both;}',
+      PLAN_FILAS.map(function (_, i) {
+        return '.vp-pl-col .vp-pl-fila:nth-child(' + (i + 1) + '){animation-delay:' + (0.36 + i * 0.035).toFixed(3) + 's}' +
+               '.vp-pl-col.pro .vp-pl-fila:nth-child(' + (i + 1) + '){animation-delay:' + (0.44 + i * 0.035).toFixed(3) + 's}';
+      }).join(''),
+      '.vp-pl-pie{animation:vp-pl-sube .45s cubic-bezier(.22,1,.36,1) .66s both;}',
+      '.vp-pl-col.pro .vp-pl-pie{animation-delay:.72s;}',
+      /* ---- Salida: el contenido baja y se desvanece junto con la hoja ---- */
+      '.modal-overlay.is-closing .vp-pl-scroll,.modal-overlay.is-closing .vp-pr-x{animation:vp-pl-sale .22s ease-in both;}',
+      '@media (prefers-reduced-motion: reduce){.vp-pl-h1,.vp-pl-lead,.vp-pl-col,.vp-pl-tag,.vp-pl-fila,.vp-pl-pie,',
+      '.modal-overlay.is-closing .vp-pl-scroll,.modal-overlay.is-closing .vp-pr-x{animation:none !important;}}',
       '@media (max-width:359px){.vp-pl{gap:7px;}.vp-pl-col{padding:14px 9px 12px;}.vp-pl-fila{font-size:11.5px;}.vp-pl-h1{font-size:23px;}}',
       '@media (min-width:700px){.vp-pl{gap:14px;}.vp-pl-col{padding:20px 16px 16px;}.vp-pl-fila{font-size:13.5px;}}'
     ].join('\n');
