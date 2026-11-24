@@ -24390,6 +24390,7 @@ const Cloud = {
   /* ---------- El correo de Supabase es el de la cuenta ---------- */
   syncEmail(user){
     this.email = normEmail(user && user.email);
+    if(this.email && typeof Cloud.recordarCorreo === 'function') Cloud.recordarCorreo(this.email);
     const u = AUTH.getUser();
     if(this.email && u && normEmail(u.email) !== this.email){ u.email = this.email; AUTH.saveUser(u); }
   },
@@ -24888,9 +24889,14 @@ nipCheckCode = function(){
    Salir a propósito (botón "Cerrar sesión", cambiar de correo, eliminar
    la cuenta) también dispara SIGNED_OUT. Con esta marca el vigilante no
    vuelve a avisar encima: cada flujo ya hace lo suyo. */
-Cloud.salirDeSupabase = async function(){
+/* scope 'local' (lo normal): cierra la sesión SOLO en este aparato.
+   Antes se usaba el cierre global de Supabase, que cerraba la sesión en
+   TODOS los aparatos del negocio: si el dueño salía en un celular, los
+   demás se quedaban "dentro" pero sin poder sincronizar ni revisar Premium.
+   'global' solo al eliminar la cuenta. */
+Cloud.salirDeSupabase = async function(scope){
   this._saliendoAProposito = true;
-  try{ await this.sb.auth.signOut(); }
+  try{ await this.sb.auth.signOut({ scope: scope === 'global' ? 'global' : 'local' }); }
   catch(e){ console.warn('Vendo plus · cerrar sesión', e); }
   finally{ setTimeout(() => { Cloud._saliendoAProposito = false; }, 1500); }
 };
@@ -24929,7 +24935,7 @@ const _doDeleteAccount = doDeleteAccount;
 doDeleteAccount = async function(){
   if(Cloud.ready && Cloud.uid && (document.getElementById('delWord').value || '').trim().toUpperCase() === 'ELIMINAR'){
     if(document.getElementById('wipeRow').classList.contains('checked')) await Cloud.sb.from('user_data').delete().eq('user_id', Cloud.uid);
-    await Cloud.salirDeSupabase(); Cloud.uid = null; Cloud.sub = null; Cloud.email = '';
+    await Cloud.salirDeSupabase('global'); Cloud.uid = null; Cloud.sub = null; Cloud.email = '';
     _doDeleteAccount(); Cloud.wipeLocal(); Cloud.gate(); return;
   }
   _doDeleteAccount();
@@ -24969,6 +24975,31 @@ doDeleteAccount = async function(){
       · Usuario activo .......... mesa_active_user, mesa_user_session, NIP.
       Cambiar de usuario dentro del negocio no toca las otras dos.
    ===================================================================== */
+/* ---------------------------------------------------------------------
+   SESIÓN QUE DE VERDAD SE PERDIÓ
+   Pasa muy rara vez (cambio de contraseña, cuenta borrada, alguien la
+   cerró desde otro lado). Antes la app se quedaba "dentro" para siempre
+   sin sesión: no sincronizaba, no revisaba Premium y los pagos fallaban.
+   Ahora se pide SOLO la contraseña: el correo ya va escrito y los datos
+   del aparato no se tocan (al entrar con la misma cuenta se sube lo
+   pendiente). Dejar el celular días sin usar NO causa esto: la sesión se
+   renueva sola al abrir la app.
+--------------------------------------------------------------------- */
+Cloud.recordarCorreo = function(email){ try{ if(email) localStorage.setItem('vp_ultimo_correo', String(email)); }catch(e){} };
+Cloud.sesionPerdida = function(){
+  if(Cloud._pidiendoClave) return;
+  Cloud._pidiendoClave = true;
+  setTimeout(() => { Cloud._pidiendoClave = false; }, 5000);
+  Cloud.gen++; Cloud.uid = null; Cloud.sub = null;
+  let correo = '';
+  try{ correo = localStorage.getItem('vp_ultimo_correo') || (AUTH.getUser() || {}).email || Cloud.email || ''; }catch(e){}
+  if(!AUTH.isLogged()) return;
+  AUTH.closeSession();
+  try{ authState.email = correo; authState.password = ''; }catch(e){}
+  try{ showAuth('welcome'); if(correo){ authState.mode = 'login'; authStart('login'); } }catch(e){}
+  try{ toast('Confirma tu contraseña', { subtitle:'Por seguridad, vuelve a escribirla. Tus datos siguen guardados.', icon:icon('lock'), duration:5200 }); }catch(e){}
+};
+
 const _bootApp = bootApp;
 bootApp = async function(){
   if(!Cloud.ready) return _bootApp();
@@ -24998,12 +25029,7 @@ bootApp = async function(){
       /* Cierre de verdad: Supabase dice que esta sesión ya no existe. */
       if(ev === 'SIGNED_OUT' || ev === 'USER_DELETED'){
         if(Cloud._saliendoAProposito) return;      /* lo pidió el usuario: ya se atendió */
-        Cloud.gen++; Cloud.uid = null;
-        if(AUTH.isLogged()){
-          AUTH.closeSession();
-          try{ toast('Tu sesión se cerró', { subtitle:'Entra de nuevo con tu correo y contraseña', icon:icon('alert') }); }catch(e){}
-          try{ showAuth('login'); }catch(e){}
-        }
+        Cloud.sesionPerdida();
       }
     });
     /* Reintento de recuperación: al volver el internet o la app al frente */
@@ -25013,6 +25039,10 @@ bootApp = async function(){
       try{
         const r = await conLimiteCloud(Cloud.sb.auth.getSession(), 9000);
         const s = r && r.data && r.data.session;
+        if(!s && ((r && cloudSesionMuerta(r.error)) || (!(r && r.error) && navigator.onLine !== false && !cloudHayTokenGuardado()))){
+          Cloud.sesionPerdida();
+          return;
+        }
         if(s && s.user){
           const dueno = localStorage.getItem('mesa_cloud_uid');
           if(dueno && dueno !== s.user.id) return;
@@ -25086,6 +25116,7 @@ bootApp = async function(){
       Cloud.gen++;
       Cloud.uid = sesion.user.id;
       try{ localStorage.setItem('mesa_cloud_uid', Cloud.uid); }catch(e){}
+      Cloud.recordarCorreo(sesion.user.email);
       Cloud.syncEmail(sesion.user);
       if(AUTH.getUser()) AUTH.openSession();
       /* Primero se sube lo que quedó pendiente de la vez pasada (ventas
@@ -25106,9 +25137,15 @@ bootApp = async function(){
       /* Supabase confirmó que esta sesión ya no existe (token revocado,
          cuenta borrada). Este sí es motivo para pedir entrar de nuevo. */
       console.warn('[auth] Supabase confirmó que la sesión ya no existe', error);
-      Cloud.gen++; Cloud.uid = null;
-      AUTH.closeSession();
-      vencida = tuvoSesion;
+      if(tuvoSesion) setTimeout(() => Cloud.sesionPerdida(), 0);
+      else { Cloud.gen++; Cloud.uid = null; AUTH.closeSession(); }
+      return;
+    }
+    /* Ni siquiera hay token guardado en el aparato (se borró el
+       almacenamiento): no hay nada que renovar, reintentar no sirve. */
+    if(!error && tuvoSesion && !cloudHayTokenGuardado()){
+      console.warn('[auth] no hay token guardado: se pide la contraseña');
+      setTimeout(() => Cloud.sesionPerdida(), 0);
       return;
     }
     /* Todo lo demás (sin internet, tiempo agotado, 500, 429, el candado
