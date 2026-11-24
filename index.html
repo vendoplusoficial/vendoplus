@@ -2957,7 +2957,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
      PC ya es más chico por sí mismo, y juntos dejaban letras de 8 px. */
   @media (min-width:700px){ :root{ --z:1; } }
 
-  .app, #modal-layer, #modal-ghost, .auth-layer, .toast,
+  .app, #modal-layer, #modal-ghost, #md-under, .auth-layer, .toast,
   .dm, .dm-cartbar, #dmLayer, #dmGhost, .dm-toast{ zoom:var(--z); }
   .app, .dm{ min-height:calc(100dvh / var(--z)); }
   @media (min-width:700px){ .bottomnav{ height:calc(100dvh / var(--z)); } }
@@ -3071,6 +3071,8 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .modal-overlay.is-swap::before, .modal-overlay.is-swap .modal-sheet,
   .dm-overlay.is-swap::before, .dm-overlay.is-swap .dm-sheet{ animation:none; }
   #modal-ghost, #dmGhost{ position:relative; z-index:401; pointer-events:none; }
+  #md-under{ position:relative; z-index:399; pointer-events:none; }
+  #md-under .modal-overlay{ z-index:399; }
   #modal-ghost .modal-overlay, #dmGhost .dm-overlay{ z-index:401; }
 
   @media (min-width:700px){
@@ -7660,15 +7662,15 @@ function openModal(html, opts){
   const layer = document.getElementById('modal-layer');
   /* Si una hoja se está cerrando, se quita ya para no encimar dos fondos */
   const ghost = document.getElementById('modal-ghost');
-  if(ghost) ghost.innerHTML = '';
+  if(ghost && !opts.keepGhost) ghost.innerHTML = '';
   /* ¿Ya hay una hoja abierta? Entonces solo se cambia su contenido, sin
      volver a deslizarla desde abajo (antes "brincaba" en cada toque, por
      ejemplo al elegir Efectivo/Tarjeta o al cambiar una cantidad). */
   const prevSheet = layer.querySelector('.modal-overlay:not(.is-closing) .modal-sheet');
-  const swap = !!prevSheet;
-  const prevTitle = swap ? sheetTitleOf(prevSheet) : '';
-  const prevY = swap ? prevSheet.scrollTop : 0;
-  const prevKeep = swap ? Array.from(prevSheet.querySelectorAll('[data-keep-scroll]')).map(e => [e.getAttribute('data-keep-scroll'), e.scrollTop]) : [];
+  const swap = !!prevSheet || !!opts.swap;
+  const prevTitle = prevSheet ? sheetTitleOf(prevSheet) : '';
+  const prevY = prevSheet ? prevSheet.scrollTop : 0;
+  const prevKeep = prevSheet ? Array.from(prevSheet.querySelectorAll('[data-keep-scroll]')).map(e => [e.getAttribute('data-keep-scroll'), e.scrollTop]) : [];
   layer.innerHTML = `<div class="modal-overlay ${opts.center?'modal-center':''} ${swap?'is-swap':''}" id="modalOverlay" ${opts.dismissible === false ? 'data-lock="1"' : ''}>
       <div class="modal-sheet ${opts.card?'modal-card':''}">
         ${opts.grip !== false ? '<div class="sheet-grip"></div>' : ''}
@@ -20605,11 +20607,15 @@ function mdSetupHTML(){
     </div>
     ${mdConfigHTML(mdCfg())}`;
 }
-function mdOpenSetup(){
+function mdOpenSetup(regreso){
   if(mdCfg().active){ mdSetupOn = false; return; }
-  vibrate(8);
+  if(regreso !== true) vibrate(8);
   mdSetupOn = true;
-  openModal(mdSetupHTML(), { dismissible:true });
+  openModal(mdSetupHTML(), regreso === true ? { dismissible:true, swap:true, keepGhost:true } : { dismissible:true });
+  if(regreso === true && mdSetupScrollY){
+    const sh = document.querySelector('#modal-layer .modal-sheet');
+    if(sh){ sh.scrollTop = mdSetupScrollY; requestAnimationFrame(() => { if(sh.isConnected) sh.scrollTop = mdSetupScrollY; }); }
+  }
 }
 function mdSetupShowing(){
   const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
@@ -20638,13 +20644,54 @@ openModal = function(html, opts){
   try{
     const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
     if(sh && sheetTitleOf(sh) === MD_CFG_TITLE) mdCfgScrollY = sh.scrollTop || 0;
+    if(sh && sheetTitleOf(sh) === MD_SETUP_TITLE) mdSetupScrollY = sh.scrollTop || 0;
   }catch(e){}
-  return _mdOpenModalBase.apply(this, arguments);
+  const r = _mdOpenModalBase.apply(this, arguments);
+  mdUnderSync();
+  return r;
 };
-function mdOpenCfgSheet(){
+/* ---- La configuración se queda atrás de sus subsecciones ----
+   Solo hay una hoja a la vez: al entrar a "Pago con tarjeta", "Horarios",
+   etc., el formulario reemplaza a la Configuración y atrás se veía la
+   bandeja de pedidos. Ahora, mientras una subsección está abierta, atrás
+   se pinta una copia quieta (no se puede tocar) de la Configuración, en
+   la misma altura en que estaba. */
+var mdSetupScrollY = 0;
+function mdUnderEl(){
+  let u = document.getElementById('md-under');
+  if(!u){
+    const layer = document.getElementById('modal-layer'); if(!layer) return null;
+    u = document.createElement('div'); u.id = 'md-under';
+    u.setAttribute('aria-hidden', 'true'); u.inert = true;
+    layer.parentNode.insertBefore(u, layer);
+  }
+  return u;
+}
+function mdUnderClear(){ const u = document.getElementById('md-under'); if(u && u.firstChild){ u.innerHTML = ''; u.dataset.k = ''; } }
+function mdUnderSync(){
+  try{
+    const sh = document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .modal-sheet');
+    const t = sh ? sheetTitleOf(sh) : '';
+    let k = '';
+    if(sh && t !== MD_CFG_TITLE && t !== MD_SETUP_TITLE && currentView === 'menu'){
+      if(mdCfgSheetOn && mdCfg().active) k = 'cfg';
+      else if(mdSetupOn && !mdCfg().active) k = 'setup';
+    }
+    if(!k){ mdUnderClear(); return; }
+    const u = mdUnderEl(); if(!u || u.dataset.k === k) return;
+    u.dataset.k = k;
+    u.innerHTML = `<div class="modal-overlay is-swap"><div class="modal-sheet"><div class="sheet-grip"></div>${k === 'cfg' ? mdCfgSheetHTML() : mdSetupHTML()}</div></div>`;
+    u.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    const c = u.querySelector('.modal-sheet'), y = k === 'cfg' ? mdCfgScrollY : mdSetupScrollY;
+    if(c && y){ c.scrollTop = y; requestAnimationFrame(() => { if(c.isConnected) c.scrollTop = y; }); }
+  }catch(e){ mdUnderClear(); }
+}
+function mdOpenCfgSheet(regreso){
   if(!mdCfg().active){ mdCfgSheetOn = false; return; }
   mdCfgSheetOn = true;
-  openModal(mdCfgSheetHTML(), { dismissible:true });
+  /* De regreso de una subsección la configuración ya estaba atrás: aparece
+     sin volver a deslizarse y el formulario se desvanece encima. */
+  openModal(mdCfgSheetHTML(), regreso === true ? { dismissible:true, swap:true, keepGhost:true } : { dismissible:true });
   if(mdCfgScrollY){
     const sh = document.querySelector('#modal-layer .modal-sheet');
     if(sh){
@@ -20683,12 +20730,17 @@ closeModal = function(){
   const eraSetup = !!sh && sheetTitleOf(sh) === MD_SETUP_TITLE;
   _mdCloseModalBase();
   if(eraCfg){ mdCfgSheetOn = false; mdCfgScrollY = 0; return; }
-  if(eraSetup){ mdSetupOn = false; return; }
+  if(eraSetup){ mdSetupOn = false; mdSetupScrollY = 0; return; }
   /* se cerró un formulario que estaba sobre la configuración inicial */
-  if(mdSetupOn && currentView === 'menu' && !mdCfg().active){ mdOpenSetup(); return; }
+  if(mdSetupOn && currentView === 'menu' && !mdCfg().active){ mdOpenSetup(true); return; }
   /* se cerró un formulario o confirmación que estaba sobre la configuración */
-  if(mdCfgSheetOn && currentView === 'menu' && mdCfg().active) mdOpenCfgSheet();
+  if(mdCfgSheetOn && currentView === 'menu' && mdCfg().active){ mdOpenCfgSheet(true); return; }
+  mdUnderClear();
 };
+/* Cualquier cierre directo (la ✕ de la configuración, salir de la
+   sección…) también quita la copia de atrás. */
+var _mdCloseBase0 = _mdCloseModalBase;
+_mdCloseModalBase = function(){ const r = _mdCloseBase0.apply(this, arguments); mdUnderClear(); return r; };
 function mdSetCfgVisible(v){
   vibrate(8);
   if(v){ mdOpenCfgSheet(); return; }
