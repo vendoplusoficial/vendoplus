@@ -1520,9 +1520,13 @@
     if (!promoListo()) return false;
     if (activo()) return true;                           /* Premium: nunca */
     var kSes = 'vp_promo_entrada_' + llaveUsuario();
-    if (ssGet(kSes)) return true;                        /* ya salió en esta entrada */
+    var nueva = entradaNueva;                            /* acaba de iniciar sesión */
+    entradaNueva = false;
+    if (!nueva) {
+      if (ssGet(kSes)) return true;                      /* ya salió en esta entrada */
+      if (esRecarga()) { ssSet(kSes, '1'); return true; }   /* recargó la página: no */
+    }
     ssSet(kSes, '1');
-    if (esRecarga()) return true;                        /* recargó la página: no */
     var reg = diaRegistro();
     if (!reg || reg === diaLocal(new Date())) return true;   /* el día del registro no */
     if (!PROMOS.length) return true;                     /* todavía no hay imágenes */
@@ -1533,6 +1537,20 @@
   }
 
   var promoTimer = null;
+  var entradaNueva = false;
+  /* Iniciar sesión (o crear cuenta) cuenta como "entrar": se vuelve a revisar */
+  function engancharEntrada() {
+    var f = window.finishAuth;
+    if (typeof f !== 'function' || f.__vpPromo) return;
+    var env = function () {
+      var r = f.apply(this, arguments);
+      entradaNueva = true;
+      arrancarPromo();
+      return r;
+    };
+    env.__vpPromo = true;
+    try { window.finishAuth = env; } catch (e) {}
+  }
   function arrancarPromo() {
     /* Vista previa: vendoplusoficial.com/?promo=prueba (no cuenta como el del día) */
     if (/[?&]promo=prueba\b/.test(location.search)) {
@@ -1574,6 +1592,7 @@
   function arrancar() {
     ocultarPremium();
     setTimeout(arrancarPromo, 1200);
+    engancharEntrada();
     estilos();
     registrarFunciones();
     /* La tecla Esc cierra la pantalla de Premium (computadora) */
