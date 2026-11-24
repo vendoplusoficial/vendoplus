@@ -36,6 +36,7 @@ window.VPComandas = (() => {
   }
   const esMesero = () => myArea() === 'mesero';
   const esCocina = () => myArea() === 'cocina';
+  const esCajero = () => myArea() === 'caja';
   function puedeAdministrar() {
     try { return isOwner(); } catch (e) { return false; }
   }
@@ -46,13 +47,13 @@ window.VPComandas = (() => {
     const area = myArea();
     if (area === 'mesero') {
       if (!(currentView === 'sale' && checkout.floorTableId)) currentView = 'comandas';
-    } else if (area === 'cocina') {
+    } else if (area === 'cocina' || area === 'caja') {
       currentView = 'comandas';
     } else if (currentView === 'comandas' && !puedeAdministrar()) {
       currentView = 'sale';
     }
     const b = document.body.classList;
-    b.toggle('cm-solo', area === 'mesero' || area === 'cocina');
+    b.toggle('cm-solo', !!area);
     b.toggle('cm-mesero', area === 'mesero');
     b.toggle('cm-admin', puedeAdministrar());
   }
@@ -576,6 +577,40 @@ window.VPComandas = (() => {
   }
 
   /* =========================================================
+     CAJERO: solo las cuentas de las mesas para cobrarlas
+     (no es Caja y corte: eso sigue siendo del Dueño)
+  ========================================================= */
+  function cajaHTML() {
+    const me = activeUser();
+    const orders = VPMesas.openOrders();
+    const n = orders.size;
+    return `
+      <h1 class="page-title">Caja</h1>
+      <p class="page-sub">Hola, ${escapeHtml(userFirstName(me) || me.name)} · ${n ? 'Toca una mesa ocupada para cobrar' : 'Aquí aparecen las cuentas de las mesas'}</p>
+      ${soloBar()}
+      <div class="vp-floor cm-floor" aria-label="Plano de mesas">
+        ${VPMesas.layout().map(t => {
+          const o = orders.get(t.id);
+          const label = o ? formatMoney(o.total) : 'Libre';
+          return `<button type="button" class="vp-floor-table ${t.id === 'bar' ? 'is-bar' : ''} ${o ? 'is-occupied' : ''}"
+            style="--x:${t.x}%;--y:${t.y}%" onclick="VPComandas.cobrar('${escapeHtml(t.id)}')"
+            aria-label="${escapeHtml(t.name)} · ${o ? 'Cuenta de ' + label : 'Libre'}"><b>${escapeHtml(t.name)}</b><small>${label}</small></button>`;
+        }).join('')}
+      </div>`;
+  }
+
+  /* Abre la cuenta de la mesa para revisarla y cobrarla */
+  function cobrar(id) {
+    if (!esCajero()) return;
+    const o = VPMesas.openOrders().get(id);
+    if (!o) { toast('Esta mesa está libre', { subtitle:'No tiene cuenta por cobrar.' }); return; }
+    cart = JSON.parse(JSON.stringify(o.cart || []));
+    customItems = JSON.parse(JSON.stringify(o.customItems || {}));
+    checkout = Object.assign(newCheckout(), o.checkout || {}, { cash:'' });
+    openCartSheet('cart');
+  }
+
+  /* =========================================================
      COCINA: pedidos por preparar
   ========================================================= */
   function itemsHTML(items) {
@@ -625,6 +660,7 @@ window.VPComandas = (() => {
   const ESTADOS = { cocina:'En cocina', listo:'Listo', entregado:'Entregado', cancelado:'Cancelado' };
   function historial() {
     const me = activeUser();
+    if (esCajero()) { historialCaja(me); return; }
     const cocina = esCocina();
     const list = tickets()
       .filter(t => cocina ? t.status !== 'cocina' : (me && t.byId === me.id))
@@ -651,6 +687,30 @@ window.VPComandas = (() => {
     `, { dismissible:true });
   }
 
+  function historialCaja(me) {
+    const list = DB.getSales().filter(s => me && s.userId === me.id && !s.cancelled)
+      .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 80);
+    openModal(`
+      <div class="sheet-header">
+        <h2>Historial</h2>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      ${list.length ? `<div class="cm-hist">${list.map(s => `
+        <div class="cm-hist-row">
+          <div class="cm-hist-h">
+            <b>${escapeHtml(s.table || orderNumberLabel(s.number))}</b>
+            <b>${formatMoney(s.total + (s.tip || 0))}</b>
+          </div>
+          <div class="cm-hist-sub">${fmtDay(s.date)} · ${fmtTime(s.date)} · ${escapeHtml(paymentOf(s.paymentMethod).name)}${s.tip ? ' · propina ' + formatMoney(s.tip) : ''}</div>
+          <ul class="cm-items">${(s.items || []).map(i => `<li><b>${fmtN(i.qty)}×</b><span>${escapeHtml(i.name || '')}</span></li>`).join('')}</ul>
+        </div>`).join('')}</div>` : `
+        <div class="empty-state">
+          <div class="empty-title">Aún no hay cobros</div>
+          <div class="empty-text">Las cuentas que cobres aparecerán aquí.</div>
+        </div>`}
+    `, { dismissible:true });
+  }
+
   function cambiar() { switchUser(); }
 
   /* ---------- Vista principal ---------- */
@@ -658,6 +718,7 @@ window.VPComandas = (() => {
     const area = myArea();
     if (area === 'mesero') return meseroHTML();
     if (area === 'cocina') return cocinaHTML();
+    if (area === 'caja') return cajaHTML();
     if (!puedeAdministrar()) return '';
     if (st.screen === 'area' && AREAS[st.area]) return areaHTML();
     if (st.screen === 'add' && AREAS[st.area]) return addHTML();
@@ -670,7 +731,7 @@ window.VPComandas = (() => {
   /* Cocina y mesas se actualizan solas (otra pestaña o el paso del tiempo) */
   function refresh() {
     try {
-      if (currentView !== 'comandas' || !(esCocina() || esMesero())) return;
+      if (currentView !== 'comandas' || !myArea()) return;
       if (document.querySelector('#modal-layer .modal-overlay')) return;
       render();
     } catch (e) {}
@@ -686,9 +747,9 @@ window.VPComandas = (() => {
   if (!register()) document.addEventListener('DOMContentLoaded', register);
 
   return {
-    abrir, guard, esMesero, esCocina, puedeAdministrar,
+    abrir, guard, esMesero, esCocina, esCajero, puedeAdministrar,
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
-    mesa, saleHead, salirMesa, cartActions, enviar, cancelarOrden,
+    mesa, cobrar, saleHead, salirMesa, cartActions, enviar, cancelarOrden,
     listo, historial, cambiar
   };
 })();

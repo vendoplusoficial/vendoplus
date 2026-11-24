@@ -247,7 +247,7 @@ window.VPMesas = (() => {
       }
       if (window.VPComandas) VPComandas.cancelarOrden(id);
       closeModal();
-      if (window.VPComandas?.esMesero()) { goTo('comandas'); return; }
+      if (window.VPComandas?.esMesero() || window.VPComandas?.esCajero()) { goTo('comandas'); return; }
       render();
       open('sale');
     });
