@@ -417,7 +417,7 @@
   /* Pantalla principal: comparación clásica de planes, Básico vs Premium,
      lado a lado. Cada fila: palomita (incluido) o tache (no incluido). */
   var PLAN_FILAS = [
-    { k: 'ventas',   t: 'Ventas y cobros',               basico: true },
+    { k: 'ventas',   t: 'Ventas y cobros',               basico: 'Hasta 300 al mes', premium: 'Ilimitadas' },
     { k: 'tickets',  t: 'Tickets e impresora',           basico: true },
     { k: 'caja',     t: 'Caja e inventario',             basico: true },
     { k: 'clientes', t: 'Clientes y deudas',             basico: true },
@@ -1062,6 +1062,176 @@
   /* =======================================================================
      12. ENCENDER
   ======================================================================= */
+  /* =======================================================================
+     10b. LÍMITE DE VENTAS DEL PLAN BÁSICO
+     · Básico: 300 ventas completadas al mes por negocio. Premium: ilimitadas.
+     · Cuenta = ventas del mes en curso que NO están canceladas y que no son
+       devoluciones. Se cuentan las de todos los aparatos del negocio (las
+       ventas se sincronizan con la nube).
+     · A las 250 y cuando quedan 10 (290): aviso chiquito en Nueva venta,
+       con "Ver Premium" y una × para cerrarlo.
+     · Al llegar a 300: ese mismo día se puede seguir vendiendo. Desde el día
+       siguiente se bloquean los cobros nuevos hasta que se confirme Premium
+       o empiece el mes siguiente.
+  ======================================================================= */
+  var VENTAS_LIMITE = 300, VENTAS_AVISO = 250, VENTAS_ULTIMAS = 10;
+
+  function diaLocal(d) {
+    d = d instanceof Date ? d : new Date(d);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function mesLocal(d) { return diaLocal(d).slice(0, 7); }
+  function primeroDelMesQueSigue() {
+    var n = new Date(); return new Date(n.getFullYear(), n.getMonth() + 1, 1);
+  }
+  function fechaLarga(d) {
+    try { return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }); } catch (e) { return diaLocal(d); }
+  }
+
+  /** Estado del límite este mes. */
+  function ventasMes() {
+    var mes = mesLocal(new Date()), fechas = [];
+    try {
+      var db = ref('DB'), lista = db && db.getSales ? db.getSales() : [];
+      for (var i = 0; i < lista.length; i++) {
+        var s = lista[i];
+        if (!s || s.cancelled || s.type === 'devolucion' || !s.date) continue;
+        var f = new Date(s.date);
+        if (isNaN(f)) continue;
+        if (mesLocal(f) === mes) fechas.push(f.getTime());
+      }
+    } catch (e) {}
+    fechas.sort(function (a, b) { return a - b; });
+    var n = fechas.length;
+    var diaTope = n >= VENTAS_LIMITE ? diaLocal(new Date(fechas[VENTAS_LIMITE - 1])) : null;
+    var premium = activo();
+    return {
+      n: n,
+      premium: premium,
+      restan: Math.max(VENTAS_LIMITE - n, 0),
+      diaTope: diaTope,                                     /* el día que se llegó a 300 */
+      gracia: !premium && !!diaTope && diaTope === diaLocal(new Date()),
+      bloqueado: !premium && !!diaTope && diaLocal(new Date()) > diaTope
+    };
+  }
+
+  function cssLimite() {
+    if (document.getElementById('vp-limite-css')) return;
+    var st = document.createElement('style');
+    st.id = 'vp-limite-css';
+    st.textContent = [
+      '.vp-lim{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 8px 9px 12px;border-radius:12px;',
+      'background:var(--surface,#fff);border:1px solid var(--border,#E4E8EF);font-size:13px;line-height:1.35;font-weight:400;color:var(--ink,#15181C);',
+      'animation:vp-lim-in .3s cubic-bezier(.22,1,.36,1) both;}',
+      '@keyframes vp-lim-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}',
+      '.vp-lim-pt{flex:none;width:7px;height:7px;border-radius:50%;background:#F5A524;}',
+      '.vp-lim.alto .vp-lim-pt,.vp-lim.tope .vp-lim-pt{background:#E5484D;}',
+      '.vp-lim-txt{flex:1;min-width:0;}',
+      '.vp-lim-txt b{font-weight:600;}',
+      '.vp-lim-ver{flex:none;border:none;background:none;padding:6px 6px;font-family:inherit;font-size:13px;font-weight:600;color:var(--vp-pr-verde,#16A34A);cursor:pointer;white-space:nowrap;}',
+      '.vp-lim-x{flex:none;width:28px;height:28px;border:none;border-radius:8px;background:none;color:var(--ink-soft,#6C7480);display:flex;align-items:center;justify-content:center;cursor:pointer;}',
+      '.vp-lim-x:active{background:var(--surface-alt,#F1F3F7);}',
+      '.vp-lim-x svg{width:14px;height:14px;}',
+      '.vp-lim-hoja{text-align:center;padding:6px 4px 2px;}',
+      '.vp-lim-ico{width:52px;height:52px;margin:4px auto 14px;border-radius:16px;background:#FEF3F2;color:#D92D20;display:flex;align-items:center;justify-content:center;}',
+      '.vp-lim-ico svg{width:24px;height:24px;}',
+      '.vp-lim-hoja h2{margin:0 0 8px;font-size:20px;font-weight:700;letter-spacing:-.3px;color:var(--ink,#15181C);}',
+      '.vp-lim-hoja p{margin:0 auto 18px;max-width:340px;font-size:14px;line-height:1.5;font-weight:400;color:var(--ink-soft,#6C7480);}',
+      '.vp-lim-hoja .vp-pl-btn{margin-bottom:8px;}',
+      '.vp-lim-hoja .vp-lim-no{width:100%;border:none;background:none;padding:10px;font-family:inherit;font-size:14px;font-weight:500;color:var(--ink-soft,#6C7480);cursor:pointer;}',
+      '@media (prefers-reduced-motion: reduce){.vp-lim{animation:none;}}'
+    ].join('\n');
+    document.head.appendChild(st);
+  }
+
+  /* Qué aviso toca: 'aviso' (250+), 'ultimas' (quedan 10 o menos), 'tope' (llegó hoy), 'bloqueado' */
+  function etapaLimite(e) {
+    if (e.premium) return null;
+    if (e.bloqueado) return 'bloqueado';
+    if (e.gracia) return 'tope';
+    if (e.n >= VENTAS_LIMITE - VENTAS_ULTIMAS) return 'ultimas';
+    if (e.n >= VENTAS_AVISO) return 'aviso';
+    return null;
+  }
+  function llaveCerrado(etapa) { return 'vp_lim_cerrado_' + mesLocal(new Date()) + '_' + etapa + (etapa === 'tope' ? '_' + diaLocal(new Date()) : ''); }
+  function cerradoAviso(etapa) { try { return localStorage.getItem(llaveCerrado(etapa)) === '1'; } catch (e) { return false; } }
+
+  function avisoLimiteHTML() {
+    var e = ventasMes(), etapa = etapaLimite(e);
+    if (!etapa || (etapa !== 'bloqueado' && cerradoAviso(etapa))) return '';
+    cssLimite();
+    var txt;
+    if (etapa === 'aviso') txt = 'Llevas <b>' + e.n + ' de ' + VENTAS_LIMITE + '</b> ventas este mes en el plan Básico.';
+    else if (etapa === 'ultimas') txt = 'Te queda' + (e.restan === 1 ? '' : 'n') + ' <b>' + e.restan + ' venta' + (e.restan === 1 ? '' : 's') + '</b> este mes en el plan Básico.';
+    else if (etapa === 'tope') txt = 'Llegaste a <b>' + VENTAS_LIMITE + ' ventas</b>. Hoy puedes seguir cobrando; desde mañana necesitas Premium.';
+    else txt = 'Llegaste a <b>' + VENTAS_LIMITE + ' ventas</b> este mes. Los cobros vuelven el ' + fechaLarga(primeroDelMesQueSigue()) + ' o con Premium.';
+    var clase = etapa === 'aviso' ? '' : (etapa === 'ultimas' ? ' alto' : ' tope');
+    return '<div class="vp-lim' + clase + '" role="status" id="vpLimAviso">' +
+        '<span class="vp-lim-pt" aria-hidden="true"></span>' +
+        '<span class="vp-lim-txt">' + txt + '</span>' +
+        '<button type="button" class="vp-lim-ver" onclick="VPPremium.abrir(\'ventas\')">Ver Premium</button>' +
+        (etapa === 'bloqueado' ? '' :
+          '<button type="button" class="vp-lim-x" aria-label="Cerrar aviso" onclick="VPPremium.cerrarAvisoVentas(\'' + etapa + '\')">' + ico('close') + '</button>') +
+      '</div>';
+  }
+
+  function cerrarAvisoVentas(etapa) {
+    try { localStorage.setItem(llaveCerrado(etapa), '1'); } catch (e) {}
+    var el = document.getElementById('vpLimAviso');
+    if (el) el.remove();
+  }
+
+  function hojaBloqueo() {
+    cssLimite();
+    estilosPlanes();
+    var abrirModal = fn('openModal');
+    var html = '<div class="vp-lim-hoja">' +
+        '<div class="vp-lim-ico">' + ico('alert') + '</div>' +
+        '<h2>Llegaste a tus ' + VENTAS_LIMITE + ' ventas del mes</h2>' +
+        '<p>El plan Básico incluye ' + VENTAS_LIMITE + ' ventas al mes. Activa Premium para seguir cobrando sin límite, o vuelve a cobrar a partir del ' +
+          fechaLarga(primeroDelMesQueSigue()) + '. Tu carrito se queda guardado.</p>' +
+        '<button type="button" class="vp-pl-btn" onclick="VPPremium.abrir(\'ventas\')">Ver Premium</button>' +
+        '<button type="button" class="vp-lim-no" onclick="closeModal()">Ahora no</button>' +
+      '</div>';
+    if (abrirModal) abrirModal(html, { dismissible: true });
+    else avisar('Llegaste a tus ' + VENTAS_LIMITE + ' ventas del mes', { subtitle: 'Activa Premium para seguir cobrando', variant: 'toast-danger' });
+  }
+
+  function engancharLimite() {
+    /* 1) Cobrar: se revisa justo antes de registrar la venta */
+    var cobro = window.confirmarCobro;
+    if (typeof cobro === 'function' && !cobro.__vpLim) {
+      var envuelto = function () {
+        if (ventasMes().bloqueado) { vibra(20); hojaBloqueo(); return; }
+        var r = cobro.apply(this, arguments);
+        /* Por si con esta venta se cruzó un aviso: se repinta Nueva venta */
+        setTimeout(function () {
+          var v = document.getElementById('view');
+          if (v && v.dataset.v === 'sale' && etapaLimite(ventasMes()) && !document.getElementById('vpLimAviso')) {
+            try { if (typeof window.render === 'function') window.render(); } catch (e) {}
+          }
+        }, 0);
+        return r;
+      };
+      envuelto.__vpLim = true;
+      try { window.confirmarCobro = envuelto; } catch (e) {}
+    }
+    /* 2) El aviso chiquito arriba de Nueva venta */
+    var rs = window.renderSale;
+    if (typeof rs === 'function' && !rs.__vpLim) {
+      var env2 = function () {
+        var html = rs.apply(this, arguments);
+        if (typeof html !== 'string') return html;
+        var aviso = '';
+        try { aviso = avisoLimiteHTML(); } catch (e) {}
+        return aviso + html;
+      };
+      env2.__vpLim = true;
+      try { window.renderSale = env2; } catch (e) {}
+    }
+    return !!(window.confirmarCobro && window.confirmarCobro.__vpLim && window.renderSale && window.renderSale.__vpLim);
+  }
+
   function engancharTodo() {
     soltarLaApp();
     quitarBienvenida();
@@ -1071,8 +1241,9 @@
     engancharAtras();
     var a = engancharChat();
     var b = engancharEscaner();
+    var c = engancharLimite();
     pintarMascota();
-    return a && b;
+    return a && b && c;
   }
 
   function arrancar() {
@@ -1837,6 +2008,8 @@
     pagar: pagar,
     pagoPagar: pagoPagar,
     pagoListo: pagoListo,
+    ventasMes: ventasMes,
+    cerrarAvisoVentas: cerrarAvisoVentas,
     puerta: puerta,
     precio: PRECIO,
     precioTxt: precioTxt,
