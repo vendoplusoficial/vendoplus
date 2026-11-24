@@ -5170,6 +5170,25 @@ body.pg-mode{ background:#F4F6FA; }
 .brand-mark svg.vp-logo, .auth-brand-mark svg.vp-logo, .logo svg.vp-logo{ width:76% !important; height:auto !important; }
 #splash .splash-mark svg.vp-logo{ width:74% !important; height:auto !important; }
 </style>
+<style>
+/* ===== Sin fondo amarillo del autocompletado =====
+   Safari/Chrome pintan de amarillo los campos que llenan solos (correo,
+   contraseña). Lo tapamos con una sombra interior del color normal del
+   campo y dejamos la letra en el color de siempre. */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus,
+input:-webkit-autofill:active, textarea:-webkit-autofill, select:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 1000px var(--surface, #fff) inset !important;
+  box-shadow:0 0 0 1000px var(--surface, #fff) inset !important;
+  -webkit-text-fill-color:var(--ink, #16213E) !important;
+  caret-color:var(--ink, #16213E);
+  transition:background-color 99999s ease-in-out 0s !important;
+}
+input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px var(--surface, #fff) inset, 0 0 0 3px rgba(var(--brand-rgb, 37,211,102),.14) !important;
+  box-shadow:0 0 0 1000px var(--surface, #fff) inset, 0 0 0 3px rgba(var(--brand-rgb, 37,211,102),.14) !important;
+}
+input:autofill{ background-color:var(--surface, #fff) !important; }
+</style>
 </head>
 <body>
 <noscript>
