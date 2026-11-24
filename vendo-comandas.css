@@ -160,3 +160,28 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-live{ display:flex; align-items:center; gap:8px; margin:12px 0 0; font-size:13px; font-weight:700; color:#8A6000; }
 .cm-live.on{ color:var(--sec-home-ink, #0F8F46); }
 .cm-live svg{ width:16px; height:16px; flex:none; }
+
+/* Cocina: pasos y un solo botón grande */
+.cm-kmeta{ display:flex; flex-wrap:wrap; gap:6px 14px; margin:-6px 0 12px; font-size:13px; font-weight:700; color:var(--ink-soft); }
+.cm-kmeta span{ display:inline-flex; align-items:center; gap:5px; }
+.cm-kmeta svg{ width:15px; height:15px; }
+.cm-steps{ display:flex; align-items:center; margin:0 0 14px; padding:12px 14px; border-radius:16px; background:var(--surface-alt, #F1F3F7); }
+.cm-step{ display:flex; flex-direction:column; align-items:center; gap:4px; flex:none; color:var(--ink-faint, #A3AAB5); }
+.cm-step i{ display:inline-flex; width:38px; height:38px; align-items:center; justify-content:center; border-radius:50%; background:var(--surface, #fff); border:2px solid currentColor; }
+.cm-step i svg{ width:19px; height:19px; }
+.cm-step small{ font-size:11.5px; font-weight:800; }
+.cm-step.done{ color:var(--success, #19C15F); }
+.cm-step.done i{ background:var(--success, #19C15F); border-color:var(--success, #19C15F); color:#fff; }
+.cm-step.now{ color:var(--ink); }
+.cm-step.now i{ background:var(--ink); border-color:var(--ink); color:#fff; transform:scale(1.08); }
+.cm-step-bar{ flex:1; height:3px; margin:0 6px 18px; border-radius:3px; background:var(--border); }
+.cm-step-bar.done{ background:var(--success, #19C15F); }
+.cm-notes-flag{ display:inline-flex; align-items:center; gap:6px; margin:0 0 6px; padding:5px 11px; border-radius:999px; background:var(--accent-soft); color:#8A6000; font-size:13px; font-weight:800; }
+.cm-notes-flag svg{ width:15px; height:15px; }
+.cm-go{ display:flex; align-items:center; justify-content:center; gap:10px; font-size:19px !important; font-weight:800; padding:19px 20px !important; border-radius:18px !important; color:#fff; }
+.cm-go svg{ width:24px !important; height:24px !important; }
+.cm-go-prep{ background:#2456C8; box-shadow:0 8px 20px rgb(36 86 200 / 25%); }
+.cm-go-ok{ background:var(--success, #19C15F); box-shadow:0 8px 20px rgb(25 193 95 / 28%); }
+.cm-wait{ display:flex; align-items:center; justify-content:center; gap:8px; padding:16px; border-radius:16px; background:var(--success-bg, #E5FAEC); color:#1F6B49; font-size:16px; font-weight:800; }
+.cm-wait svg{ width:20px; height:20px; }
+.cm-undo{ align-self:center; border:none; background:none; color:var(--ink-soft); font:inherit; font-size:13px; font-weight:700; text-decoration:underline; cursor:pointer; padding:4px 8px; }

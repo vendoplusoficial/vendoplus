@@ -33,7 +33,7 @@ window.VPComandas = (() => {
   const ORDER = ['caja', 'mesero', 'cocina'];
   const ESTADOS = {
     nuevo:      { label:'Nueva',      cls:'nuevo' },
-    preparando: { label:'Preparando', cls:'prep' },
+    preparando: { label:'Cocinando', cls:'prep' },
     listo:      { label:'Lista',      cls:'ok' },
     entregado:  { label:'Entregada',  cls:'cancel' },
     cancelado:  { label:'Cancelada',  cls:'no' }
@@ -928,18 +928,24 @@ window.VPComandas = (() => {
     st.open = { kind:'comanda', id };
     openModal(comandaHTML(k), { dismissible:true });
   }
+  /* Íconos de los pasos de cocina */
+  const FIRE = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21c-4 0-6.5-2.7-6.5-6.2 0-3.4 2.6-5.4 3.6-8.8.3-1 1.6-1.2 2.2-.4 1 1.4 1.4 2.8 1.4 4 .8-.5 1.4-1.3 1.6-2.3.2-.7 1-.9 1.5-.4 1.6 1.7 2.7 4 2.7 7 0 4-2.5 7.1-6.5 7.1Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 21c-1.8 0-3-1.2-3-2.9 0-1.9 1.6-2.7 2.3-4.3.8 1 3.7 2 3.7 4.4 0 1.6-1.2 2.8-3 2.8Z" fill="currentColor"/></svg>';
+  function pasosHTML(st) {
+    const i = { nuevo:0, preparando:1, listo:2, entregado:2 }[st] ?? 0;
+    const p = [[icon('inbox'), 'Nueva'], [FIRE, 'Cocinando'], [icon('check'), 'Lista']];
+    return `<div class="cm-steps">${p.map((x, n) => `<span class="cm-step ${n < i ? 'done' : ''} ${n === i ? 'now' : ''}"><i>${x[0]}</i><small>${x[1]}</small></span>${n < 2 ? '<b class="cm-step-bar ' + (n < i ? 'done' : '') + '"></b>' : ''}`).join('')}</div>`;
+  }
   function comandaHTML(k) {
     const e = ESTADOS[k.status];
     const notas = k.items.filter(i => i.note).length;
     let acts = '';
     if (k.status === 'nuevo') acts = `
-      <button class="btn primary block" onclick="VPComandas.estado('${k.id}','preparando')">${icon('clock')} Empezar a preparar</button>
-      <button class="btn ghost block" onclick="VPComandas.estado('${k.id}','listo')">${icon('check')} Ya está lista</button>`;
+      <button class="btn xl block cm-go cm-go-prep" onclick="VPComandas.estado('${k.id}','preparando')">${FIRE} Preparar</button>`;
     else if (k.status === 'preparando') acts = `
-      <button class="btn primary block" onclick="VPComandas.estado('${k.id}','listo')">${icon('check')} ¡Lista! Avisar al mesero</button>`;
+      <button class="btn xl block cm-go cm-go-ok" onclick="VPComandas.estado('${k.id}','listo')">${icon('check')} Lista</button>`;
     else if (k.status === 'listo') acts = `
-      <div class="mdi-banner ok">${icon('bell')}<span><b>Lista · esperando al mesero</b>Se le avisó a ${escapeHtml(k.by || 'el mesero')} ${ago(k.readyAt || k.at)}.</span></div>
-      <button class="btn ghost block" onclick="VPComandas.estado('${k.id}','preparando')">Regresar a preparando</button>`;
+      <div class="cm-wait">${icon('bell')} Esperando al mesero</div>
+      <button class="cm-undo" onclick="VPComandas.estado('${k.id}','preparando')">Deshacer</button>`;
     return `
       <i class="fs-marker" hidden></i><i class="cm-open" data-id="${k.id}" hidden></i>
       <div class="sheet-header">
@@ -949,13 +955,13 @@ window.VPComandas = (() => {
         </div>
         <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
       </div>
-      <div class="mdi-meta">
-        <span>${icon('person')} Mesero: <b>${escapeHtml(k.by || '')}</b></span>
-        <span>${icon('clock')} Ronda ${k.round || 1} · mandada a las ${fmtTime(k.at)} (${ago(k.at)})</span>
-        ${k.startedAt ? `<span>${icon('check')} En preparación desde las ${fmtTime(k.startedAt)}</span>` : ''}
+      <div class="cm-kmeta">
+        <span>${icon('person')} ${escapeHtml(k.by || '')}</span>
+        <span>${icon('clock')} ${ago(k.at)}</span>
+        <span>Ronda ${k.round || 1}</span>
       </div>
-      ${notas ? `<div class="mdi-banner warn">${icx('note')}<span><b>${plural(notas, 'producto con nota', 'productos con nota')}</b>Revisa las indicaciones del cliente antes de prepararlo.</span></div>` : ''}
-      <div class="mdi-block-title cm-block-t">${plural(unitsOf(k.items), 'producto', 'productos')}</div>
+      ${pasosHTML(k.status)}
+      ${notas ? `<div class="cm-notes-flag">${icx('note')} ${plural(notas, 'nota', 'notas')}</div>` : ''}
       <div class="cm-lines">${lineasHTML(k.items)}</div>
       <div class="cm-sheet-acts">${acts}</div>`;
   }
