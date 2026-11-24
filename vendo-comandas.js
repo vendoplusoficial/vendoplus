@@ -40,7 +40,7 @@ window.VPComandas = (() => {
   };
 
   /* Estado de pantallas */
-  const st = { screen:'home', area:null, form:null, permsDraft:null, kf:'activas', open:null };
+  const st = { screen:'home', area:null, form:null, permsDraft:null, kf:'activas', mtab:'mesas', open:null };
 
   /* ---------- Quién está usando la app ---------- */
   function myArea() {
@@ -537,6 +537,31 @@ window.VPComandas = (() => {
     </div>`;
   }
 
+  /* ---------- Cada mesero con sus mesas ---------- */
+  const duenoDe = o => (o && ((o.cm && o.cm.waiterId) || o.byId)) || '';
+  const nombreDe = o => (o && ((o.cm && o.cm.waiterName) || o.by)) || 'otro mesero';
+  function esMiMesa(o) { const yo = me(); return !!o && !!yo && (duenoDe(o) === yo.id || !duenoDe(o)); }
+  /* Comandas listas que le tocan a este mesero (de sus mesas) */
+  function misListas() {
+    const yo = me();
+    return tickets().filter(k => {
+      if (k.status !== 'listo') return false;
+      const o = orderById(k.orderId);
+      return o ? esMiMesa(o) : (!!yo && k.byId === yo.id);
+    });
+  }
+  /* Juntas por mesa: dos rondas de la misma mesa = un solo aviso */
+  function listasPorMesa() {
+    const g = {};
+    misListas().forEach(k => { const key = k.orderId || k.tableId; (g[key] = g[key] || { key, table:k.table, ks:[] }).ks.push(k); });
+    return Object.values(g).map(x => {
+      x.ks.sort((a, b) => (a.round || 1) - (b.round || 1));
+      x.at = x.ks.reduce((m, k) => Math.min(m, new Date(k.readyAt || k.at).getTime()), Infinity);
+      x.items = x.ks.flatMap(k => k.items);
+      return x;
+    }).sort((a, b) => a.at - b.at);
+  }
+
   /* Estado de una mesa para el plano */
   function mesaEstado(o, tks, modo) {
     if (!o) return { cls:'', label:'Libre' };
@@ -545,6 +570,7 @@ window.VPComandas = (() => {
     const cocina = ks.some(k => k.status === 'nuevo' || k.status === 'preparando');
     const cuenta = !!(o.cm && o.cm.billAt);
     if (modo === 'caja') return { cls:'is-occupied' + (cuenta ? ' cm-bill' : ''), label:cuenta ? 'Pide cuenta' : formatMoney(o.total) };
+    if (!esMiMesa(o)) return { cls:'cm-other', label:userFirstName({ name:nombreDe(o) }) || 'Otro' };
     if (listas) return { cls:'is-occupied cm-ready', label:'¡Lista!' };
     if (cuenta) return { cls:'is-occupied cm-bill', label:'Pidió cuenta' };
     return { cls:'is-occupied', label:cocina ? 'En cocina' : 'Ocupada' };
@@ -555,7 +581,7 @@ window.VPComandas = (() => {
     const tks = tickets();
     const legend = modo === 'caja'
       ? [['', 'Libre'], ['is-occupied', 'Abierta'], ['cm-bill', 'Pide cuenta']]
-      : [['', 'Libre'], ['is-occupied', 'Ocupada'], ['cm-ready', 'Comanda lista'], ['cm-bill', 'Pidió cuenta']];
+      : [['', 'Libre'], ['is-occupied', 'Mía'], ['cm-ready', 'Lista'], ['cm-bill', 'Pidió cuenta'], ['cm-other', 'De otro mesero']];
     return `
       <div class="vp-floor cm-floor" aria-label="Plano de mesas">
         ${VPMesas.layout().map(t => {
@@ -570,7 +596,12 @@ window.VPComandas = (() => {
 
   function tocarMesa(id) {
     if (esCajero()) { const o = VPMesas.openOrders().get(id); if (!o) { toast('Esta mesa está libre', { subtitle:'No tiene cuenta por cobrar.' }); return; } abrirCuenta(o.id); return; }
-    if (esMesero()) { const o = VPMesas.openOrders().get(id); if (o) abrirCuenta(o.id); else ronda(id); }
+    if (esMesero()) {
+      const o = VPMesas.openOrders().get(id);
+      if (!o) ronda(id);
+      else if (esMiMesa(o)) abrirCuenta(o.id);
+      else mesaAjena(o);
+    }
   }
 
   /* Líneas de la comanda con foto, cantidad y nota (cocina y detalle) */
@@ -639,7 +670,7 @@ window.VPComandas = (() => {
         <button class="btn ghost block" onclick="VPComandas.editarCuenta('${o.id}')">${icon('edit')} Revisar o corregir la cuenta</button>`;
     } else {
       acts = `
-        ${listas.length ? `<button class="btn primary block" onclick="VPComandas.verLista('${listas[0].id}')">${icon('bell')} Recoger pedido listo</button>` : ''}
+        ${listas.length ? `<button class="btn primary block" onclick="VPComandas.verLista('${o.id}')">${icon('bell')} Recoger pedido listo</button>` : ''}
         <button class="btn ${listas.length ? 'ghost' : 'primary'} block" onclick="VPComandas.ronda('${escapeHtml(o.checkout.floorTableId)}')">${icon('plus')} Agregar productos</button>
         ${cuenta ? `<button class="btn ghost block" onclick="VPComandas.pedirCuenta('${o.id}')">${icon('close')} Quitar aviso de cuenta</button>`
                  : holdBtn('cm-go-bill', icon('cash') + ' Pedir la cuenta', 'pedirCuenta', [o.id])}`;
@@ -671,21 +702,64 @@ window.VPComandas = (() => {
   ========================================================= */
   function meseroHTML() {
     const yo = me();
-    const listas = tickets().filter(k => k.status === 'listo')
-      .sort((a, b) => new Date(a.readyAt || a.at) - new Date(b.readyAt || b.at));
+    const grupos = listasPorMesa();
+    const tab = st.mtab === 'listos' ? 'listos' : 'mesas';
     return `
       <h1 class="page-title">Mesas</h1>
-      <p class="page-sub">Hola, ${escapeHtml(userFirstName(yo) || yo.name)} · Toca una mesa para tomar o ver su pedido</p>
+      <p class="page-sub">Hola, ${escapeHtml(userFirstName(yo) || yo.name)}</p>
       ${soloBar()}
-      <div class="cm-notif ${listas.length ? 'on' : ''}">
-        <div class="cm-notif-h">${icon('bell')} <b>Pedidos listos</b>${listas.length ? `<span class="cm-notif-n">${listas.length}</span>` : ''}</div>
-        ${listas.length ? listas.map(k => `<button type="button" class="cm-notif-row" onclick="VPComandas.verLista('${k.id}')">
-          <span class="cm-notif-mesa">${escapeHtml(k.table)}</span>
-          <span class="cm-notif-txt"><b>Ronda ${k.round || 1} · lista ${ago(k.readyAt || k.at)}</b><small>${resumen(k.items)}</small></span>
-          <span class="cm-notif-go">Recoger ${icon('chevronRight')}</span>
-        </button>`).join('') : `<p class="cm-notif-empty">Nada por recoger. Te avisamos cuando cocina termine.</p>`}
+      <div class="cm-tabs" role="tablist">
+        <button type="button" role="tab" class="cm-tab ${tab === 'mesas' ? 'on' : ''}" onclick="VPComandas.tabMesero('mesas')">${VPMesas.tableIcon} Mesas</button>
+        <button type="button" role="tab" class="cm-tab ${tab === 'listos' ? 'on' : ''} ${grupos.length ? 'has' : ''}" onclick="VPComandas.tabMesero('listos')">${icon('bell')} Listos${grupos.length ? `<span class="cm-tab-n">${grupos.length}</span>` : ''}</button>
       </div>
-      ${planoHTML('mesero')}`;
+      ${tab === 'mesas' ? planoHTML('mesero') : (grupos.length ? `<div class="cm-pick">${grupos.map(g => `
+        <button type="button" class="cm-pick-card" onclick="VPComandas.verLista('${escapeHtml(g.key)}')">
+          <span class="cm-pick-mesa">${escapeHtml(g.table)}</span>
+          <span class="cm-pick-txt">
+            <b>${g.ks.length > 1 ? plural(g.ks.length, 'ronda lista', 'rondas listas') : 'Ronda ' + (g.ks[0].round || 1) + ' lista'}</b>
+            <small>${resumen(g.items)}</small>
+            <small class="cm-pick-time">${icon('clock')} ${ago(new Date(g.at).toISOString())}</small>
+          </span>
+          <span class="cm-pick-go">Recoger ${icon('chevronRight')}</span>
+        </button>`).join('')}</div>` : `
+        <div class="mdi-empty">
+          <span class="mdi-empty-ico">${icon('bell')}</span>
+          <b>Nada por recoger</b>
+          <span>Cuando cocina termine un pedido de tus mesas, aparecerá aquí.</span>
+        </div>`)}`;
+  }
+  function tabMesero(t) { st.mtab = t; vibrate(6); render(); }
+
+  /* Mesa que atiende otro mesero */
+  function mesaAjena(o) {
+    const quien = escapeHtml(nombreDe(o));
+    openModal(`
+      <div class="sheet-header">
+        <div class="sheet-header-left" style="min-width:0;"><h2>${escapeHtml(tableName(o))}</h2><span class="mdi-pill cancel">${quien}</span></div>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      <div class="cm-other-box">
+        <span class="cm-other-av">${escapeHtml(initialsOf(nombreDe(o)))}</span>
+        <b>Esta mesa la atiende ${quien}</b>
+        <small>Solo tómala si ${quien} ya no está o te lo pidió.</small>
+      </div>
+      <div class="cm-sheet-acts">
+        ${holdBtn('cm-go cm-go-take', icon('swap') + ' Tomar esta mesa', 'tomarMesa', [o.id])}
+        <button class="cm-undo" onclick="closeModal()">Mejor no</button>
+      </div>
+    `, { dismissible:true });
+  }
+  function tomarMesa(orderId) {
+    const yo = me();
+    const list = DB.getTableOrders();
+    const o = list.find(x => x.id === orderId);
+    if (!o || !yo) { closeModal(); render(); return; }
+    const antes = nombreDe(o);
+    o.cm = Object.assign({}, o.cm, { waiterId:yo.id, waiterName:yo.name, takenFrom:antes, takenAt:nowIso(), updatedAt:nowIso() });
+    DB.saveTableOrders(list);
+    render();
+    abrirCuenta(orderId);
+    toast('Ahora ' + tableName(o) + ' es tuya', { variant:'toast-success', icon:icon('check'), subtitle:'Antes la atendía ' + antes });
   }
 
   /* Empieza una ronda nueva en la mesa: el catálogo con el carrito vacío */
@@ -814,37 +888,39 @@ window.VPComandas = (() => {
     toast(n === 1 ? 'Comanda entregada' : n + ' comandas entregadas', { variant:'toast-success', icon:icon('check') });
   }
 
-  /* Comanda lista: "¿Ya tienes el pedido?" con lo que hay que llevar */
-  function verLista(id) {
-    const k = tickets().find(x => x.id === id);
-    if (!k || k.status !== 'listo') { closeModal(); render(); return; }
+  /* Recoger: "¿Ya tienes el pedido?" con todo lo listo de esa mesa */
+  function verLista(key) {
+    const g = listasPorMesa().find(x => x.key === key)
+      || (() => { const k = tickets().find(x => x.id === key && x.status === 'listo'); return k ? { key:k.orderId || k.tableId, table:k.table, ks:[k], items:k.items } : null; })();
+    if (!g) { closeModal(); render(); return; }
     openModal(`
       <div class="sheet-header">
-        <div class="sheet-header-left" style="min-width:0;"><h2>${escapeHtml(k.table)}</h2><span class="mdi-pill ok">Lista</span></div>
+        <div class="sheet-header-left" style="min-width:0;"><h2>${escapeHtml(g.table)}</h2><span class="mdi-pill ok">${g.ks.length > 1 ? plural(g.ks.length, 'ronda', 'rondas') : 'Lista'}</span></div>
         <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
       </div>
       <div class="cm-todo">
         <span class="cm-todo-step"><i>${icon('inbox')}</i><small>Recoge en cocina</small></span>
         <b class="cm-todo-arrow">${icon('chevronRight')}</b>
-        <span class="cm-todo-step"><i>${VPMesas.tableIcon}</i><small>Lleva a ${escapeHtml(k.table)}</small></span>
+        <span class="cm-todo-step"><i>${VPMesas.tableIcon}</i><small>Lleva a ${escapeHtml(g.table)}</small></span>
       </div>
-      <div class="cm-lines">${lineasHTML(k.items)}</div>
+      <div class="cm-lines">${lineasHTML(g.items)}</div>
       <div class="cm-sheet-acts">
         <p class="cm-ask">¿Ya tienes el pedido?</p>
-        ${holdBtn('cm-go cm-go-ok', icon('check') + ' Ya lo tengo', 'entregarTicket', [k.id])}
+        ${holdBtn('cm-go cm-go-ok', icon('check') + ' Ya lo tengo', 'entregarGrupo', [g.ks.map(k => k.id)])}
         <button class="cm-undo" onclick="closeModal()">Todavía no</button>
       </div>
     `, { dismissible:true });
   }
-  function entregarTicket(id) {
+  function entregarGrupo(ids) {
     const list = tickets();
-    const k = list.find(x => x.id === id);
-    if (!k || k.status !== 'listo') { closeModal(); render(); return; }
-    k.status = 'entregado'; k.deliveredAt = nowIso(); k.deliveredBy = meName();
-    saveTickets(list);
+    let mesa = '', n = 0;
+    list.forEach(k => { if (ids.indexOf(k.id) >= 0 && k.status === 'listo') { k.status = 'entregado'; k.deliveredAt = nowIso(); k.deliveredBy = meName(); mesa = k.table; n++; } });
     closeModal();
+    if (!n) { render(); return; }
+    saveTickets(list);
+    if (!listasPorMesa().length) st.mtab = 'mesas';
     render();
-    toast('¡Listo! Llévalo a ' + k.table, { variant:'toast-success', icon:icon('check') });
+    toast('¡Listo! Llévalo a ' + mesa, { variant:'toast-success', icon:icon('check') });
   }
 
   function pedirCuenta(orderId) {
@@ -1148,7 +1224,7 @@ window.VPComandas = (() => {
       beep(); vibrate([30, 80, 30]);
       toast(nuevas.length === 1 ? 'Nueva comanda · ' + nuevas[0].table : nuevas.length + ' comandas nuevas', { icon:icon('bell'), variant:'toast-success toast-top', subtitle:nuevas.length === 1 ? 'De ' + (nuevas[0].by || 'el mesero') : '', duration:3500 });
     }
-    const mias = listas.filter(k => area === 'mesero' && (!yo || k.byId === yo.id || ((orderById(k.orderId) || {}).cm || {}).waiterId === yo.id));
+    const mias = area === 'mesero' ? listas.filter(k => { const o = orderById(k.orderId); return o ? esMiMesa(o) : (!!yo && k.byId === yo.id); }) : [];
     if (mias.length) {
       beep(); vibrate([30, 80, 30]);
       toast(mias[0].table + ' · comanda lista', { icon:icon('bell'), variant:'toast-success toast-top', subtitle:'Pásala a recoger a cocina', duration:4000 });
@@ -1336,7 +1412,7 @@ window.VPComandas = (() => {
   return {
     abrir, guard, esMesero, esCocina, esCajero, puedeAdministrar,
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
-    tocarMesa, abrirCuenta, verLista, entregarTicket, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
+    tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
     filtro, abrirComanda, estado, historial, cambiar, sync:() => Sync.run()
   };

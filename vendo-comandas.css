@@ -229,3 +229,38 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-todo-arrow{ display:inline-flex; color:var(--ink-soft); margin-bottom:20px; }
 .cm-todo-arrow svg{ width:22px; height:22px; }
 .cm-ask{ margin:0; text-align:center; font-size:17px; font-weight:800; color:var(--ink); }
+
+/* Mesero: pestañas Mesas | Listos (el plano no se mueve) */
+.cm-tabs{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:0 0 12px; padding:5px; border-radius:16px; background:var(--surface-alt, #F1F3F7); }
+.cm-tab{ display:flex; align-items:center; justify-content:center; gap:7px; padding:11px 10px; border:none; border-radius:12px; background:transparent; color:var(--ink-soft); font:inherit; font-size:14.5px; font-weight:800; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cm-tab svg{ width:18px; height:18px; }
+.cm-tab.on{ background:var(--surface, #fff); color:var(--ink); box-shadow:0 2px 8px rgb(20 32 62 / 10%); }
+.cm-tab.has:not(.on){ color:var(--brand-ink, #0F8F46); }
+.cm-tab-n{ min-width:22px; height:22px; padding:0 6px; display:inline-grid; place-items:center; border-radius:999px; background:var(--brand); color:#fff; font-size:12px; font-weight:800; }
+.cm-tab.has:not(.on) .cm-tab-n{ animation:cm-pop 1.4s ease-in-out infinite; }
+@keyframes cm-pop{ 50%{ transform:scale(1.18); } }
+@media (prefers-reduced-motion:reduce){ .cm-tab.has:not(.on) .cm-tab-n{ animation:none; } }
+
+/* Mesero: pedidos listos, uno por mesa */
+.cm-pick{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px; }
+.cm-pick-card{ display:flex; align-items:center; gap:12px; width:100%; padding:14px; border:1.5px solid var(--brand); border-radius:18px; background:var(--surface, #fff); color:var(--ink); font:inherit; text-align:left; cursor:pointer; box-shadow:0 2px 10px rgb(20 32 62 / 6%); }
+.cm-pick-card:active{ transform:scale(.985); }
+.cm-pick-mesa{ flex:none; min-width:70px; padding:14px 8px; border-radius:14px; background:var(--brand); color:#fff; text-align:center; font-size:15px; font-weight:800; }
+.cm-pick-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.cm-pick-txt b{ font-size:14.5px; font-weight:800; }
+.cm-pick-txt small{ font-size:12.5px; color:var(--ink-soft); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cm-pick-time{ display:inline-flex; align-items:center; gap:4px; }
+.cm-pick-time svg{ width:12px; height:12px; }
+.cm-pick-go{ flex:none; display:inline-flex; align-items:center; gap:2px; font-size:13.5px; font-weight:800; color:var(--brand-ink, #0F8F46); }
+.cm-pick-go svg{ width:16px; height:16px; }
+
+/* Mesas de otro mesero */
+.vp-floor-table.cm-other{ background:var(--surface-alt, #F1F3F7); border-style:dashed; color:var(--ink-soft); box-shadow:none; }
+.vp-floor-table.cm-other small{ color:var(--ink-soft); font-weight:700; }
+.cm-legend i.cm-other{ background:var(--surface-alt, #F1F3F7); border-style:dashed; }
+.cm-other-box{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:18px 14px; border-radius:16px; background:var(--surface-alt, #F1F3F7); text-align:center; }
+.cm-other-av{ display:inline-grid; place-items:center; width:52px; height:52px; border-radius:50%; background:var(--ink); color:#fff; font-size:18px; font-weight:800; }
+.cm-other-box b{ font-size:16px; font-weight:800; color:var(--ink); }
+.cm-other-box small{ font-size:13px; font-weight:600; color:var(--ink-soft); }
+.cm-go-take{ background:var(--ink); color:#fff; font-size:17px !important; font-weight:800; padding:15px 18px !important; border-radius:16px !important; }
+.cm-go-take svg{ width:20px; height:20px; }
