@@ -5162,6 +5162,12 @@ body.pg-mode{ background:#F4F6FA; }
 }
 .mdi-pay-pill.st-pill{ color:#5A45F2 !important; }
 .st-fin-btn{ margin-top:12px; }
+/* Barra lateral de PC: solo si el Dueño tiene Stripe enlazado (va pegado a Caja y corte) */
+.navbtn.st-nav{ display:none !important; }
+@media (min-width:700px){
+  body.st-fin-on .navbtn.st-nav{ display:flex !important; }
+  .bottomnav .navbtn[data-view="stripefin"]{ order:4 !important; }
+}
 
 /* ===== Finanzas de Stripe ===== */
 .stf{ transition:opacity .2s ease; }
@@ -5490,6 +5496,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
+    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="coin" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -16857,8 +16864,6 @@ function mdChecklist(){
            : '¿Aceptas transferencias? Toca para responder',
         action:'mdOpenTransferForm()' };
     })(),
-    ...(stLinked() ? [{ label:'Finanzas de Stripe', ok:true, owner:true,
-      sub:'Tu saldo, retiros, devoluciones e historial', action:'stOpenFinanzas()' }] : []),
     { label:'WhatsApp del negocio', ok:!!wa,
       sub:wa ? escapeHtml(mdWhatsappLabel()) + (wa.fromAccount ? ' · el de tu cuenta de ' + APP_NAME : ' · aquí llegan los pedidos') : 'Aquí te llegarán los pedidos', action:'mdOpenWhatsappForm()' },
     { label:'Productos del menú', ok:prods.length > 0, free:true,
@@ -19661,12 +19666,14 @@ const STRIPE_LOGO = '<svg class="st-logo" viewBox="0 0 60 25" role="img" aria-la
 
 function stCfg(){ const s = (mdCfg().payments || {}).st || {}; return { on:!!s.on, ready:!!s.ready, name:s.name || '', at:s.at || null }; }
 function stLinked(){ const s = stCfg(); return s.on && s.ready; }
+function stNavSync(){ try{ document.body.classList.toggle('st-fin-on', stLinked() && isOwner()); }catch(e){} }
 function stSaveCfg(j){
   const cfg = mdCfg();
   const antes = JSON.stringify(cfg.payments.st || {});
   cfg.payments.st = { on:!!(j && j.connected), ready:!!(j && j.connected && j.ready), name:(j && j.name) || '', at:(j && j.connected) ? ((cfg.payments.st && cfg.payments.st.at) || new Date().toISOString()) : null };
   const cambio = antes !== JSON.stringify(cfg.payments.st);
   if(cambio) mdSaveCfg(cfg);
+  stNavSync();
   return cambio;
 }
 
@@ -19721,8 +19728,7 @@ function stBoxHTML(){
       <span class="st-box-sep" aria-hidden="true"></span>
       <span class="st-box-txt"><b>Stripe enlazado</b><button type="button" class="st-box-lnk" onclick="stAskUnlink()">Desenlazar</button></span>
     </div>
-    <p class="st-box-note">${s.name ? 'Cuenta ' + escapeHtml(s.name) + ' · ' : ''}tus clientes ya pueden pagar con tarjeta desde tu menú. El dinero llega a tu cuenta de Stripe.</p>
-    ${isOwner() ? `<button type="button" class="btn ghost block st-fin-btn" onclick="stOpenFinanzas()">${icon('coin')} Ver mi dinero, retiros y devoluciones</button>` : ''}`;
+    <p class="st-box-note">${s.name ? 'Cuenta ' + escapeHtml(s.name) + ' · ' : ''}tus clientes ya pueden pagar con tarjeta desde tu menú. El dinero llega a tu cuenta de Stripe.</p>`;
   }
   const pendiente = s.on && !s.ready;
   return `<div class="st-box" id="stBox">
@@ -19809,6 +19815,7 @@ function stAskUnlink(){
 
 /** Al arrancar: revisa el enlace y, si se regresó de Stripe, avisa. */
 function stBoot(){
+  stNavSync();
   let vuelta = null;
   try{
     const q = new URLSearchParams(location.search);
@@ -28311,18 +28318,30 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
       '</div>';
   };
   var MORE=[['stats','chart','Estadísticas'],['customers','users','Clientes y crédito'],['cash','cashbox','Caja y corte'],['account','person','Mi cuenta']];
+  /* Finanzas de Stripe: entre "Caja y corte" y "Mi cuenta", solo para el
+     Dueño y solo si tiene Stripe enlazado. */
+  function moreItems(){
+    var l=MORE.slice();
+    try{
+      if(typeof stLinked==='function' && stLinked() && isOwner()){
+        var i=l.findIndex(function(x){return x[0]==='account';});
+        l.splice(i<0?l.length:i,0,['stripefin','coin','Finanzas de Stripe']);
+      }
+    }catch(e){}
+    return l;
+  }
   function openMore(){
     var bg=q('.vp-sheet-bg');
     if(!bg){
       bg=document.createElement('div'); bg.className='vp-sheet-bg';
-      bg.innerHTML='<div class="vp-sheet">'+MORE.map(function(i){return '<button data-go="'+i[0]+'">'+icon(i[1])+'<span>'+i[2]+'</span></button>';}).join('')+'</div>';
       bg.addEventListener('click',function(e){
         var t=e.target.closest('[data-go]');
-        if(t){ hideMore(bg); if(t.dataset.go==='feedback'){ if(typeof openFeedback==='function') openFeedback(); } else goTo(t.dataset.go); }
+        if(t){ hideMore(bg); if(t.dataset.go==='feedback'){ if(typeof openFeedback==='function') openFeedback(); } else if(t.dataset.go==='stripefin'){ stOpenFinanzas(); } else goTo(t.dataset.go); }
         else if(e.target===bg) hideMore(bg);
       });
       document.body.appendChild(bg);
     }
+    bg.innerHTML='<div class="vp-sheet">'+moreItems().map(function(i){return '<button data-go="'+i[0]+'">'+icon(i[1])+'<span>'+i[2]+'</span></button>';}).join('')+'</div>';
     bg.classList.remove('hiding');
     bg.classList.add('show');
   }
