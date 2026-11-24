@@ -1053,6 +1053,9 @@
     if (typeof b !== 'function' || b.__vpPr) return;
     var envuelto = function () {
       if (document.querySelector('#modal-layer .vp-pr')) { atras(); return 'handled'; }
+      /* Con el anuncio en pantalla, atrás no hace nada: solo la × lo cierra */
+      var ad = document.querySelector('.vp-promo');
+      if (ad && ad.style.display !== 'none') return 'handled';
       return b.apply(this, arguments);
     };
     envuelto.__vpPr = true;
@@ -1453,9 +1456,31 @@
             (horizontal ? 'horizontal 1920 × 1080 px' : 'vertical 1080 × 1620 px') + '</span></div>') +
         '<button type="button" class="vp-promo-x" aria-label="Cerrar anuncio">' + ico('close') + '</button>' +
       '</div>';
+    /* Botón de ATRÁS (navegador, gesto o botón del celular): mientras el
+       anuncio exista, atrás nunca saca de la página. En los planes o el pago
+       da un paso atrás (pago → planes → anuncio); en el anuncio no hace nada.
+       Solo la × lo cierra. En la app de Android lo maneja __vendoBack. */
+    var conHist = false;
+    function enAtras() {
+      if (!document.body.contains(cont)) { soltarHist(); return; }
+      if (document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .vp-pr')) atras();
+      try { history.pushState({ vpPromo: 1 }, ''); } catch (e) {}
+    }
+    function soltarHist() {
+      if (!conHist) return;
+      conHist = false;
+      window.removeEventListener('popstate', enAtras);
+      try { if (history.state && history.state.vpPromo) history.back(); } catch (e) {}
+    }
+    if (typeof window.__vendoBack !== 'function' && window.history && history.pushState) {
+      try { history.pushState({ vpPromo: 1 }, ''); conHist = true; window.addEventListener('popstate', enAtras); } catch (e) {}
+    }
+    cont.__vpSoltar = soltarHist;
+
     function cerrarPromo() {
       if (cont.classList.contains('sale')) return;
       cont.classList.add('sale');
+      soltarHist();
       setTimeout(function () { cont.remove(); }, 230);
     }
     /* Solo la × cierra. Tocar fuera no hace nada (ni pica lo de atrás). */
@@ -1478,7 +1503,7 @@
         if (!visto && Date.now() - t0 < 1500) return;       /* todavía no termina de abrir */
         if (document.querySelector('#modal-layer .modal-overlay.is-closing')) return;   /* esperando su animación */
         clearInterval(vigila);
-        if (activo()) { cont.remove(); return; }           /* ya es Premium: listo */
+        if (activo()) { soltarHist(); cont.remove(); return; }   /* ya es Premium: listo */
         cont.style.display = '';
         var caja = cont.querySelector('.vp-promo-caja');
         if (caja) { caja.style.animation = 'none'; void caja.offsetWidth; caja.style.animation = ''; }
