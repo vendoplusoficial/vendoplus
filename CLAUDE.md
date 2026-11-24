@@ -1,5 +1,10 @@
 # Notas para Claude (VendoPlus)
 
+## Publicar al instante
+El usuario pidió que **todo cambio se publique de inmediato** sin esperar a que lo pida:
+al terminar, sube los cambios a `main` (es lo que se publica en vendoplusoficial.com)
+y avísale. No hace falta pedir permiso ni abrir pull request.
+
 ## PENDIENTE: cambiar el logo en la app de Android
 El usuario va a pasar los archivos de su **versión Android**. En cuanto los tengas,
 **cambia el logo viejo por el nuevo en TODOS lados**, sin que te lo vuelva a pedir.
