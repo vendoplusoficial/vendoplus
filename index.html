@@ -17659,7 +17659,7 @@ function dmClearCart(btn){
     clearTimeout(btn._t); btn._t = setTimeout(() => { if(btn.isConnected){ btn.classList.remove('ask'); btn.querySelector('span').textContent = 'Vaciar carrito'; } }, 3000);
     return;
   }
-  dm.cart = []; dm.co = null;
+  dm.cart = []; dm.co = null; dmCartSave();
   dmCloseSheet(); dmRefreshCards();
   dmToast('Carrito vacío');
 }
@@ -17712,14 +17712,50 @@ function dmSendWhatsApp(){
   dmToast('Pedido listo en WhatsApp');
 }
 
-/* El cliente regresó de la pantalla de pago para agregar o quitar cosas */
+/* El carrito del cliente se guarda en ESTA pestaña (sessionStorage): sigue
+   ahí si recarga la página o regresa de la pantalla de pago. Se vacía cuando
+   el pedido se manda (o se paga) y al cerrar la app o la pestaña. */
+function dmCartKey(){ return 'vp_menu_cart_' + (dm.id || ''); }
+function dmCartSave(){
+  if(!dm.id) return;
+  try{
+    if(!dm.cart || !dm.cart.length){ sessionStorage.removeItem(dmCartKey()); return; }
+    const co = Object.assign({}, dm.co || {}); delete co.code; delete co.geoTried;
+    sessionStorage.setItem(dmCartKey(), JSON.stringify({ cart:dm.cart, co:co }));
+  }catch(e){}
+}
 function dmRestoreCart(){
-  let r = null;
-  try{ r = JSON.parse(sessionStorage.getItem('vp_menu_restore') || 'null'); sessionStorage.removeItem('vp_menu_restore'); }catch(e){}
-  if(!r || r.menu !== dm.id || !Array.isArray(r.cart) || !r.cart.length) return;
-  dm.cart = r.cart;
-  dm.co = r.co || null;
-  dm.restored = true;
+  let r = null, abrir = false, pend = null;
+  try{
+    r = JSON.parse(sessionStorage.getItem(dmCartKey()) || 'null');
+    abrir = sessionStorage.getItem('vp_menu_open_cart') === '1'; sessionStorage.removeItem('vp_menu_open_cart');
+    pend = sessionStorage.getItem('vp_menu_pend_' + dm.id);
+  }catch(e){}
+  if(r && Array.isArray(r.cart) && r.cart.length){
+    dm.cart = r.cart;
+    if(r.co) dm.co = Object.assign({ geoTried:false }, r.co);
+    dm.restored = abrir;
+  }
+  /* Regresó de la pantalla de pago sin pagar (botón de atrás): ese pedido se
+     cancela y al volver a enviar se hace uno nuevo. Si sí pagó, se vacía. */
+  if(pend && typeof pgFetch === 'function'){
+    pgFetch(ST_FN.pago, { order_id:pend }).then(j => {
+      if(j && j.status === 'paid'){
+        try{ sessionStorage.removeItem('vp_menu_pend_' + dm.id); }catch(e){}
+        dm.cart = []; dm.co = null; dmCartSave(); dmRefreshCards();
+        return;
+      }
+      if(j && (j.status === 'processing')) return;
+      return pgFetch(ST_FN.pago, { order_id:pend, action:'cancel' }).then(() => { try{ sessionStorage.removeItem('vp_menu_pend_' + dm.id); }catch(e){} });
+    }).catch(() => {});
+  }
+  /* Se guarda solo: al salir, al recargar y cada ratito */
+  if(!dmRestoreCart.on){
+    dmRestoreCart.on = true;
+    window.addEventListener('pagehide', dmCartSave);
+    document.addEventListener('visibilitychange', () => { if(document.hidden) dmCartSave(); });
+    setInterval(dmCartSave, 1500);
+  }
 }
 
 /* ---------- Arranque del menú del cliente ---------- */
@@ -20589,6 +20625,7 @@ dmSendWhatsApp = async function(){
   const listo = msg => {
     dm.cart = [];
     dm.co = null;                 /* el nombre queda guardado en este celular */
+    dmCartSave();                 /* pedido enviado: el carrito se vacía de verdad */
     dmCloseSheet();
     dmRefreshCards();
     dmToast(msg);
@@ -20664,13 +20701,13 @@ async function dmSendAndPay(order){
   try{
     sessionStorage.setItem('vp_pago_wa_txt_' + order.id, order.waText);
     sessionStorage.setItem('vp_pago_menu_' + order.id, dm.id);
-    /* Por si regresa a agregar o quitar cosas: su carrito y sus datos */
-    const co = Object.assign({}, dm.co || {}); delete co.code;
-    sessionStorage.setItem('vp_pago_cart_' + order.id, JSON.stringify({ cart:dm.cart, co:co }));
+    /* El carrito NO se borra: sigue ahí si regresa a agregar o quitar cosas.
+       Se borra hasta que el pago queda confirmado (o cierra la app). */
+    sessionStorage.setItem('vp_menu_pend_' + dm.id, order.id);
   }catch(e){}
-  dm.cart = []; dm.co = null;
+  dmCartSave();
   dmVib([60, 40, 60]);
-  location.replace(location.pathname + location.search + '#pagar/' + encodeURIComponent(order.id));
+  location.assign(location.pathname + location.search + '#pagar/' + encodeURIComponent(order.id));
   location.reload();
 }
 
@@ -26367,6 +26404,8 @@ function bootStripePago(route){
   document.body.classList.add('dm-mode', 'pg-mode');
   const s = document.getElementById('splash'); if(s) s.remove();
   sp.id = route.id;
+  /* Con el botón de atrás del navegador se regresa al menú (con su carrito) */
+  window.addEventListener('hashchange', () => { if(dmRoute()) location.reload(); });
   const root = document.createElement('div'); root.id = 'spRoot'; root.className = 'pg sp';
   document.body.appendChild(root);
   spLoad();
@@ -26556,6 +26595,8 @@ function spEsperando(){
 function spOk(){
   const d = sp.data || {};
   if(sp.t){ clearInterval(sp.t); sp.t = null; }
+  /* Ya pagó: ahora sí se vacía el carrito del menú */
+  try{ const m = spMenuId(); if(m){ sessionStorage.removeItem('vp_menu_cart_' + m); sessionStorage.removeItem('vp_menu_pend_' + m); } }catch(e){}
   /* El número de WhatsApp del negocio solo llega cuando ya está pagado */
   if(!d.whatsapp && !sp.pidioWa){ sp.pidioWa = true; pgFetch(ST_FN.pago, { order_id:sp.id }).then(j => { sp.data = Object.assign({}, sp.data, j); spOk(); }).catch(() => {}); }
   const enviado = spWaEnviado();
@@ -26586,10 +26627,7 @@ async function spCambiar(){
     return;
   }
   const m = spMenuId();
-  try{
-    const guardado = sessionStorage.getItem('vp_pago_cart_' + sp.id);
-    if(guardado) sessionStorage.setItem('vp_menu_restore', JSON.stringify(Object.assign({ menu:m }, JSON.parse(guardado))));
-  }catch(e){}
+  try{ sessionStorage.removeItem('vp_menu_pend_' + m); sessionStorage.setItem('vp_menu_open_cart', '1'); }catch(e){}
   location.replace(location.pathname + '#menu/' + encodeURIComponent(m));
   location.reload();
 }
