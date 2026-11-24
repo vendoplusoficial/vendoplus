@@ -73,3 +73,7 @@
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+.vp-floor-table.cm-bill { background: var(--accent-soft, #FFF0C2); border-color: var(--accent-strong, #F5BF3C); }
+.vp-floor-table.cm-bill small { color: #8A6000; font-weight: 800; }
+.vp-floor-count.is-bill { background: var(--accent-strong, #F5BF3C); color: #16213E; }
+.sale-tools .vp-floor-quick.has-bill { border-color: var(--accent-strong, #F5BF3C); }
