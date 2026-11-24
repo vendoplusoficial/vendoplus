@@ -428,8 +428,8 @@
     { k: 'usuarios', t: 'Acceso para tus empleados',     basico: false },
     /* Cobros con tarjeta por Stripe (solo Premium): debajo, en chiquito,
        los dos cobros que incluye (cada uno en su renglón). */
-    { k: 'stripe',   t: 'Cobros con tarjeta Stripe',     basico: false, premium: 'Cobro con sensor|Cobro con tarjeta en menú digital' },
-    { k: 'apps',     t: 'Apps de Delivery',              basico: false, premium: 'Rappi / DiDi Food / Uber Eats' }
+    { k: 'stripe',   t: 'Cobros con tarjeta Stripe',     basico: false, premium: 'Cobro con sensor|Cobro con tarjeta en menú digital', sub: true },
+    { k: 'apps',     t: 'Apps de Delivery',              basico: false, premium: 'Rappi / DiDi Food / Uber Eats', sub: true }
   ];
   var SVG_SI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>';
   var SVG_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
@@ -437,6 +437,8 @@
   function planFila(f, plan, clave) {
     var v = plan === 'premium' ? (f.premium || true) : f.basico;
     var si = v !== false;
+    /* sub: lo que incluye se lee también en Básico (sin ponerlo en gris) */
+    if (!si && f.sub && typeof f.premium === 'string') v = f.premium;
     var nota = typeof v === 'string' ? String(v).replace('{N}', String(GRATIS_AL_MES)) : '';
     return '<li class="vp-pl-fila' + (si ? '' : ' no') + '">' +
              '<span class="vp-pl-ico">' + (si ? SVG_SI : SVG_NO) + '</span>' +
@@ -512,6 +514,7 @@
       '.vp-pl-ico svg{width:16px;height:16px;display:block;}',
       '.vp-pl-txt{min-width:0;}',
       '.vp-pl-txt small{display:block;font-size:11px;font-weight:400;color:var(--ink-soft,#6C7480);margin-top:1px;}',
+      '.vp-pl-fila.no .vp-pl-txt small{color:var(--ink-soft,#6C7480);}',
       '.vp-pl-pie{margin-top:14px;padding-top:12px;border-top:1px solid #EEF1F5;text-align:center;}',
       '.vp-pl-precio{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-bottom:10px;}',
       '.vp-pl-precio b{font-size:24px;font-weight:600;letter-spacing:-.6px;color:var(--ink,#15181C);}',
