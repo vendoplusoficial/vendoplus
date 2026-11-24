@@ -40,6 +40,24 @@
 
   var PRECIO = 249;
 
+  /* ===== PREMIUM OCULTO (por mientras) =====
+     true  = nadie puede entrar a la pantalla de Premium ni contratarlo:
+             se esconde la corona (arriba y en el menú) y todas las
+             invitaciones ("Ver Premium", "Contratar Premium", etc.).
+             Quien YA tiene Premium activo lo sigue usando normal.
+     false = Premium vuelve a verse y a venderse como antes. */
+  var PREMIUM_OCULTO = true;
+
+  function ocultarPremium() {
+    if (!PREMIUM_OCULTO || document.getElementById('vp-premium-oculto')) return;
+    var st = document.createElement('style');
+    st.id = 'vp-premium-oculto';
+    st.textContent =
+      '#topPremium, .vp-top-prem, .navbtn[data-view="premium"], .ud-premium,' +
+      '.vp-pr-cuenta-btn, .vp-stats-lock-copy .btn, .vp-stats-lock-note{ display:none !important; }';
+    (document.head || document.documentElement).appendChild(st);
+  }
+
   /* Atajos seguros a lo que ya existe en index.html (se declara con const,
      así que se llega por nombre, pero todo va envuelto por si cambiara). */
   function ref(n) { try { return eval(n); } catch (e) { return undefined; } }
@@ -470,6 +488,7 @@
   var origen = null;
 
   function abrir(clave, vistaInicial) {
+    if (PREMIUM_OCULTO) return;          /* Premium oculto: no se abre nada */
     estilos();
     estilosFunciones();
     origen = (clave === 'usuarios') ? 'usuarios' : null;
@@ -679,6 +698,7 @@
         '</div>';
     }
 
+    if (PREMIUM_OCULTO) return '';
     return '<div class="section-title">Membresía</div>' +
       '<div class="vp-pr-cuenta">' +
         '<span class="vp-pr-cuenta-txt"><b>Versión gratis</b>' +
@@ -940,6 +960,7 @@
   }
 
   function arrancar() {
+    ocultarPremium();
     estilos();
     registrarFunciones();
     /* La tecla Esc cierra la pantalla de Premium (computadora) */
@@ -1311,6 +1332,7 @@
     funcionesVista: funcionesVista
   };
 
+  ocultarPremium();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar);
   else arrancar();
 })();
