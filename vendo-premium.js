@@ -1318,9 +1318,19 @@
        Tocar la imagen abre los planes de Premium.
      Las imágenes van en la carpeta promos/ (ver promos/LEEME.txt).
   ======================================================================= */
+  /* Cada anuncio trae DOS imágenes: la vertical (celular) y la horizontal
+     (PC / pantalla acostada). Si falta una, se usa la otra.
+       vertical:   1080 x 1620 px (2:3)
+       horizontal: 1920 x 1080 px (16:9)                                   */
   var PROMOS = [
-    /* 'promos/premium-01.webp', */
+    /* { vertical: 'promos/premium-01-v.webp', horizontal: 'promos/premium-01-h.webp' }, */
   ];
+  function esHorizontal() { return (window.innerWidth || 0) > (window.innerHeight || 0); }
+  function srcPromo(p) {
+    if (!p) return null;
+    if (typeof p === 'string') return p;
+    return (esHorizontal() ? (p.horizontal || p.vertical) : (p.vertical || p.horizontal)) || null;
+  }
 
   function llaveUsuario() {
     var c = nube();
@@ -1366,32 +1376,37 @@
     var st = document.createElement('style');
     st.id = 'vp-promo-css';
     st.textContent = [
-      '.vp-promo{position:fixed;inset:0;z-index:650;display:flex;align-items:center;justify-content:center;',
-      'padding:max(56px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom));',
-      'background:rgba(10,14,28,.62);animation:vp-promo-fondo .25s ease both;}',
-      '.vp-promo-caja{position:relative;max-width:min(560px,100%);max-height:100%;display:flex;',
+      /* Sin oscurecer el fondo. La capa sí atrapa los toques, para que no se
+         pique nada de atrás por accidente: solo se cierra con la ×. */
+      '.vp-promo{position:fixed;inset:0;z-index:650;display:flex;align-items:center;justify-content:center;background:transparent;',
+      'padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));}',
+      /* La caja SIEMPRE cabe en la pantalla, y la × va adentro de la caja:
+         así nunca queda fuera de la vista en ningún tamaño. */
+      '.vp-promo-caja{position:relative;display:block;line-height:0;background:#fff;border-radius:0;overflow:hidden;',
+      'min-width:min(240px,100%);min-height:160px;',
+      'max-width:100%;max-height:100%;box-shadow:0 18px 50px rgba(16,22,42,.28),0 0 0 1px rgba(16,22,42,.06);',
       'animation:vp-promo-entra .42s cubic-bezier(.22,1,.36,1) both;}',
-      '.vp-promo-img{display:block;max-width:100%;max-height:calc(100vh - 110px);max-height:calc(100dvh - 110px);',
-      'width:auto;height:auto;border-radius:0;box-shadow:0 24px 60px rgba(0,0,0,.4);cursor:pointer;background:#fff;}',
-      /* Sin imagen todavía (vista previa): un recuadro con la medida sugerida */
-      '.vp-promo-vacio{width:min(420px,calc(100vw - 32px));aspect-ratio:2/3;max-height:calc(100dvh - 110px);border-radius:0;',
-      'background:linear-gradient(160deg,#0A2368,#01164F);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;',
-      'gap:10px;text-align:center;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.4);cursor:pointer;font-family:inherit;}',
+      '.vp-promo-img{display:block;border-radius:0;cursor:pointer;object-fit:contain;',
+      'max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);width:auto;height:auto;}',
+      /* Vertical (celular): alta. Horizontal (PC): ancha, sin llenar todo */
+      '.vp-promo.v .vp-promo-img{max-height:min(88dvh,calc(100dvh - 32px));}',
+      '.vp-promo.h .vp-promo-img{max-width:min(1100px,88vw);max-height:min(82dvh,calc(100dvh - 32px));}',
+      /* Vista previa sin imagen: recuadro con la medida que toca */
+      '.vp-promo-vacio{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;',
+      'background:linear-gradient(160deg,#0A2368,#01164F);color:#fff;font-family:inherit;line-height:1.4;cursor:pointer;}',
+      '.vp-promo.v .vp-promo-vacio{width:min(440px,calc(100vw - 32px),calc((100dvh - 32px) * 2 / 3));aspect-ratio:2/3;}',
+      '.vp-promo.h .vp-promo-vacio{width:min(1100px,88vw,calc((100dvh - 32px) * 16 / 9));aspect-ratio:16/9;}',
       '.vp-promo-vacio b{font-size:22px;font-weight:700;letter-spacing:-.3px;}',
-      '.vp-promo-vacio span{font-size:13px;font-weight:400;opacity:.75;line-height:1.45;max-width:260px;}',
-      '.vp-promo-x{position:absolute;top:-14px;right:-14px;width:36px;height:36px;border:none;border-radius:50%;',
-      'background:#fff;color:#15181C;display:flex;align-items:center;justify-content:center;cursor:pointer;',
-      'box-shadow:0 6px 16px rgba(0,0,0,.25);-webkit-tap-highlight-color:transparent;}',
+      '.vp-promo-vacio span{font-size:13px;font-weight:400;opacity:.75;max-width:280px;}',
+      '.vp-promo-x{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border:none;border-radius:50%;',
+      'background:rgba(255,255,255,.94);color:#15181C;display:flex;align-items:center;justify-content:center;cursor:pointer;',
+      'box-shadow:0 2px 10px rgba(0,0,0,.22);-webkit-tap-highlight-color:transparent;touch-action:manipulation;}',
       '.vp-promo-x:active{transform:scale(.92);}',
-      '.vp-promo-x svg{width:16px;height:16px;}',
-      '@media (max-width:480px){.vp-promo-x{top:-46px;right:0;}}',
-      '.vp-promo.sale{animation:vp-promo-fondo-sale .22s ease both;}',
+      '.vp-promo-x svg{width:17px;height:17px;}',
       '.vp-promo.sale .vp-promo-caja{animation:vp-promo-sale .22s ease-in both;}',
-      '@keyframes vp-promo-fondo{from{opacity:0}to{opacity:1}}',
-      '@keyframes vp-promo-fondo-sale{from{opacity:1}to{opacity:0}}',
       '@keyframes vp-promo-entra{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}',
       '@keyframes vp-promo-sale{from{opacity:1;transform:none}to{opacity:0;transform:scale(.96)}}',
-      '@media (prefers-reduced-motion: reduce){.vp-promo,.vp-promo-caja,.vp-promo.sale,.vp-promo.sale .vp-promo-caja{animation:none;}}'
+      '@media (prefers-reduced-motion: reduce){.vp-promo-caja,.vp-promo.sale .vp-promo-caja{animation:none;}}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -1407,32 +1422,35 @@
     return elegida;
   }
 
-  function mostrarPromo(src) {
+  function mostrarPromo(promo) {
     cssPromo();
+    var horizontal = esHorizontal();
+    var src = srcPromo(promo);
     var cont = document.createElement('div');
-    cont.className = 'vp-promo';
+    cont.className = 'vp-promo ' + (horizontal ? 'h' : 'v');
     cont.setAttribute('role', 'dialog');
+    cont.setAttribute('aria-modal', 'true');
     cont.setAttribute('aria-label', 'VendoPlus Premium');
     cont.innerHTML = '<div class="vp-promo-caja">' +
         (src
           ? '<img class="vp-promo-img" src="' + esc(src) + '" alt="VendoPlus Premium" decoding="async">'
-          : '<div class="vp-promo-vacio"><b>Aquí va tu imagen</b><span>Imagen promocional de VendoPlus Premium · 1080 × 1620 px (vertical)</span></div>') +
-        '<button type="button" class="vp-promo-x" aria-label="Cerrar">' + ico('close') + '</button>' +
+          : '<div class="vp-promo-vacio"><b>Aquí va tu imagen</b><span>Imagen promocional de VendoPlus Premium · ' +
+            (horizontal ? 'horizontal 1920 × 1080 px' : 'vertical 1080 × 1620 px') + '</span></div>') +
+        '<button type="button" class="vp-promo-x" aria-label="Cerrar anuncio">' + ico('close') + '</button>' +
       '</div>';
     function cerrarPromo() {
       if (cont.classList.contains('sale')) return;
       cont.classList.add('sale');
       setTimeout(function () { cont.remove(); }, 230);
-      document.removeEventListener('keydown', tecla, true);
     }
-    function tecla(e) { if (e.key === 'Escape') { e.stopImmediatePropagation(); cerrarPromo(); } }
+    /* Solo la × cierra. Tocar fuera no hace nada (ni pica lo de atrás). */
     cont.querySelector('.vp-promo-x').addEventListener('click', function (e) { e.stopPropagation(); vibra(6); cerrarPromo(); });
-    cont.addEventListener('click', function (e) { if (e.target === cont) cerrarPromo(); });
+    cont.addEventListener('click', function (e) { e.stopPropagation(); });
     var pieza = cont.querySelector('.vp-promo-img, .vp-promo-vacio');
     pieza.addEventListener('click', function () { cerrarPromo(); setTimeout(function () { abrir('promo'); }, 240); });
     var img = cont.querySelector('.vp-promo-img');
+    /* Si la imagen no carga, el anuncio se quita solo: nadie se queda trabado */
     if (img) img.addEventListener('error', function () { cont.remove(); });
-    document.addEventListener('keydown', tecla, true);
     document.body.appendChild(cont);
   }
 
