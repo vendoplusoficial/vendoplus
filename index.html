@@ -19690,14 +19690,25 @@ function stSaveCfg(j){
   return cambio;
 }
 
-/** Llamada a una función de Stripe en Supabase (con la sesión del negocio). */
-async function stCall(fn, body, conSesion){
+/** La sesión del negocio, renovada si ya venció o está por vencer.
+    (El token dura una hora; si la app se quedó abierta, el guardado ya venció.) */
+async function stSesion(forzar){
+  const auth = Cloud.sb && Cloud.sb.auth;
+  if(!auth) return null;
+  let s = null;
+  try{ s = (await auth.getSession()).data.session; }catch(e){}
+  if(!forzar && s && s.access_token && s.expires_at && s.expires_at * 1000 - Date.now() > 60000) return s;
+  try{ const r = await auth.refreshSession(); if(r && r.data && r.data.session) return r.data.session; }catch(e){}
+  return forzar ? null : s;
+}
+/** Llamada a una función de Stripe en Supabase. Con sesión: si el servidor
+    dice que la sesión venció, se renueva y se intenta una vez más. */
+async function stCall(fn, body, conSesion, reintento){
   if(!mpReady()) throw new Error('Falta configurar Supabase');
   let auth = VENDO_CONFIG.SUPABASE_ANON_KEY;
   if(conSesion){
-    let s = null;
-    try{ s = (await Cloud.sb.auth.getSession()).data.session; }catch(e){}
-    if(!s || !s.access_token) throw new Error('Inicia sesión en tu cuenta para hacer esto');
+    const s = await stSesion(!!reintento);
+    if(!s || !s.access_token) throw new Error('Tu sesión se cerró. Vuelve a entrar a tu cuenta e inténtalo otra vez');
     auth = s.access_token;
   }
   const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -19709,12 +19720,20 @@ async function stCall(fn, body, conSesion){
       headers:{ 'Content-Type':'application/json', apikey:VENDO_CONFIG.SUPABASE_ANON_KEY, Authorization:'Bearer ' + auth },
       body:JSON.stringify(body || {}), signal: ctl ? ctl.signal : undefined
     });
+  }catch(e){
+    throw new Error(e && e.name === 'AbortError' ? 'Stripe tardó demasiado en contestar. Inténtalo otra vez' : 'Sin conexión a internet. Revísala e inténtalo otra vez');
   }finally{ if(t) clearTimeout(t); }
+  if(conSesion && r.status === 401 && !reintento) return stCall(fn, body, conSesion, true);
   let j = null;
   try{ j = await r.json(); }catch(e){}
   if(!r.ok || (j && j.ok === false)){
-    const e = new Error((j && j.error) || (r.status === 401 ? 'Tu sesión venció. Vuelve a entrar e inténtalo otra vez' : 'No se pudo conectar con Stripe (error ' + r.status + ')'));
-    e.code = j && j.code; throw e;
+    const msg = (j && (j.error || j.message)) ||
+      (r.status === 401 ? 'Tu sesión se cerró. Vuelve a entrar a tu cuenta e inténtalo otra vez'
+      : r.status === 404 ? 'Falta subir las funciones de Stripe a Supabase'
+      : r.status === 429 ? 'Demasiadas peticiones seguidas. Espera un momento'
+      : 'No se pudo conectar con Stripe (error ' + r.status + ')');
+    const e = new Error(String(msg).replace(/^Invalid JWT$/i, 'Tu sesión se cerró. Vuelve a entrar a tu cuenta e inténtalo otra vez'));
+    e.code = j && j.code; e.status = r.status; throw e;
   }
   return j || {};
 }
