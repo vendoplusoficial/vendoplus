@@ -12,7 +12,7 @@
   "theme_color": "#F3F4FA",
   "icons": [
     {
-      "src": "/favicon-96x96.png?v=2",
+      "src": "/favicon-96x96.png?v=3",
       "sizes": "96x96",
       "type": "image/png"
     },
@@ -40,7 +40,7 @@
       "purpose": "maskable"
     },
     {
-      "src": "/icon.svg?v=2",
+      "src": "/icon.svg?v=3",
       "sizes": "any",
       "type": "image/svg+xml"
     }

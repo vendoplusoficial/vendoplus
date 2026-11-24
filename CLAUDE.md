@@ -16,7 +16,7 @@ El usuario va a pasar los archivos de su **versión Android**. En cuanto los ten
   - `vendoplus-icono-android-adaptativo.svg`: versión con la V más chica, para la zona segura del icono adaptativo
   - `vendoplus-logo-solo.svg`: solo la V azul, sin fondo (para foreground o uso dentro de la app)
   - `vendoplus-icono-1024.png`: PNG grande de respaldo
-- En el sitio web ya se cambió: `icon.svg`, favicons, `icon-*.png`, `apple-touch-icon.png`,
+- En el sitio web ya se cambió: `icon.svg` y favicons (con esquinas redondeadas, para la pestaña del navegador), `icon-*.png`, `apple-touch-icon.png`,
   `icon-maskable-512.png`, `og-image.png`, splash, encabezado y bienvenida de `index.html`
   (`ICONS.logo`), `404.html`, `eliminar-cuenta.html` y `privacidad.html`.
 
