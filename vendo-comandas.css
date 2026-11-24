@@ -185,3 +185,47 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-wait{ display:flex; align-items:center; justify-content:center; gap:8px; padding:16px; border-radius:16px; background:var(--success-bg, #E5FAEC); color:#1F6B49; font-size:16px; font-weight:800; }
 .cm-wait svg{ width:20px; height:20px; }
 .cm-undo{ align-self:center; border:none; background:none; color:var(--ink-soft); font:inherit; font-size:13px; font-weight:700; text-decoration:underline; cursor:pointer; padding:4px 8px; }
+
+/* Mantener presionado para confirmar (contra toques accidentales) */
+.cm-hold{ position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.cm-hold-in{ position:relative; z-index:1; display:inline-flex; align-items:center; gap:10px; }
+.cm-hold-tip{ position:relative; z-index:1; font-size:11.5px; font-weight:700; opacity:.85; letter-spacing:.2px; }
+.cm-hold-fill{ position:absolute; inset:0; z-index:0; background:rgb(255 255 255 / 28%); transform:scaleX(0); transform-origin:left; transition:transform .18s ease; pointer-events:none; }
+.cm-hold.holding .cm-hold-fill{ transform:scaleX(1); transition:transform .7s linear; }
+.cm-hold.holding{ transform:scale(.985); }
+.cm-hold.cm-hold-done .cm-hold-fill{ transform:scaleX(1); }
+.cm-hold.cm-hold-nudge{ animation:cm-nudge .45s ease; }
+.cm-hold.cm-hold-nudge .cm-hold-tip{ opacity:1; text-decoration:underline; }
+@keyframes cm-nudge{ 20%,60%{ transform:translateX(-5px); } 40%,80%{ transform:translateX(5px); } }
+@media (prefers-reduced-motion:reduce){ .cm-hold.cm-hold-nudge{ animation:none; } }
+.cm-go-bill{ background:var(--accent-strong, #F5BF3C); color:#16213E; font-size:17px !important; font-weight:800; padding:15px 18px !important; border-radius:16px !important; }
+.cm-go-bill .cm-hold-fill{ background:rgb(22 33 62 / 14%); }
+.cm-go-bill svg{ width:20px; height:20px; }
+
+/* Mesero: cuadro de notificaciones de pedidos listos */
+.cm-notif{ margin:0 0 14px; padding:12px; border:1px solid var(--border); border-radius:18px; background:var(--surface, #fff); }
+.cm-notif.on{ border:1.5px solid var(--brand); background:var(--brand-soft); animation:cm-pulse 1.6s ease-in-out 3; }
+.cm-notif-h{ display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink); }
+.cm-notif-h svg{ width:18px; height:18px; color:var(--ink-soft); }
+.cm-notif.on .cm-notif-h svg{ color:var(--brand-ink, #0F8F46); }
+.cm-notif-n{ min-width:22px; height:22px; padding:0 6px; display:inline-grid; place-items:center; border-radius:999px; background:var(--brand); color:#fff; font-size:12px; font-weight:800; }
+.cm-notif-empty{ margin:6px 0 0; font-size:13px; color:var(--ink-soft); font-weight:600; }
+.cm-notif-row{ display:flex; align-items:center; gap:10px; width:100%; margin-top:8px; padding:10px; border:none; border-radius:14px; background:var(--surface, #fff); box-shadow:0 2px 8px rgb(20 32 62 / 7%); color:var(--ink); font:inherit; text-align:left; cursor:pointer; }
+.cm-notif-row:active{ transform:scale(.985); }
+.cm-notif-mesa{ flex:none; min-width:62px; padding:9px 8px; border-radius:11px; background:var(--brand); color:#fff; text-align:center; font-size:13.5px; font-weight:800; }
+.cm-notif-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.cm-notif-txt b{ font-size:13.5px; font-weight:800; }
+.cm-notif-txt small{ font-size:12.5px; color:var(--ink-soft); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cm-notif-go{ flex:none; display:inline-flex; align-items:center; gap:2px; font-size:13px; font-weight:800; color:var(--brand-ink, #0F8F46); }
+.cm-notif-go svg{ width:16px; height:16px; }
+
+/* Qué hacer: recoge → lleva */
+.cm-todo{ display:flex; align-items:center; justify-content:center; gap:10px; margin:0 0 12px; padding:14px; border-radius:16px; background:var(--surface-alt, #F1F3F7); }
+.cm-todo-step{ display:flex; flex-direction:column; align-items:center; gap:5px; flex:1; text-align:center; }
+.cm-todo-step i{ display:inline-flex; width:44px; height:44px; align-items:center; justify-content:center; border-radius:50%; background:var(--ink); color:#fff; }
+.cm-todo-step i svg{ width:21px; height:21px; }
+.cm-todo-step small{ font-size:12.5px; font-weight:800; color:var(--ink); }
+.cm-todo-arrow{ display:inline-flex; color:var(--ink-soft); margin-bottom:20px; }
+.cm-todo-arrow svg{ width:22px; height:22px; }
+.cm-ask{ margin:0; text-align:center; font-size:17px; font-weight:800; color:var(--ink); }

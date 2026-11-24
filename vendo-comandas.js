@@ -124,6 +124,54 @@ window.VPComandas = (() => {
     } catch (e) {}
   }
 
+  /* ---------- Mantener presionado para confirmar ----------
+     Los botones que cambian algo importante se confirman dejando el
+     dedo ~0.7 s: se llena una barrita. Un toque rápido no hace nada
+     (solo enseña "Mantén presionado"). */
+  const HOLD_MS = 700;
+  function holdBtn(cls, html, accion, args) {
+    return `<button type="button" class="btn xl block cm-hold ${cls}" data-hold="${accion}" data-args="${escapeHtml(JSON.stringify(args || []))}">
+      <span class="cm-hold-fill" aria-hidden="true"></span>
+      <span class="cm-hold-in">${html}</span>
+      <small class="cm-hold-tip">Mantén presionado</small>
+    </button>`;
+  }
+  (function () {
+    let h = null;
+    const stop = done => {
+      if (!h) return;
+      clearTimeout(h.t);
+      h.b.classList.remove('holding');
+      if (!done && Date.now() - h.at < HOLD_MS) { h.b.classList.add('cm-hold-nudge'); setTimeout(() => h && h.b && h.b.classList.remove('cm-hold-nudge'), 600); vibrate(8); }
+      h = null;
+    };
+    document.addEventListener('pointerdown', e => {
+      const b = e.target.closest && e.target.closest('[data-hold]');
+      if (!b || b.disabled || (e.button != null && e.button !== 0)) return;
+      stop(true);
+      b.classList.remove('cm-hold-nudge');
+      void b.offsetWidth;
+      b.classList.add('holding');
+      const btn = b;
+      h = { b, at:Date.now(), t:setTimeout(() => {
+        h = null;
+        btn.classList.remove('holding');
+        btn.classList.add('cm-hold-done');
+        vibrate([20, 40, 20]);
+        let args = [];
+        try { args = JSON.parse(btn.dataset.args || '[]'); } catch (x) {}
+        const fn = VPComandas[btn.dataset.hold];
+        if (typeof fn === 'function') fn.apply(null, args);
+      }, HOLD_MS) };
+    }, true);
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => document.addEventListener(ev, e => {
+      if (!h) return;
+      if (ev === 'pointerleave' && e.target !== h.b) return;
+      stop(false);
+    }, true));
+    document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('[data-hold]')) e.preventDefault(); }, true);
+  })();
+
   /* ---------- Ilustraciones de las 3 áreas ---------- */
   const ART = {
     caja: `<svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -591,9 +639,10 @@ window.VPComandas = (() => {
         <button class="btn ghost block" onclick="VPComandas.editarCuenta('${o.id}')">${icon('edit')} Revisar o corregir la cuenta</button>`;
     } else {
       acts = `
-        ${listas.length ? `<button class="btn primary block" onclick="VPComandas.entregar('${o.id}')">${icon('check')} Ya la serví · marcar entregada</button>` : ''}
+        ${listas.length ? `<button class="btn primary block" onclick="VPComandas.verLista('${listas[0].id}')">${icon('bell')} Recoger pedido listo</button>` : ''}
         <button class="btn ${listas.length ? 'ghost' : 'primary'} block" onclick="VPComandas.ronda('${escapeHtml(o.checkout.floorTableId)}')">${icon('plus')} Agregar productos</button>
-        <button class="btn ghost block" onclick="VPComandas.pedirCuenta('${o.id}')">${icon('cash')} ${cuenta ? 'Quitar aviso de cuenta' : 'Pedir la cuenta'}</button>`;
+        ${cuenta ? `<button class="btn ghost block" onclick="VPComandas.pedirCuenta('${o.id}')">${icon('close')} Quitar aviso de cuenta</button>`
+                 : holdBtn('cm-go-bill', icon('cash') + ' Pedir la cuenta', 'pedirCuenta', [o.id])}`;
     }
 
     return `
@@ -628,13 +677,14 @@ window.VPComandas = (() => {
       <h1 class="page-title">Mesas</h1>
       <p class="page-sub">Hola, ${escapeHtml(userFirstName(yo) || yo.name)} · Toca una mesa para tomar o ver su pedido</p>
       ${soloBar()}
-      ${listas.length ? `<div class="cm-ready-list">
-        ${listas.map(k => `<button type="button" class="cm-ready-row" onclick="VPComandas.verLista('${k.id}')">
-          <span class="cm-ready-ico">${icon('bell')}</span>
-          <span class="cm-ready-txt"><b>${escapeHtml(k.table)} · Ronda ${k.round || 1} lista</b><small>${resumen(k.items)}</small></span>
-          <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>`).join('')}
-      </div>` : ''}
+      <div class="cm-notif ${listas.length ? 'on' : ''}">
+        <div class="cm-notif-h">${icon('bell')} <b>Pedidos listos</b>${listas.length ? `<span class="cm-notif-n">${listas.length}</span>` : ''}</div>
+        ${listas.length ? listas.map(k => `<button type="button" class="cm-notif-row" onclick="VPComandas.verLista('${k.id}')">
+          <span class="cm-notif-mesa">${escapeHtml(k.table)}</span>
+          <span class="cm-notif-txt"><b>Ronda ${k.round || 1} · lista ${ago(k.readyAt || k.at)}</b><small>${resumen(k.items)}</small></span>
+          <span class="cm-notif-go">Recoger ${icon('chevronRight')}</span>
+        </button>`).join('') : `<p class="cm-notif-empty">Nada por recoger. Te avisamos cuando cocina termine.</p>`}
+      </div>
       ${planoHTML('mesero')}`;
   }
 
@@ -764,21 +814,37 @@ window.VPComandas = (() => {
     toast(n === 1 ? 'Comanda entregada' : n + ' comandas entregadas', { variant:'toast-success', icon:icon('check') });
   }
 
-  /* Comanda lista: abre su mesa; si la cuenta ya se cobró, se marca entregada */
+  /* Comanda lista: "¿Ya tienes el pedido?" con lo que hay que llevar */
   function verLista(id) {
     const k = tickets().find(x => x.id === id);
-    if (!k) { render(); return; }
-    if (orderById(k.orderId)) { abrirCuenta(k.orderId); return; }
-    askConfirm({
-      title: escapeHtml(k.table) + ' · Ronda ' + (k.round || 1) + ' lista',
-      text: 'La cuenta de esta mesa ya se cobró. ¿Ya la serviste?',
-      ok: 'Sí, ya la serví', icon: icon('check')
-    }, () => {
-      const list = tickets();
-      const x = list.find(v => v.id === id);
-      if (x && x.status === 'listo') { x.status = 'entregado'; x.deliveredAt = nowIso(); x.deliveredBy = meName(); saveTickets(list); }
-      render();
-    });
+    if (!k || k.status !== 'listo') { closeModal(); render(); return; }
+    openModal(`
+      <div class="sheet-header">
+        <div class="sheet-header-left" style="min-width:0;"><h2>${escapeHtml(k.table)}</h2><span class="mdi-pill ok">Lista</span></div>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      <div class="cm-todo">
+        <span class="cm-todo-step"><i>${icon('inbox')}</i><small>Recoge en cocina</small></span>
+        <b class="cm-todo-arrow">${icon('chevronRight')}</b>
+        <span class="cm-todo-step"><i>${VPMesas.tableIcon}</i><small>Lleva a ${escapeHtml(k.table)}</small></span>
+      </div>
+      <div class="cm-lines">${lineasHTML(k.items)}</div>
+      <div class="cm-sheet-acts">
+        <p class="cm-ask">¿Ya tienes el pedido?</p>
+        ${holdBtn('cm-go cm-go-ok', icon('check') + ' Ya lo tengo', 'entregarTicket', [k.id])}
+        <button class="cm-undo" onclick="closeModal()">Todavía no</button>
+      </div>
+    `, { dismissible:true });
+  }
+  function entregarTicket(id) {
+    const list = tickets();
+    const k = list.find(x => x.id === id);
+    if (!k || k.status !== 'listo') { closeModal(); render(); return; }
+    k.status = 'entregado'; k.deliveredAt = nowIso(); k.deliveredBy = meName();
+    saveTickets(list);
+    closeModal();
+    render();
+    toast('¡Listo! Llévalo a ' + k.table, { variant:'toast-success', icon:icon('check') });
   }
 
   function pedirCuenta(orderId) {
@@ -940,9 +1006,9 @@ window.VPComandas = (() => {
     const notas = k.items.filter(i => i.note).length;
     let acts = '';
     if (k.status === 'nuevo') acts = `
-      <button class="btn xl block cm-go cm-go-prep" onclick="VPComandas.estado('${k.id}','preparando')">${FIRE} Preparar</button>`;
+      ${holdBtn('cm-go cm-go-prep', FIRE + ' Preparar', 'estado', [k.id, 'preparando'])}`;
     else if (k.status === 'preparando') acts = `
-      <button class="btn xl block cm-go cm-go-ok" onclick="VPComandas.estado('${k.id}','listo')">${icon('check')} Lista</button>`;
+      ${holdBtn('cm-go cm-go-ok', icon('check') + ' Lista', 'estado', [k.id, 'listo'])}`;
     else if (k.status === 'listo') acts = `
       <div class="cm-wait">${icon('bell')} Esperando al mesero</div>
       <button class="cm-undo" onclick="VPComandas.estado('${k.id}','preparando')">Deshacer</button>`;
@@ -1270,7 +1336,7 @@ window.VPComandas = (() => {
   return {
     abrir, guard, esMesero, esCocina, esCajero, puedeAdministrar,
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
-    tocarMesa, abrirCuenta, verLista, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
+    tocarMesa, abrirCuenta, verLista, entregarTicket, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
     filtro, abrirComanda, estado, historial, cambiar, sync:() => Sync.run()
   };
