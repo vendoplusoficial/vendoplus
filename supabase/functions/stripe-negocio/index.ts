@@ -203,6 +203,7 @@ Deno.serve(async (req) => {
       const { error } = await cuentas.update({ connected: true, ready: true, display_name: name, updated_at: new Date().toISOString() })
         .eq("user_id", user.id).eq("livemode", LIVE);
       if (error) throw error;
+      console.log("start: re-enlazada sin pasar por Stripe", accountId);
       return json({ connected: true, ready: true, name, account: accountId, livemode: LIVE });
     }
     if (!accountId) {
@@ -225,6 +226,7 @@ Deno.serve(async (req) => {
     }, { onConflict: "user_id,livemode" });
     if (upErr) throw upErr;
 
+    console.log("start: faltan datos, se abre Stripe", accountId, lista ? "" : "(cuenta sin terminar)");
     const link = await stripe.accountLinks.create({
       account: accountId,
       type: "account_onboarding",

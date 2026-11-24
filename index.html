@@ -19838,24 +19838,25 @@ async function stConnect(btn){
   if(!mpCanLink()){ toast('No tienes permiso para cambiar el Menú Digital', { icon:icon('alert'), variant:'toast-danger' }); return; }
   if(!Cloud.ready || !Cloud.uid){ toast('Entra a tu cuenta para conectar Stripe', { icon:icon('alert'), variant:'toast-danger' }); return; }
   const txt = btn ? btn.textContent : '';
-  if(btn){ btn.disabled = true; btn.textContent = 'Abriendo…'; }
-  /* La ventana se abre YA (en el toque) para que el navegador no la bloquee */
+  if(btn){ btn.disabled = true; btn.textContent = 'Conectando…'; }
+  /* Ya NO se abre ninguna ventana antes de saber la respuesta: si tu cuenta
+     de Stripe ya estaba lista (la desenlazaste y la vuelves a enlazar), se
+     enlaza aquí mismo sin abrir Stripe ni pedirte datos otra vez. */
   let w = null;
-  try{ w = window.open('', '_blank'); }catch(e){}
   try{
     const j = await stCall(ST_FN.negocio, { action:'start' }, true);
     if(j.connected && j.ready){
-      if(w) try{ w.close(); }catch(e){}
       stSaveCfg(j);
       vibrate([15, 60, 15]);
-      toast('Stripe enlazado', { icon:icon('check'), variant:'toast-success', subtitle:'Tus clientes ya pueden pagar con tarjeta' });
+      toast('Stripe enlazado otra vez', { icon:icon('check'), variant:'toast-success', subtitle:'Con la misma cuenta de antes · no tuviste que poner tus datos' });
       stRepaintForm(); mdRerenderIfMenu();
       return;
     }
     if(!j.url) throw new Error('Stripe no devolvió el enlace');
     stSaveCfg({ connected:true, ready:false, name:stCfg().name });
-    if(w && !w.closed){ w.location.href = j.url; }
-    else { location.href = j.url; return; }
+    /* Solo si a Stripe le faltan datos de tu cuenta se abre su página */
+    try{ w = window.open(j.url, '_blank'); }catch(e){}
+    if(!w){ location.href = j.url; return; }
     toast('Termina en Stripe y regresa aquí', { icon:icon('external'), subtitle:'Al volver, revisamos tu cuenta sola', duration:3800 });
     stRepaintForm();
     stWaitLink();
