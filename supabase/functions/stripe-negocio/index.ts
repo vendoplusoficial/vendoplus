@@ -5,6 +5,9 @@
 //                    Stripe para crearla o enlazarla (ahí entra con su correo).
 //  action "unlink" → la desconecta del menú (los pagos ya hechos no se tocan).
 //  action "arm"    → al aceptar un pedido, fija EN EL SERVIDOR cuánto se cobra.
+//  action "finanzas"   → saldo, pagos recibidos, retiros y movimientos.
+//  action "reembolsar" → devuelve un pago (todo o una parte) al cliente.
+//  action "retirar"    → manda el saldo disponible a su banco (si Stripe deja).
 //
 // El dinero de cada pedido va DIRECTO a la cuenta de Stripe del negocio
 // (cargo directo). VendoPlus no cobra comisión ni toca el dinero.
@@ -64,6 +67,94 @@ Deno.serve(async (req) => {
       const { error } = await comoNegocio.rpc("mp_arm_order", { p_order_id: orderId, p_total: total, p_code: code });
       if (error) return json({ error: error.message || "No se pudo preparar el cobro" }, 400);
       return json({ ok: true, amount: total });
+    }
+
+    // ---------------------------------------------------------------
+    // FINANZAS: todo se hace sobre la cuenta de Stripe DEL NEGOCIO que
+    // inició sesión (la de su fila). Nunca sobre otra cuenta.
+    if (action === "finanzas" || action === "reembolsar" || action === "retirar") {
+      if (!fila?.connected || !fila.stripe_account_id) return json({ error: "Primero enlaza tu Stripe." }, 409);
+      const acct = fila.stripe_account_id;
+      const op = { stripeAccount: acct };
+
+      if (action === "reembolsar") {
+        const chargeId = String(body?.charge_id ?? "");
+        if (!/^(ch|py)_[A-Za-z0-9]+$/.test(chargeId)) return json({ error: "Pago no válido." }, 400);
+        const ch = await stripe.charges.retrieve(chargeId, {}, op);   // solo existe si es de SU cuenta
+        const resta = ch.amount - ch.amount_refunded;
+        if (ch.status !== "succeeded" || ch.refunded || resta <= 0) return json({ error: "Este pago ya no se puede devolver." }, 409);
+        let monto = resta;
+        if (body?.amount != null && body.amount !== "") {
+          monto = Math.round(Number(body.amount) * 100);
+          if (!(monto > 0) || monto > resta) return json({ error: "El monto a devolver no es válido." }, 400);
+        }
+        try {
+          const r = await stripe.refunds.create({
+            charge: chargeId, amount: monto, reason: "requested_by_customer",
+            metadata: { origen: "vendoplus_app", supabase_user_id: user.id },
+          }, { ...op, idempotencyKey: "vp-ref-" + chargeId + "-" + monto + "-" + ch.amount_refunded });
+          return json({ ok: true, status: r.status, amount: monto / 100 });
+        } catch (e) {
+          const m = String((e as Error)?.message || "");
+          if (/insufficient|balance/i.test(m)) return json({ error: "No tienes saldo suficiente en Stripe para esta devolución." }, 409);
+          throw e;
+        }
+      }
+
+      if (action === "retirar") {
+        const bal = await stripe.balance.retrieve({}, op);
+        const disp = (bal.available || []).filter((b) => b.currency === "mxn").reduce((a, b) => a + b.amount, 0);
+        let monto = disp;
+        if (body?.amount != null && body.amount !== "") monto = Math.round(Number(body.amount) * 100);
+        if (!(monto >= 100) || monto > disp) return json({ error: disp < 100 ? "Todavía no tienes saldo disponible para retirar." : "El monto a retirar no es válido." }, 400);
+        try {
+          const po = await stripe.payouts.create({ amount: monto, currency: "mxn", metadata: { origen: "vendoplus_app" } },
+            { ...op, idempotencyKey: "vp-po-" + acct + "-" + monto + "-" + Math.floor(Date.now() / 60000) });
+          return json({ ok: true, status: po.status, amount: monto / 100, arrival_date: po.arrival_date });
+        } catch (e) {
+          const m = String((e as Error)?.message || "");
+          console.error("retirar", m);
+          if (/automatic|schedule/i.test(m)) {
+            return json({ error: "Stripe deposita tu dinero a tu banco automáticamente. Para retirar cuando tú quieras, cambia tus depósitos a «manuales» en tu panel de Stripe.", code: "auto_payouts" }, 409);
+          }
+          if (/external account|bank account/i.test(m)) return json({ error: "Agrega tu cuenta de banco en tu panel de Stripe para poder retirar." }, 409);
+          if (/insufficient/i.test(m)) return json({ error: "No tienes saldo suficiente para retirar." }, 409);
+          return json({ error: "Stripe no permitió el retiro: " + m.slice(0, 140) }, 409);
+        }
+      }
+
+      // finanzas
+      const [bal, acc, charges, txs, pos] = await Promise.all([
+        stripe.balance.retrieve({}, op),
+        stripe.accounts.retrieve(acct),
+        stripe.charges.list({ limit: 25 }, op),
+        stripe.balanceTransactions.list({ limit: 30 }, op),
+        stripe.payouts.list({ limit: 10 }, op),
+      ]);
+      const suma = (l: { amount: number; currency: string }[] | undefined) =>
+        (l || []).filter((b) => b.currency === "mxn").reduce((a, b) => a + b.amount, 0) / 100;
+      const sch = acc.settings?.payouts?.schedule;
+      const banco = (acc.external_accounts?.data || [])[0] as unknown as { bank_name?: string; last4?: string } | undefined;
+      return json({
+        ok: true,
+        livemode: LIVE,
+        available: suma(bal.available),
+        pending: suma(bal.pending),
+        payouts_enabled: !!acc.payouts_enabled,
+        schedule: sch ? { interval: sch.interval, delay_days: sch.delay_days, weekly_anchor: sch.weekly_anchor ?? null, monthly_anchor: sch.monthly_anchor ?? null } : null,
+        bank: banco ? { name: banco.bank_name || "", last4: banco.last4 || "" } : null,
+        charges: charges.data.map((c) => ({
+          id: c.id, amount: c.amount / 100, refunded_amount: c.amount_refunded / 100, refunded: c.refunded,
+          status: c.status, disputed: c.disputed, created: c.created,
+          code: c.metadata?.code || "", description: c.description || "",
+          card: c.payment_method_details?.card ? { brand: c.payment_method_details.card.brand, last4: c.payment_method_details.card.last4 } : null,
+        })),
+        movements: txs.data.map((t) => ({
+          id: t.id, type: t.type, category: t.reporting_category, amount: t.amount / 100, fee: t.fee / 100, net: t.net / 100,
+          created: t.created, available_on: t.available_on, status: t.status, description: t.description || "",
+        })),
+        payouts: pos.data.map((p) => ({ id: p.id, amount: p.amount / 100, status: p.status, arrival_date: p.arrival_date, created: p.created, automatic: p.automatic })),
+      });
     }
 
     // ---------------------------------------------------------------

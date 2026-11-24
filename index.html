@@ -5161,6 +5161,51 @@ body.pg-mode{ background:#F4F6FA; }
   .st-box-go{ padding:0 16px; font-size:14px; }
 }
 .mdi-pay-pill.st-pill{ color:#5A45F2 !important; }
+.st-fin-btn{ margin-top:12px; }
+
+/* ===== Finanzas de Stripe ===== */
+.stf{ transition:opacity .2s ease; }
+.stf.cargando{ opacity:.55; pointer-events:none; }
+.stf-carga{ display:flex; justify-content:center; gap:6px; padding:40px 0; }
+.stf-carga i{ width:8px; height:8px; border-radius:50%; background:var(--ink-faint, #C9CEDD); animation:stf-pulso 1s ease-in-out infinite; }
+.stf-carga i:nth-child(2){ animation-delay:.15s; } .stf-carga i:nth-child(3){ animation-delay:.3s; }
+@keyframes stf-pulso{ 0%,100%{ opacity:.3; transform:scale(.8); } 50%{ opacity:1; transform:none; } }
+.stf-saldo{ padding:16px 16px 14px; border-radius:18px; background:linear-gradient(135deg,#EAF9F0,#F4FBF7); border:1px solid #D3F0DF; }
+.stf-saldo small{ display:block; font-size:12.5px; font-weight:600; color:#0E7A3D; }
+.stf-saldo > b{ display:block; margin-top:2px; font-size:30px; font-weight:800; letter-spacing:-.6px; color:var(--ink); }
+.stf-saldo-fila{ display:flex; gap:10px; margin-top:6px; font-size:13px; font-weight:600; color:var(--ink-soft); }
+.stf-saldo-fila span{ display:inline-flex; align-items:center; gap:5px; }
+.stf-saldo-fila svg{ width:14px; height:14px; }
+.stf-saldo-fila b{ color:var(--ink); font-weight:700; }
+.stf-saldo p{ margin:8px 0 0; font-size:12px; font-weight:600; line-height:1.4; color:var(--ink-soft); }
+.stf-acts{ display:flex; gap:8px; margin:12px 0 14px; }
+.stf-acts .btn.primary{ flex:1; }
+.stf-acts .btn svg{ width:16px; height:16px; }
+.stf-tabs{ display:flex; gap:4px; padding:4px; border-radius:12px; background:var(--surface-alt, #F1F3F7); }
+.stf-tabs button{ flex:1; min-height:36px; border:0; border-radius:9px; background:none; font:inherit; font-size:13.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
+.stf-tabs button.on{ background:var(--surface, #fff); color:var(--ink); box-shadow:0 1px 3px rgba(16,22,42,.12); }
+.stf-tip{ margin:10px 2px 0; font-size:12px; font-weight:600; color:var(--ink-soft); }
+.stf-lista{ display:flex; flex-direction:column; margin-top:6px; }
+.stf-row{ display:flex; align-items:center; gap:11px; width:100%; padding:11px 2px; border:0; border-bottom:1px solid var(--border, #EEF1F5); background:none; font:inherit; text-align:left; color:inherit; cursor:pointer; }
+.stf-row:disabled{ cursor:default; opacity:1; }
+div.stf-row{ cursor:default; }
+.stf-row:last-child{ border-bottom:0; }
+.stf-ico{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:none; border-radius:11px; background:var(--surface-alt, #F1F3F7); color:var(--ink-soft); }
+.stf-ico.in{ background:#E6F7EE; color:#0E7A3D; }
+.stf-ico.out{ background:#FEF3F2; color:#B42318; }
+.stf-ico svg{ width:17px; height:17px; }
+.stf-txt{ flex:1; min-width:0; }
+.stf-txt b{ display:block; font-size:14px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.stf-txt small{ display:block; margin-top:2px; font-size:12px; font-weight:500; color:var(--ink-soft); }
+.stf-der{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:none; }
+.stf-der b{ font-size:14px; font-weight:800; color:var(--ink); }
+.stf-der b.pos{ color:#0E7A3D; } .stf-der b.neg{ color:#B42318; }
+.stf-pill{ padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+.stf-pill.ok{ background:#E6F7EE; color:#0E7A3D; }
+.stf-pill.warn{ background:#FFF6E5; color:#A15C00; }
+.stf-pill.bad{ background:#FEF3F2; color:#B42318; }
+.stf-pill.gris{ background:var(--surface-alt, #F1F3F7); color:var(--ink-soft); }
+.stf-vacio{ margin:24px 0; text-align:center; font-size:13.5px; font-weight:600; color:var(--ink-soft); }
 
 /* ===== Pantalla de pago con Stripe del cliente (…#pagar/<pedido>) ===== */
 .sp-card{ padding:20px 18px 22px; }
@@ -16812,6 +16857,8 @@ function mdChecklist(){
            : '¿Aceptas transferencias? Toca para responder',
         action:'mdOpenTransferForm()' };
     })(),
+    ...(stLinked() ? [{ label:'Finanzas de Stripe', ok:true, owner:true,
+      sub:'Tu saldo, retiros, devoluciones e historial', action:'stOpenFinanzas()' }] : []),
     { label:'WhatsApp del negocio', ok:!!wa,
       sub:wa ? escapeHtml(mdWhatsappLabel()) + (wa.fromAccount ? ' · el de tu cuenta de ' + APP_NAME : ' · aquí llegan los pedidos') : 'Aquí te llegarán los pedidos', action:'mdOpenWhatsappForm()' },
     { label:'Productos del menú', ok:prods.length > 0, free:true,
@@ -19674,7 +19721,8 @@ function stBoxHTML(){
       <span class="st-box-sep" aria-hidden="true"></span>
       <span class="st-box-txt"><b>Stripe enlazado</b><button type="button" class="st-box-lnk" onclick="stAskUnlink()">Desenlazar</button></span>
     </div>
-    <p class="st-box-note">${s.name ? 'Cuenta ' + escapeHtml(s.name) + ' · ' : ''}tus clientes ya pueden pagar con tarjeta desde tu menú. El dinero llega a tu cuenta de Stripe.</p>`;
+    <p class="st-box-note">${s.name ? 'Cuenta ' + escapeHtml(s.name) + ' · ' : ''}tus clientes ya pueden pagar con tarjeta desde tu menú. El dinero llega a tu cuenta de Stripe.</p>
+    ${isOwner() ? `<button type="button" class="btn ghost block st-fin-btn" onclick="stOpenFinanzas()">${icon('coin')} Ver mi dinero, retiros y devoluciones</button>` : ''}`;
   }
   const pendiente = s.on && !s.ready;
   return `<div class="st-box" id="stBox">
@@ -19895,6 +19943,184 @@ const StWatch = {
     setTimeout(() => this.pull(), 3000);
   }
 };
+
+/* =========================================================================
+   FINANZAS DE STRIPE · saldo, retiros, devoluciones y mini historial
+   -------------------------------------------------------------------------
+   Solo el Dueño. Todo pasa por stripe-negocio, que trabaja ÚNICAMENTE con
+   la cuenta de Stripe de este negocio. Retirar y devolver piden confirmar.
+   · Retirar: manda el saldo disponible a su banco (si Stripe lo permite;
+     con depósitos automáticos Stripe deposita solo y avisa por qué no).
+   · Devolver: regresa un pago (todo o una parte) a la tarjeta del cliente.
+========================================================================= */
+const stFin = { data:null, tab:'pagos', cargando:false, err:'' };
+
+function stOpenFinanzas(){
+  if(!isOwner()){ toast('Solo el Dueño puede ver las finanzas', { icon:icon('alert'), variant:'toast-danger' }); return; }
+  if(!stLinked()){ toast('Primero enlaza tu Stripe', { icon:icon('alert') }); return; }
+  stFin.tab = stFin.tab || 'pagos';
+  stFinPaint(true);
+  stFinCargar();
+}
+async function stFinCargar(){
+  stFin.cargando = true; stFin.err = '';
+  stFinPaint(false);
+  try{
+    stFin.data = await stCall(ST_FN.negocio, { action:'finanzas' }, true);
+  }catch(e){
+    stFin.err = String((e && e.message) || 'No se pudo cargar').slice(0, 160);
+  }
+  stFin.cargando = false;
+  stFinPaint(false);
+}
+function stFinFecha(ts, conHora){
+  try{
+    const d = new Date(ts * 1000);
+    return d.toLocaleDateString('es-MX', { day:'numeric', month:'short' }) + (conHora ? ' · ' + d.toLocaleTimeString('es-MX', { hour:'numeric', minute:'2-digit' }) : '');
+  }catch(e){ return ''; }
+}
+function stFinDepositos(d){
+  const s = d.schedule;
+  const banco = d.bank && d.bank.last4 ? ' a ' + escapeHtml((d.bank.name || 'tu banco') + ' ····' + d.bank.last4) : '';
+  if(!d.payouts_enabled) return 'Stripe aún no puede depositarte: revisa los datos pendientes en tu panel de Stripe.';
+  if(!s) return 'Depósitos a tu banco' + banco + '.';
+  if(s.interval === 'manual') return 'Retiras cuando tú quieras' + banco + '.';
+  const cada = s.interval === 'daily' ? 'cada día' : s.interval === 'weekly' ? 'cada semana' : s.interval === 'monthly' ? 'cada mes' : 'automáticamente';
+  return 'Stripe te deposita ' + cada + banco + '.';
+}
+function stFinPill(c){
+  if(c.disputed) return '<span class="stf-pill bad">En disputa</span>';
+  if(c.refunded) return '<span class="stf-pill gris">Devuelto</span>';
+  if(c.refunded_amount > 0) return '<span class="stf-pill warn">Devuelto ' + formatMoney(c.refunded_amount) + '</span>';
+  if(c.status === 'succeeded') return '<span class="stf-pill ok">Pagado</span>';
+  if(c.status === 'pending') return '<span class="stf-pill warn">Procesando</span>';
+  return '<span class="stf-pill bad">Rechazado</span>';
+}
+function stFinMovNombre(m){
+  const t = m.type;
+  if(t === 'charge' || t === 'payment') return 'Cobro con tarjeta';
+  if(t === 'refund' || t === 'payment_refund') return 'Devolución';
+  if(t === 'payout') return 'Retiro a tu banco';
+  if(t === 'payout_cancel' || t === 'payout_failure') return 'Retiro regresado';
+  if(/fee/.test(t)) return 'Comisión de Stripe';
+  if(/dispute|adjustment/.test(t)) return 'Ajuste o disputa';
+  return 'Movimiento';
+}
+function stFinPaint(primera){
+  const d = stFin.data;
+  const cuerpo = (() => {
+    if(!d && stFin.cargando) return `<div class="stf-carga"><i></i><i></i><i></i></div>`;
+    if(!d && stFin.err) return `<div class="mdi-banner warn">${icon('alert')}<span><b>No se pudo cargar</b>${escapeHtml(stFin.err)}</span></div>
+      <div class="sheet-actions"><button class="btn primary block" onclick="stFinCargar()">${icon('refresh')} Intentar otra vez</button></div>`;
+    if(!d) return '';
+    const pagos = (d.charges || []).filter(c => c.status !== 'failed');
+    const lista = stFin.tab === 'pagos'
+      ? (pagos.length ? pagos.map(c => {
+          const puede = c.status === 'succeeded' && !c.refunded && !c.disputed && (c.amount - c.refunded_amount) > 0.004;
+          return `<button type="button" class="stf-row" ${puede ? `onclick="stFinDevolver('${c.id}')"` : 'disabled'}>
+            <span class="stf-ico">${icon('card')}</span>
+            <span class="stf-txt"><b>${escapeHtml(c.code ? 'Pedido ' + c.code : (c.description || 'Pago con tarjeta'))}</b>
+              <small>${stFinFecha(c.created, true)}${c.card ? ' · ' + escapeHtml(String(c.card.brand || '').replace(/^./, x => x.toUpperCase())) + ' ····' + escapeHtml(c.card.last4 || '') : ''}</small></span>
+            <span class="stf-der"><b>${formatMoney(c.amount)}</b>${stFinPill(c)}</span>
+          </button>`;
+        }).join('') : `<p class="stf-vacio">Todavía no recibes pagos con tarjeta.</p>`)
+      : (() => {
+          const movs = (d.movements || []);
+          return movs.length ? movs.map(m => {
+            const pend = m.status === 'pending';
+            return `<div class="stf-row">
+              <span class="stf-ico ${m.net < 0 ? 'out' : 'in'}">${icon(m.type === 'payout' ? 'bank' : (m.net < 0 ? 'undo' : 'coin'))}</span>
+              <span class="stf-txt"><b>${stFinMovNombre(m)}</b>
+                <small>${stFinFecha(m.created, true)}${m.fee > 0 ? ' · comisión ' + formatMoney(m.fee) : ''}${pend ? ' · disponible el ' + stFinFecha(m.available_on) : ''}</small></span>
+              <span class="stf-der"><b class="${m.net < 0 ? 'neg' : 'pos'}">${m.net < 0 ? '−' : '+'}${formatMoney(Math.abs(m.net))}</b>${pend ? '<span class="stf-pill warn">En camino</span>' : ''}</span>
+            </div>`;
+          }).join('') : `<p class="stf-vacio">Aún no hay movimientos.</p>`;
+        })();
+    return `
+      <div class="stf-saldo">
+        <small>Disponible para retirar</small>
+        <b>${formatMoney(d.available)}</b>
+        <div class="stf-saldo-fila"><span>${icon('clock')} En camino: <b>${formatMoney(d.pending)}</b></span></div>
+        <p>${stFinDepositos(d)}</p>
+      </div>
+      <div class="stf-acts">
+        <button class="btn primary block" onclick="stFinRetirar()" ${d.available >= 1 ? '' : 'disabled'}>${icon('bank')} Retirar a mi banco</button>
+        <button class="btn ghost" onclick="window.open('https://dashboard.stripe.com/', '_blank')" aria-label="Abrir mi panel de Stripe">${icon('external')} Stripe</button>
+      </div>
+      <div class="stf-tabs" role="tablist">
+        <button type="button" class="${stFin.tab === 'pagos' ? 'on' : ''}" onclick="stFin.tab='pagos'; stFinPaint(false)">Pagos</button>
+        <button type="button" class="${stFin.tab === 'historial' ? 'on' : ''}" onclick="stFin.tab='historial'; stFinPaint(false)">Historial</button>
+      </div>
+      ${stFin.tab === 'pagos' && pagos.some(c => c.status === 'succeeded' && !c.refunded) ? '<p class="stf-tip">Toca un pago para devolverlo.</p>' : ''}
+      <div class="stf-lista">${lista}</div>
+      ${d.livemode === false ? '<p class="stf-tip">Modo de prueba: nada de esto es dinero real.</p>' : ''}`;
+  })();
+  const html = `
+    <div class="sheet-header">
+      <h2>Finanzas de Stripe</h2>
+      <button class="sheet-close" onclick="stFinCargar()" aria-label="Actualizar" style="margin-left:auto;margin-right:8px">${icon('refresh')}</button>
+      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
+    </div>
+    <div class="stf ${stFin.cargando && d ? 'cargando' : ''}">${cuerpo}</div>`;
+  const body = document.querySelector('#modal-layer .stf');
+  if(!primera){
+    /* Si ya cerró la hoja mientras cargaba, no se vuelve a abrir */
+    if(body) body.outerHTML = `<div class="stf ${stFin.cargando && d ? 'cargando' : ''}">${cuerpo}</div>`;
+    return;
+  }
+  openModal(html, { dismissible:true });
+}
+
+function stFinRetirar(){
+  const d = stFin.data; if(!d) return;
+  const banco = d.bank && d.bank.last4 ? escapeHtml((d.bank.name || 'tu banco') + ' ····' + d.bank.last4) : 'tu cuenta de banco';
+  askConfirm({
+    title:'¿Retirar a tu banco?',
+    text:'Se mandan <b>' + formatMoney(d.available) + '</b> a ' + banco + '. Normalmente llega en 1 a 3 días hábiles.',
+    ok:'Sí, retirar', cancel:'Cancelar', icon:icon('bank')
+  }, async () => {
+    toast('Pidiendo tu retiro…', { icon:icon('bank'), duration:1600 });
+    try{
+      const j = await stCall(ST_FN.negocio, { action:'retirar' }, true);
+      vibrate([15, 60, 15]);
+      toast('Retiro en camino', { icon:icon('check'), variant:'toast-success', subtitle:formatMoney(j.amount) + (j.arrival_date ? ' · llega el ' + stFinFecha(j.arrival_date) : ''), duration:4000 });
+      stFinCargar();
+    }catch(e){
+      toast('No se pudo retirar', { icon:icon('alert'), variant:'toast-danger', subtitle:String(e.message || e).slice(0, 160), duration:6500 });
+    }
+  });
+}
+
+function stFinDevolver(id){
+  const d = stFin.data; if(!d) return;
+  const c = (d.charges || []).find(x => x.id === id); if(!c) return;
+  const resta = round2(c.amount - c.refunded_amount);
+  let monto = resta;
+  askConfirm({
+    title:'¿Devolver este pago?',
+    text:(c.code ? 'Pedido <b>' + escapeHtml(c.code) + '</b> · ' : '') + 'pagó ' + formatMoney(c.amount) + (c.refunded_amount > 0 ? ' (ya devolviste ' + formatMoney(c.refunded_amount) + ')' : '') +
+      '. El dinero regresa a la tarjeta del cliente en 5 a 10 días. <b>No se puede deshacer.</b>',
+    extraHTML:`<div class="field" style="margin:4px 0 6px;text-align:left"><label for="stfMonto">¿Cuánto le devuelves?</label>
+      <input id="stfMonto" type="number" inputmode="decimal" min="1" step="0.01" max="${resta}" value="${resta}"></div>
+      <p class="stf-tip" style="margin:0 0 6px;text-align:left">Puedes devolver todo (${formatMoney(resta)}) o solo una parte.</p>`,
+    validate: layer => {
+      const v = Number((layer.querySelector('#stfMonto') || {}).value);
+      if(!(v > 0) || v > resta + 0.004){ toast('Escribe un monto entre $1 y ' + formatMoney(resta), { icon:icon('alert') }); return false; }
+      monto = round2(v); return true;
+    },
+    ok:'Sí, devolver', cancel:'Cancelar', danger:true, icon:icon('undo')
+  }, async () => {
+    toast('Haciendo la devolución…', { icon:icon('undo'), duration:1600 });
+    try{
+      const j = await stCall(ST_FN.negocio, { action:'reembolsar', charge_id:id, amount:monto < resta ? monto : '' }, true);
+      vibrate([15, 60, 15]);
+      toast('Devolución hecha', { icon:icon('check'), variant:'toast-success', subtitle:formatMoney(j.amount) + ' regresan a la tarjeta del cliente', duration:4000 });
+      stFinCargar();
+    }catch(e){
+      toast('No se pudo devolver', { icon:icon('alert'), variant:'toast-danger', subtitle:String(e.message || e).slice(0, 160), duration:6000 });
+    }
+  });
+}
 
 /* ---------- Cancelar un pedido ya confirmado ----------
    · Por cobrar: solo cambia a cancelado (no hubo venta, ni dinero, ni
