@@ -1462,6 +1462,24 @@
 
   var SVG_CANDADO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
 
+  /* En celular la app achica todo con "zoom" (0.9). Safari en iPhone no
+     achica bien el recuadro de Stripe (es un iframe): queda más angosto y
+     pegado a la izquierda. Aquí se le quita el zoom SOLO a ese recuadro
+     (zoom inverso), así ocupa justo el ancho y queda
+     centrado como lo demás. */
+  function sinZoom(box) {
+    if (!box) return;
+    var z = 1, n = box.parentElement;
+    while (n && n !== document.documentElement) {
+      var v = parseFloat(getComputedStyle(n).zoom);
+      if (v && isFinite(v)) z *= v;
+      n = n.parentElement;
+    }
+    if (Math.abs(z - 1) < 0.01) { box.style.zoom = ''; box.style.width = ''; return; }
+    box.style.zoom = String(1 / z);   /* el ancho en % no cambia con zoom: sigue al 100 % */
+    box.style.width = '100%';
+  }
+
   function pagoHTML() {
     var total = dinero(pago.monto);
     return '<div class="vp-pr-x dos">' +
@@ -1529,7 +1547,7 @@
       '.vp-pg-linea{height:1px;background:#E6E9EF;margin:12px 0;}',
       '.vp-pg-lbl{font-size:13px;font-weight:500;color:var(--ink-soft,#6C7480);margin:0 2px 8px;}',
       '.vp-pg-tarjeta{position:relative;min-height:150px;width:100%;min-width:0;overflow:hidden;}',
-      '#vpPgEl{width:100%;min-width:0;max-width:100%;}',
+      '#vpPgEl{width:100%;min-width:0;}',
       '#vpPgEl iframe{max-width:100% !important;}',
       '.vp-pg-info,.vp-pg-form,.vp-pg-in{min-width:0;}',
       '.vp-pg-incluye{display:none;}',
@@ -1733,6 +1751,7 @@
         });
         el.on('change', function () { errorPago(''); });
         el.on('loaderror', function () { errorPago('No se pudo cargar el formulario de pago. Revisa tu internet e inténtalo de nuevo.'); });
+        sinZoom(document.getElementById('vpPgEl'));
         el.mount('#vpPgEl');
       });
     }).catch(function (e) {
