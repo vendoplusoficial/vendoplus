@@ -372,7 +372,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
   .product-card.in-cart{ border-color:var(--whatsapp); border-width:2px; box-shadow:0 4px 16px rgba(37,211,102,0.32); }
   .product-card .pc-tap{ display:flex; flex-direction:column; cursor:pointer; }
   .product-card .pc-tap:active{ opacity:.85; }
-  .product-card .pc-top{ height:5px; }
+  .product-card .pc-top{ display:none; }   /* franja de color vieja: ya no se usa (antes se veía un segundo al cargar) */
   .product-card .pc-photo{
     width:100%; aspect-ratio:4 / 4.6; background:var(--surface-alt); flex-shrink:0;
     display:flex; align-items:center; justify-content:center; overflow:hidden;
