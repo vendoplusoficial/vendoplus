@@ -5162,6 +5162,33 @@ body.pg-mode{ background:#F4F6FA; }
 }
 .mdi-pay-pill.st-pill{ color:#5A45F2 !important; }
 .st-fin-btn{ margin-top:12px; }
+.st-nav-lock{ display:none; margin-left:auto; color:var(--ink-faint, #A3AAB5); }
+.st-nav-lock svg{ width:15px; height:15px; }
+body.st-fin-lock .st-nav-lock{ display:inline-flex; }
+.vp-more-lock{ display:inline-flex; margin-left:8px; vertical-align:-2px; color:#A3AAB5; }
+.vp-sheet button .vp-more-lock svg{ width:16px; height:16px; color:#A3AAB5; }
+.stf-lock{ padding:22px 18px; border-radius:18px; background:var(--surface, #fff); border:1px solid var(--border, #EEF1F5); text-align:center; }
+.stf-lock-ico{ display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:16px; background:var(--surface-alt, #F1F3F7); color:var(--ink-soft); margin-bottom:10px; }
+.stf-lock-ico.on{ background:#E6F7EE; color:#0E7A3D; }
+.stf-lock-ico svg{ width:26px; height:26px; }
+.stf-lock b{ display:block; font-size:17px; font-weight:800; color:var(--ink); }
+.stf-lock p{ margin:6px auto 14px; max-width:340px; font-size:13.5px; font-weight:500; line-height:1.45; color:var(--ink-soft); }
+.stf-lock .btn{ margin-top:4px; }
+.stf-lbl{ margin:18px 2px 8px; font-size:12.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.3px; }
+.stf-col-b > .stf-lbl:first-child{ margin-top:4px; }
+.stf-fns{ display:flex; flex-direction:column; gap:8px; }
+.stf-fn{ display:flex; align-items:center; gap:12px; width:100%; padding:13px 14px; border:1px solid var(--border, #EEF1F5); border-radius:14px; background:var(--surface, #fff); font:inherit; text-align:left; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.stf-fn:active:not(:disabled){ background:var(--surface-alt, #F6F7FA); }
+.stf-fn.off{ cursor:default; opacity:1; }
+.stf-fn-ico{ display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; flex:none; border-radius:12px; background:#E6F7EE; color:#0E7A3D; }
+.stf-fn.off .stf-fn-ico{ background:var(--surface-alt, #F1F3F7); color:var(--ink-soft); }
+.stf-fn-ico svg{ width:19px; height:19px; }
+.stf-fn-txt{ flex:1; min-width:0; }
+.stf-fn-txt b{ display:block; font-size:14.5px; font-weight:700; color:var(--ink); }
+.stf-fn-txt small{ display:block; margin-top:2px; font-size:12.5px; font-weight:500; color:var(--ink-soft); line-height:1.35; }
+.stf-fn-chev, .stf-fn-lock{ display:inline-flex; flex:none; color:var(--ink-faint, #A3AAB5); }
+.stf-fn-chev svg, .stf-fn-lock svg{ width:18px; height:18px; }
+@media (min-width:900px){ .stf-fn:not(:disabled):hover{ background:var(--surface-alt, #F6F7FA); } }
 /* Barra lateral de PC: solo si el Dueño tiene Stripe enlazado (va pegado a Caja y corte) */
 .navbtn.st-nav{ display:none !important; }
 @media (min-width:700px){
@@ -5528,7 +5555,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
-    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="coin" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe</span></button>
+    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="coin" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe</span><em class="st-nav-lock"></em></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -19698,7 +19725,20 @@ const STRIPE_LOGO = '<svg class="st-logo" viewBox="0 0 60 25" role="img" aria-la
 
 function stCfg(){ const s = (mdCfg().payments || {}).st || {}; return { on:!!s.on, ready:!!s.ready, name:s.name || '', at:s.at || null }; }
 function stLinked(){ const s = stCfg(); return s.on && s.ready; }
-function stNavSync(){ try{ document.body.classList.toggle('st-fin-on', stLinked() && isOwner()); }catch(e){} }
+/* El apartado de Stripe en "Más":
+   · Versión básica → se ve, pero bloqueado (al tocarlo, Pro).
+   · Pro sin Stripe → los enlaces para activar sus cobros.
+   · Pro con Stripe → las finanzas. */
+function stEsPro(){ try{ return !window.VPPremium || VPPremium.activo(); }catch(e){ return true; } }
+function stFinEstado(){ return !stEsPro() ? 'bloqueado' : (stLinked() ? 'ok' : 'sinEnlace'); }
+function stNavSync(){
+  try{
+    document.body.classList.toggle('st-fin-on', isOwner());
+    document.body.classList.toggle('st-fin-lock', !stEsPro());
+    const l = document.querySelector('.st-nav-lock'); if(l && !l.firstChild) l.innerHTML = icon('lock');
+  }catch(e){}
+}
+setInterval(stNavSync, 5000);
 function stSaveCfg(j){
   const cfg = mdCfg();
   const antes = JSON.stringify(cfg.payments.st || {});
@@ -20017,7 +20057,7 @@ const stFin = { data:null, tab:'pagos', cargando:false, err:'' };
    El botón de atrás del celular también la cierra. */
 function stOpenFinanzas(){
   if(!isOwner()){ toast('Solo el Dueño puede ver las finanzas', { icon:icon('alert'), variant:'toast-danger' }); return; }
-  if(!stLinked()){ toast('Primero enlaza tu Stripe', { icon:icon('alert') }); return; }
+  stNavSync();
   try{ closeModal(); }catch(e){}
   stFin.tab = stFin.tab || 'pagos';
   let pg = document.getElementById('stfPage');
@@ -20035,7 +20075,34 @@ function stOpenFinanzas(){
     window.addEventListener('popstate', () => { if(document.getElementById('stfPage')) stCerrarFinanzas(true); });
     document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.getElementById('stfPage') && !document.querySelector('#confirm-layer .modal-overlay')) stCerrarFinanzas(); });
   }
-  stFinCargar();
+  if(stFinEstado() === 'ok') stFinCargar();
+}
+/** Lo que se puede cobrar con Stripe (por ahora sin imágenes). */
+function stFinFuncionesHTML(bloqueado){
+  const pm = mdCfg().payments;
+  const menuOn = stLinked() && pm.card === true;
+  const fila = (ico, titulo, sub, accion, extra) => `
+    <button type="button" class="stf-fn ${accion ? '' : 'off'}" ${accion ? `onclick="${accion}"` : 'disabled'}>
+      <span class="stf-fn-ico">${icon(ico)}</span>
+      <span class="stf-fn-txt"><b>${titulo}</b><small>${sub}</small></span>
+      ${extra || (accion ? `<span class="stf-fn-chev">${icon('chevronRight')}</span>` : '')}
+    </button>`;
+  return `<div class="stf-fns">
+    ${fila('card', 'Pago con tarjeta en tu Menú Digital',
+        menuOn ? 'Activo · tus clientes pagan con tarjeta al hacer su pedido' : 'Tus clientes pagan con tarjeta al hacer su pedido',
+        bloqueado ? 'stFinDesbloquear()' : 'stFinIrMenu()',
+        bloqueado ? `<span class="stf-fn-lock">${icon('lock')}</span>` : (menuOn ? '<span class="stf-pill ok">Activo</span>' : ''))}
+    ${fila('mobile', 'Pago con NFC', 'Cobra acercando la tarjeta a tu celular', bloqueado ? 'stFinDesbloquear()' : null,
+        bloqueado ? `<span class="stf-fn-lock">${icon('lock')}</span>` : '<span class="stf-pill gris">Próximamente</span>')}
+  </div>`;
+}
+function stFinIrMenu(){
+  stCerrarFinanzas();
+  setTimeout(() => { try{ goTo('menu'); }catch(e){} setTimeout(() => { try{ mdOpenCardForm(); }catch(e){} }, 250); }, 260);
+}
+function stFinDesbloquear(){
+  stCerrarFinanzas();
+  setTimeout(() => { try{ if(window.VPPremium) VPPremium.puerta(null); }catch(e){} }, 260);
 }
 function stCerrarFinanzas(desdeAtras){
   const pg = document.getElementById('stfPage'); if(!pg) return;
@@ -20090,7 +20157,27 @@ function stFinMovNombre(m){
 }
 function stFinPaint(primera){
   const d = stFin.data;
+  const estado = stFinEstado();
   const cuerpo = (() => {
+    if(estado === 'bloqueado') return `
+      <div class="stf-col-a">
+        <div class="stf-lock">
+          <span class="stf-lock-ico">${icon('lock')}</span>
+          <b>Disponible en VendoPlus Pro</b>
+          <p>Conecta tu Stripe y cobra con tarjeta. Aquí verás tu dinero, tus retiros y tus devoluciones.</p>
+          <button class="btn primary block" onclick="stFinDesbloquear()">Desbloquear con Pro</button>
+        </div>
+      </div>
+      <div class="stf-col-b"><div class="stf-lbl">Lo que puedes hacer con Stripe</div>${stFinFuncionesHTML(true)}</div>`;
+    if(estado === 'sinEnlace') return `
+      <div class="stf-col-a">
+        <div class="stf-lock">
+          <span class="stf-lock-ico on">${icon('card')}</span>
+          <b>Activa tus cobros con Stripe</b>
+          <p>Elige qué quieres activar. Cuando conectes tu Stripe, aquí verás tu dinero, tus retiros y tus devoluciones.</p>
+        </div>
+      </div>
+      <div class="stf-col-b"><div class="stf-lbl">Cobros con Stripe</div>${stFinFuncionesHTML(false)}</div>`;
     if(!d && stFin.cargando) return `<div class="stf-carga"><i></i><i></i><i></i></div>`;
     if(!d && stFin.err) return `<div class="mdi-banner warn">${icon('alert')}<span><b>No se pudo cargar</b>${escapeHtml(stFin.err)}</span></div>
       <div class="sheet-actions"><button class="btn primary block" onclick="stFinCargar()">${icon('refresh')} Intentar otra vez</button></div>`;
@@ -20130,6 +20217,8 @@ function stFinPaint(primera){
         <button class="btn primary block" onclick="stFinRetirar()" ${d.available >= 1 ? '' : 'disabled'}>${icon('bank')} Retirar a mi banco</button>
         <button class="btn ghost" onclick="window.open('https://dashboard.stripe.com/', '_blank')" aria-label="Abrir mi panel de Stripe">${icon('external')} Stripe</button>
       </div>
+      <div class="stf-lbl stf-lbl-fns">Cobros con Stripe</div>
+      ${stFinFuncionesHTML(false)}
       </div>
       <div class="stf-col-b">
       <div class="stf-tabs" role="tablist">
@@ -20149,7 +20238,7 @@ function stFinPaint(primera){
     <div class="stf-top"><div class="stf-top-in">
       <button type="button" class="stf-atras" onclick="stCerrarFinanzas()" aria-label="Regresar">${icon('chevronLeft')}</button>
       <h1>Finanzas de Stripe</h1>
-      <button type="button" class="stf-actualizar" onclick="stFinCargar()" aria-label="Actualizar">${icon('refresh')}</button>
+      ${estado === 'ok' ? `<button type="button" class="stf-actualizar" onclick="stFinCargar()" aria-label="Actualizar">${icon('refresh')}</button>` : ''}
     </div></div>
     <div class="stf-scroll"><div class="${clase}">${cuerpo}</div></div>`;
 }
@@ -28399,9 +28488,10 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
   function moreItems(){
     var l=MORE.slice();
     try{
-      if(typeof stLinked==='function' && stLinked() && isOwner()){
+      if(typeof stFinEstado==='function' && isOwner()){
         var i=l.findIndex(function(x){return x[0]==='account';});
-        l.splice(i<0?l.length:i,0,['stripefin','coin','Finanzas de Stripe']);
+        var lock=stFinEstado()==='bloqueado';
+        l.splice(i<0?l.length:i,0,['stripefin','coin','Finanzas de Stripe'+(lock?'<em class="vp-more-lock">'+icon('lock')+'</em>':'')]);
       }
     }catch(e){}
     return l;
