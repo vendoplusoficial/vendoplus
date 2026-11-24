@@ -414,16 +414,120 @@
   var claveAbierta = null;
   var ORDEN_MAS = ['menu', 'chat', 'escaner', 'stats', 'usuarios'];
 
-  /* Pantalla principal: corona, título, las 4 tarjetas, "Ver más beneficios",
-     precio y botón. */
+  /* Pantalla principal: comparación clásica de planes, Básico vs Premium,
+     lado a lado. Cada fila: palomita (incluido) o tache (no incluido). */
+  var PLAN_FILAS = [
+    { k: 'ventas',   t: 'Ventas y cobros',               basico: true },
+    { k: 'tickets',  t: 'Tickets e impresora',           basico: true },
+    { k: 'caja',     t: 'Caja e inventario',             basico: true },
+    { k: 'clientes', t: 'Clientes y deudas',             basico: true },
+    { k: 'escaner',  t: 'Productos con una foto',        basico: '{N} al mes', premium: 'Sin límite' },
+    { k: 'menu',     t: 'Menú digital y pedidos',        basico: false },
+    { k: 'chat',     t: 'Asistente con IA',              basico: false },
+    { k: 'stats',    t: 'Reportes de ventas y ganancias', basico: false },
+    { k: 'usuarios', t: 'Acceso para tus empleados',     basico: false }
+  ];
+  var SVG_SI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>';
+  var SVG_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+
+  function planFila(f, plan, clave) {
+    var v = plan === 'premium' ? (f.premium || true) : f.basico;
+    var si = v !== false;
+    var nota = typeof v === 'string' ? String(v).replace('{N}', String(GRATIS_AL_MES)) : '';
+    return '<li class="vp-pl-fila' + (si ? '' : ' no') + (plan === 'premium' && clave === f.k ? ' foco' : '') + '">' +
+             '<span class="vp-pl-ico">' + (si ? SVG_SI : SVG_NO) + '</span>' +
+             '<span class="vp-pl-txt">' + esc(f.t) + (nota ? '<small>' + esc(nota) + '</small>' : '') + '</span>' +
+           '</li>';
+  }
+
+  function planesHTML(clave, esDueno, precio) {
+    var filas = function (plan) { return PLAN_FILAS.map(function (f) { return planFila(f, plan, clave); }).join(''); };
+    var monto = String(precio).replace(/\s*MXN\s*$/i, '');
+    var boton = esDueno
+      ? '<button type="button" class="vp-pl-btn" id="payBtn" onclick="VPPremium.pagar()">Contratar</button>'
+      : '<button type="button" class="vp-pl-btn" disabled>Solo el Dueño</button>';
+    return '<div class="vp-pl">' +
+        '<div class="vp-pl-col">' +
+          '<div class="vp-pl-cab"><h2>Básico</h2><p>Lo esencial para vender</p></div>' +
+          '<ul class="vp-pl-lista">' + filas('basico') + '</ul>' +
+          '<div class="vp-pl-pie">' +
+            '<div class="vp-pl-precio"><b>$0</b><span>al mes</span></div>' +
+            '<button type="button" class="vp-pl-btn sec" disabled>Plan actual</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="vp-pl-col pro">' +
+          '<span class="vp-pl-tag">Recomendado</span>' +
+          '<div class="vp-pl-cab"><h2>Premium</h2><p>Todo para crecer tu negocio</p></div>' +
+          '<ul class="vp-pl-lista">' + filas('premium') + '</ul>' +
+          '<div class="vp-pl-pie">' +
+            '<div class="vp-pl-precio"><b data-vp-monto>' + esc(monto) + '</b><span>al mes</span></div>' +
+            boton +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
   function cuerpoPrincipal(clave, esDueno, precio) {
-    return cabeceraHTML(
-        'Desbloquea más<br><b>funciones con Premium</b>',
-        'Lleva tu negocio <b>más lejos</b> con herramientas que te ahorran tiempo y te ayudan a vender más.'
-      ) +
-      '<div class="vp-pr-cards">' + (clave === 'usuarios' ? ORDEN_USUARIOS : ORDEN).map(function (k) { return tarjetaHTML(k, clave); }).join('') + '</div>' +
-      '<button type="button" class="vp-pr-mas" onclick="VPPremium.masBeneficios()">Ver más beneficios' + ico('chevronRight') + '</button>' +
-      pieHTML(precio, esDueno);
+    estilosPlanes();
+    return '<div class="vp-pr-x"><button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
+      '<div class="vp-pl-scroll">' +
+        '<h1 class="vp-pl-h1">Elige tu plan</h1>' +
+        '<p class="vp-pl-lead">Empieza gratis y cámbiate a Premium cuando lo necesites. Cancela cuando quieras.</p>' +
+        planesHTML(clave, esDueno, precio) +
+        (esDueno ? '' : '<p class="vp-pl-nota">Solo el <b>Dueño</b> de la cuenta puede activar Premium. Pídele que entre con su usuario y lo active desde Mi cuenta.</p>') +
+        (window.PlayPay
+          ? '<button type="button" class="vp-pr-link" id="restoreBtn" onclick="PlayPay.restore()">Ya pagué · Restaurar compra</button>'
+          : '') +
+        '<button type="button" class="vp-pl-mas" onclick="VPPremium.masBeneficios()">Ver todo lo que incluye Premium' + ico('chevronRight') + '</button>' +
+      '</div>';
+  }
+
+  var cssPlanes = false;
+  function estilosPlanes() {
+    if (cssPlanes || document.getElementById('vp-planes-css')) { cssPlanes = true; return; }
+    cssPlanes = true;
+    var st = document.createElement('style');
+    st.id = 'vp-planes-css';
+    st.textContent = [
+      '.vp-pl-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 0 6px;}',
+      '.vp-pl-h1{margin:4px 0 6px;text-align:center;font-size:26px;line-height:1.15;font-weight:700;letter-spacing:-.4px;color:var(--ink,#15181C);}',
+      '.vp-pl-lead{margin:0 auto 18px;max-width:380px;text-align:center;font-size:14px;line-height:1.45;font-weight:400;color:var(--ink-soft,#6C7480);}',
+      '.vp-pl{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;}',
+      '.vp-pl-col{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid #E4E8EF;border-radius:18px;padding:16px 12px 14px;min-width:0;}',
+      '.vp-pl-col.pro{border:1.5px solid var(--vp-pr-verde-claro,#25D366);box-shadow:0 10px 26px rgba(22,163,74,.10);}',
+      '.vp-pl-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--vp-pr-verde-claro,#25D366);color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.3px;padding:3px 10px;border-radius:99px;}',
+      '.vp-pl-cab{text-align:center;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid #EEF1F5;}',
+      '.vp-pl-cab h2{margin:0;font-size:17px;font-weight:600;color:var(--ink,#15181C);letter-spacing:-.2px;}',
+      '.vp-pl-col.pro .vp-pl-cab h2{color:var(--vp-pr-verde,#16A34A);}',
+      '.vp-pl-cab p{margin:3px 0 0;font-size:11.5px;line-height:1.3;font-weight:400;color:var(--ink-soft,#6C7480);}',
+      '.vp-pl-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;flex:1 1 auto;}',
+      '.vp-pl-fila{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;line-height:1.3;font-weight:400;color:var(--ink,#15181C);}',
+      '.vp-pl-fila.no{color:#A3AAB5;}',
+      '.vp-pl-fila.foco{font-weight:600;}',
+      '.vp-pl-ico{flex:none;width:16px;height:16px;margin-top:0;color:var(--vp-pr-verde,#16A34A);}',
+      '.vp-pl-fila.no .vp-pl-ico{color:#C3C8D1;}',
+      '.vp-pl-ico svg{width:16px;height:16px;display:block;}',
+      '.vp-pl-txt{min-width:0;}',
+      '.vp-pl-txt small{display:block;font-size:11px;font-weight:400;color:var(--ink-soft,#6C7480);margin-top:1px;}',
+      '.vp-pl-pie{margin-top:14px;padding-top:12px;border-top:1px solid #EEF1F5;text-align:center;}',
+      '.vp-pl-precio{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-bottom:10px;}',
+      '.vp-pl-precio b{font-size:24px;font-weight:600;letter-spacing:-.6px;color:var(--ink,#15181C);}',
+      '.vp-pl-col.pro .vp-pl-precio b{color:var(--vp-pr-verde,#16A34A);}',
+      '.vp-pl-precio span{font-size:12px;font-weight:400;color:var(--ink-soft,#6C7480);}',
+      '.vp-pl-btn{width:100%;border:none;border-radius:12px;padding:11px 8px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;',
+      'background:var(--vp-pr-verde-claro,#25D366);color:#fff;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,opacity .15s ease;}',
+      '.vp-pl-btn:active:not(:disabled){transform:scale(.97);}',
+      '.vp-pl-btn.sec{background:#F1F3F7;color:var(--ink-soft,#6C7480);cursor:default;}',
+      '.vp-pl-btn:disabled:not(.sec){opacity:.6;cursor:default;}',
+      '.vp-pl-nota{margin:14px 4px 0;text-align:center;font-size:12.5px;line-height:1.45;font-weight:400;color:var(--ink-soft,#6C7480);}',
+      '.vp-pl-scroll .vp-pr-link{display:block;margin:12px auto 0;}',
+      '.vp-pl-mas{display:flex;align-items:center;justify-content:center;gap:2px;width:100%;border:none;background:none;cursor:pointer;',
+      'font-family:inherit;font-size:13.5px;font-weight:500;color:var(--vp-pr-verde,#16A34A);padding:14px 8px 4px;-webkit-tap-highlight-color:transparent;}',
+      '.vp-pl-mas svg{width:15px;height:15px;}',
+      '@media (max-width:359px){.vp-pl{gap:7px;}.vp-pl-col{padding:14px 9px 12px;}.vp-pl-fila{font-size:11.5px;}.vp-pl-h1{font-size:23px;}}',
+      '@media (min-width:700px){.vp-pl{gap:14px;}.vp-pl-col{padding:20px 16px 16px;}.vp-pl-fila{font-size:13.5px;}}'
+    ].join('\n');
+    document.head.appendChild(st);
   }
 
   /* Vista de detalle: todo lo que incluye Premium (con flecha para regresar). */
@@ -562,6 +666,8 @@
     var p = precioTxt();
     var c = document.querySelector('[data-vp-price]');
     if (c) c.innerHTML = '<small>Membresía Vendo Plus</small><b>' + esc(p) + '</b><span>por mes · Cancela cuando quieras</span>';
+    var m = document.querySelector('[data-vp-monto]');
+    if (m) m.textContent = String(p).replace(/\s*MXN\s*$/i, '');
   }
 
   /** El botón de pagar: usa EXACTAMENTE el cobro que ya tenías. */
