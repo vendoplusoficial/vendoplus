@@ -4822,13 +4822,10 @@ body.dm-cat .dm{ background:#fff; box-shadow:none; }
 .cg-srch-x{ width:36px; height:36px; border-radius:50%; border:0; background:#fff; color:#6B7080; display:flex; align-items:center; justify-content:center; cursor:pointer; }
 .cg-srch-x svg{ width:15px; height:15px; }
 .cg-view{ position:relative; padding:0 0 calc(120px + env(safe-area-inset-bottom, 0px)) !important; max-width:none !important; overflow:hidden; }
-/* Arriba se quedan pegadas las categorías y, justo debajo, CATÁLOGO.
-   El banner va entre los dos y se va hacia arriba (por debajo de las
-   categorías) al bajar; al regresar hasta arriba vuelve a aparecer.
-   Todo con posición "sticky": sin cálculos al hacer scroll, sin brincos. */
+/* El encabezado (categorías + banner + CATÁLOGO) se queda pegado arriba:
+   solo los productos se desplazan. */
 .cg-top{ padding-bottom:0 !important; }
-.cg-hero{ position:sticky; top:var(--dm-top-h, 70px); z-index:19; text-align:center; padding:6px 16px 12px; background:rgba(255,255,255,.96); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
-#dmRoot > .cgb{ z-index:1; }
+.cg-hero{ position:relative; text-align:center; padding:6px 16px 12px; }
 /* Los adornos de los lados: sobre el fondo blanco, pero debajo de las
    tarjetas de productos (las tarjetas van en z-index 1). */
 .cg-blob{ position:absolute; top:-26px; width:120px; height:120px; border-radius:50%; background:var(--dm-soft,#FCE9D7); opacity:1; z-index:0; pointer-events:none; }
@@ -27915,12 +27912,8 @@ function cgSetCat(id, btn){
     if(btn) rail.scrollTo({ left:btn.offsetLeft - rail.offsetWidth / 2 + btn.offsetWidth / 2, behavior:'smooth' });
   }
   cgFill(); cgAnimGrid();
-  /* Si ya bajó, regresa al inicio de los productos (con el banner ya
-     escondido), no hasta arriba de todo. */
-  const ban = document.querySelector('#dmRoot > .cgb');
-  const top = document.getElementById('dmTop');
-  const tope = ban ? Math.max(0, ban.offsetTop + ban.offsetHeight - (top ? top.offsetHeight : 0)) : 0;
-  if(window.scrollY > tope) window.scrollTo({ top:tope, behavior:'smooth' });
+  const hero = document.querySelector('.cg-hero');
+  if(hero && window.scrollY > hero.offsetTop) window.scrollTo({ top:0, behavior:'smooth' });
 }
 function cgToggleSearch(open){
   const row = document.getElementById('cgSrch'), btn = document.getElementById('cgSrchBtn');
@@ -27963,9 +27956,9 @@ function cgRender(d){
         ${icon('search')}<input id="cgSrchInput" type="search" placeholder="Buscar producto…" autocomplete="off" enterkeyhint="search" value="${escapeHtml(dm.q || '')}" oninput="cgSearchInput(this.value)" onkeydown="if(event.key==='Enter') this.blur()">
         <button type="button" class="cg-srch-x" onclick="cgToggleSearch(false)" aria-label="Cerrar búsqueda">${icon('close')}</button>
       </div>
+      ${mdBannerHTML(d.cfg.banner)}
+      <div class="cg-hero"><h1 class="cg-title">Catálogo</h1></div>
     </header>
-    ${mdBannerHTML(d.cfg.banner)}
-    <div class="cg-hero" id="cgHero"><h1 class="cg-title">Catálogo</h1></div>
     <main class="dm-view cg-view">
       <i class="cg-blob l" aria-hidden="true"></i><i class="cg-blob r" aria-hidden="true"></i>
       ${dmHoursLineHTML(d.cfg).replace('class="dm-hours"', 'class="dm-hours cg-hours"')}
