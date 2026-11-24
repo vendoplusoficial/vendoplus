@@ -2510,7 +2510,8 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
 
   /* ---------- Historial, ticket y ventas ---------- */
   .tag.md{ background:var(--sec-menu-soft); color:var(--sec-menu-ink); margin:0 0 0 4px; vertical-align:1px; }
-  .tag.dlv{ background:color-mix(in srgb, var(--app) 13%, #fff); color:color-mix(in srgb, var(--app) 78%, #000); margin:0 0 0 4px; vertical-align:1px; }
+  .tag.dlv{ display:inline-flex; align-items:center; gap:4px; background:color-mix(in srgb, var(--app) 13%, #fff); color:color-mix(in srgb, var(--app) 78%, #000); margin:0 0 0 4px; padding-left:3px; vertical-align:1px; }
+  .tag.dlv img{ width:13px; height:13px; border-radius:4px; display:block; }
   .sale-row-badge.md{ background:var(--sec-menu-soft); }
   .ticket-origin{
     margin:8px 0 2px; font-size:11.5px; font-weight:700; line-height:1.45; font-family:var(--sans);
@@ -10752,7 +10753,7 @@ function renderSaleRow(sale){
     <button class="sale-row ${sale.cancelled?'cancelled':''} ${ret ? 'is-return' : ''}" onclick="openSaleDetail('${sale.id}')">
       <div class="sale-row-badge ${sale.origin === 'menu' ? 'md' : ''} ${ret ? 'ret' : ''}">${icon(ret ? 'undo' : (sale.origin === 'menu' ? 'mobile' : service.ico))}</div>
       <div class="sale-row-main">
-        <div class="sale-row-num">${ret ? 'Devolución ' + escapeHtml(sale.folio || '') : orderNumberLabel(sale.number)}${sale.origin === 'menu' ? ' <span class="tag md">Menú Digital' + (sale.menuCode ? ' · ' + escapeHtml(sale.menuCode) : '') + '</span>' : ''}${sale.origin === 'app' ? ' <span class="tag dlv" style="--app:' + ((VP_APPS[sale.app] || {}).c || '#6C7480') + '">' + escapeHtml(saleAppLabel(sale)) + '</span>' : ''}${fiado ? ' <span class="tag credit">Fiado</span>' : ''}</div>
+        <div class="sale-row-num">${ret ? 'Devolución ' + escapeHtml(sale.folio || '') : orderNumberLabel(sale.number)}${sale.origin === 'menu' ? ' <span class="tag md">Menú Digital' + (sale.menuCode ? ' · ' + escapeHtml(sale.menuCode) : '') + '</span>' : ''}${sale.origin === 'app' ? ' <span class="tag dlv" style="--app:' + ((VP_APPS[sale.app] || {}).c || '#6C7480') + '">' + ((VP_APPS[sale.app] || {}).img ? '<img src="' + VP_APPS[sale.app].img + '" alt="">' : '') + escapeHtml(saleAppLabel(sale)) + '</span>' : ''}${fiado ? ' <span class="tag credit">Fiado</span>' : ''}</div>
         ${ret && sale.refNumber ? `<div class="sale-row-who">De la venta ${orderNumberLabel(sale.refNumber)}</div>` : ''}
         ${sale.customerName ? `<div class="sale-row-who">Cliente: ${escapeHtml(sale.customerName)}</div>` : ''}
         <div class="sale-row-meta">${formatDateTime(sale.date)} · ${ret ? escapeHtml(refundMethodName(sale.paymentMethod)) : payment.name}${sale.table ? ' · ' + tableTicketLabel(sale) + ' ' + escapeHtml(sale.table) : ''}</div>
@@ -21249,9 +21250,10 @@ function mdiUnpaidAlertHTML(){
 function saleIsMenu(s){ return s && s.origin === 'menu'; }
 /* Ventas que llegan de Rappi, DiDi Food y Uber Eats (ver vendo-apps.js) */
 const VP_APPS = {
-  rappi:{ n:'Rappi',     c:'#FF441F', l:'R' },
-  didi: { n:'DiDi Food', c:'#FC6A1C', l:'D' },
-  uber: { n:'Uber Eats', c:'#06C167', l:'U' }
+  /* c = color de acento, b = color de los botones, img = logo */
+  rappi:{ n:'Rappi',     c:'#FF441F', b:'#FF441F', l:'R', img:'logos-apps/rappi.png' },
+  didi: { n:'DiDi Food', c:'#F27C4B', b:'#EE6A33', l:'D', img:'logos-apps/didi.png' },
+  uber: { n:'Uber Eats', c:'#06C167', b:'#142328', l:'U', img:'logos-apps/uber.png' }
 };
 const VP_APPS_ORDEN = ['rappi', 'didi', 'uber'];
 function saleIsApp(s){ return !!(s && s.origin === 'app'); }
@@ -29628,7 +29630,7 @@ window.VP_PROMOS_IMG = {
 };
 </script>
 <script src="vendo-premium.js?v=20261124y"></script>
-<script src="vendo-apps.js?v=20261124a"></script>
+<script src="vendo-apps.js?v=20261124b"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,

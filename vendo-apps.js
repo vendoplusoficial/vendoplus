@@ -28,7 +28,8 @@
   function norm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
   function logo(k, cls) {
     var a = VP_APPS[k] || {};
-    return '<span class="vpa-logo ' + (cls || '') + '" style="background:' + a.c + '" aria-hidden="true">' + esc(a.l || '?') + '</span>';
+    return a.img ? '<img class="vpa-logo ' + (cls || '') + '" src="' + a.img + '" alt="" aria-hidden="true" decoding="async">'
+      : '<span class="vpa-logo ' + (cls || '') + '" style="background:' + a.c + '" aria-hidden="true">' + esc(a.l || '?') + '</span>';
   }
   function listoNube() {
     return typeof Cloud !== 'undefined' && Cloud.ready && Cloud.sb && !!Cloud.uid &&
@@ -188,7 +189,7 @@
       ORDEN.map(function (k) {
         return '<button type="button" role="tab" aria-selected="' + (k === activa) + '" class="' + (k === activa ? 'active' : '') + '" ' +
           (cls === 'mas' ? 'data-go="app:' + k + '"' : 'onclick="VPApps.elegir(\'' + k + '\')"') + '>' +
-          '<i style="background:' + VP_APPS[k].c + '"></i>' + esc(VP_APPS[k].n) + '</button>';
+          logo(k, 'sm') + esc(VP_APPS[k].n) + '</button>';
       }).join('') + '</div>';
   }
   function barraMasHTML() {
@@ -262,7 +263,7 @@
           '<p class="vpa-p">Los pedidos se siguen atendiendo en la app de ' + esc(a.n) + '. Cuando un pedido se <b>completa</b>, VendoPlus:</p>' +
           '<ul class="vpa-lista"><li>' + icon('receipt') + '<span>Lo registra en tu <b>Historial</b> y en <b>Estadísticas</b>, marcado como ' + esc(a.n) + '.</span></li>' +
           '<li>' + icon('box') + '<span>Descuenta de tu <b>inventario</b> los productos que vincules.</span></li></ul>' +
-          '<button class="btn primary block vpa-btn" style="--app:' + a.c + '" onclick="VPApps.formulario(true)">' + icon('link') + ' Enlazar con ' + esc(a.n) + '</button>' +
+          '<button class="btn primary block vpa-btn" onclick="VPApps.formulario(true)">' + icon('link') + ' Enlazar con ' + esc(a.n) + '</button>' +
           '</div>';
       }
       return h + '<div class="vpa-card">' +
@@ -272,7 +273,7 @@
             (x.s ? '<small class="vpa-hint">' + esc(x.s) + '</small>' : '') + '</div>';
         }).join('') +
         '<div class="vpa-acts"><button class="btn ghost" onclick="VPApps.formulario(false)">Cancelar</button>' +
-        '<button class="btn primary vpa-btn" style="--app:' + a.c + '" id="vpaGuardar" onclick="VPApps.conectar()">' + (conectada ? 'Guardar' : 'Enlazar') + '</button></div>' +
+        '<button class="btn primary vpa-btn" id="vpaGuardar" onclick="VPApps.conectar()">' + (conectada ? 'Guardar' : 'Enlazar') + '</button></div>' +
         '</div>';
     }
 
@@ -288,16 +289,19 @@
         (info.ultimo_evento_at ? '<p class="vpa-p sm">Último aviso: ' + esc(new Date(info.ultimo_evento_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })) + '</p>' : '') +
       '</div>' +
       '<button class="vpa-opc" onclick="VPApps.vincular()">' +
-        '<span class="vpa-opc-ico" style="--app:' + a.c + '">' + icon('link') + '</span>' +
+        '<span class="vpa-opc-ico">' + icon('link') + '</span>' +
         '<span class="vpa-opc-txt"><b>Enlazar productos</b><small>Para descontar tu inventario con cada venta</small></span>' + icon('chevronRight') + '</button>' +
       '<button class="vpa-opc" onclick="VPApps.historial()">' +
-        '<span class="vpa-opc-ico" style="--app:' + a.c + '">' + icon('receipt') + '</span>' +
+        '<span class="vpa-opc-ico">' + icon('receipt') + '</span>' +
         '<span class="vpa-opc-txt"><b>Ver historial</b><small>Ventas de ' + esc(a.n) + ' en tu Historial</small></span>' + icon('chevronRight') + '</button>' +
       '<div class="vpa-pie"><button type="button" class="vpa-lnk" onclick="VPApps.formulario(true)">Editar datos</button><span>·</span><button type="button" class="vpa-lnk" onclick="VPApps.desconectar()">Desenlazar</button></div>';
   }
 
+  /* Los colores de la app que se está viendo (botones, acentos) */
+  function colores(pg, k) { var a = VP_APPS[k] || {}; pg.style.setProperty('--app', a.c); pg.style.setProperty('--app-b', a.b || a.c); }
   function pintar(primera) {
     var pg = document.getElementById('vpaPage'); if (!pg) return;
+    colores(pg, st.app);
     var cuerpo = cuerpoApp();
     var caja = pg.querySelector('.vpa');
     if (!primera && caja) {
@@ -445,7 +449,7 @@
     var hechos = vin.prods.filter(function (p) { return !!vin.vinc[p.producto_id]; }).length;
     var pct = total ? Math.round(hechos / total * 100) : 0;
     var h = '<div class="vpa-cuenta"><div><b>' + hechos + ' de ' + total + '</b> productos vinculados</div>' +
-      '<div class="vpa-barra-p"><i style="width:' + pct + '%;background:' + VP_APPS[vin.app].c + '"></i></div></div>';
+      '<div class="vpa-barra-p"><i style="width:' + pct + '%"></i></div></div>';
     h += '<p class="vpa-p sm">Cada producto de ' + esc(nombre(vin.app)) + ' que vincules descuenta tu inventario cuando se completa una venta. Los productos aparecen solos con cada pedido; también puedes agregarlos.</p>';
     if (!total && !vin.agregar) h += '<p class="vpa-vacio">Todavía no hay productos de ' + esc(nombre(vin.app)) + '. Llegan solos con la primera venta completada, o agrégalos aquí.</p>';
     h += '<div class="vpa-filas">' + vin.prods.map(filaHTML).join('') + '</div>';
@@ -460,6 +464,7 @@
   }
   function pintarVinc(primera) {
     var pg = document.getElementById('vpaVinc'); if (!pg || !vin) return;
+    colores(pg, vin.app);
     var n = cambios();
     var pie = '<div class="vpa-guardar"><button type="button" class="btn primary block" id="vpaGuardarV" onclick="VPApps.guardarVinc()"' + (n ? '' : ' disabled') + '>' +
       icon('check') + ' Guardar vinculaciones' + (n ? ' (' + n + ')' : '') + '</button></div>';
@@ -554,16 +559,17 @@
     '.vpa-vinc .vpa-in{padding-bottom:110px;}',
     '.vpa-seg{display:flex;gap:2px;background:var(--surface-alt,#F1F3F7);border-radius:999px;padding:4px;margin:0 0 16px;}',
     '.vpa-seg button{flex:1;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;border-radius:999px;padding:9px 6px;font:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;}',
-    '.vpa-seg button i{width:8px;height:8px;border-radius:50%;flex:none;}',
+    '.vpa-seg .vpa-logo.sm{width:18px;height:18px;border-radius:5px;flex:none;box-shadow:0 0 0 1px rgba(16,22,42,.08);}',
+    '.vp-sheet .vpa-seg.mas .vpa-logo.sm{width:20px;height:20px;}',
     '.vpa-seg button.active{background:var(--surface,#fff);color:var(--ink);box-shadow:0 1px 3px rgba(22,33,62,.12);}',
     /* en la hoja de "Más" (celular): mismo estilo, sin heredar el de los renglones */
     '.vpa-mas-tit{margin:2px 8px 8px;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}',
     '.vp-sheet .vpa-seg.mas{margin:0 0 10px;}',
     '.vp-sheet .vpa-seg.mas button{width:auto;flex:1;display:inline-flex;gap:6px;padding:10px 4px;border-radius:999px;font:700 13px var(--sans);color:var(--ink);text-align:center;background:var(--surface,#fff);box-shadow:0 1px 3px rgba(22,33,62,.10);}',
     '.vp-sheet .vpa-seg.mas button:active{background:var(--vp-soft,#EEF1F5);}',
-    '.vpa-logo{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;border-radius:8px;color:#fff;font-weight:800;font-size:14px;}',
+    '.vpa-logo{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;border-radius:8px;color:#fff;font-weight:800;font-size:14px;object-fit:cover;box-shadow:0 0 0 1px rgba(16,22,42,.08);}',
     '.vpa-logo.md{width:30px;height:30px;margin:0 4px 0 2px;}',
-    '.vpa-logo.xl{width:46px;height:46px;border-radius:14px;font-size:22px;}',
+    '.vpa-logo.xl{width:50px;height:50px;border-radius:14px;font-size:22px;box-shadow:0 0 0 1px rgba(16,22,42,.08),0 4px 12px -4px rgba(16,22,42,.25);}',
     '.vpa-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;}',
     '.vpa-head-txt{flex:1;min-width:0;}',
     '.vpa-head-txt b{display:block;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.2px;}',
@@ -574,7 +580,14 @@
     '.vpa-lista{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:10px;}',
     '.vpa-lista li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;font-weight:500;line-height:1.4;color:var(--ink);}',
     '.vpa-lista svg{width:18px;height:18px;flex:none;color:var(--ink-soft);margin-top:1px;}',
-    '.vpa-btn{background:var(--app) !important;border-color:var(--app) !important;color:#fff !important;}',
+    /* Botones con el color de la app */
+    '.vpa-page .btn.primary{background:var(--app-b) !important;border-color:var(--app-b) !important;color:#fff !important;box-shadow:0 8px 18px -10px var(--app-b) !important;}',
+    '.vpa-page .btn.primary:disabled{opacity:.45;box-shadow:none !important;}',
+    '.vpa-page .btn.ghost{color:var(--ink);}',
+    '.vpa-page .vpa-elegir{border-color:color-mix(in srgb, var(--app-b) 35%, #fff);color:var(--app-b);}',
+    '.vpa-page .vpa-mas-btn{border-color:color-mix(in srgb, var(--app-b) 35%, #fff);color:var(--app-b);}',
+    '.vpa-page .stf-buscar:focus-within{border-color:var(--app-b);}',
+    '.vpa-barra-p i{background:var(--app);}',
     '.vpa-acts{display:flex;gap:8px;margin-top:12px;}',
     '.vpa-acts .btn{flex:1;}',
     '.vpa-hint{display:block;margin-top:5px;font-size:11.5px;font-weight:500;color:var(--ink-soft);line-height:1.35;}',
@@ -619,9 +632,9 @@
     '.vpa-opts{max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;margin-top:8px;border:1px solid var(--border,#EEF1F5);border-radius:12px;}',
     '.vpa-opt{display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border:0;border-bottom:1px solid var(--border,#EEF1F5);background:none;font:inherit;text-align:left;color:var(--ink);cursor:pointer;}',
     '.vpa-opt:last-child{border-bottom:0;}',
-    '.vpa-opt.on{background:#F1FBF5;}',
+    '.vpa-opt.on{background:color-mix(in srgb, var(--app) 8%, #fff);}',
     '.vpa-radio{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid #C9CEDD;}',
-    '.vpa-opt.on .vpa-radio{border:5px solid #16A34A;}',
+    '.vpa-opt.on .vpa-radio{border:5px solid var(--app-b);}',
     '.vpa-opt-n{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
     '.vpa-opt-p{flex:none;font-size:12.5px;font-weight:600;color:var(--ink-soft);}',
     '.vpa-vacio{margin:18px 4px;text-align:center;font-size:13.5px;font-weight:600;color:var(--ink-soft);line-height:1.45;}',
