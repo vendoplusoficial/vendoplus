@@ -562,9 +562,13 @@
     vibra(6);
   }
   function masBeneficios() { pintarVista('mas'); }
-  function volver() { pintarVista('principal'); }
+  function volver() { if (pago.ocupado) return; limpiarPago(); pintarVista('principal'); }
   /* Atrás / Esc: en la vista de detalle regresa a la principal; en la principal cierra. */
-  function atras() { if (vista === 'mas' && !entroDirecto) volver(); else cerrar(); }
+  function atras() {
+    if (vista === 'pago') { if (!pago.ocupado) volver(); return; }
+    if (vista === 'listo') { pagoListo(); return; }
+    if (vista === 'mas' && !entroDirecto) volver(); else cerrar();
+  }
 
   function pieHTML(precio, esDueno, pie) {
     if (!esDueno) {
@@ -657,6 +661,7 @@
   }
 
   function cerrar() {
+    limpiarPago();
     var vuelve = origen === 'usuarios';
     origen = null;
     vista = 'principal';
@@ -684,7 +689,8 @@
     if (!esDueno) { avisar('Solo el Dueño puede activar Premium'); return; }
 
     var c = nube();
-    /* web → Stripe (se sale de la página) · Android → Google Play (aquí mismo) */
+    /* web → pantalla de pago propia (aquí mismo) · Android → Google Play */
+    if (c && c.sb && c.uid && !window.PlayPay) { abrirPago(); return; }
     if (c && typeof c.checkout === 'function') {
       var r = c.checkout();
       if (r && typeof r.then === 'function') r.then(listoPremium, function () {});
@@ -1415,6 +1421,314 @@
   }
 
   /* =======================================================================
+     12b. PANTALLA DE PAGO PROPIA (web)
+     Antes "Contratar" mandaba a la página de Stripe Checkout. Ahora el cobro
+     se hace AQUÍ, dentro de VendoPlus, con el diseño de la app:
+       · vp-suscripcion (función de Supabase) crea la suscripción y da el
+         client_secret.
+       · El campo de tarjeta es Stripe Payment Element: la tarjeta va directo
+         y cifrada de la app a Stripe; ni VendoPlus ni Supabase la ven.
+       · Al pagar, vp-suscripcion "confirmar" activa paid_until al instante
+         (el webhook invoice.paid también lo hace, como respaldo).
+     Si falta la llave pública de Stripe, se usa el cobro anterior (Stripe
+     Checkout) para que nunca se quede sin poder cobrar.
+     Android sigue cobrando con Google Play (PlayPay), no cambia.
+  ======================================================================= */
+  /* Llave PUBLICABLE de Stripe (pk_live_...). Es pública: puede ir aquí.
+     También puede venir de la función (secreto STRIPE_PUBLISHABLE_KEY). */
+  var STRIPE_PK = '';
+
+  var pago = { stripe: null, elements: null, subId: null, monto: null, ocupado: false };
+
+  function cargarStripeJs() {
+    if (window.Stripe) return Promise.resolve(window.Stripe);
+    if (cargarStripeJs.p) return cargarStripeJs.p;
+    cargarStripeJs.p = new Promise(function (ok, mal) {
+      var s = document.createElement('script');
+      s.src = 'https://js.stripe.com/v3/';
+      s.async = true;
+      s.onload = function () { window.Stripe ? ok(window.Stripe) : mal(new Error('Stripe.js')); };
+      s.onerror = function () { cargarStripeJs.p = null; mal(new Error('Stripe.js')); };
+      document.head.appendChild(s);
+    });
+    return cargarStripeJs.p;
+  }
+
+  function dinero(centavos) {
+    var n = (centavos == null ? PRECIO * 100 : centavos) / 100;
+    return '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  var SVG_CANDADO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+  function pagoHTML() {
+    var total = dinero(pago.monto);
+    return '<div class="vp-pr-x dos">' +
+        '<button type="button" class="sheet-close" onclick="VPPremium.volver()" aria-label="Regresar">' + ico('chevronLeft') + '</button>' +
+        '<button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button>' +
+      '</div>' +
+      '<div class="vp-pg">' +
+        '<h1 class="vp-pg-h1">Completa tu pago</h1>' +
+        '<p class="vp-pg-lead">Activa Premium en tu cuenta de VendoPlus.</p>' +
+        '<div class="vp-pg-resumen">' +
+          '<div class="vp-pg-fila"><span><b>VendoPlus Premium</b><small>Plan mensual · se renueva cada mes</small></span><span data-vp-pg-monto>' + total + '</span></div>' +
+          '<div class="vp-pg-linea"></div>' +
+          '<div class="vp-pg-fila total"><span>Total hoy</span><span><b data-vp-pg-monto>' + total + '</b> <small>MXN</small></span></div>' +
+        '</div>' +
+        '<div class="vp-pg-lbl">Método de pago</div>' +
+        '<div class="vp-pg-tarjeta">' +
+          '<div class="vp-pg-esq" id="vpPgEsq"><i></i><i></i><i class="dos"><em></em><em></em></i></div>' +
+          '<div id="vpPgEl"></div>' +
+        '</div>' +
+        '<div class="vp-pg-error" id="vpPgError" role="alert" hidden></div>' +
+        '<button type="button" class="vp-pg-btn" id="vpPgBtn" onclick="VPPremium.pagoPagar()" disabled>' +
+          '<span class="vp-pg-btn-txt">Pagar ' + total + ' MXN</span><span class="vp-pg-spin" aria-hidden="true"></span>' +
+        '</button>' +
+        '<p class="vp-pg-nota">Cancela cuando quieras desde Mi cuenta. Al pagar aceptas que se cobre ' + total + ' MXN cada mes hasta que canceles.</p>' +
+        '<div class="vp-pg-seguro">' + SVG_CANDADO + '<span>Pago seguro y cifrado. Tus datos de tarjeta no se guardan en VendoPlus; los procesa Stripe.</span></div>' +
+      '</div>';
+  }
+
+  function listoHTML() {
+    return '<div class="vp-pr-x"><button type="button" class="sheet-close" onclick="VPPremium.pagoListo()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
+      '<div class="vp-pg vp-pg-ok">' +
+        '<div class="vp-pg-check"><svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M15 27l7.5 7.5L37.5 19"/></svg></div>' +
+        '<h1 class="vp-pg-h1">¡Ya eres Premium!</h1>' +
+        '<p class="vp-pg-lead">Tu pago quedó listo. Ya puedes usar el Menú digital, el asistente con IA, los reportes y todo lo demás.</p>' +
+        '<button type="button" class="vp-pg-btn" onclick="VPPremium.pagoListo()"><span class="vp-pg-btn-txt">Empezar</span></button>' +
+      '</div>';
+  }
+
+  function estilosPago() {
+    if (document.getElementById('vp-pago-css')) return;
+    var st = document.createElement('style');
+    st.id = 'vp-pago-css';
+    st.textContent = [
+      '.vp-pg{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 8px;width:100%;max-width:440px;margin:0 auto;',
+      'animation:vp-pl-sube .45s cubic-bezier(.22,1,.36,1) both;}',
+      '@keyframes vp-pl-sube{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}',
+      '.vp-pg-h1{margin:6px 0 6px;font-size:25px;line-height:1.15;font-weight:700;letter-spacing:-.4px;color:var(--ink,#15181C);text-align:center;}',
+      '.vp-pg-lead{margin:0 auto 20px;max-width:340px;text-align:center;font-size:14px;line-height:1.45;font-weight:400;color:var(--ink-soft,#6C7480);}',
+      '.vp-pg-resumen{background:#F7F8FA;border:1px solid #EEF1F5;border-radius:16px;padding:14px 16px;margin-bottom:20px;}',
+      '.vp-pg-fila{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;font-size:14px;font-weight:400;color:var(--ink,#15181C);}',
+      '.vp-pg-fila b{font-weight:600;}',
+      '.vp-pg-fila small{display:block;font-size:12px;color:var(--ink-soft,#6C7480);margin-top:2px;}',
+      '.vp-pg-fila.total{align-items:baseline;}',
+      '.vp-pg-fila.total > span:first-child{font-weight:500;}',
+      '.vp-pg-fila.total b{font-size:20px;font-weight:600;letter-spacing:-.4px;}',
+      '.vp-pg-fila.total small{display:inline;margin:0;}',
+      '.vp-pg-linea{height:1px;background:#E6E9EF;margin:12px 0;}',
+      '.vp-pg-lbl{font-size:13px;font-weight:500;color:var(--ink-soft,#6C7480);margin:0 2px 8px;}',
+      '.vp-pg-tarjeta{position:relative;min-height:150px;}',
+      '.vp-pg-esq{display:flex;flex-direction:column;gap:12px;}',
+      '.vp-pg-esq i{display:block;height:46px;border-radius:12px;background:linear-gradient(90deg,#F1F3F7 25%,#F8F9FB 50%,#F1F3F7 75%);background-size:200% 100%;animation:vp-pg-brillo 1.2s linear infinite;}',
+      '.vp-pg-esq i.dos{display:flex;gap:12px;background:none;animation:none;}',
+      '.vp-pg-esq i.dos em{flex:1;border-radius:12px;background:linear-gradient(90deg,#F1F3F7 25%,#F8F9FB 50%,#F1F3F7 75%);background-size:200% 100%;animation:vp-pg-brillo 1.2s linear infinite;}',
+      '@keyframes vp-pg-brillo{to{background-position:-200% 0}}',
+      '.vp-pg-tarjeta.lista .vp-pg-esq{display:none;}',
+      '.vp-pg-error{margin:14px 0 0;padding:11px 13px;border-radius:12px;background:#FEF2F2;color:#B42318;font-size:13px;line-height:1.4;font-weight:500;}',
+      '.vp-pg-btn{position:relative;width:100%;margin-top:18px;border:none;border-radius:14px;padding:15px 16px;font-family:inherit;font-size:15.5px;font-weight:600;',
+      'background:var(--vp-pr-verde-claro,#25D366);color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,opacity .2s ease;',
+      'box-shadow:0 8px 20px rgba(37,211,102,.25);}',
+      '.vp-pg-btn:active:not(:disabled){transform:scale(.98);}',
+      '.vp-pg-btn:disabled{opacity:.55;cursor:default;box-shadow:none;}',
+      '.vp-pg-spin{display:none;position:absolute;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:2.2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:vp-pg-gira .7s linear infinite;}',
+      '.vp-pg-btn.cargando .vp-pg-btn-txt{visibility:hidden;}',
+      '.vp-pg-btn.cargando .vp-pg-spin{display:block;}',
+      '.vp-pg-btn.cargando:disabled{opacity:1;}',
+      '@keyframes vp-pg-gira{to{transform:rotate(360deg)}}',
+      '.vp-pg-nota{margin:12px 4px 0;text-align:center;font-size:12px;line-height:1.45;font-weight:400;color:var(--ink-soft,#6C7480);}',
+      '.vp-pg-seguro{display:flex;align-items:flex-start;justify-content:center;gap:7px;margin:14px auto 0;max-width:340px;font-size:11.5px;line-height:1.45;font-weight:400;color:#8A93A0;}',
+      '.vp-pg-seguro svg{flex:none;width:15px;height:15px;margin-top:1px;}',
+      '.vp-pg-ok{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}',
+      '.vp-pg-ok .vp-pg-btn{max-width:320px;}',
+      '.vp-pg-check{width:84px;height:84px;margin:6px auto 18px;}',
+      '.vp-pg-check svg{width:100%;height:100%;fill:none;stroke:var(--vp-pr-verde-claro,#25D366);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}',
+      '.vp-pg-check circle{stroke-dasharray:151;stroke-dashoffset:151;animation:vp-pg-traza .6s cubic-bezier(.65,0,.45,1) .1s forwards;}',
+      '.vp-pg-check path{stroke-dasharray:36;stroke-dashoffset:36;animation:vp-pg-traza .35s cubic-bezier(.65,0,.45,1) .6s forwards;}',
+      '@keyframes vp-pg-traza{to{stroke-dashoffset:0}}',
+      '.modal-overlay.is-closing .vp-pg{animation:vp-pl-sale .22s ease-in both;}',
+      '@keyframes vp-pl-sale{from{opacity:1;transform:none}to{opacity:0;transform:translateY(12px) scale(.98)}}',
+      '@media (prefers-reduced-motion: reduce){.vp-pg,.vp-pg-esq i,.vp-pg-esq em{animation:none !important;}',
+      '.vp-pg-check circle,.vp-pg-check path{animation:none !important;stroke-dashoffset:0;}}'
+    ].join('\n');
+    document.head.appendChild(st);
+  }
+
+  function pintarPago(html, clase) {
+    var r = document.querySelector('#modal-layer .vp-pr');
+    if (!r) return null;
+    r.className = 'vp-pr' + (clase ? ' ' + clase : '');
+    r.innerHTML = html;
+    return r;
+  }
+
+  function errorPago(msg) {
+    var e = document.getElementById('vpPgError');
+    if (!e) { if (msg) avisar(msg, { variant: 'toast-danger' }); return; }
+    e.textContent = msg || '';
+    e.hidden = !msg;
+  }
+
+  function botonPago(estado) {
+    var b = document.getElementById('vpPgBtn');
+    if (!b) return;
+    b.disabled = estado !== 'listo';
+    b.classList.toggle('cargando', estado === 'cargando');
+  }
+
+  function limpiarPago() {
+    try { if (pago.elements) { var el = pago.elements.getElement('payment'); if (el) el.destroy(); } } catch (e) {}
+    pago.elements = null;
+  }
+
+  /* Cobro anterior: Stripe Checkout (se sale de la página). Solo de respaldo. */
+  function cobroAnterior() {
+    var c = nube();
+    if (c && typeof c.checkout === 'function') {
+      var r = c.checkout();
+      if (r && typeof r.then === 'function') r.then(listoPremium, function () {});
+      return r;
+    }
+  }
+
+  function abrirPago() {
+    var c = nube();
+    estilosPago();
+    if (!document.querySelector('#modal-layer .vp-pr')) abrir(claveAbierta);
+    vista = 'pago';
+    pago.subId = null;
+    limpiarPago();
+    pintarPago(pagoHTML(), 'vp-pr-pago-v');
+    vibra(6);
+
+    c.sb.functions.invoke('vp-suscripcion', { body: { action: 'iniciar' } }).then(function (r) {
+      if (vista !== 'pago') return;
+      var d = r && r.data;
+      if (r.error || !d) throw (r.error || new Error('sin datos'));
+      if (d.yaActivo) {
+        return Promise.resolve(c.refreshSub && c.refreshSub()).then(function () {
+          avisar('Tu Premium ya está activo', { variant: 'toast-success', icon: ico('check') });
+          pagoListo();
+        });
+      }
+      var pk = d.publishableKey || STRIPE_PK;
+      if (!pk || !d.clientSecret) { cobroAnterior(); return; }   /* sin llave: el cobro de antes */
+      pago.subId = d.subscriptionId;
+      if (d.monto != null) {
+        pago.monto = d.monto;
+        var t = dinero(d.monto);
+        var ms = document.querySelectorAll('[data-vp-pg-monto]');
+        for (var i = 0; i < ms.length; i++) ms[i].textContent = t;
+        var bt = document.querySelector('#vpPgBtn .vp-pg-btn-txt'); if (bt) bt.textContent = 'Pagar ' + t + ' MXN';
+      }
+      return cargarStripeJs().then(function (S) {
+        if (vista !== 'pago') return;
+        pago.stripe = pago.stripe && pago.stripe._vpPk === pk ? pago.stripe : S(pk, { locale: 'es-419' });
+        pago.stripe._vpPk = pk;
+        pago.elements = pago.stripe.elements({
+          clientSecret: d.clientSecret,
+          locale: 'es-419',
+          fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap' }],
+          appearance: {
+            theme: 'stripe',
+            variables: {
+              colorPrimary: '#16A34A', colorText: '#15181C', colorTextSecondary: '#6C7480',
+              colorTextPlaceholder: '#A3AAB5', colorDanger: '#B42318', colorBackground: '#FFFFFF',
+              fontFamily: 'Inter, system-ui, -apple-system, sans-serif', fontSizeBase: '15px',
+              fontWeightNormal: '400', borderRadius: '12px', spacingUnit: '4px'
+            },
+            rules: {
+              '.Input': { border: '1.5px solid #E4E8EF', boxShadow: 'none', padding: '13px 14px' },
+              '.Input:focus': { border: '1.5px solid #25D366', boxShadow: '0 0 0 3px rgba(37,211,102,.14)' },
+              '.Input--invalid': { border: '1.5px solid #F1B4AE', boxShadow: 'none' },
+              '.Label': { fontWeight: '500', fontSize: '13px', color: '#6C7480' },
+              '.Tab': { border: '1.5px solid #E4E8EF', boxShadow: 'none' },
+              '.Tab--selected': { border: '1.5px solid #25D366', boxShadow: 'none' }
+            }
+          }
+        });
+        var el = pago.elements.create('payment', { layout: 'tabs', fields: { billingDetails: { email: 'never' } } });
+        el.on('ready', function () {
+          var t = document.querySelector('.vp-pg-tarjeta'); if (t) t.classList.add('lista');
+          botonPago('listo');
+        });
+        el.on('change', function () { errorPago(''); });
+        el.on('loaderror', function () { errorPago('No se pudo cargar el formulario de pago. Revisa tu internet e inténtalo de nuevo.'); });
+        el.mount('#vpPgEl');
+      });
+    }).catch(function (e) {
+      console.error(e);
+      if (vista !== 'pago') return;
+      var t = document.querySelector('.vp-pg-tarjeta'); if (t) t.classList.add('lista');
+      errorPago('No pudimos preparar tu pago. Revisa tu internet e inténtalo de nuevo.');
+      var b = document.getElementById('vpPgBtn');
+      if (b) { b.disabled = false; b.onclick = function () { abrirPago(); }; var tx = b.querySelector('.vp-pg-btn-txt'); if (tx) tx.textContent = 'Reintentar'; }
+    });
+  }
+
+  function confirmarEnServidor(intentos) {
+    var c = nube();
+    return c.sb.functions.invoke('vp-suscripcion', { body: { action: 'confirmar', subscriptionId: pago.subId } })
+      .then(function (r) {
+        var d = r && r.data;
+        if (d && d.activo) return true;
+        if (intentos > 0) return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return confirmarEnServidor(intentos - 1); });
+        return false;
+      }, function () {
+        if (intentos > 0) return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return confirmarEnServidor(intentos - 1); });
+        return false;
+      });
+  }
+
+  function pagoPagar() {
+    if (pago.ocupado || !pago.stripe || !pago.elements) return;
+    pago.ocupado = true;
+    vibra(10);
+    errorPago('');
+    botonPago('cargando');
+    pago.stripe.confirmPayment({
+      elements: pago.elements,
+      redirect: 'if_required',
+      confirmParams: { return_url: location.origin + location.pathname + '?pago=ok' }
+    }).then(function (res) {
+      if (res.error) {
+        pago.ocupado = false;
+        botonPago('listo');
+        var m = res.error.type === 'card_error' || res.error.type === 'validation_error'
+          ? res.error.message : 'No se pudo completar el pago. Inténtalo de nuevo.';
+        errorPago(m);
+        vibra(20);
+        return;
+      }
+      return confirmarEnServidor(6).then(function () {
+        var c = nube();
+        return Promise.resolve(c && c.refreshSub && c.refreshSub());
+      }).then(function () {
+        pago.ocupado = false;
+        limpiarPago();
+        vista = 'listo';
+        pintarPago(listoHTML(), 'vp-pr-pago-v');
+        vibra(18);
+      });
+    }).catch(function (e) {
+      console.error(e);
+      pago.ocupado = false;
+      botonPago('listo');
+      errorPago('No se pudo completar el pago. Revisa tu internet e inténtalo de nuevo.');
+    });
+  }
+
+  function pagoListo() {
+    limpiarPago();
+    vista = 'principal';
+    var f = fn('closeModal'); if (f) f();
+    pintarMascota();
+    try { if (typeof window.render === 'function') window.render(); } catch (e) {}
+    try { var c = nube(); if (c && typeof c.gate === 'function') c.gate(); } catch (e) {}
+  }
+
+  /* =======================================================================
      13. LO QUE QUEDA DISPONIBLE PARA EL RESTO DE VENDO PLUS
   ======================================================================= */
   window.VPPremium = {
@@ -1424,6 +1738,8 @@
     masBeneficios: masBeneficios,
     volver: volver,
     pagar: pagar,
+    pagoPagar: pagoPagar,
+    pagoListo: pagoListo,
     puerta: puerta,
     precio: PRECIO,
     precioTxt: precioTxt,
