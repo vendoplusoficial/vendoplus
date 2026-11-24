@@ -1125,12 +1125,13 @@
       'h1.page-title.vp-lim-h1{position:relative;}',
       '.vp-lim{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:60;}',   /* no ocupa lugar: cero movimiento */
       '.vp-lim-pill{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px 0 9px;border-radius:99px;',
-      'border:1px solid #F5D9A8;background:#FFF8EB;color:#92400E;font-family:inherit;font-size:12px;font-weight:600;letter-spacing:0;',
+      'border:1px solid var(--border,#E4E8EF);background:#fff;color:var(--ink-soft,#6C7480);font-family:inherit;font-size:12px;font-weight:500;letter-spacing:0;',
+      'box-shadow:0 1px 2px rgba(16,22,42,.04);',
       'white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease;',
       'animation:vp-lim-in .35s cubic-bezier(.22,1,.36,1) both;}',
       '.vp-lim-pill:active{transform:scale(.96);}',
-      '.vp-lim.alto .vp-lim-pill,.vp-lim.tope .vp-lim-pill{border-color:#F6C9C4;background:#FEF3F2;color:#B42318;}',
-      '.vp-lim-pill i{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none;}',
+      /* Todo en blanco y gris: discreto, sin colores de alarma */
+      '.vp-lim-pill i{width:6px;height:6px;border-radius:50%;background:#C3C8D1;flex:none;}',
       '.vp-lim-pill svg{width:12px;height:12px;flex:none;opacity:.8;}',
       '@keyframes vp-lim-in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}',
       /* Tarjetita con el detalle (se abre al tocar la pastilla) */
@@ -1147,8 +1148,7 @@
       '.vp-lim-x:active{background:var(--surface-alt,#F1F3F7);}',
       '.vp-lim-x svg{width:14px;height:14px;}',
       '.vp-lim-barra{height:6px;border-radius:99px;background:#EEF1F5;overflow:hidden;margin:10px 0 6px;}',
-      '.vp-lim-barra span{display:block;height:100%;border-radius:99px;background:#F5A524;}',
-      '.vp-lim.alto .vp-lim-barra span,.vp-lim.tope .vp-lim-barra span{background:#E5484D;}',
+      '.vp-lim-barra span{display:block;height:100%;border-radius:99px;background:#9AA3B2;}',
       '.vp-lim-cuenta{display:flex;justify-content:space-between;font-size:11.5px;font-weight:500;color:var(--ink-soft,#6C7480);}',
       /* Va dentro del h1: se le quitan el interlineado y el peso del título */
       '.vp-lim-pop,.vp-lim-pop *{line-height:1.4;white-space:normal;letter-spacing:0;}',
@@ -1161,7 +1161,7 @@
       '.vp-lim-ver:active{transform:scale(.98);}',
       /* Hoja que sale al intentar cobrar ya bloqueado */
       '.vp-lim-hoja{text-align:center;padding:6px 4px 2px;}',
-      '.vp-lim-ico{width:52px;height:52px;margin:4px auto 14px;border-radius:16px;background:#FEF3F2;color:#D92D20;display:flex;align-items:center;justify-content:center;}',
+      '.vp-lim-ico{width:52px;height:52px;margin:4px auto 14px;border-radius:16px;background:#F1F3F7;color:var(--ink-soft,#6C7480);display:flex;align-items:center;justify-content:center;}',
       '.vp-lim-ico svg{width:24px;height:24px;}',
       '.vp-lim-hoja h2{margin:0 0 8px;font-size:20px;font-weight:700;letter-spacing:-.3px;color:var(--ink,#15181C);}',
       '.vp-lim-hoja p{margin:0 auto 18px;max-width:340px;font-size:14px;line-height:1.5;font-weight:400;color:var(--ink-soft,#6C7480);}',
@@ -1199,7 +1199,7 @@
     } else if (etapa === 'ultimas') {
       pill = (e.restan === 1 ? 'Queda 1 venta' : 'Quedan ' + e.restan + ' ventas');
       titulo = (e.restan === 1 ? 'Te queda 1 venta' : 'Te quedan ' + e.restan + ' ventas') + ' este mes';
-      texto = 'Al llegar a ' + VENTAS_LIMITE + ' podrás seguir cobrando ese día. Desde el día siguiente necesitarás Premium para cobrar.';
+      texto = 'Cuando llegues a ' + VENTAS_LIMITE + ' ventas, podrás seguir cobrando ese día. Al día siguiente, tus cobros se pausarán hasta que actives Premium o empiece el próximo mes.';
     } else if (etapa === 'tope') {
       pill = 'Límite de ventas';
       titulo = 'Llegaste a ' + VENTAS_LIMITE + ' ventas este mes';
