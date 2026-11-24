@@ -469,6 +469,7 @@
 
   function cuerpoPrincipal(clave, esDueno, precio) {
     estilosPlanes();
+    estilosPago();   /* trae también la pantalla completa en computadora */
     return '<div class="vp-pr-x"><button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button></div>' +
       '<div class="vp-pl-scroll">' +
         '<h1 class="vp-pl-h1">Elige tu plan</h1>' +
@@ -1468,6 +1469,7 @@
         '<button type="button" class="sheet-close" onclick="VPPremium.cerrar()" aria-label="Cerrar">' + ico('close') + '</button>' +
       '</div>' +
       '<div class="vp-pg">' +
+       '<div class="vp-pg-info"><div class="vp-pg-in">' +
         '<h1 class="vp-pg-h1">Completa tu pago</h1>' +
         '<p class="vp-pg-lead">Activa Premium en tu cuenta de VendoPlus.</p>' +
         '<div class="vp-pg-resumen">' +
@@ -1475,6 +1477,12 @@
           '<div class="vp-pg-linea"></div>' +
           '<div class="vp-pg-fila total"><span>Total hoy</span><span><b data-vp-pg-monto>' + total + '</b> <small>MXN</small></span></div>' +
         '</div>' +
+        '<div class="vp-pg-incluye"><div class="vp-pg-lbl">Incluye</div><ul>' +
+          ['Menú digital y pedidos', 'Asistente con IA', 'Productos con una foto, sin límite', 'Reportes de ventas y ganancias', 'Acceso para tus empleados']
+            .map(function (t) { return '<li>' + SVG_SI + '<span>' + esc(t) + '</span></li>'; }).join('') +
+        '</ul></div>' +
+       '</div></div>' +
+       '<div class="vp-pg-form"><div class="vp-pg-in">' +
         '<div class="vp-pg-lbl">Método de pago</div>' +
         '<div class="vp-pg-tarjeta">' +
           '<div class="vp-pg-esq" id="vpPgEsq"><i></i><i></i><i class="dos"><em></em><em></em></i></div>' +
@@ -1486,6 +1494,7 @@
         '</button>' +
         '<p class="vp-pg-nota">Cancela cuando quieras desde Mi cuenta. Al pagar aceptas que se cobre ' + total + ' MXN cada mes hasta que canceles.</p>' +
         '<div class="vp-pg-seguro">' + SVG_CANDADO + '<span>Pago seguro y cifrado. Tus datos de tarjeta no se guardan en VendoPlus; los procesa Stripe.</span></div>' +
+       '</div></div>' +
       '</div>';
   }
 
@@ -1504,7 +1513,7 @@
     var st = document.createElement('style');
     st.id = 'vp-pago-css';
     st.textContent = [
-      '.vp-pg{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 8px;width:100%;max-width:440px;margin:0 auto;',
+      '.vp-pg{flex:1 1 auto;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:2px 0 8px;width:100%;max-width:440px;margin:0 auto;',
       'animation:vp-pl-sube .45s cubic-bezier(.22,1,.36,1) both;}',
       '@keyframes vp-pl-sube{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}',
       '.vp-pg-h1{margin:6px 0 6px;font-size:25px;line-height:1.15;font-weight:700;letter-spacing:-.4px;color:var(--ink,#15181C);text-align:center;}',
@@ -1519,7 +1528,14 @@
       '.vp-pg-fila.total small{display:inline;margin:0;}',
       '.vp-pg-linea{height:1px;background:#E6E9EF;margin:12px 0;}',
       '.vp-pg-lbl{font-size:13px;font-weight:500;color:var(--ink-soft,#6C7480);margin:0 2px 8px;}',
-      '.vp-pg-tarjeta{position:relative;min-height:150px;}',
+      '.vp-pg-tarjeta{position:relative;min-height:150px;width:100%;min-width:0;overflow:hidden;}',
+      '#vpPgEl{width:100%;min-width:0;max-width:100%;}',
+      '#vpPgEl iframe{max-width:100% !important;}',
+      '.vp-pg-info,.vp-pg-form,.vp-pg-in{min-width:0;}',
+      '.vp-pg-incluye{display:none;}',
+      '.vp-pg-incluye ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px;}',
+      '.vp-pg-incluye li{display:flex;align-items:center;gap:10px;font-size:14.5px;font-weight:400;color:var(--ink,#15181C);}',
+      '.vp-pg-incluye svg{flex:none;width:17px;height:17px;color:var(--vp-pr-verde,#16A34A);}',
       '.vp-pg-esq{display:flex;flex-direction:column;gap:12px;}',
       '.vp-pg-esq i{display:block;height:46px;border-radius:12px;background:linear-gradient(90deg,#F1F3F7 25%,#F8F9FB 50%,#F1F3F7 75%);background-size:200% 100%;animation:vp-pg-brillo 1.2s linear infinite;}',
       '.vp-pg-esq i.dos{display:flex;gap:12px;background:none;animation:none;}',
@@ -1549,6 +1565,52 @@
       '@keyframes vp-pg-traza{to{stroke-dashoffset:0}}',
       '.modal-overlay.is-closing .vp-pg{animation:vp-pl-sale .22s ease-in both;}',
       '@keyframes vp-pl-sale{from{opacity:1;transform:none}to{opacity:0;transform:translateY(12px) scale(.98)}}',
+      /* ===== COMPUTADORA: pantalla completa =====
+         Planes: las dos tarjetas grandes al centro.
+         Pago: dos mitades, a la izquierda el resumen (gris) y a la derecha la tarjeta. */
+      '@media (min-width:900px){',
+      '  .modal-overlay:has(.vp-pl),.modal-overlay:has(.vp-pg){padding:0 !important;align-items:stretch !important;justify-content:stretch !important;}',
+      /* La app escala todo con zoom (--z): el alto y ancho se dividen entre él */
+      '  .modal-sheet:has(.vp-pl),.modal-sheet:has(.vp-pg){width:calc(100vw / var(--z,1)) !important;max-width:none !important;',
+      '    height:calc(100vh / var(--z,1)) !important;height:calc(100dvh / var(--z,1)) !important;max-height:none !important;',
+      '    border-radius:0 !important;padding:0 !important;margin:0 !important;overflow:hidden !important;display:flex;flex-direction:column;background:#fff;}',
+      '  .modal-sheet:has(.vp-pl) .vp-pr,.modal-sheet:has(.vp-pg) .vp-pr{position:relative;max-width:none;height:100%;margin:0;}',
+      '  .modal-sheet:has(.vp-pl) .vp-pr-x,.modal-sheet:has(.vp-pg) .vp-pr-x{position:absolute;top:24px;left:28px;right:28px;z-index:3;margin:0;pointer-events:none;}',
+      '  .modal-sheet:has(.vp-pl) .vp-pr-x button,.modal-sheet:has(.vp-pg) .vp-pr-x button{pointer-events:auto;width:42px;height:42px;}',
+      /* planes */
+      '  .vp-pl-scroll{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px 48px 56px;}',
+      '  .vp-pl-h1{font-size:38px;letter-spacing:-.8px;margin:0 0 10px;}',
+      '  .vp-pl-lead{font-size:16px;max-width:520px;margin-bottom:40px;}',
+      '  .vp-pl{width:100%;max-width:900px;gap:24px;}',
+      '  .vp-pl-col{padding:34px 30px 28px;border-radius:24px;}',
+      '  .vp-pl-tag{top:-12px;font-size:11.5px;padding:4px 13px;}',
+      '  .vp-pl-cab{padding-bottom:20px;margin-bottom:20px;}',
+      '  .vp-pl-cab h2{font-size:23px;}',
+      '  .vp-pl-cab p{font-size:14px;margin-top:5px;}',
+      '  .vp-pl-lista{gap:14px;}',
+      '  .vp-pl-fila{font-size:15px;gap:11px;}',
+      '  .vp-pl-ico,.vp-pl-ico svg{width:19px;height:19px;}',
+      '  .vp-pl-txt small{font-size:12.5px;}',
+      '  .vp-pl-pie{margin-top:26px;padding-top:22px;}',
+      '  .vp-pl-precio{margin-bottom:16px;}',
+      '  .vp-pl-precio b{font-size:36px;}',
+      '  .vp-pl-precio span{font-size:14px;}',
+      '  .vp-pl-btn{padding:15px 10px;font-size:15.5px;border-radius:14px;}',
+      /* pago */
+      '  .vp-pg{max-width:none;height:100%;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);overflow:hidden;}',
+      '  .vp-pg-info{background:#F7F8FA;border-right:1px solid #EEF1F5;overflow-y:auto;display:flex;justify-content:flex-end;align-items:center;padding:96px 72px;}',
+      '  .vp-pg-form{overflow-y:auto;display:flex;justify-content:flex-start;align-items:center;padding:96px 72px;}',
+      '  .vp-pg-in{width:100%;max-width:420px;}',
+      '  .vp-pg-info .vp-pg-h1{text-align:left;font-size:34px;letter-spacing:-.7px;margin:0 0 8px;}',
+      '  .vp-pg-info .vp-pg-lead{text-align:left;margin:0 0 28px;max-width:none;font-size:15.5px;}',
+      '  .vp-pg-resumen{background:#fff;padding:18px 20px;margin-bottom:28px;}',
+      '  .vp-pg-incluye{display:block;}',
+      '  .vp-pg-incluye .vp-pg-lbl{margin-bottom:14px;}',
+      '  .vp-pg-form .vp-pg-lbl{font-size:14px;margin-bottom:12px;}',
+      '  .vp-pg-nota,.vp-pg-seguro{text-align:left;justify-content:flex-start;margin-left:0;margin-right:0;max-width:none;}',
+      '  .vp-pg-ok{display:flex;height:100%;padding:40px;}',
+      '  .vp-pg-ok .vp-pg-h1{font-size:34px;}',
+      '}',
       '@media (prefers-reduced-motion: reduce){.vp-pg,.vp-pg-esq i,.vp-pg-esq em{animation:none !important;}',
       '.vp-pg-check circle,.vp-pg-check path{animation:none !important;stroke-dashoffset:0;}}'
     ].join('\n');
@@ -1648,7 +1710,12 @@
             }
           }
         });
-        var el = pago.elements.create('payment', { layout: 'tabs', fields: { billingDetails: { email: 'never' } } });
+        var el = pago.elements.create('payment', {
+          layout: 'tabs',
+          fields: { billingDetails: { email: 'never' } },
+          terms: { card: 'never' },              /* el aviso de cobro lo damos nosotros, abajo */
+          wallets: { link: 'never', applePay: 'auto', googlePay: 'auto' }
+        });
         el.on('ready', function () {
           var t = document.querySelector('.vp-pg-tarjeta'); if (t) t.classList.add('lista');
           botonPago('listo');
