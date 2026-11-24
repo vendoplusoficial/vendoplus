@@ -31,6 +31,14 @@
     return a.img ? '<img class="vpa-logo ' + (cls || '') + '" src="' + a.img + '" alt="" aria-hidden="true" decoding="async">'
       : '<span class="vpa-logo ' + (cls || '') + '" style="background:' + a.c + '" aria-hidden="true">' + esc(a.l || '?') + '</span>';
   }
+  /* Enlazar Rappi, DiDi Food y Uber Eats es de Premium */
+  function esPro() { try { return !window.VPPremium || VPPremium.activo(); } catch (e) { return true; } }
+  /* Los planes se abren encima de la app: primero se cierra esta pantalla */
+  function premium() {
+    if (document.getElementById('vpaVinc')) cerrarVinc(false, true);
+    cerrar();
+    setTimeout(function () { try { if (window.VPPremium) VPPremium.abrir('apps'); } catch (e) {} }, 260);
+  }
   function listoNube() {
     return typeof Cloud !== 'undefined' && Cloud.ready && Cloud.sb && !!Cloud.uid &&
       !document.body.classList.contains('dm-mode') &&
@@ -126,7 +134,7 @@
   }
 
   async function sincronizar(avisar) {
-    if (sync.busy || !listoNube()) return 0;
+    if (sync.busy || !listoNube() || !esPro()) return 0;
     sync.busy = true; sync.last = Date.now();
     var ids = [];
     try {
@@ -260,10 +268,12 @@
       var ay = AYUDA[k];
       if (!st.form) {
         return h + '<div class="vpa-card">' +
+          (esPro() ? '' : '<span class="vpa-pro">Función Premium</span>') +
           '<p class="vpa-p">Los pedidos se siguen atendiendo en la app de ' + esc(a.n) + '. Cuando un pedido se <b>completa</b>, VendoPlus:</p>' +
           '<ul class="vpa-lista"><li>' + icon('receipt') + '<span>Lo registra en tu <b>Historial</b> y en <b>Estadísticas</b>, marcado como ' + esc(a.n) + '.</span></li>' +
           '<li>' + icon('box') + '<span>Descuenta de tu <b>inventario</b> los productos que vincules.</span></li></ul>' +
           '<button class="btn primary block vpa-btn" onclick="VPApps.formulario(true)">' + icon('link') + ' Enlazar con ' + esc(a.n) + '</button>' +
+          (esPro() ? '' : '<p class="vpa-p sm" style="margin:10px 0 0;text-align:center">Disponible en Premium. Al tocar el botón te mostramos los planes.</p>') +
           '</div>';
       }
       return h + '<div class="vpa-card">' +
@@ -278,6 +288,7 @@
     }
 
     return h +
+      (esPro() ? '' : '<button type="button" class="vpa-aviso" onclick="VPApps.premium()"><b>Tu Premium no está activo</b>Las ventas de ' + esc(a.n) + ' se guardan y se registran en cuanto lo actives. Toca para ver los planes.</button>') +
       '<div class="vpa-stats">' +
         '<div><small>Ventas registradas</small><b>' + ventas.length + '</b></div>' +
         '<div><small>Total vendido</small><b>' + formatMoney(total) + '</b></div>' +
@@ -317,7 +328,7 @@
       '<div class="stf-scroll"><div class="vpa-in"><div class="vpa-barra">' + barraHTML(st.app) + '</div><div class="vpa">' + cuerpo + '</div></div></div>';
   }
 
-  function formulario(v) { st.form = !!v; pintar(); if (v) setTimeout(function () { var i = document.getElementById('vpaStore'); if (i) i.focus(); }, 60); }
+  function formulario(v) { if (v && !esPro()) { premium(); return; } st.form = !!v; pintar(); if (v) setTimeout(function () { var i = document.getElementById('vpaStore'); if (i) i.focus(); }, 60); }
   async function conectar() {
     var k = st.app, val = function (id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; };
     var body = { action: 'conectar', plataforma: k, store_id: val('vpaStore') };
@@ -576,6 +587,9 @@
     '.vpa-head-txt{flex:1;min-width:0;}',
     '.vpa-head-txt b{display:block;font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.2px;}',
     '.vpa-head-txt small{display:block;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+    '.vpa-pro{display:inline-block;margin:0 0 10px;padding:4px 9px;border-radius:8px;background:#E8F9EF;color:#16A34A;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;}',
+    '.vpa-aviso{display:block;width:100%;margin:0 0 12px;padding:12px 14px;border:0;border-radius:14px;background:#FFF6E5;color:#8A5A00;font:inherit;font-size:12.5px;font-weight:500;line-height:1.4;text-align:left;cursor:pointer;}',
+    '.vpa-aviso b{display:block;font-size:13.5px;font-weight:800;color:#6B4500;margin-bottom:2px;}',
     '.vpa-card{padding:16px;border-radius:18px;background:var(--surface,#fff);border:1px solid var(--border,#EEF1F5);margin-bottom:12px;}',
     '.vpa-p{margin:0 0 10px;font-size:14px;font-weight:500;line-height:1.45;color:var(--ink);}',
     '.vpa-p.sm{font-size:12.5px;color:var(--ink-soft);}',
@@ -656,7 +670,7 @@
     desconectar: desconectar, copiar: copiar, historial: historial, barraMasHTML: barraMasHTML,
     vincular: vincular, cerrarVinc: cerrarVinc, abrirFila: abrirFila, marcar: marcar, buscar: buscar,
     confirmar: confirmar, quitar: quitar, agregar: agregar, agregarGuardar: agregarGuardar, guardarVinc: guardarVinc,
-    sincronizar: sincronizar, _ventaDe: ventaDe
+    sincronizar: sincronizar, premium: premium, _ventaDe: ventaDe
   };
   arrancar();
 })();

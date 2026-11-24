@@ -201,6 +201,11 @@ Deno.serve(async (req) => {
     if (!PLATAFORMAS.includes(plat)) return json({ error: "Plataforma inválida" }, 400);
 
     if (action === "conectar") {
+      // Enlazar las apps es de Premium.
+      const { data: pf } = await sb.from("profiles").select("paid_until, web_paid_until, play_paid_until, vp_web_pagado_hasta, vp_play_pagado_hasta").eq("user_id", user.id).maybeSingle();
+      const ahora = Date.now();
+      const pro = !!pf && Object.values(pf).some((v) => v && new Date(v as string).getTime() > ahora);
+      if (!pro) return json({ error: "Enlazar apps de delivery es parte de Premium." }, 402);
       const store = String(body?.store_id ?? "").trim().slice(0, 80);
       if (!store) return json({ error: "Escribe el ID de tu tienda" }, 400);
       const { data: ya } = await sb.from("vp_apps_conexiones").select("webhook_token").eq("user_id", user.id).eq("plataforma", plat).maybeSingle();

@@ -428,7 +428,8 @@
     { k: 'usuarios', t: 'Acceso para tus empleados',     basico: false },
     /* Cobros con tarjeta por Stripe (solo Premium): debajo, en chiquito,
        los dos cobros que incluye (cada uno en su renglón). */
-    { k: 'stripe',   t: 'Cobros con tarjeta Stripe',     basico: false, premium: 'Cobro con sensor|Cobro con tarjeta en menú digital' }
+    { k: 'stripe',   t: 'Cobros con tarjeta Stripe',     basico: false, premium: 'Cobro con sensor|Cobro con tarjeta en menú digital' },
+    { k: 'apps',     t: 'Apps de Delivery',              basico: false, premium: 'Rappi / DiDi Food / Uber Eats' }
   ];
   var SVG_SI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>';
   var SVG_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
