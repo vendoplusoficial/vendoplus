@@ -425,12 +425,22 @@
     { k: 'menu',     t: 'Menú digital y pedidos',        basico: false },
     { k: 'chat',     t: 'Asistente con IA',              basico: false },
     { k: 'stats',    t: 'Reportes de ventas y ganancias', basico: false },
-    { k: 'usuarios', t: 'Acceso para tus empleados',     basico: false }
+    { k: 'usuarios', t: 'Acceso para tus empleados',     basico: false },
+    /* Cobros con tarjeta por Stripe (solo Premium): un subtítulo con el logo
+       de Stripe y los dos beneficios, cada uno con su explicación corta. */
+    { grupo: 'Cobros con tarjeta' },
+    { k: 'stripe',   t: 'Pago con tarjeta en tu menú digital', basico: false, premium: 'Tus clientes pagan en línea al hacer su pedido' },
+    { k: 'nfc',      t: 'Pago con sensor (NFC)',          basico: false, premium: 'Acercan su tarjeta a tu celular · Próximamente' }
   ];
   var SVG_SI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>';
   var SVG_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
 
+  var SVG_STRIPE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="5.5" fill="#533AFD"/><path d="M5.6 8.3 18.4 5.6v10.1L5.6 18.4z" fill="#fff"/></svg>';
   function planFila(f, plan, clave) {
+    if (f.grupo) {
+      return '<li class="vp-pl-grupo">' + (f.grupo === 'Cobros con tarjeta' ? '<span class="vp-pl-stripe">' + SVG_STRIPE + '</span>' : '') +
+               '<span>' + esc(f.grupo) + (f.grupo === 'Cobros con tarjeta' ? '<small>con Stripe</small>' : '') + '</span></li>';
+    }
     var v = plan === 'premium' ? (f.premium || true) : f.basico;
     var si = v !== false;
     var nota = typeof v === 'string' ? String(v).replace('{N}', String(GRATIS_AL_MES)) : '';
@@ -507,6 +517,11 @@
       '.vp-pl-fila.no .vp-pl-ico{color:#C3C8D1;}',
       '.vp-pl-ico svg{width:16px;height:16px;display:block;}',
       '.vp-pl-txt{min-width:0;}',
+      '.vp-pl-grupo{display:flex;align-items:center;gap:7px;margin:6px 0 -1px;padding-top:10px;border-top:1px dashed #E4E8EF;font-size:11px;line-height:1.2;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--ink-soft,#6C7480);}',
+      '.vp-pl-grupo small{display:block;margin-top:1px;font-size:10.5px;font-weight:400;letter-spacing:0;text-transform:none;}',
+      '.vp-pl-stripe{flex:none;width:18px;height:18px;}',
+      '.vp-pl-stripe svg{width:18px;height:18px;display:block;}',
+      '.vp-pl-col:not(.pro) .vp-pl-stripe{opacity:.45;}',
       '.vp-pl-txt small{display:block;font-size:11px;font-weight:400;color:var(--ink-soft,#6C7480);margin-top:1px;}',
       '.vp-pl-pie{margin-top:14px;padding-top:12px;border-top:1px solid #EEF1F5;text-align:center;}',
       '.vp-pl-precio{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-bottom:10px;}',
