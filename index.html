@@ -5555,7 +5555,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
-    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="coin" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe</span><em class="st-nav-lock"></em></button>
+    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="stripeLogo" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe</span><em class="st-nav-lock"></em></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -5898,6 +5898,9 @@ ICONS.vpCrown = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 ICONS.clock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>';
 /* Imagen y nota: los usa el apartado del banner del Menú Digital */
 ICONS.image = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="8.5" cy="10" r="1.6"/><path d="m4 17 4.8-4.4a2 2 0 0 1 2.7 0L16 17M14.5 15l1.6-1.4a2 2 0 0 1 2.7 0L21 15.6"/></svg>';
+/* Logo de Stripe (cuadro morado con la figura blanca): es el único ícono a
+   color del menú; lo usa "Finanzas de Stripe" en "Más" y en la barra lateral. */
+ICONS.stripeLogo = '<svg class="ico-stripe" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="5.5" fill="#533AFD"/><path d="M5.6 8.3 18.4 5.6v10.1L5.6 18.4z" fill="#fff"/></svg>';
 ICONS.info = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r="1.1" fill="currentColor" stroke="none"/></svg>';
 
 /* ---------- Íconos de línea en lugar de emojis ----------
@@ -28492,7 +28495,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
       if(typeof stFinEstado==='function' && isOwner()){
         var i=l.findIndex(function(x){return x[0]==='account';});
         var lock=stFinEstado()==='bloqueado';
-        l.splice(i<0?l.length:i,0,['stripefin','coin','Finanzas de Stripe'+(lock?'<em class="vp-more-lock">'+icon('lock')+'</em>':'')]);
+        l.splice(i<0?l.length:i,0,['stripefin','stripeLogo','Finanzas de Stripe'+(lock?'<em class="vp-more-lock">'+icon('lock')+'</em>':'')]);
       }
     }catch(e){}
     return l;
