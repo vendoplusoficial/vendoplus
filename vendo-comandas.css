@@ -1,0 +1,112 @@
+/* ===== Comandas ===== */
+
+/* Barra lateral: solo el Dueño la ve, justo debajo de Caja y corte */
+.navbtn.cm-nav{ display:none !important; }
+@media (min-width:700px){
+  body.cm-admin:not(.cm-solo) .navbtn.cm-nav{ display:flex !important; }
+  .bottomnav .navbtn[data-view="comandas"]{ order:4 !important; }
+}
+
+/* Mesero y Cocinero: solo su sección (sin menú ni accesos del POS) */
+html body.cm-solo.cm-solo.cm-solo .bottomnav,
+html body.cm-solo.cm-solo.cm-solo .nav-burger,
+html body.cm-solo.cm-solo.cm-solo .nav-open-btn,
+html body.cm-solo.cm-solo.cm-solo .nav-collapse,
+html body.cm-solo.cm-solo.cm-solo .nav-backdrop,
+body.cm-solo #topPremium{ display:none !important; }
+@media (min-width:700px){
+  html body.cm-solo.cm-solo.cm-solo .app{ grid-template-columns:minmax(0,1fr) !important; grid-template-areas:"topbar" "view" !important; padding-left:0 !important; }
+}
+body.cm-mesero .sale-tools .vp-floor-quick,
+body.cm-mesero .sale-tools .vp-floor-placeholder,
+body.cm-mesero .parked-bar,
+body.cm-mesero .kbd-hint,
+body.cm-mesero .vp-empty-cta{ display:none !important; }
+
+/* Regresar (también visible en PC, a diferencia de .page-back) */
+.cm-back{ display:inline-flex; align-items:center; gap:4px; border:none; background:none; color:var(--ink-soft); font-weight:700; font-size:13px; padding:2px 0 4px; margin:0 0 2px -4px; font-family:inherit; cursor:pointer; }
+.cm-back svg{ width:16px; height:16px; }
+
+/* Las 3 áreas, con imagen */
+.cm-areas{ display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:14px; margin-top:18px; }
+.cm-area{ display:flex; flex-direction:column; align-items:stretch; gap:0; padding:0; height:auto !important; min-height:0 !important; max-height:none !important; border:1px solid var(--border); border-radius:20px; background:var(--surface, #fff); color:var(--ink); font:inherit; text-align:left; overflow:hidden; cursor:pointer; box-shadow:0 2px 10px rgb(20 32 62 / 5%); transition:transform .15s ease, box-shadow .15s ease; -webkit-tap-highlight-color:transparent; }
+.cm-area:active{ transform:scale(.98); }
+@media (hover:hover){ .cm-area:hover{ box-shadow:0 8px 22px rgb(20 32 62 / 10%); } }
+.cm-area-art{ display:block; flex-shrink:0; background:var(--bg, #F4F6FB); padding:12px 12px 0; }
+.cm-area-art svg{ display:block; width:100%; height:auto; max-height:170px; margin:0 auto; }
+.cm-area-foot{ display:flex; align-items:center; gap:10px; padding:14px 16px; }
+.cm-area-txt{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+.cm-area-txt b{ font-size:18px; font-weight:800; }
+.cm-area-txt small{ font-size:13px; color:var(--ink-soft); font-weight:600; }
+.cm-area-foot .acc-chev{ display:inline-flex; flex:none; color:var(--ink-soft); }
+.cm-area-foot .acc-chev svg{ width:18px; height:18px; }
+@media (max-width:699px){
+  .cm-areas{ gap:12px; }
+  .cm-area{ flex-direction:row; align-items:stretch; }
+  .cm-area-art{ width:118px; flex:none; padding:8px 0 0; display:flex; align-items:flex-end; }
+  .cm-area-foot{ flex:1; min-width:0; padding:14px; }
+}
+
+/* Encabezado del área con "Agregar" arriba a la izquierda */
+.cm-head{ display:flex; flex-direction:column; align-items:flex-start; gap:12px; }
+.cm-add{ padding:10px 16px; border-radius:12px; }
+.cm-head-txt .page-sub{ margin-bottom:0; }
+.cm-people{ margin-top:16px; }
+.cm-person{ gap:8px; }
+.cm-person-main{ display:flex; align-items:center; gap:12px; flex:1; min-width:0; padding:0; border:none; background:none; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+.cm-del{ flex:none; width:38px; height:38px; }
+.cm-del svg{ width:18px; height:18px; }
+.cm-on{ color:var(--sec-home-ink, #0F8F46); font-weight:700; }
+.cm-plus{ display:inline-flex; width:32px; height:32px; align-items:center; justify-content:center; border-radius:10px; background:var(--sec-home-soft, #E5FAEC); color:var(--sec-home-ink, #0F8F46); flex:none; }
+.cm-plus svg{ width:18px; height:18px; }
+.cm-new{ margin-top:16px; }
+.cm-empty{ margin-top:10px; }
+.cm-empty-art svg{ display:block; width:190px; max-width:70%; height:auto; margin:0 auto 6px; }
+
+/* Formulario y permisos */
+.cm-card{ margin-top:16px; padding:16px; border:1px solid var(--border); border-radius:18px; background:var(--surface, #fff); }
+.cm-card .field:last-child{ margin-bottom:0; }
+.cm-roles{ grid-template-columns:1fr 1fr !important; max-width:none !important; margin-bottom:6px; }
+.cm-roles .opt-emoji svg{ width:20px; height:20px; }
+.cm-perms-link{ margin-top:14px; }
+.cm-perms{ padding:6px 16px; }
+.cm-perms .toggle-row:last-child{ border-bottom:none; }
+.cm-actions{ display:flex; gap:10px; margin-top:18px; }
+.cm-actions .btn{ flex:1; min-width:0; }
+@media (min-width:700px){
+  .cm-card, .cm-perms-link, .cm-actions, .cm-people, .cm-head + .empty-state{ max-width:620px; }
+}
+
+/* Mesero y Cocina: Historial a un lado y Cambiar de cuenta al otro */
+.cm-solo-bar{ display:flex; justify-content:space-between; gap:10px; margin:14px 0; }
+.cm-solo-bar .btn{ padding:10px 14px; }
+.cm-floor{ max-width:640px; height:clamp(320px, 62dvh, 540px); margin:0 auto 12px; }
+.vp-floor-table.cm-ready{ border-color:var(--brand); background:var(--brand); color:#fff; }
+.vp-floor-table.cm-ready small{ color:#fff; font-weight:700; }
+.cm-cart-actions .btn svg{ width:18px; height:18px; }
+
+/* Pedidos en cocina */
+.cm-tickets{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:12px; }
+.cm-ticket{ display:flex; flex-direction:column; gap:8px; padding:14px; border:1px solid var(--border); border-radius:18px; background:var(--surface, #fff); box-shadow:0 2px 10px rgb(20 32 62 / 5%); }
+.cm-ticket-h{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.cm-ticket-h b{ font-size:18px; font-weight:800; color:var(--ink); }
+.cm-ticket-h span{ font-size:12.5px; font-weight:700; color:var(--ink-soft); white-space:nowrap; }
+.cm-ticket-by{ display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--ink-soft); font-weight:600; }
+.cm-ticket-by svg{ width:14px; height:14px; }
+.cm-ticket .btn{ margin-top:auto; }
+.cm-items{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+.cm-items li{ display:flex; gap:8px; font-size:14.5px; color:var(--ink); line-height:1.3; }
+.cm-items li b{ min-width:30px; font-weight:800; }
+.cm-items li small{ display:block; font-size:12.5px; color:var(--ink-soft); }
+.cm-ticket .cm-items{ padding:8px 0 10px; border-top:1px dashed var(--border); }
+
+/* Historial */
+.cm-hist{ display:flex; flex-direction:column; gap:10px; }
+.cm-hist-row{ padding:12px 14px; border:1px solid var(--border); border-radius:14px; background:var(--surface, #fff); }
+.cm-hist-h{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.cm-hist-h b{ font-size:15px; font-weight:800; color:var(--ink); }
+.cm-hist-sub{ font-size:12.5px; color:var(--ink-soft); margin:2px 0 8px; }
+.cm-st{ font-size:11.5px; font-weight:800; padding:3px 9px; border-radius:999px; background:var(--surface-alt, #F1F3F7); color:var(--ink-soft); }
+.cm-st.cocina{ background:var(--accent-soft); color:#8A6A18; }
+.cm-st.listo, .cm-st.entregado{ background:var(--sec-home-soft, #E5FAEC); color:var(--sec-home-ink, #0F8F46); }
+.cm-st.cancelado{ background:var(--danger-bg, #FDECEC); color:#B4332A; }

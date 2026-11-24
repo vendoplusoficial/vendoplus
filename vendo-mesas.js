@@ -245,7 +245,9 @@ window.VPMesas = (() => {
         customItems = {};
         checkout = newCheckout();
       }
+      if (window.VPComandas) VPComandas.cancelarOrden(id);
       closeModal();
+      if (window.VPComandas?.esMesero()) { goTo('comandas'); return; }
       render();
       open('sale');
     });
@@ -259,5 +261,5 @@ window.VPMesas = (() => {
     return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="${label}">${tableIcon}${badge}</button>`;
   }
 
-  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon };
+  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon, layout, openOrders };
 })();
