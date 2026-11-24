@@ -5169,7 +5169,20 @@ body.pg-mode{ background:#F4F6FA; }
   .bottomnav .navbtn[data-view="stripefin"]{ order:4 !important; }
 }
 
-/* ===== Finanzas de Stripe ===== */
+/* ===== Finanzas de Stripe (pantalla completa) ===== */
+.stf-page{ position:fixed; inset:0; z-index:450; display:flex; flex-direction:column; background:var(--bg, #F4F6FB); opacity:0; transform:translateX(24px); transition:opacity .22s ease, transform .26s cubic-bezier(.22,1,.36,1); }
+.stf-page.on{ opacity:1; transform:none; }
+.stf-page.sale{ opacity:0; transform:translateX(24px); transition-duration:.2s; }
+@media (prefers-reduced-motion:reduce){ .stf-page, .stf-page.on, .stf-page.sale{ transition:none; transform:none; } }
+body.stf-abierta{ overflow:hidden; }
+.stf-top{ flex:none; display:flex; align-items:center; gap:6px; padding:calc(10px + env(safe-area-inset-top)) 12px 10px; background:var(--surface, #fff); border-bottom:1px solid var(--border, #EEF1F5); zoom:var(--z, 1); }
+.stf-top h1{ flex:1; margin:0; font-size:18px; font-weight:800; letter-spacing:-.2px; color:var(--ink); }
+.stf-atras, .stf-actualizar{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; flex:none; border:0; border-radius:12px; background:none; color:var(--ink); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.stf-atras:active, .stf-actualizar:active{ background:var(--surface-alt, #F1F3F7); }
+.stf-atras svg{ width:24px; height:24px; }
+.stf-actualizar svg{ width:19px; height:19px; color:var(--ink-soft); }
+.stf-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+.stf-scroll > .stf{ max-width:620px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); zoom:var(--z, 1); }
 .stf{ transition:opacity .2s ease; }
 .stf.cargando{ opacity:.55; pointer-events:none; }
 .stf-carga{ display:flex; justify-content:center; gap:6px; padding:40px 0; }
@@ -19962,12 +19975,36 @@ const StWatch = {
 ========================================================================= */
 const stFin = { data:null, tab:'pagos', cargando:false, err:'' };
 
+/* Pantalla completa, separada del resto, con "<" arriba a la izquierda.
+   El botón de atrás del celular también la cierra. */
 function stOpenFinanzas(){
   if(!isOwner()){ toast('Solo el Dueño puede ver las finanzas', { icon:icon('alert'), variant:'toast-danger' }); return; }
   if(!stLinked()){ toast('Primero enlaza tu Stripe', { icon:icon('alert') }); return; }
+  try{ closeModal(); }catch(e){}
   stFin.tab = stFin.tab || 'pagos';
+  let pg = document.getElementById('stfPage');
+  if(!pg){
+    pg = document.createElement('div'); pg.id = 'stfPage'; pg.className = 'stf-page';
+    pg.setAttribute('role', 'dialog'); pg.setAttribute('aria-modal', 'true'); pg.setAttribute('aria-label', 'Finanzas de Stripe');
+    document.body.appendChild(pg);
+  }
   stFinPaint(true);
+  requestAnimationFrame(() => pg.classList.add('on'));
+  document.body.classList.add('stf-abierta');
+  try{ history.pushState({ stf:1 }, ''); }catch(e){}
+  if(!stOpenFinanzas.on){
+    stOpenFinanzas.on = true;
+    window.addEventListener('popstate', () => { if(document.getElementById('stfPage')) stCerrarFinanzas(true); });
+    document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.getElementById('stfPage') && !document.querySelector('#confirm-layer .modal-overlay')) stCerrarFinanzas(); });
+  }
   stFinCargar();
+}
+function stCerrarFinanzas(desdeAtras){
+  const pg = document.getElementById('stfPage'); if(!pg) return;
+  pg.classList.remove('on'); pg.classList.add('sale');
+  document.body.classList.remove('stf-abierta');
+  setTimeout(() => pg.remove(), 220);
+  if(!desdeAtras){ try{ if(history.state && history.state.stf) history.back(); }catch(e){} }
 }
 async function stFinCargar(){
   stFin.cargando = true; stFin.err = '';
@@ -20062,20 +20099,17 @@ function stFinPaint(primera){
       <div class="stf-lista">${lista}</div>
       ${d.livemode === false ? '<p class="stf-tip">Modo de prueba: nada de esto es dinero real.</p>' : ''}`;
   })();
-  const html = `
-    <div class="sheet-header">
-      <h2>Finanzas de Stripe</h2>
-      <button class="sheet-close" onclick="stFinCargar()" aria-label="Actualizar" style="margin-left:auto;margin-right:8px">${icon('refresh')}</button>
-      <button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button>
+  const pg = document.getElementById('stfPage'); if(!pg) return;   /* ya la cerró */
+  const clase = 'stf ' + (stFin.cargando && d ? 'cargando' : '');
+  const body = pg.querySelector('.stf');
+  if(!primera && body){ body.className = clase; body.innerHTML = cuerpo; return; }
+  pg.innerHTML = `
+    <div class="stf-top">
+      <button type="button" class="stf-atras" onclick="stCerrarFinanzas()" aria-label="Regresar">${icon('chevronLeft')}</button>
+      <h1>Finanzas de Stripe</h1>
+      <button type="button" class="stf-actualizar" onclick="stFinCargar()" aria-label="Actualizar">${icon('refresh')}</button>
     </div>
-    <div class="stf ${stFin.cargando && d ? 'cargando' : ''}">${cuerpo}</div>`;
-  const body = document.querySelector('#modal-layer .stf');
-  if(!primera){
-    /* Si ya cerró la hoja mientras cargaba, no se vuelve a abrir */
-    if(body) body.outerHTML = `<div class="stf ${stFin.cargando && d ? 'cargando' : ''}">${cuerpo}</div>`;
-    return;
-  }
-  openModal(html, { dismissible:true });
+    <div class="stf-scroll"><div class="${clase}">${cuerpo}</div></div>`;
 }
 
 function stFinRetirar(){
