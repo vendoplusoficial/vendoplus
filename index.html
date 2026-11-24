@@ -5175,6 +5175,7 @@ body.pg-mode{ background:#F4F6FA; }
 .stf-page.sale{ opacity:0; transform:translateX(24px); transition-duration:.2s; }
 @media (prefers-reduced-motion:reduce){ .stf-page, .stf-page.on, .stf-page.sale{ transition:none; transform:none; } }
 body.stf-abierta{ overflow:hidden; }
+.stf-top-in{ display:flex; align-items:center; gap:6px; width:100%; max-width:1120px; margin:0 auto; }
 .stf-top{ flex:none; display:flex; align-items:center; gap:6px; padding:calc(10px + env(safe-area-inset-top)) 12px 10px; background:var(--surface, #fff); border-bottom:1px solid var(--border, #EEF1F5); zoom:var(--z, 1); }
 .stf-top h1{ flex:1; margin:0; font-size:18px; font-weight:800; letter-spacing:-.2px; color:var(--ink); }
 .stf-atras, .stf-actualizar{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; flex:none; border:0; border-radius:12px; background:none; color:var(--ink); cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -5183,6 +5184,24 @@ body.stf-abierta{ overflow:hidden; }
 .stf-actualizar svg{ width:19px; height:19px; color:var(--ink-soft); }
 .stf-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
 .stf-scroll > .stf{ max-width:620px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); zoom:var(--z, 1); }
+/* PC: dos columnas. A la izquierda el saldo y los botones (se quedan fijos
+   al bajar); a la derecha los pagos y el historial en una tarjeta. */
+@media (min-width:900px){
+  .stf-top{ padding:14px 28px; }
+  .stf-top h1{ font-size:20px; }
+  .stf-scroll > .stf{ max-width:1120px; padding:28px 28px 40px; display:grid; grid-template-columns:minmax(300px, 380px) 1fr; gap:24px; align-items:start; }
+  .stf-scroll > .stf > .stf-carga, .stf-scroll > .stf > .mdi-banner, .stf-scroll > .stf > .sheet-actions{ grid-column:1 / -1; }
+  .stf-col-a{ position:sticky; top:0; }
+  .stf-saldo{ padding:22px 22px 18px; }
+  .stf-saldo > b{ font-size:36px; }
+  .stf-acts{ flex-direction:column; }
+  .stf-acts .btn{ width:100%; min-height:48px; }
+  .stf-col-b{ padding:18px 20px 10px; border-radius:20px; background:var(--surface, #fff); border:1px solid var(--border, #EEF1F5); box-shadow:0 10px 30px -24px rgba(16,22,42,.35); min-height:420px; }
+  .stf-tabs{ max-width:360px; }
+  .stf-row{ padding:13px 6px; border-radius:10px; }
+  button.stf-row:not(:disabled):hover{ background:var(--surface-alt, #F6F7FA); }
+  .stf-vacio{ margin:80px 0; }
+}
 .stf{ transition:opacity .2s ease; }
 .stf.cargando{ opacity:.55; pointer-events:none; }
 .stf-carga{ display:flex; justify-content:center; gap:6px; padding:40px 0; }
@@ -20100,6 +20119,7 @@ function stFinPaint(primera){
           }).join('') : `<p class="stf-vacio">Aún no hay movimientos.</p>`;
         })();
     return `
+      <div class="stf-col-a">
       <div class="stf-saldo">
         <small>Disponible para retirar</small>
         <b>${formatMoney(d.available)}</b>
@@ -20110,24 +20130,27 @@ function stFinPaint(primera){
         <button class="btn primary block" onclick="stFinRetirar()" ${d.available >= 1 ? '' : 'disabled'}>${icon('bank')} Retirar a mi banco</button>
         <button class="btn ghost" onclick="window.open('https://dashboard.stripe.com/', '_blank')" aria-label="Abrir mi panel de Stripe">${icon('external')} Stripe</button>
       </div>
+      </div>
+      <div class="stf-col-b">
       <div class="stf-tabs" role="tablist">
         <button type="button" class="${stFin.tab === 'pagos' ? 'on' : ''}" onclick="stFin.tab='pagos'; stFinPaint(false)">Pagos</button>
         <button type="button" class="${stFin.tab === 'historial' ? 'on' : ''}" onclick="stFin.tab='historial'; stFinPaint(false)">Historial</button>
       </div>
       ${stFin.tab === 'pagos' && pagos.some(c => c.status === 'succeeded' && !c.refunded) ? '<p class="stf-tip">Toca un pago para devolverlo.</p>' : ''}
       <div class="stf-lista">${lista}</div>
-      ${d.livemode === false ? '<p class="stf-tip">Modo de prueba: nada de esto es dinero real.</p>' : ''}`;
+      ${d.livemode === false ? '<p class="stf-tip">Modo de prueba: nada de esto es dinero real.</p>' : ''}
+      </div>`;
   })();
   const pg = document.getElementById('stfPage'); if(!pg) return;   /* ya la cerró */
   const clase = 'stf ' + (stFin.cargando && d ? 'cargando' : '');
   const body = pg.querySelector('.stf');
   if(!primera && body){ body.className = clase; body.innerHTML = cuerpo; return; }
   pg.innerHTML = `
-    <div class="stf-top">
+    <div class="stf-top"><div class="stf-top-in">
       <button type="button" class="stf-atras" onclick="stCerrarFinanzas()" aria-label="Regresar">${icon('chevronLeft')}</button>
       <h1>Finanzas de Stripe</h1>
       <button type="button" class="stf-actualizar" onclick="stFinCargar()" aria-label="Actualizar">${icon('refresh')}</button>
-    </div>
+    </div></div>
     <div class="stf-scroll"><div class="${clase}">${cuerpo}</div></div>`;
 }
 
