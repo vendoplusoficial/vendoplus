@@ -2510,6 +2510,7 @@ if(window.VendoNative && !window.VendoApp){ document.write('<script src="vendo-b
 
   /* ---------- Historial, ticket y ventas ---------- */
   .tag.md{ background:var(--sec-menu-soft); color:var(--sec-menu-ink); margin:0 0 0 4px; vertical-align:1px; }
+  .tag.dlv{ background:color-mix(in srgb, var(--app) 13%, #fff); color:color-mix(in srgb, var(--app) 78%, #000); margin:0 0 0 4px; vertical-align:1px; }
   .sale-row-badge.md{ background:var(--sec-menu-soft); }
   .ticket-origin{
     margin:8px 0 2px; font-size:11.5px; font-weight:700; line-height:1.45; font-family:var(--sans);
@@ -5199,7 +5200,7 @@ body.st-fin-lock .st-nav-lock{ display:inline-flex; }
 .navbtn.st-nav{ display:none !important; }
 @media (min-width:700px){
   body.st-fin-on .navbtn.st-nav{ display:flex !important; }
-  .bottomnav .navbtn[data-view="stripefin"]{ order:7 !important; }
+  .bottomnav .navbtn[data-view="stripefin"], .bottomnav .navbtn[data-view="apps"]{ order:7 !important; }
 }
 
 /* ===== Finanzas de Stripe (pantalla completa) ===== */
@@ -5585,6 +5586,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
     <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="stripeLogo" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe</span></button>
+    <button class="navbtn nav-pc nav-2l st-nav" data-view="apps" data-icon="truck" onclick="if(window.VPApps) VPApps.abrir()"><span class="navicon"></span><span>Apps de delivery</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
@@ -8621,6 +8623,7 @@ function ticketMetaRows(sale){
   if(ret && sale.refNumber) rows.push(['De la venta', orderNumberLabel(sale.refNumber)]);
   rows.push(['Fecha', formatDateTime(sale.date)]);
   if(sale.origin === 'menu') rows.push(['Origen', 'Menú Digital' + (sale.menuCode ? ' ' + sale.menuCode : '')]);
+  if(sale.origin === 'app') rows.push(['Origen', saleAppLabel(sale)]);
   if(sale.customerName) rows.push(['Cliente', sale.customerName]);
   if(!ret) rows.push(['Servicio', stripEmoji(serviceOf(sale.serviceType).name)]);
   if(sale.table) rows.push([tableTicketLabel(sale), sale.table]);
@@ -10687,6 +10690,7 @@ function ticketImageSpec(sale){
   const retTotal = (sale.returns || []).reduce((a, r) => a + Math.abs(r.total || 0), 0);
   const metas = [ ret ? 'De la venta ' + (sale.refNumber ? orderNumberLabel(sale.refNumber) : '') : 'Pedido ' + orderNumberLabel(sale.number), formatDateTime(sale.date) ];
   if(typeof saleIsMenu === 'function' && saleIsMenu(sale)) metas.push('Pedido hecho en Menú Digital' + (sale.menuCode ? ' · ' + sale.menuCode : ''));
+  if(sale.origin === 'app' && typeof saleAppLabel === 'function') metas.push('Venta de ' + saleAppLabel(sale));
   if(sale.customerName) metas.push('Cliente: ' + sale.customerName);
   if(sale.userName) metas.push('Atendió: ' + sale.userName);
   const extras = [];
@@ -10748,7 +10752,7 @@ function renderSaleRow(sale){
     <button class="sale-row ${sale.cancelled?'cancelled':''} ${ret ? 'is-return' : ''}" onclick="openSaleDetail('${sale.id}')">
       <div class="sale-row-badge ${sale.origin === 'menu' ? 'md' : ''} ${ret ? 'ret' : ''}">${icon(ret ? 'undo' : (sale.origin === 'menu' ? 'mobile' : service.ico))}</div>
       <div class="sale-row-main">
-        <div class="sale-row-num">${ret ? 'Devolución ' + escapeHtml(sale.folio || '') : orderNumberLabel(sale.number)}${sale.origin === 'menu' ? ' <span class="tag md">Menú Digital' + (sale.menuCode ? ' · ' + escapeHtml(sale.menuCode) : '') + '</span>' : ''}${fiado ? ' <span class="tag credit">Fiado</span>' : ''}</div>
+        <div class="sale-row-num">${ret ? 'Devolución ' + escapeHtml(sale.folio || '') : orderNumberLabel(sale.number)}${sale.origin === 'menu' ? ' <span class="tag md">Menú Digital' + (sale.menuCode ? ' · ' + escapeHtml(sale.menuCode) : '') + '</span>' : ''}${sale.origin === 'app' ? ' <span class="tag dlv" style="--app:' + ((VP_APPS[sale.app] || {}).c || '#6C7480') + '">' + escapeHtml(saleAppLabel(sale)) + '</span>' : ''}${fiado ? ' <span class="tag credit">Fiado</span>' : ''}</div>
         ${ret && sale.refNumber ? `<div class="sale-row-who">De la venta ${orderNumberLabel(sale.refNumber)}</div>` : ''}
         ${sale.customerName ? `<div class="sale-row-who">Cliente: ${escapeHtml(sale.customerName)}</div>` : ''}
         <div class="sale-row-meta">${formatDateTime(sale.date)} · ${ret ? escapeHtml(refundMethodName(sale.paymentMethod)) : payment.name}${sale.table ? ' · ' + tableTicketLabel(sale) + ' ' + escapeHtml(sale.table) : ''}</div>
@@ -10922,7 +10926,7 @@ function matchesHistoryFilters(sale){
     const q = saleNorm(historyFilters.search);
     const hay = saleNorm([
       sale.number, orderNumberLabel(sale.number || 0), sale.folio, sale.table, sale.customerName, sale.payRef,
-      sale.menuCode, sale.userName,
+      sale.menuCode, sale.userName, sale.origin === 'app' && typeof saleAppLabel === 'function' ? saleAppLabel(sale) : '',
       sale.items.map(it => it.name + ' ' + (it.sku || '') + ' ' + (it.note || '')).join(' ')
     ].join(' '));
     if(!q.split(/\s+/).every(w => hay.indexOf(w) >= 0)) return false;
@@ -21227,6 +21231,7 @@ const STATS_ORIGINS = [
   { id:'all',  label:'Todo' },
   { id:'caja', label:'En caja' },
   { id:'menu', label:'Menú Digital' },
+  { id:'apps', label:'Apps' },
 ];
 
 /* Pedidos del Menú Digital confirmados que todavía no se cobran: aún no son venta */
@@ -21242,7 +21247,23 @@ function mdiUnpaidAlertHTML(){
   </button>`;
 }
 function saleIsMenu(s){ return s && s.origin === 'menu'; }
-function statsOriginMatch(s){ return statsOrigin === 'all' || (statsOrigin === 'menu' ? saleIsMenu(s) : !saleIsMenu(s)); }
+/* Ventas que llegan de Rappi, DiDi Food y Uber Eats (ver vendo-apps.js) */
+const VP_APPS = {
+  rappi:{ n:'Rappi',     c:'#FF441F', l:'R' },
+  didi: { n:'DiDi Food', c:'#FC6A1C', l:'D' },
+  uber: { n:'Uber Eats', c:'#06C167', l:'U' }
+};
+const VP_APPS_ORDEN = ['rappi', 'didi', 'uber'];
+function saleIsApp(s){ return !!(s && s.origin === 'app'); }
+function saleAppName(s){ return saleIsApp(s) ? ((VP_APPS[s.app] || {}).n || 'App de delivery') : ''; }
+/** "Rappi · #1234" para tickets, historial y Excel */
+function saleAppLabel(s){ return saleAppName(s) + (s && s.appCode ? ' · #' + s.appCode : ''); }
+function statsOriginMatch(s){
+  if(statsOrigin === 'all') return true;
+  if(statsOrigin === 'menu') return saleIsMenu(s);
+  if(statsOrigin === 'apps') return saleIsApp(s);
+  return !saleIsMenu(s) && !saleIsApp(s);
+}
 function withSalesOrigin(fn){
   if(statsOrigin === 'all') return fn();
   const orig = visibleSales;
@@ -21252,7 +21273,7 @@ function withSalesOrigin(fn){
 function setStatsOrigin(o){ statsOrigin = o; statsSel = null; vibrate(8); render(); }
 function statsOriginSegHTML(){
   return `<div class="seg origin-seg" role="tablist" aria-label="Origen de las ventas">
-    ${STATS_ORIGINS.map(o => `<button role="tab" aria-selected="${o.id === statsOrigin}" class="${o.id === statsOrigin ? 'active' : ''}" onclick="setStatsOrigin('${o.id}')">${o.id === 'menu' ? icon('menuBook') : o.id === 'caja' ? icon('store2') : ''}${o.label}</button>`).join('')}
+    ${STATS_ORIGINS.map(o => `<button role="tab" aria-selected="${o.id === statsOrigin}" class="${o.id === statsOrigin ? 'active' : ''}" onclick="setStatsOrigin('${o.id}')">${o.id === 'menu' ? icon('menuBook') : o.id === 'caja' ? icon('store2') : o.id === 'apps' ? icon('truck') : ''}${o.label}</button>`).join('')}
   </div>`;
 }
 const _muStatsChartsHTML = statsChartsHTML;
@@ -21274,9 +21295,15 @@ renderStats = function(){
   if(statsOrigin === 'all'){
     const rr = reportRange();
     const act = visibleSales().filter(s => !s.cancelled && new Date(s.date) >= rr[0] && new Date(s.date) < rr[1]);
-    const caja = act.filter(s => !saleIsMenu(s)), menu = act.filter(saleIsMenu);
+    const caja = act.filter(s => !saleIsMenu(s) && !saleIsApp(s)), menu = act.filter(saleIsMenu);
     const sum = a => a.reduce((x, s) => x + s.total, 0);
-    const max = Math.max(1, sum(caja), sum(menu));
+    const porApp = VP_APPS_ORDEN.map(k => ({ k, a:act.filter(s => saleIsApp(s) && s.app === k) })).filter(x => x.a.length);
+    const max = Math.max(1, sum(caja), sum(menu), ...porApp.map(x => sum(x.a)));
+    const barrasApps = porApp.map(x => `
+        <div class="bar-row">
+          <div class="bar-row-top"><span>${icx('truck')}${VP_APPS[x.k].n}</span><span class="bv">${formatMoney(sum(x.a))} · ${x.a.length}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${sum(x.a) / max * 100}%; background:${VP_APPS[x.k].c};"></div></div>
+        </div>`).join('');
     const card = `
       <div class="section-title">Ventas por origen</div>
       <div class="card">
@@ -21287,7 +21314,7 @@ renderStats = function(){
         <div class="bar-row">
           <div class="bar-row-top"><span>${icx('mobile')}Pedido hecho en Menú Digital</span><span class="bv">${formatMoney(sum(menu))} · ${menu.length}</span></div>
           <div class="bar-track"><div class="bar-fill" style="width:${sum(menu) / max * 100}%; background:var(--sec-menu);"></div></div>
-        </div>
+        </div>${barrasApps}
       </div>`;
     html = html.replace('<div class="inv-actions rep-actions">', card + '<div class="inv-actions rep-actions">');
   }
@@ -21462,7 +21489,7 @@ openHistoryFilters = function(){
     <div class="filter-modal-group">
       <div class="filter-modal-label"><span class="fml-icon">${icon('menuBook')}</span>Origen</div>
       <div class="filter-pill-row">
-        ${[['all','Todo origen'],['caja',icx('store2') + 'En caja'],['menu',icx('mobile') + 'Menú Digital']].map(([id, t]) => `<button class="filter-chip ${historyFilters.origin === id ? 'active' : ''}" onclick="setHistoryFilter('origin','${id}')">${t}</button>`).join('')}
+        ${[['all','Todo origen'],['caja',icx('store2') + 'En caja'],['menu',icx('mobile') + 'Menú Digital'],['apps',icx('truck') + 'Apps']].concat(VP_APPS_ORDEN.map(k => [k, VP_APPS[k].n])).map(([id, t]) => `<button class="filter-chip ${historyFilters.origin === id ? 'active' : ''}" onclick="setHistoryFilter('origin','${id}')">${t}</button>`).join('')}
       </div>
     </div>`;
   if(ref) ref.insertAdjacentHTML('afterend', html);
@@ -21470,10 +21497,12 @@ openHistoryFilters = function(){
 const _muMatchesHistoryFilters = matchesHistoryFilters;
 matchesHistoryFilters = function(sale){
   if(historyFilters.origin === 'menu' && !saleIsMenu(sale)) return false;
-  if(historyFilters.origin === 'caja' && saleIsMenu(sale)) return false;
+  if(historyFilters.origin === 'caja' && (saleIsMenu(sale) || saleIsApp(sale))) return false;
+  if(historyFilters.origin === 'apps' && !saleIsApp(sale)) return false;
+  if(VP_APPS[historyFilters.origin] && !(saleIsApp(sale) && sale.app === historyFilters.origin)) return false;
   if(historyFilters.search){
     const q = historyFilters.search.toLowerCase();
-    if(((sale.menuCode || '') + ' ' + (sale.customerName || '')).toLowerCase().includes(q)){
+    if(((sale.menuCode || '') + ' ' + (sale.customerName || '') + ' ' + (saleIsApp(sale) ? saleAppLabel(sale) : '')).toLowerCase().includes(q)){
       const s = historyFilters.search; historyFilters.search = '';
       try{ return _muMatchesHistoryFilters(sale); }finally{ historyFilters.search = s; }
     }
@@ -21498,6 +21527,7 @@ renderHistoryShell = function(){
 function saleOriginHTML(sale){
   let h = '';
   if(saleIsMenu(sale)) h += `<div class="ticket-origin">${icx('mobile')}Pedido hecho en Menú Digital${sale.menuCode ? ' · ' + escapeHtml(sale.menuCode) : ''}${sale.customerName ? '<br>Cliente: ' + escapeHtml(sale.customerName) : ''}</div>`;
+  if(saleIsApp(sale)) h += `<div class="ticket-origin">${icx('truck')}Venta de ${escapeHtml(saleAppLabel(sale))}${sale.customerName ? '<br>Cliente: ' + escapeHtml(sale.customerName) : ''}</div>`;
   return h;
 }
 
@@ -24579,6 +24609,7 @@ function xlSubtitle(range){
 }
 function xlSaleOrigin(s){
   if(s.origin === 'menu') return 'Menú Digital' + (s.menuCode ? ' ' + s.menuCode : '');
+  if(s.origin === 'app') return saleAppLabel(s);
   return 'Caja';
 }
 function xlPay(id){ return stripEmoji(paymentOf(id).name); }
@@ -28611,12 +28642,12 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
       bg=document.createElement('div'); bg.className='vp-sheet-bg';
       bg.addEventListener('click',function(e){
         var t=e.target.closest('[data-go]');
-        if(t){ hideMore(bg); if(t.dataset.go==='feedback'){ if(typeof openFeedback==='function') openFeedback(); } else if(t.dataset.go==='stripefin'){ stOpenFinanzas(); } else goTo(t.dataset.go); }
+        if(t){ hideMore(bg); if(t.dataset.go==='feedback'){ if(typeof openFeedback==='function') openFeedback(); } else if(t.dataset.go==='stripefin'){ stOpenFinanzas(); } else if(t.dataset.go.indexOf('app:')===0){ if(window.VPApps) VPApps.abrir(t.dataset.go.slice(4)); } else goTo(t.dataset.go); }
         else if(e.target===bg) hideMore(bg);
       });
       document.body.appendChild(bg);
     }
-    bg.innerHTML='<div class="vp-sheet">'+moreItems().map(function(i){return '<button data-go="'+i[0]+'">'+icon(i[1])+'<span>'+i[2]+'</span></button>';}).join('')+'</div>';
+    bg.innerHTML='<div class="vp-sheet">'+((window.VPApps&&isOwner())?VPApps.barraMasHTML():'')+moreItems().map(function(i){return '<button data-go="'+i[0]+'">'+icon(i[1])+'<span>'+i[2]+'</span></button>';}).join('')+'</div>';
     bg.classList.remove('hiding');
     bg.classList.add('show');
   }
@@ -29597,6 +29628,7 @@ window.VP_PROMOS_IMG = {
 };
 </script>
 <script src="vendo-premium.js?v=20261124y"></script>
+<script src="vendo-apps.js?v=20261124a"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,
