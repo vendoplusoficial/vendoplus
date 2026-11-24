@@ -5195,6 +5195,12 @@ body.pg-mode{ background:#F4F6FA; }
 .sp-seguro{ display:flex; align-items:flex-start; gap:9px; margin:14px 0 0; padding:11px 12px; border-radius:13px; background:#F4F6FA; font-size:12.5px; font-weight:600; line-height:1.45; color:#6B7487; }
 .sp-seguro svg{ width:18px; height:18px; flex:none; margin-top:1px; color:#635BFF; }
 .sp-seguro b{ color:#16213E; }
+.sp-paso{ margin:14px 0 0; padding:12px 14px; border-radius:14px; background:#EAF9F0; color:#0E5C30; font-size:13.5px; font-weight:600; line-height:1.45; text-align:left; }
+.sp-paso b{ display:block; margin-bottom:2px; font-size:14px; font-weight:800; color:#0E7A3D; }
+.sp-btn.sp-wa{ background:#25D366; box-shadow:0 12px 24px -14px rgba(37,211,102,.9); }
+.sp-btn.sp-wa .sp-btn-txt{ display:inline-flex; align-items:center; gap:8px; }
+.sp-btn.sp-wa svg{ width:20px; height:20px; }
+.sp-btn.sp-wa.sp-wa-sec{ background:#fff; color:#128C4A; border:1.5px solid #BDECCF; box-shadow:none; min-height:48px; font-size:15px; }
 .sp-check{ display:flex; justify-content:center; margin:6px 0 2px; }
 .sp-check svg{ width:74px; height:74px; }
 .sp-check circle{ fill:none; stroke:#16A34A; stroke-width:2.5; stroke-dasharray:151; stroke-dashoffset:151; animation:sp-traza .6s ease-out forwards; }
@@ -26447,13 +26453,33 @@ function spEsperando(){
 function spOk(){
   const d = sp.data || {};
   if(sp.t){ clearInterval(sp.t); sp.t = null; }
+  /* El número de WhatsApp del negocio solo llega cuando ya está pagado */
+  if(!d.whatsapp && !sp.pidioWa){ sp.pidioWa = true; pgFetch(ST_FN.pago, { order_id:sp.id }).then(j => { sp.data = Object.assign({}, sp.data, j); spOk(); }).catch(() => {}); }
+  const enviado = spWaEnviado();
   spPaint(`<div class="pg-card pg-center sp-card sp-ok">
       ${spCabeza()}
       <div class="sp-check"><svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M15 27l7.5 7.5L37.5 19"/></svg></div>
-      <h1>¡Listo, ya pagaste!</h1>
-      <p>Tu pago de <b>${pgMoney(d.amount)}</b> quedó confirmado. El negocio ya lo puede ver.</p>
-      <p class="pg-mini">Pedido ${pgEsc(d.code || '')} · pagado con Stripe</p>
+      <h1>${enviado ? '¡Listo, ya quedó!' : '¡Pago confirmado!'}</h1>
+      <p>Tu pago de <b>${pgMoney(d.amount)}</b> quedó confirmado${enviado ? ' y ya le avisaste al negocio por WhatsApp.' : '.'}</p>
+      ${enviado ? '' : `<div class="sp-paso"><b>Último paso</b>Manda tu pedido por WhatsApp para que el negocio lo reciba también por ahí.</div>`}
+      <button type="button" class="sp-btn sp-wa${enviado ? ' sp-wa-sec' : ''}" onclick="spEnviarWa()">
+        <span class="sp-btn-txt">${icon('whatsapp')} ${enviado ? 'Enviar otra vez por WhatsApp' : 'Enviar a WhatsApp'}</span>
+      </button>
+      <p class="pg-mini">Pedido ${pgEsc(d.code || '')}</p>
     </div>`);
+}
+function spWaKey(){ return 'vp_pago_wa_' + sp.id; }
+function spWaEnviado(){ try{ return localStorage.getItem(spWaKey()) === '1'; }catch(e){ return false; } }
+/** El cliente SÍ O SÍ le manda su pedido pagado al negocio por WhatsApp. */
+function spEnviarWa(){
+  const d = sp.data || {};
+  const msg = '¡Hola' + (d.business ? ' ' + d.business : '') + '! Ya pagué con tarjeta mi pedido ' + (d.code || '') + '.' +
+    '\n\n*Total pagado: ' + pgMoney(d.amount) + ' MXN*\nPago confirmado ✅';
+  const url = 'https://wa.me/' + String(d.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
+  try{ localStorage.setItem(spWaKey(), '1'); }catch(e){}
+  const w = window.open(url, '_blank');
+  if(!w) location.href = url;
+  setTimeout(spOk, 600);
 }
 
 /* ---------- Aviso de pedido nuevo (lo usan Realtime, la revisión y otra pestaña) ---------- */

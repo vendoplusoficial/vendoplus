@@ -148,6 +148,8 @@ Deno.serve(async (req) => {
       status_text: r.detalle,
       can_pay: !!(acct && cuenta?.ready),
       livemode: LIVE,
+      // Ya pagado: el cliente le manda la confirmación al negocio por WhatsApp
+      whatsapp: r.estado === "paid" ? String(menus?.[0]?.data?.wa ?? "").replace(/\D/g, "") : "",
     });
   } catch (e) {
     const err = e as { message?: string; type?: string; code?: string };
