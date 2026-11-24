@@ -5197,6 +5197,34 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
    PREMIUM_OCULTO = false en vendo-premium.js. */
 #topPremium, .vp-top-prem, .navbtn[data-view="premium"], .ud-premium{ display:none !important; }
 </style>
+<style id="vp-indice-temprano">
+/* ===== Índice de categorías desde el arranque =====
+   Copia de las reglas de "vp-fix-oct24-css" y "vp-fotos-cuadradas" (al final
+   de la página). Van también aquí para que las pastillas no se vean verdes
+   ni de otro tamaño por un instante al cargar. Si cambias unas, cambia las otras. */
+/* ===== Nueva venta: índice ===== */
+.topbar-index .chip-row{ scroll-behavior:auto !important; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; touch-action:pan-x; }
+.chip-row.sticky-index{ -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; }
+.chip-row.sticky-index .chip{ flex:none; }
+
+#view .chip-row.sticky-index .cat-dot, .topbar-index .cat-dot{ display:none !important; }
+/* Índice sin verde: ni seleccionado ni al presionar */
+#view .chip-row.sticky-index .chip, .topbar-index .chip,
+#view .chip-row.sticky-index .chip.active, .topbar-index .chip.active,
+#view .chip-row.sticky-index .chip:active, .topbar-index .chip:active,
+#view .chip-row.sticky-index .chip:focus, .topbar-index .chip:focus,
+#view .chip-row.sticky-index .chip:hover, .topbar-index .chip:hover{
+  background:var(--surface, #fff) !important; color:var(--ink-soft) !important; border:1.5px solid var(--border) !important;
+  box-shadow:none !important; outline:none; -webkit-tap-highlight-color:transparent;
+}
+/* PC (mouse): las categorías se acomodan en renglones, la barra no se corre de lado */
+@media (hover:hover) and (pointer:fine){
+  #view .chip-row.sticky-index, .topbar-index .chip-row{ flex-wrap:wrap; overflow-x:hidden !important; overflow-y:visible; row-gap:8px; }
+}
+
+.chip-row{ gap:6px; margin-bottom:12px; }
+.chip-row .chip{ padding:7px 14px !important; font-size:12.5px !important; line-height:1.2 !important; }
+</style>
 </head>
 <body>
 <noscript>
