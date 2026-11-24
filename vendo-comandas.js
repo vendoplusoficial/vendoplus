@@ -1,29 +1,46 @@
 'use strict';
 
 /* =========================================================
-   COMANDAS
-   - El Dueño entra a "Comandas" y ve 3 áreas: Caja, Mesero y Cocinero.
-     En cada una ve a las personas de esa área, puede agregar
-     (un usuario que ya existe o uno nuevo, sin pasar por Usuarios)
-     y quitar con confirmación.
-   - Quien entra con su cuenta de Mesero solo ve las mesas (el mismo
-     plano de VPMesas), su historial y "Cambiar de cuenta".
-   - Quien entra como Cocinero solo ve los pedidos que mandan los
-     meseros, los marca como listos y ve su historial.
-   - El área de cada persona vive en su usuario (u.area) y los pedidos
-     que se mandan a cocina en 'mesa_comandas'.
+   COMANDAS (Caja · Mesero · Cocina)
+
+   Cómo funciona, como en un restaurante:
+   1. MESERO abre una mesa y toma el pedido con el catálogo. Cada vez que
+      manda productos se crea una COMANDA (ronda) que llega a cocina, y lo
+      mandado se suma a la CUENTA de la mesa.
+   2. COCINA ve las comandas en cuadritos (como los pedidos del Menú
+      Digital). Al abrir una ve cada producto con su foto, cantidad y nota.
+      La pasa a "Preparando" y luego a "Lista".
+   3. El MESERO recibe el aviso de que está lista, la sirve y la marca como
+      entregada. Cuando el cliente la pide, toca "Pedir la cuenta".
+   4. CAJA ve todas las mesas con su total y las que pidieron la cuenta.
+      Abre la cuenta, la revisa y la cobra. Al cobrar, la mesa queda libre.
+
+   Datos:
+   - Cuentas de mesa: las mismas del plano de mesas (DB.getTableOrders),
+     con un campo extra "cm" (mesero, rondas, cuenta pedida).
+   - Comandas: 'mesa_comandas'.
+   - Las dos se comparten EN VIVO entre los aparatos del negocio con la
+     tabla vp_comandas_sync de Supabase (Realtime).
 ========================================================= */
 window.VPComandas = (() => {
   const KEY = 'mesa_comandas';
+  const T = 'vp_comandas_sync';
   const AREAS = {
-    caja:   { name:'Caja',     who:'Cajeros',    one:'cajero',   sub:'Cobran las cuentas de las mesas' },
-    mesero: { name:'Mesero',   who:'Meseros',    one:'mesero',   sub:'Toman los pedidos en las mesas' },
-    cocina: { name:'Cocinero', who:'Cocineros',  one:'cocinero', sub:'Preparan lo que mandan los meseros' }
+    caja:   { name:'Caja',     who:'Cajeros',   one:'cajero',   sub:'Cobran las cuentas de las mesas' },
+    mesero: { name:'Mesero',   who:'Meseros',   one:'mesero',   sub:'Toman los pedidos y los mandan a cocina' },
+    cocina: { name:'Cocinero', who:'Cocineros', one:'cocinero', sub:'Preparan las comandas que llegan' }
   };
   const ORDER = ['caja', 'mesero', 'cocina'];
+  const ESTADOS = {
+    nuevo:      { label:'Nueva',      cls:'nuevo' },
+    preparando: { label:'Preparando', cls:'prep' },
+    listo:      { label:'Lista',      cls:'ok' },
+    entregado:  { label:'Entregada',  cls:'cancel' },
+    cancelado:  { label:'Cancelada',  cls:'no' }
+  };
 
-  /* Estado de las pantallas del Dueño */
-  const st = { screen:'home', area:null, form:null, permsDraft:null, snap:null };
+  /* Estado de pantallas */
+  const st = { screen:'home', area:null, form:null, permsDraft:null, kf:'activas', open:null };
 
   /* ---------- Quién está usando la app ---------- */
   function myArea() {
@@ -37,11 +54,10 @@ window.VPComandas = (() => {
   const esMesero = () => myArea() === 'mesero';
   const esCocina = () => myArea() === 'cocina';
   const esCajero = () => myArea() === 'caja';
-  function puedeAdministrar() {
-    try { return isOwner(); } catch (e) { return false; }
-  }
+  function puedeAdministrar() { try { return isOwner(); } catch (e) { return false; } }
+  const me = () => { try { return activeUser(); } catch (e) { return null; } };
 
-  /* Se llama al inicio de cada render(): manda a cada quien a su sección */
+  /* Se llama al inicio de cada render(): cada quien ve solo su sección */
   function guard() {
     if (typeof EXTRA_VIEWS !== 'undefined' && EXTRA_VIEWS.comandas !== view) EXTRA_VIEWS.comandas = view;
     const area = myArea();
@@ -56,26 +72,56 @@ window.VPComandas = (() => {
     b.toggle('cm-solo', !!area);
     b.toggle('cm-mesero', area === 'mesero');
     b.toggle('cm-admin', puedeAdministrar());
+    Sync.tick();
   }
 
   function abrir() {
     st.screen = 'home'; st.area = null; st.form = null; st.permsDraft = null;
     goTo('comandas');
   }
-  function show(screen) {
-    st.screen = screen;
-    goTo('comandas');
-  }
+  function show(screen) { st.screen = screen; goTo('comandas'); }
 
-  /* ---------- Pedidos mandados a cocina ---------- */
+  /* ---------- Datos ---------- */
   const tickets = () => Store.list(KEY);
-  const saveTickets = list => Store.set(KEY, list.slice(-400));
-
+  function saveTickets(list) {
+    /* Se guardan las activas y las terminadas de los últimos 3 días */
+    const lim = Date.now() - 3 * 86400000;
+    return Store.set(KEY, list.filter(t => t && (t.status === 'nuevo' || t.status === 'preparando' || t.status === 'listo' || new Date(t.at).getTime() > lim)));
+  }
+  const ticketsOf = orderId => tickets().filter(t => t.orderId === orderId && t.status !== 'cancelado').sort((a, b) => new Date(a.at) - new Date(b.at));
+  const orderById = id => DB.getTableOrders().find(o => o.id === id) || null;
+  const tableName = o => (o && (o.checkout && o.checkout.table)) || (o && o.name) || 'Mesa';
+  const nowIso = () => new Date().toISOString();
+  const fmtN = n => (Math.round(Number(n) * 100) / 100).toString();
+  const mins = iso => Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
   function ago(iso) {
-    const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-    if (min < 1) return 'Ahora';
-    if (min < 60) return 'Hace ' + min + ' min';
-    return fmtTime(iso);
+    const m = mins(iso);
+    if (m < 1) return 'justo ahora';
+    if (m < 60) return 'hace ' + m + ' min';
+    const h = Math.floor(m / 60);
+    return 'hace ' + h + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
+  }
+  const unitsOf = items => items.reduce((a, i) => a + (Number.isInteger(i.qty) ? i.qty : 1), 0);
+  const plural = (n, a, b) => n + ' ' + (n === 1 ? a : b);
+  const thumb = productId => { const p = productId ? findProduct(productId) : null; return p && p.image ? `<img src="${p.image}" alt="">` : icon('plate'); };
+
+  /* Avisos con sonido (cocina: comanda nueva · mesero: comanda lista) */
+  function beep() {
+    try {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return;
+      const c = beep.c || (beep.c = new C());
+      if (c.state === 'suspended') c.resume();
+      [0, 0.22].forEach(d => {
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = 'sine'; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, c.currentTime + d);
+        g.gain.exponentialRampToValueAtTime(0.3, c.currentTime + d + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + d + 0.18);
+        o.connect(g); g.connect(c.destination);
+        o.start(c.currentTime + d); o.stop(c.currentTime + d + 0.2);
+      });
+    } catch (e) {}
   }
 
   /* ---------- Ilustraciones de las 3 áreas ---------- */
@@ -127,7 +173,9 @@ window.VPComandas = (() => {
     </svg>`
   };
 
-  /* ---------- Gente de cada área ---------- */
+  /* =========================================================
+     DUEÑO: áreas y personas
+  ========================================================= */
   const gente = area => DB.getUsers().filter(u => u.role !== 'dueno' && u.area === area);
   const disponibles = area => DB.getUsers().filter(u => u.role !== 'dueno' && u.area !== area);
   const enTurno = u => DB.getShifts().some(s => !s.end && s.userId === u.id);
@@ -136,10 +184,8 @@ window.VPComandas = (() => {
     return `<span class="acc-ico ${u.role === 'admin' ? 'blue' : 'green'} ${ph ? 'has-photo' : ''}">${ph ? `<img src="${ph}" alt="">` : `<span class="ini">${userInitials(u)}</span>`}</span>`;
   }
 
-  /* =========================================================
-     PANTALLAS DEL DUEÑO
-  ========================================================= */
   function homeHTML() {
+    const vivo = Sync.online();
     return `
       <h1 class="page-title">Comandas</h1>
       <p class="page-sub">Elige un área para ver y agregar a tu equipo</p>
@@ -151,12 +197,24 @@ window.VPComandas = (() => {
             <span class="cm-area-foot">
               <span class="cm-area-txt">
                 <b>${AREAS[id].name}</b>
-                <small>${n ? n + (n === 1 ? ' persona' : ' personas') : 'Sin personas todavía'}</small>
+                <small>${n ? plural(n, 'persona', 'personas') : 'Sin personas todavía'}</small>
               </span>
               <span class="acc-chev">${icon('chevronRight')}</span>
             </span>
           </button>`;
         }).join('')}
+      </div>
+      <div class="cm-how">
+        <div class="cm-how-t">Así trabajan juntos</div>
+        <ol>
+          <li><b>Mesero</b> abre la mesa, toma el pedido y lo manda a cocina.</li>
+          <li><b>Cocinero</b> recibe la comanda, la prepara y la marca como lista.</li>
+          <li><b>Mesero</b> recibe el aviso, la sirve y pide la cuenta cuando el cliente quiere pagar.</li>
+          <li><b>Caja</b> ve la cuenta de cada mesa y la cobra. La mesa queda libre.</li>
+        </ol>
+        <p class="cm-live ${vivo ? 'on' : ''}">${icon(vivo ? 'check' : 'alert')} ${vivo
+          ? 'En vivo: cada quien puede usar su propio celular o tablet con tu misma cuenta.'
+          : 'Sin conexión a la nube: por ahora solo funciona en este aparato.'}</p>
       </div>`;
   }
 
@@ -169,7 +227,7 @@ window.VPComandas = (() => {
         <button class="btn primary cm-add" onclick="VPComandas.agregar()">${icon('plus')} Agregar</button>
         <div class="cm-head-txt">
           <h1 class="page-title">${a.name}</h1>
-          <p class="page-sub">${a.who} activos en esta área</p>
+          <p class="page-sub">${a.who} activos · ${a.sub.toLowerCase()}</p>
         </div>
       </div>
       ${list.length ? `<div class="acc-list cm-people">
@@ -300,7 +358,6 @@ window.VPComandas = (() => {
       </div>`;
   }
 
-  /* ---------- Acciones del Dueño ---------- */
   function area(id) {
     if (!AREAS[id]) return;
     st.area = id; st.form = null; st.permsDraft = null;
@@ -374,20 +431,17 @@ window.VPComandas = (() => {
       owner.pin = op;
     }
     list.push({
-      id: 'u' + Date.now(),
-      name,
+      id: 'u' + Date.now(), name,
       role: f.role === 'admin' ? 'admin' : 'empleado',
-      pin: pin || null,
-      phone: '',
+      pin: pin || null, phone: '',
       country: (currentUser() || {}).country || 'MX',
       perms: Object.assign({}, f.perms),
       area: st.area,
-      createdAt: new Date().toISOString()
+      createdAt: nowIso()
     });
     DB.saveUsers(list);
-    /* El Dueño sigue siendo quien usa la app */
-    const me = activeUser();
-    if (me) setActiveUser(me.id);
+    const yo = activeUser();
+    if (yo) setActiveUser(yo.id);
     openUserSession();
     if (!currentShift()) openShiftFor(activeUser());
     paintChrome();
@@ -415,21 +469,18 @@ window.VPComandas = (() => {
     askConfirm({
       title: '¿Eliminar a ' + escapeHtml(u.name) + ' de ' + a.name + '?',
       text: 'Ya no aparecerá en ' + a.name + '. Su usuario sigue guardado y puedes volver a agregarlo cuando quieras.',
-      ok: 'Eliminar',
-      danger: true,
-      icon: icon('trash')
+      ok: 'Eliminar', danger: true, icon: icon('trash')
     }, () => {
       const list = DB.getUsers();
       const x = list.find(v => v.id === id);
       if (x) { delete x.area; DB.saveUsers(list); }
-      closeModal();
       show('area');
       toast(u.name + ' ya no está en ' + a.name, { icon:icon('trash') });
     });
   }
 
   /* =========================================================
-     MESERO: solo las mesas, su historial y cambiar de cuenta
+     PIEZAS COMPARTIDAS
   ========================================================= */
   function soloBar() {
     return `<div class="cm-solo-bar">
@@ -438,276 +489,543 @@ window.VPComandas = (() => {
     </div>`;
   }
 
-  function meseroHTML() {
-    const me = activeUser();
-    const orders = VPMesas.openOrders();
-    const listos = new Set(tickets().filter(t => t.status === 'listo').map(t => t.tableId));
-    return `
-      <h1 class="page-title">Mesas</h1>
-      <p class="page-sub">Hola, ${escapeHtml(userFirstName(me) || me.name)} · Toca una mesa para tomar el pedido</p>
-      ${soloBar()}
-      <div class="vp-floor cm-floor" aria-label="Plano de mesas">
-        ${VPMesas.layout().map(t => {
-          const busy = orders.has(t.id);
-          const ready = busy && listos.has(t.id);
-          const label = ready ? 'Listo' : (busy ? 'Ocupada' : 'Libre');
-          return `<button type="button" class="vp-floor-table ${t.id === 'bar' ? 'is-bar' : ''} ${busy ? 'is-occupied' : ''} ${ready ? 'cm-ready' : ''}"
-            style="--x:${t.x}%;--y:${t.y}%" onclick="VPComandas.mesa('${escapeHtml(t.id)}')"
-            aria-label="${escapeHtml(t.name)} · ${label}"><b>${escapeHtml(t.name)}</b><small>${label}</small></button>`;
-        }).join('')}
-      </div>`;
+  /* Estado de una mesa para el plano */
+  function mesaEstado(o, tks, modo) {
+    if (!o) return { cls:'', label:'Libre' };
+    const ks = tks.filter(k => k.orderId === o.id);
+    const listas = ks.some(k => k.status === 'listo');
+    const cocina = ks.some(k => k.status === 'nuevo' || k.status === 'preparando');
+    const cuenta = !!(o.cm && o.cm.billAt);
+    if (modo === 'caja') return { cls:'is-occupied' + (cuenta ? ' cm-bill' : ''), label:cuenta ? 'Pide cuenta' : formatMoney(o.total) };
+    if (listas) return { cls:'is-occupied cm-ready', label:'¡Lista!' };
+    if (cuenta) return { cls:'is-occupied cm-bill', label:'Pidió cuenta' };
+    return { cls:'is-occupied', label:cocina ? 'En cocina' : 'Ocupada' };
   }
 
-  /* Abre una mesa en el catálogo de Nueva venta */
-  function mesa(id) {
-    if (!esMesero()) return;
-    const t = VPMesas.layout().find(x => x.id === id);
-    if (!t) return;
-    const order = VPMesas.openOrders().get(id);
-    cart = []; customItems = {}; checkout = newCheckout();
-    if (order) {
-      cart = JSON.parse(JSON.stringify(order.cart || []));
-      customItems = JSON.parse(JSON.stringify(order.customItems || {}));
-      checkout = Object.assign(newCheckout(), order.checkout || {}, { cash:'' });
-      /* Lo que ya estaba listo en cocina se da por entregado al abrir la mesa */
-      const list = tickets();
-      let changed = false;
-      list.forEach(k => { if (k.orderId === order.id && k.status === 'listo') { k.status = 'entregado'; k.deliveredAt = new Date().toISOString(); changed = true; } });
-      if (changed) saveTickets(list);
+  function planoHTML(modo) {
+    const orders = VPMesas.openOrders();
+    const tks = tickets();
+    const legend = modo === 'caja'
+      ? [['', 'Libre'], ['is-occupied', 'Abierta'], ['cm-bill', 'Pide cuenta']]
+      : [['', 'Libre'], ['is-occupied', 'Ocupada'], ['cm-ready', 'Comanda lista'], ['cm-bill', 'Pidió cuenta']];
+    return `
+      <div class="vp-floor cm-floor" aria-label="Plano de mesas">
+        ${VPMesas.layout().map(t => {
+          const e = mesaEstado(orders.get(t.id), tks, modo);
+          return `<button type="button" class="vp-floor-table ${t.id === 'bar' ? 'is-bar' : ''} ${e.cls}"
+            style="--x:${t.x}%;--y:${t.y}%" onclick="VPComandas.tocarMesa('${escapeHtml(t.id)}')"
+            aria-label="${escapeHtml(t.name)} · ${escapeHtml(e.label)}"><b>${escapeHtml(t.name)}</b><small>${escapeHtml(e.label)}</small></button>`;
+        }).join('')}
+      </div>
+      <div class="cm-legend">${legend.map(([c, l]) => `<span><i class="${c}"></i>${l}</span>`).join('')}</div>`;
+  }
+
+  function tocarMesa(id) {
+    if (esCajero()) { const o = VPMesas.openOrders().get(id); if (!o) { toast('Esta mesa está libre', { subtitle:'No tiene cuenta por cobrar.' }); return; } abrirCuenta(o.id); return; }
+    if (esMesero()) { const o = VPMesas.openOrders().get(id); if (o) abrirCuenta(o.id); else ronda(id); }
+  }
+
+  /* Líneas de la comanda con foto, cantidad y nota (cocina y detalle) */
+  function lineasHTML(items) {
+    return items.map(i => `
+      <div class="mdi-line cm-line">
+        <div class="mdi-thumb">${thumb(i.productId)}</div>
+        <div class="mdi-line-main">
+          <div class="mdi-line-name">${escapeHtml(i.name)}${i.size ? ' <span class="cm-size">' + escapeHtml(i.size) + '</span>' : ''}</div>
+          ${i.note ? `<div class="dm-line-note cm-note">${icx('note')}${escapeHtml(i.note)}</div>` : ''}
+        </div>
+        <div class="cm-qty">×${fmtN(i.qty)}</div>
+      </div>`).join('');
+  }
+  function resumen(items) {
+    return items.slice(0, 3).map(i => escapeHtml(fmtN(i.qty) + '× ' + i.name)).join(' · ') + (items.length > 3 ? ' · +' + (items.length - 3) + ' más' : '');
+  }
+
+  /* =========================================================
+     CUENTA DE UNA MESA (mesero y caja)
+  ========================================================= */
+  function abrirCuenta(orderId) {
+    const o = orderById(orderId);
+    if (!o) { closeModal(); render(); toast('Esa cuenta ya se cerró'); return; }
+    st.open = { kind:'cuenta', id:orderId };
+    openModal(cuentaHTML(o), { dismissible:true });
+  }
+
+  function cuentaHTML(o) {
+    const caja = esCajero() || !myArea();
+    const ks = ticketsOf(o.id);
+    const enCocina = ks.filter(k => k.status === 'nuevo' || k.status === 'preparando');
+    const listas = ks.filter(k => k.status === 'listo');
+    const cuenta = !!(o.cm && o.cm.billAt);
+    const mesero = (o.cm && o.cm.waiterName) || o.by || '';
+    const banners = [];
+    if (listas.length) banners.push(`<div class="mdi-banner ok">${icon('bell')}<span><b>${plural(listas.length, 'comanda lista', 'comandas listas')} para servir</b>${caja ? 'El mesero ya puede llevarla a la mesa.' : 'Llévala a la mesa y márcala como entregada.'}</span></div>`);
+    if (enCocina.length) banners.push(`<div class="mdi-banner warn">${icon('clock')}<span><b>${plural(enCocina.length, 'comanda', 'comandas')} en cocina</b>${caja ? 'Todavía se está preparando algo de esta mesa.' : 'Te avisamos cuando esté lista.'}</span></div>`);
+    if (cuenta) banners.push(`<div class="mdi-banner cm-banner-bill">${icon('cash')}<span><b>Pidió la cuenta</b>${caja ? 'El cliente ya quiere pagar.' : 'Caja ya sabe que esta mesa quiere pagar.'} · ${ago(o.cm.billAt)}</span></div>`);
+
+    const rondas = ks.length ? `
+      <div class="mdi-block-title cm-block-t">Comandas</div>
+      <div class="cm-rondas">${ks.map(k => `
+        <div class="cm-ronda">
+          <div class="cm-ronda-h"><b>Ronda ${k.round || 1}</b><span class="mdi-pill ${ESTADOS[k.status].cls}">${ESTADOS[k.status].label}</span><span class="mdi-time">${fmtTime(k.at)}</span></div>
+          <div class="cm-ronda-items">${k.items.map(i => `<span><b>${fmtN(i.qty)}×</b> ${escapeHtml(i.name)}${i.size ? ' · ' + escapeHtml(i.size) : ''}${i.note ? ` <i>(${escapeHtml(i.note)})</i>` : ''}</span>`).join('')}</div>
+        </div>`).join('')}</div>` : '';
+
+    const lineas = (o.cart || []).map(c => {
+      const p = findProduct(c.productId);
+      return `<div class="mdi-line cm-line">
+        <div class="mdi-thumb">${thumb(c.productId)}</div>
+        <div class="mdi-line-main">
+          <div class="mdi-line-name">${escapeHtml(p ? p.name : 'Producto')}${c.sizeLabel ? ' <span class="cm-size">' + escapeHtml(c.sizeLabel) + '</span>' : ''}</div>
+          <div class="mdi-line-sub">${fmtN(c.qty)} × ${formatMoney(cartLineBase(c))}</div>
+          ${c.note ? `<div class="dm-line-note cm-note">${icx('note')}${escapeHtml(c.note)}</div>` : ''}
+        </div>
+        <div class="mdi-line-amt">${formatMoney(cartLineAmount(c))}</div>
+      </div>`;
+    }).join('');
+
+    let acts;
+    if (caja) {
+      acts = `
+        <button class="btn primary block" onclick="VPComandas.cobrar('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(o.total)}</button>
+        <button class="btn ghost block" onclick="VPComandas.editarCuenta('${o.id}')">${icon('edit')} Revisar o corregir la cuenta</button>`;
     } else {
-      checkout.floorTableId = t.id;
-      checkout.serviceType = 'mesa';
-      checkout.table = t.name;
+      acts = `
+        ${listas.length ? `<button class="btn primary block" onclick="VPComandas.entregar('${o.id}')">${icon('check')} Ya la serví · marcar entregada</button>` : ''}
+        <button class="btn ${listas.length ? 'ghost' : 'primary'} block" onclick="VPComandas.ronda('${escapeHtml(o.checkout.floorTableId)}')">${icon('plus')} Agregar productos</button>
+        <button class="btn ghost block" onclick="VPComandas.pedirCuenta('${o.id}')">${icon('cash')} ${cuenta ? 'Quitar aviso de cuenta' : 'Pedir la cuenta'}</button>`;
     }
-    st.snap = JSON.stringify(cart);
+
+    return `
+      <i class="fs-marker" hidden></i><i class="cm-open" data-id="${o.id}" hidden></i>
+      <div class="sheet-header">
+        <div class="sheet-header-left" style="min-width:0;">
+          <h2>${escapeHtml(tableName(o))}</h2>
+          <span class="mdi-pill ${cuenta ? 'nuevo' : 'ok'}">${cuenta ? 'Pidió la cuenta' : 'Abierta'}</span>
+        </div>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      <div class="mdi-meta">
+        ${mesero ? `<span>${icon('person')} Mesero: <b>${escapeHtml(mesero)}</b></span>` : ''}
+        <span>${icon('clock')} Abierta ${ago((o.cm && o.cm.openedAt) || o.at)} · ${plural(ks.length, 'ronda', 'rondas')}</span>
+      </div>
+      ${banners.join('')}
+      ${caja ? `<div class="mdi-block-title cm-block-t">Cuenta</div><div class="cm-lines">${lineas || '<p class="sheet-text">Sin productos.</p>'}</div>
+        <div class="totals"><div class="totals-row grand"><span>Total</span><span class="v">${formatMoney(o.total)}</span></div></div>
+        ${rondas}` : `${rondas}
+        <div class="totals"><div class="totals-row grand"><span>Total de la mesa</span><span class="v">${formatMoney(o.total)}</span></div></div>`}
+      <div class="cm-sheet-acts">${acts}</div>`;
+  }
+
+  /* =========================================================
+     MESERO
+  ========================================================= */
+  function meseroHTML() {
+    const yo = me();
+    const listas = tickets().filter(k => k.status === 'listo')
+      .sort((a, b) => new Date(a.readyAt || a.at) - new Date(b.readyAt || b.at));
+    return `
+      <h1 class="page-title">Mesas</h1>
+      <p class="page-sub">Hola, ${escapeHtml(userFirstName(yo) || yo.name)} · Toca una mesa para tomar o ver su pedido</p>
+      ${soloBar()}
+      ${listas.length ? `<div class="cm-ready-list">
+        ${listas.map(k => `<button type="button" class="cm-ready-row" onclick="VPComandas.verLista('${k.id}')">
+          <span class="cm-ready-ico">${icon('bell')}</span>
+          <span class="cm-ready-txt"><b>${escapeHtml(k.table)} · Ronda ${k.round || 1} lista</b><small>${resumen(k.items)}</small></span>
+          <span class="acc-chev">${icon('chevronRight')}</span>
+        </button>`).join('')}
+      </div>` : ''}
+      ${planoHTML('mesero')}`;
+  }
+
+  /* Empieza una ronda nueva en la mesa: el catálogo con el carrito vacío */
+  function ronda(tableId) {
+    if (!esMesero()) return;
+    const t = VPMesas.layout().find(x => x.id === tableId);
+    if (!t) return;
+    closeModal();
+    cart = []; customItems = {}; checkout = newCheckout();
+    checkout.floorTableId = t.id;
+    checkout.serviceType = 'mesa';
+    checkout.table = t.name;
     goTo('sale');
   }
 
   function saleHead() {
     if (!esMesero() || !checkout.floorTableId) return '';
+    const o = VPMesas.openOrders().get(checkout.floorTableId);
+    const n = o ? ticketsOf(o.id).length + 1 : 1;
     return `
       <button class="cm-back" onclick="VPComandas.salirMesa()">${icon('chevronLeft')} Mesas</button>
-      <h1 class="page-title">${escapeHtml(checkout.table || 'Mesa')}</h1>
-      <p class="page-sub">Agrega los productos y mándalos a cocina</p>`;
+      <h1 class="page-title">${escapeHtml(checkout.table || 'Mesa')} <span class="cm-round-tag">Ronda ${n}</span></h1>
+      <p class="page-sub">Agrega los productos. En el carrito toca un producto para ponerle nota.</p>`;
   }
 
   function salirMesa() {
-    const leave = () => {
-      cart = []; customItems = {}; checkout = newCheckout(); st.snap = null;
-      closeModal();
-      goTo('comandas');
-    };
-    if (st.snap !== null && JSON.stringify(cart) !== st.snap) {
+    const leave = () => { cart = []; customItems = {}; checkout = newCheckout(); closeModal(); goTo('comandas'); };
+    if (cart.length) {
       askConfirm({
-        title: '¿Salir sin mandar el pedido?',
-        text: 'Los cambios de ' + escapeHtml(checkout.table || 'esta mesa') + ' no se guardarán.',
-        ok: 'Salir sin mandar',
-        danger: true,
-        icon: icon('alert')
+        title: '¿Salir sin mandar a cocina?',
+        text: 'Los productos que agregaste a ' + escapeHtml(checkout.table || 'esta mesa') + ' no se mandarán.',
+        ok: 'Salir sin mandar', danger: true, icon: icon('alert')
       }, leave);
       return;
     }
     leave();
   }
 
-  /* Lo nuevo que falta mandar a cocina (comparado con lo ya enviado) */
-  const lineKey = c => [c.productId, c.sizeId || '', (c.note || '').trim()].join('|');
-  function cartMap() {
-    const m = {};
-    cart.forEach(c => { const k = lineKey(c); m[k] = (m[k] || 0) + (Number(c.qty) || 0); });
-    return m;
+  function cartActions() {
+    const o = VPMesas.openOrders().get(checkout.floorTableId);
+    const n = cartUnitsCount();
+    return `
+      ${o ? `<div class="cm-cart-prev">${icon('receipt')}<span>Ya en la cuenta de ${escapeHtml(checkout.table)}: <b>${formatMoney(o.total)}</b></span></div>` : ''}
+      <div class="cart-actions cm-cart-actions">
+        <button class="btn primary block" onclick="VPComandas.enviar()">${icon('comandas')} Mandar a cocina · ${plural(n, 'producto', 'productos')}</button>
+      </div>`;
   }
-  function pendientes() {
-    const sent = checkout.cmSent || {};
-    const m = cartMap();
-    const out = [];
-    Object.keys(m).forEach(k => {
-      const q = Math.round((m[k] - (sent[k] || 0)) * 1000) / 1000;
-      if (q <= 0) return;
-      const c = cart.find(x => lineKey(x) === k);
-      const p = findProduct(c.productId);
-      out.push({ name: p ? p.name : 'Producto', size: c.sizeLabel || '', note: (c.note || '').trim(), qty: q });
+
+  /* Junta líneas iguales (mismo producto, tamaño, nota y precio) */
+  const lineKey = c => [c.productId, c.sizeId || '', (c.note || '').trim(), c.manualPrice == null ? '' : c.manualPrice].join('|');
+  function juntar(base, nuevas) {
+    const out = JSON.parse(JSON.stringify(base || []));
+    nuevas.forEach(c => {
+      const k = lineKey(c);
+      const ya = out.find(x => lineKey(x) === k && !x.disc && !c.disc);
+      if (ya) ya.qty = Math.round((Number(ya.qty) + Number(c.qty)) * 1000) / 1000;
+      else out.push(JSON.parse(JSON.stringify(c)));
     });
     return out;
   }
 
-  function cartActions() {
-    const n = pendientes().reduce((a, x) => a + x.qty, 0);
-    return `<div class="cart-actions cm-cart-actions">
-      <button class="btn primary block" onclick="VPComandas.enviar()">${icon('comandas')} ${n ? 'Mandar a cocina · ' + fmtN(n) + (n === 1 ? ' nuevo' : ' nuevos') : 'Guardar mesa'}</button>
-    </div>`;
-  }
-  const fmtN = n => (Math.round(n * 100) / 100).toString();
-
   function enviar() {
     if (!esMesero() || !checkout.floorTableId) return;
-    if (!cart.length && !checkout.floorOrderId) { toast('Agrega productos al pedido'); return; }
+    if (!cart.length) { toast('Agrega productos a la comanda'); return; }
     const t = VPMesas.layout().find(x => x.id === checkout.floorTableId);
     if (!t) { toast('Esta mesa ya no existe'); return; }
-    if (!VPMesas.canCharge()) { toast('Esta mesa ya tiene otra cuenta abierta'); return; }
-    const items = pendientes();
-    const prevId = checkout.floorOrderId;
-    const prevSent = checkout.cmSent;
-    checkout.cmSent = cartMap();
-    if (!parkNow(t.name, prevId)) { checkout.cmSent = prevSent; toast('No se pudo guardar el pedido'); return; }
-    const orderId = prevId || VPMesas.openOrders().get(t.id)?.id || null;
-    if (items.length) {
-      const me = activeUser();
-      const list = tickets();
-      list.push({
-        id: uid('cm'), orderId, tableId: t.id, table: t.name, items,
-        by: me ? me.name : meName(), byId: me ? me.id : meId(),
-        at: new Date().toISOString(), status: 'cocina'
-      });
-      saveTickets(list);
-    }
-    st.snap = null;
+    const yo = me();
+    const items = cart.map(c => {
+      const p = findProduct(c.productId);
+      return { productId:c.productId, sizeId:c.sizeId || '', name:p ? p.name : 'Producto', size:c.sizeLabel || '', qty:Number(c.qty) || 0, note:(c.note || '').trim() };
+    });
+    const nueva = { cart:cart.slice(), custom:Object.assign({}, customItems) };
+    const prev = VPMesas.openOrders().get(t.id);
+    const id = prev ? prev.id : uid('e');
+    const ordCheckout = Object.assign(newCheckout(), prev ? prev.checkout : {}, {
+      serviceType:'mesa', floorTableId:t.id, table:t.name, floorOrderId:id, cash:''
+    });
+    /* Total de la cuenta completa (lo de antes + esta ronda) */
+    const mergedCart = juntar(prev ? prev.cart : [], nueva.cart);
+    const mergedCustom = Object.assign({}, prev ? prev.customItems : {}, nueva.custom);
+    const keep = { cart, customItems, checkout };
+    let total = 0, units = 0;
+    try {
+      cart = mergedCart; customItems = mergedCustom; checkout = ordCheckout;
+      total = computeTotals().total; units = cartUnitsCount();
+    } finally { cart = keep.cart; customItems = keep.customItems; checkout = keep.checkout; }
+    const rondas = (prev && prev.cm && prev.cm.rounds) || (prev ? ticketsOf(prev.id).length : 0);
+    const entry = Object.assign({}, prev || {}, {
+      id, name:t.name,
+      at: prev ? prev.at : nowIso(),
+      by: prev ? prev.by : (yo ? yo.name : meName()),
+      byId: prev ? prev.byId : (yo ? yo.id : meId()),
+      cart: mergedCart, customItems: mergedCustom, checkout: ordCheckout, total, units,
+      cm: Object.assign({}, prev && prev.cm, {
+        waiterId: (prev && prev.cm && prev.cm.waiterId) || (yo ? yo.id : ''),
+        waiterName: (prev && prev.cm && prev.cm.waiterName) || (yo ? yo.name : ''),
+        openedAt: (prev && prev.cm && prev.cm.openedAt) || (prev ? prev.at : nowIso()),
+        rounds: rondas + 1,
+        updatedAt: nowIso()
+      })
+    });
+    const list = DB.getTableOrders().filter(x => x.id !== id);
+    list.push(entry);
+    if (!DB.saveTableOrders(list)) { toast('No se pudo guardar el pedido'); return; }
+    const tks = tickets();
+    tks.push({
+      id: uid('cm'), orderId:id, tableId:t.id, table:t.name, round:rondas + 1, items,
+      by: yo ? yo.name : meName(), byId: yo ? yo.id : meId(),
+      at: nowIso(), status:'nuevo'
+    });
+    saveTickets(tks);
+    cart = []; customItems = {}; checkout = newCheckout();
     closeModal();
     goTo('comandas');
-    toast(items.length ? 'Pedido mandado a cocina' : 'Mesa guardada', { variant:'toast-success', icon:icon('check'), subtitle:t.name });
+    toast('Comanda mandada a cocina', { variant:'toast-success', icon:icon('check'), subtitle:t.name + ' · Ronda ' + (rondas + 1) });
   }
 
-  /* Si se borra el pedido de una mesa, cocina ya no lo prepara */
+  function entregar(orderId) {
+    const list = tickets();
+    let n = 0;
+    list.forEach(k => { if (k.orderId === orderId && k.status === 'listo') { k.status = 'entregado'; k.deliveredAt = nowIso(); k.deliveredBy = meName(); n++; } });
+    if (!n) return;
+    saveTickets(list);
+    abrirCuenta(orderId);
+    render();
+    toast(n === 1 ? 'Comanda entregada' : n + ' comandas entregadas', { variant:'toast-success', icon:icon('check') });
+  }
+
+  /* Comanda lista: abre su mesa; si la cuenta ya se cobró, se marca entregada */
+  function verLista(id) {
+    const k = tickets().find(x => x.id === id);
+    if (!k) { render(); return; }
+    if (orderById(k.orderId)) { abrirCuenta(k.orderId); return; }
+    askConfirm({
+      title: escapeHtml(k.table) + ' · Ronda ' + (k.round || 1) + ' lista',
+      text: 'La cuenta de esta mesa ya se cobró. ¿Ya la serviste?',
+      ok: 'Sí, ya la serví', icon: icon('check')
+    }, () => {
+      const list = tickets();
+      const x = list.find(v => v.id === id);
+      if (x && x.status === 'listo') { x.status = 'entregado'; x.deliveredAt = nowIso(); x.deliveredBy = meName(); saveTickets(list); }
+      render();
+    });
+  }
+
+  function pedirCuenta(orderId) {
+    const list = DB.getTableOrders();
+    const o = list.find(x => x.id === orderId);
+    if (!o) return;
+    o.cm = Object.assign({}, o.cm);
+    const quitar = !!o.cm.billAt;
+    o.cm.billAt = quitar ? null : nowIso();
+    o.cm.billBy = quitar ? null : meName();
+    o.cm.updatedAt = nowIso();
+    DB.saveTableOrders(list);
+    closeModal();
+    render();
+    toast(quitar ? 'Se quitó el aviso de cuenta' : 'Caja ya sabe que ' + tableName(o) + ' quiere pagar', { variant:quitar ? '' : 'toast-success', icon:icon('cash') });
+  }
+
+  /* =========================================================
+     CAJA
+  ========================================================= */
+  function cajaHTML() {
+    const yo = me();
+    const orders = [...VPMesas.openOrders().values()]
+      .sort((a, b) => ((b.cm && b.cm.billAt) ? 1 : 0) - ((a.cm && a.cm.billAt) ? 1 : 0) || new Date(a.at) - new Date(b.at));
+    const tks = tickets();
+    const total = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+    return `
+      <h1 class="page-title">Caja</h1>
+      <p class="page-sub">Hola, ${escapeHtml(userFirstName(yo) || yo.name)} · ${orders.length ? plural(orders.length, 'cuenta abierta', 'cuentas abiertas') + ' · ' + formatMoney(total) : 'Aquí aparecen las cuentas de las mesas'}</p>
+      ${soloBar()}
+      ${planoHTML('caja')}
+      <div class="section-title">Cuentas abiertas ${orders.length ? `<span class="title-count">${orders.length}</span>` : ''}</div>
+      ${orders.length ? `<div class="mdi-list cm-kds">${orders.map(o => {
+        const ks = tks.filter(k => k.orderId === o.id);
+        const cocina = ks.filter(k => k.status === 'nuevo' || k.status === 'preparando').length;
+        const cuenta = !!(o.cm && o.cm.billAt);
+        const items = (o.cart || []).map(c => { const p = findProduct(c.productId); return { qty:c.qty, name:p ? p.name : 'Producto' }; });
+        return `<button type="button" class="mdi-card ${cuenta ? 'st-nuevo' : 'st-ok'}" onclick="VPComandas.abrirCuenta('${o.id}')">
+          <div class="mdi-card-top">
+            <span class="mdi-code">${escapeHtml(tableName(o))}</span>
+            <span class="mdi-pill ${cuenta ? 'nuevo' : 'ok'}">${cuenta ? 'Pide cuenta' : 'Abierta'}</span>
+            ${cocina ? `<span class="mdi-pill prep">${cocina} en cocina</span>` : ''}
+            <span class="mdi-time">${ago((o.cm && o.cm.openedAt) || o.at)}</span>
+          </div>
+          <div class="mdi-name">${icon('person')} ${escapeHtml((o.cm && o.cm.waiterName) || o.by || 'Sin mesero')}</div>
+          <div class="mdi-items">${resumen(items) || '—'}</div>
+          <div class="mdi-card-foot"><span>${plural(o.units || items.length, 'producto', 'productos')}</span><b>${formatMoney(o.total)}</b></div>
+        </button>`;
+      }).join('')}</div>` : `
+      <div class="mdi-empty">
+        <span class="mdi-empty-ico">${icon('inbox')}</span>
+        <b>No hay cuentas abiertas</b>
+        <span>Cuando un mesero mande una comanda, la cuenta de esa mesa aparecerá aquí.</span>
+      </div>`}`;
+  }
+
+  /* Pasa la cuenta al cobro de siempre (efectivo, tarjeta, propina, ticket…) */
+  function cargar(orderId) {
+    const o = orderById(orderId);
+    if (!o) { toast('Esa cuenta ya se cerró'); render(); return null; }
+    cart = JSON.parse(JSON.stringify(o.cart || []));
+    customItems = JSON.parse(JSON.stringify(o.customItems || {}));
+    checkout = Object.assign(newCheckout(), o.checkout || {}, { cash:'' });
+    st.open = null;
+    return o;
+  }
+  function cobrar(orderId) {
+    const o = cargar(orderId);
+    if (!o) return;
+    const pend = ticketsOf(o.id).filter(k => k.status === 'nuevo' || k.status === 'preparando').length;
+    if (pend) {
+      askConfirm({
+        title: 'Hay ' + plural(pend, 'comanda', 'comandas') + ' en cocina',
+        text: 'Todavía se está preparando algo de ' + escapeHtml(tableName(o)) + '. ¿Quieres cobrar de todos modos?',
+        ok: 'Cobrar', icon: icon('clock')
+      }, () => openCartSheet('checkout'));
+      return;
+    }
+    openCartSheet('checkout');
+  }
+  function editarCuenta(orderId) { if (cargar(orderId)) openCartSheet('cart'); }
+
+  /* Al borrar la cuenta: lo que quedaba en cocina se cancela.
+     Al cobrarla: lo que ya estaba listo se da por entregado. */
   function cancelarOrden(orderId) {
     if (!orderId) return;
     const list = tickets();
     let changed = false;
-    list.forEach(k => { if (k.orderId === orderId && k.status === 'cocina') { k.status = 'cancelado'; changed = true; } });
+    list.forEach(k => { if (k.orderId === orderId && (k.status === 'nuevo' || k.status === 'preparando')) { k.status = 'cancelado'; changed = true; } });
+    if (changed) saveTickets(list);
+  }
+  function cerrarOrden(orderId) {
+    if (!orderId) return;
+    const list = tickets();
+    let changed = false;
+    list.forEach(k => { if (k.orderId === orderId && k.status === 'listo') { k.status = 'entregado'; k.deliveredAt = nowIso(); changed = true; } });
     if (changed) saveTickets(list);
   }
 
   /* =========================================================
-     CAJERO: solo las cuentas de las mesas para cobrarlas
-     (no es Caja y corte: eso sigue siendo del Dueño)
+     COCINA (comandas en cuadritos)
   ========================================================= */
-  function cajaHTML() {
-    const me = activeUser();
-    const orders = VPMesas.openOrders();
-    const n = orders.size;
+  function tiempoCls(k) {
+    const m = mins(k.at);
+    return m >= 25 ? 'late' : (m >= 15 ? 'warn' : '');
+  }
+  function cocinaHTML() {
+    const all = tickets();
+    const activas = all.filter(k => k.status === 'nuevo' || k.status === 'preparando').sort((a, b) => new Date(a.at) - new Date(b.at));
+    const listas = all.filter(k => k.status === 'listo').sort((a, b) => new Date(b.readyAt || b.at) - new Date(a.readyAt || a.at));
+    const nuevas = activas.filter(k => k.status === 'nuevo').length;
+    const list = st.kf === 'listas' ? listas : activas;
     return `
-      <h1 class="page-title">Caja</h1>
-      <p class="page-sub">Hola, ${escapeHtml(userFirstName(me) || me.name)} · ${n ? 'Toca una mesa ocupada para cobrar' : 'Aquí aparecen las cuentas de las mesas'}</p>
+      <h1 class="page-title">Cocina</h1>
+      <p class="page-sub">${activas.length ? plural(activas.length, 'comanda por preparar', 'comandas por preparar') + (nuevas ? ' · ' + plural(nuevas, 'nueva', 'nuevas') : '') : 'Aquí llegan las comandas de los meseros'}</p>
       ${soloBar()}
-      <div class="vp-floor cm-floor" aria-label="Plano de mesas">
-        ${VPMesas.layout().map(t => {
-          const o = orders.get(t.id);
-          const label = o ? formatMoney(o.total) : 'Libre';
-          return `<button type="button" class="vp-floor-table ${t.id === 'bar' ? 'is-bar' : ''} ${o ? 'is-occupied' : ''}"
-            style="--x:${t.x}%;--y:${t.y}%" onclick="VPComandas.cobrar('${escapeHtml(t.id)}')"
-            aria-label="${escapeHtml(t.name)} · ${o ? 'Cuenta de ' + label : 'Libre'}"><b>${escapeHtml(t.name)}</b><small>${label}</small></button>`;
-        }).join('')}
-      </div>`;
+      <div class="chip-row cm-chips">
+        <button class="chip ${st.kf !== 'listas' ? 'active' : ''}" onclick="VPComandas.filtro('activas')">Por preparar <b>${activas.length}</b></button>
+        <button class="chip ${st.kf === 'listas' ? 'active' : ''}" onclick="VPComandas.filtro('listas')">Listas sin entregar <b>${listas.length}</b></button>
+      </div>
+      ${list.length ? `<div class="mdi-list cm-kds">${list.map(k => {
+        const e = ESTADOS[k.status];
+        const notas = k.items.some(i => i.note);
+        return `<button type="button" class="mdi-card cm-tk st-${k.status} ${k.status !== 'listo' ? tiempoCls(k) : ''}" onclick="VPComandas.abrirComanda('${k.id}')">
+          <div class="mdi-card-top">
+            <span class="mdi-code">${escapeHtml(k.table)}</span>
+            <span class="mdi-pill ${e.cls}">${e.label}</span>
+            <span class="mdi-pill cancel">Ronda ${k.round || 1}</span>
+            <span class="mdi-time cm-timer">${icon('clock')} ${k.status === 'listo' ? 'Lista ' + ago(k.readyAt || k.at) : ago(k.at)}</span>
+          </div>
+          <div class="mdi-name">${icon('person')} ${escapeHtml(k.by || 'Mesero')}</div>
+          <div class="mdi-items">${resumen(k.items)}</div>
+          <div class="mdi-card-foot"><span>${plural(unitsOf(k.items), 'producto', 'productos')}${notas ? ` · <i class="cm-has-note">${icx('note')} Con notas</i>` : ''}</span><b>${fmtTime(k.at)}</b></div>
+        </button>`;
+      }).join('')}</div>` : `
+      <div class="mdi-empty">
+        <span class="mdi-empty-ico">${icon('inbox')}</span>
+        <b>${st.kf === 'listas' ? 'No hay comandas esperando al mesero' : 'Sin comandas por ahora'}</b>
+        <span>${st.kf === 'listas' ? 'Las que marques como listas aparecen aquí hasta que el mesero las entregue.' : 'Cuando un mesero mande un pedido, aparecerá aquí con un aviso.'}</span>
+      </div>`}`;
+  }
+  function filtro(f) { st.kf = f; render(); }
+
+  function abrirComanda(id) {
+    const k = tickets().find(x => x.id === id);
+    if (!k) { closeModal(); render(); return; }
+    st.open = { kind:'comanda', id };
+    openModal(comandaHTML(k), { dismissible:true });
+  }
+  function comandaHTML(k) {
+    const e = ESTADOS[k.status];
+    const notas = k.items.filter(i => i.note).length;
+    let acts = '';
+    if (k.status === 'nuevo') acts = `
+      <button class="btn primary block" onclick="VPComandas.estado('${k.id}','preparando')">${icon('clock')} Empezar a preparar</button>
+      <button class="btn ghost block" onclick="VPComandas.estado('${k.id}','listo')">${icon('check')} Ya está lista</button>`;
+    else if (k.status === 'preparando') acts = `
+      <button class="btn primary block" onclick="VPComandas.estado('${k.id}','listo')">${icon('check')} ¡Lista! Avisar al mesero</button>`;
+    else if (k.status === 'listo') acts = `
+      <div class="mdi-banner ok">${icon('bell')}<span><b>Lista · esperando al mesero</b>Se le avisó a ${escapeHtml(k.by || 'el mesero')} ${ago(k.readyAt || k.at)}.</span></div>
+      <button class="btn ghost block" onclick="VPComandas.estado('${k.id}','preparando')">Regresar a preparando</button>`;
+    return `
+      <i class="fs-marker" hidden></i><i class="cm-open" data-id="${k.id}" hidden></i>
+      <div class="sheet-header">
+        <div class="sheet-header-left" style="min-width:0;">
+          <h2>${escapeHtml(k.table)}</h2>
+          <span class="mdi-pill ${e.cls}">${e.label}</span>
+        </div>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      <div class="mdi-meta">
+        <span>${icon('person')} Mesero: <b>${escapeHtml(k.by || '')}</b></span>
+        <span>${icon('clock')} Ronda ${k.round || 1} · mandada a las ${fmtTime(k.at)} (${ago(k.at)})</span>
+        ${k.startedAt ? `<span>${icon('check')} En preparación desde las ${fmtTime(k.startedAt)}</span>` : ''}
+      </div>
+      ${notas ? `<div class="mdi-banner warn">${icx('note')}<span><b>${plural(notas, 'producto con nota', 'productos con nota')}</b>Revisa las indicaciones del cliente antes de prepararlo.</span></div>` : ''}
+      <div class="mdi-block-title cm-block-t">${plural(unitsOf(k.items), 'producto', 'productos')}</div>
+      <div class="cm-lines">${lineasHTML(k.items)}</div>
+      <div class="cm-sheet-acts">${acts}</div>`;
   }
 
-  /* Abre la cuenta de la mesa para revisarla y cobrarla */
-  function cobrar(id) {
-    if (!esCajero()) return;
-    const o = VPMesas.openOrders().get(id);
-    if (!o) { toast('Esta mesa está libre', { subtitle:'No tiene cuenta por cobrar.' }); return; }
-    cart = JSON.parse(JSON.stringify(o.cart || []));
-    customItems = JSON.parse(JSON.stringify(o.customItems || {}));
-    checkout = Object.assign(newCheckout(), o.checkout || {}, { cash:'' });
-    openCartSheet('cart');
+  function estado(id, nuevo) {
+    const list = tickets();
+    const k = list.find(x => x.id === id);
+    if (!k) return;
+    k.status = nuevo;
+    if (nuevo === 'preparando') { k.startedAt = k.startedAt || nowIso(); k.readyAt = null; }
+    if (nuevo === 'listo') { k.readyAt = nowIso(); k.readyBy = meName(); k.startedAt = k.startedAt || k.at; }
+    saveTickets(list);
+    if (nuevo === 'listo') {
+      closeModal();
+      toast('Comanda lista', { variant:'toast-success', icon:icon('check'), subtitle:k.table + ' · se le avisó al mesero' });
+    } else abrirComanda(id);
+    render();
   }
 
   /* =========================================================
-     COCINA: pedidos por preparar
+     HISTORIAL
   ========================================================= */
-  function itemsHTML(items) {
-    return `<ul class="cm-items">${items.map(i => `
-      <li><b>${fmtN(i.qty)}×</b><span>${escapeHtml(i.name)}${i.size ? ' · ' + escapeHtml(i.size) : ''}${i.note ? `<small>${escapeHtml(i.note)}</small>` : ''}</span></li>`).join('')}</ul>`;
-  }
-
-  function cocinaHTML() {
-    const list = tickets().filter(t => t.status === 'cocina').sort((a, b) => new Date(a.at) - new Date(b.at));
-    return `
-      <h1 class="page-title">Cocina</h1>
-      <p class="page-sub">${list.length ? list.length + (list.length === 1 ? ' pedido por preparar' : ' pedidos por preparar') : 'Aquí llegan los pedidos de los meseros'}</p>
-      ${soloBar()}
-      ${list.length ? `<div class="cm-tickets">
-        ${list.map(t => `
-          <div class="cm-ticket">
-            <div class="cm-ticket-h">
-              <b>${escapeHtml(t.table)}</b>
-              <span>${ago(t.at)}</span>
-            </div>
-            <div class="cm-ticket-by">${icon('person')} ${escapeHtml(t.by || '')}</div>
-            ${itemsHTML(t.items)}
-            <button class="btn primary block" onclick="VPComandas.listo('${t.id}')">${icon('check')} Listo</button>
-          </div>`).join('')}
-      </div>` : `
-      <div class="empty-state cm-empty">
-        <span class="cm-empty-art">${ART.cocina}</span>
-        <div class="empty-title">No hay pedidos por ahora</div>
-        <div class="empty-text">Cuando un mesero mande un pedido, aparecerá aquí.</div>
-      </div>`}`;
-  }
-
-  function listo(id) {
-    if (!esCocina()) return;
-    const list = tickets();
-    const t = list.find(x => x.id === id);
-    if (!t || t.status !== 'cocina') return;
-    t.status = 'listo';
-    t.readyAt = new Date().toISOString();
-    t.readyBy = meName();
-    saveTickets(list);
-    render();
-    toast('Pedido listo', { variant:'toast-success', icon:icon('check'), subtitle:t.table });
-  }
-
-  /* ---------- Historial del mesero o de cocina ---------- */
-  const ESTADOS = { cocina:'En cocina', listo:'Listo', entregado:'Entregado', cancelado:'Cancelado' };
   function historial() {
-    const me = activeUser();
-    if (esCajero()) { historialCaja(me); return; }
+    const yo = me();
+    if (esCajero()) { historialCaja(yo); return; }
     const cocina = esCocina();
     const list = tickets()
-      .filter(t => cocina ? t.status !== 'cocina' : (me && t.byId === me.id))
-      .sort((a, b) => new Date(b.readyAt || b.at) - new Date(a.readyAt || a.at))
-      .slice(0, 80);
+      .filter(t => cocina ? (t.status === 'listo' || t.status === 'entregado') : (yo && t.byId === yo.id))
+      .sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 80);
     openModal(`
       <div class="sheet-header">
         <h2>Historial</h2>
         <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
       </div>
+      <p class="sheet-text">${cocina ? 'Comandas que preparaste en los últimos 3 días.' : 'Comandas que mandaste en los últimos 3 días.'}</p>
       ${list.length ? `<div class="cm-hist">${list.map(t => `
         <div class="cm-hist-row">
           <div class="cm-hist-h">
-            <b>${escapeHtml(t.table)}</b>
-            <span class="cm-st ${t.status}">${ESTADOS[t.status] || ''}</span>
+            <b>${escapeHtml(t.table)} · Ronda ${t.round || 1}</b>
+            <span class="mdi-pill ${ESTADOS[t.status].cls}">${ESTADOS[t.status].label}</span>
           </div>
-          <div class="cm-hist-sub">${fmtDay(t.at)} · ${fmtTime(t.at)}${cocina && t.by ? ' · ' + escapeHtml(t.by) : ''}</div>
-          ${itemsHTML(t.items)}
+          <div class="cm-hist-sub">${fmtDay(t.at)} · ${fmtTime(t.at)}${cocina && t.by ? ' · ' + escapeHtml(t.by) : ''}${t.readyAt ? ' · lista ' + fmtTime(t.readyAt) : ''}</div>
+          <div class="cm-ronda-items">${t.items.map(i => `<span><b>${fmtN(i.qty)}×</b> ${escapeHtml(i.name)}${i.size ? ' · ' + escapeHtml(i.size) : ''}${i.note ? ` <i>(${escapeHtml(i.note)})</i>` : ''}</span>`).join('')}</div>
         </div>`).join('')}</div>` : `
-        <div class="empty-state">
-          <div class="empty-title">Aún no hay nada aquí</div>
-          <div class="empty-text">${cocina ? 'Los pedidos que marques como listos aparecerán aquí.' : 'Los pedidos que mandes a cocina aparecerán aquí.'}</div>
-        </div>`}
+        <div class="mdi-empty"><span class="mdi-empty-ico">${icon('inbox')}</span><b>Aún no hay nada aquí</b>
+          <span>${cocina ? 'Las comandas que marques como listas aparecerán aquí.' : 'Las comandas que mandes a cocina aparecerán aquí.'}</span></div>`}
     `, { dismissible:true });
   }
 
-  function historialCaja(me) {
-    const list = DB.getSales().filter(s => me && s.userId === me.id && !s.cancelled)
+  function historialCaja(yo) {
+    const list = DB.getSales().filter(s => yo && s.userId === yo.id && !s.cancelled)
       .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 80);
+    const hoy = list.filter(s => isSameDay(new Date(s.date), new Date()));
+    const totalHoy = hoy.reduce((a, s) => a + s.total + (s.tip || 0), 0);
     openModal(`
       <div class="sheet-header">
         <h2>Historial</h2>
         <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
       </div>
-      ${list.length ? `<div class="cm-hist">${list.map(s => `
+      ${list.length ? `<p class="mdi-today-sum">Hoy: ${plural(hoy.length, 'cobro', 'cobros')} · <b>${formatMoney(totalHoy)}</b></p>
+      <div class="cm-hist">${list.map(s => `
         <div class="cm-hist-row">
           <div class="cm-hist-h">
             <b>${escapeHtml(s.table || orderNumberLabel(s.number))}</b>
             <b>${formatMoney(s.total + (s.tip || 0))}</b>
           </div>
           <div class="cm-hist-sub">${fmtDay(s.date)} · ${fmtTime(s.date)} · ${escapeHtml(paymentOf(s.paymentMethod).name)}${s.tip ? ' · propina ' + formatMoney(s.tip) : ''}</div>
-          <ul class="cm-items">${(s.items || []).map(i => `<li><b>${fmtN(i.qty)}×</b><span>${escapeHtml(i.name || '')}</span></li>`).join('')}</ul>
+          <div class="cm-ronda-items">${(s.items || []).map(i => `<span><b>${fmtN(i.qty)}×</b> ${escapeHtml(i.name || '')}</span>`).join('')}</div>
         </div>`).join('')}</div>` : `
-        <div class="empty-state">
-          <div class="empty-title">Aún no hay cobros</div>
-          <div class="empty-text">Las cuentas que cobres aparecerán aquí.</div>
-        </div>`}
+        <div class="mdi-empty"><span class="mdi-empty-ico">${icon('inbox')}</span><b>Aún no hay cobros</b><span>Las cuentas que cobres aparecerán aquí.</span></div>`}
     `, { dismissible:true });
   }
 
@@ -728,28 +1046,226 @@ window.VPComandas = (() => {
     return homeHTML();
   }
 
-  /* Cocina y mesas se actualizan solas (otra pestaña o el paso del tiempo) */
+  /* Repinta lo que se ve (pantalla y la hoja abierta) tras un cambio */
   function refresh() {
     try {
-      if (currentView !== 'comandas' || !myArea()) return;
-      if (document.querySelector('#modal-layer .modal-overlay')) return;
-      render();
+      const sheet = document.querySelector('#modal-layer .modal-sheet');
+      const mk = sheet && sheet.querySelector('.cm-open');
+      if (st.open && mk && mk.dataset.id === st.open.id) {
+        const ok = st.open.kind === 'cuenta' ? orderById(st.open.id) : tickets().find(x => x.id === st.open.id);
+        if (!ok) closeModal();
+        else {
+          const y = sheet.scrollTop;
+          if (st.open.kind === 'cuenta') abrirCuenta(st.open.id); else abrirComanda(st.open.id);
+          const sh = document.querySelector('#modal-layer .modal-sheet');
+          if (sh) sh.scrollTop = y;
+        }
+      }
+      if (currentView === 'comandas' && myArea()) render();
     } catch (e) {}
   }
-  setInterval(refresh, 20000);
-  window.addEventListener('storage', e => { if (!e.key || e.key === KEY || e.key === 'mesa_parked') refresh(); });
+  setInterval(() => { if (currentView === 'comandas' && myArea() && !document.querySelector('#modal-layer .modal-overlay')) render(); }, 30000);
 
-  function register() {
-    if (typeof EXTRA_VIEWS === 'undefined') return false;
-    EXTRA_VIEWS.comandas = view;
-    return true;
+  /* Avisos de lo que llega desde otro aparato */
+  function avisos(antes, despues) {
+    const area = myArea();
+    const yo = me();
+    const nuevas = despues.filter(k => k.status === 'nuevo' && !antes[k.id]);
+    const listas = despues.filter(k => k.status === 'listo' && antes[k.id] && antes[k.id] !== 'listo');
+    if (area === 'cocina' && nuevas.length) {
+      beep(); vibrate([30, 80, 30]);
+      toast(nuevas.length === 1 ? 'Nueva comanda · ' + nuevas[0].table : nuevas.length + ' comandas nuevas', { icon:icon('bell'), variant:'toast-success toast-top', subtitle:nuevas.length === 1 ? 'De ' + (nuevas[0].by || 'el mesero') : '', duration:3500 });
+    }
+    const mias = listas.filter(k => area === 'mesero' && (!yo || k.byId === yo.id || ((orderById(k.orderId) || {}).cm || {}).waiterId === yo.id));
+    if (mias.length) {
+      beep(); vibrate([30, 80, 30]);
+      toast(mias[0].table + ' · comanda lista', { icon:icon('bell'), variant:'toast-success toast-top', subtitle:'Pásala a recoger a cocina', duration:4000 });
+    }
   }
-  if (!register()) document.addEventListener('DOMContentLoaded', register);
+
+  /* =========================================================
+     EN VIVO ENTRE APARATOS (Supabase · vp_comandas_sync)
+     - Cada cuenta de mesa y cada comanda es una fila.
+     - Lo que cambia en este aparato se sube; lo que cambia en otro llega
+       al instante (Realtime) y además se revisa cada 20 s.
+     - "dirty" = cambiado aquí y todavía sin subir: eso nunca se pisa.
+  ========================================================= */
+  const Sync = (() => {
+    const SK = 'cm_sync_state';
+    let s = { uid:null, known:{}, dirty:[] };
+    let last = {};            /* id -> {k,h}: cómo estaba lo local la última vez que lo vimos */
+    let dirty = new Set();
+    let muted = false, hooked = false, busy = false, again = false, timer = null, ch = null, chUid = null, poll = null;
+
+    const can = () => { try { return Cloud.ready && !!Cloud.uid && !!Cloud.sb && AUTH.isLogged(); } catch (e) { return false; } };
+    const inUse = () => { try { return DB.getUsers().some(u => AREAS[u.area]) || DB.getTableOrders().some(o => o.cm) || tickets().length > 0; } catch (e) { return false; } };
+    const online = () => can();
+
+    function snapshot() {
+      const m = {};
+      DB.getTableOrders().forEach(o => { m[o.id] = { k:'cuenta', h:JSON.stringify(o), d:o }; });
+      tickets().forEach(t => { m[t.id] = { k:'comanda', h:JSON.stringify(t), d:t }; });
+      return m;
+    }
+    function load(uid) {
+      try { const r = JSON.parse(localStorage.getItem(SK) || 'null'); s = (r && r.uid === uid) ? r : { uid, known:{}, dirty:[] }; }
+      catch (e) { s = { uid, known:{}, dirty:[] }; }
+      s.known = s.known || {};
+      dirty = new Set(s.dirty || []);
+    }
+    function save() { s.dirty = [...dirty]; try { localStorage.setItem(SK, JSON.stringify(s)); } catch (e) {} }
+    const strip = m => { const o = {}; Object.keys(m).forEach(id => { o[id] = { k:m[id].k, h:m[id].h }; }); return o; };
+
+    /* Un cambio hecho en este aparato */
+    function onLocal() {
+      const cur = snapshot();
+      if (muted) { last = strip(cur); return; }
+      const ids = new Set(Object.keys(cur).concat(Object.keys(last)));
+      ids.forEach(id => {
+        if ((cur[id] && cur[id].h) === (last[id] && last[id].h)) return;
+        dirty.add(id);
+        if (!cur[id] && last[id]) s.known[id] = Object.assign({}, s.known[id] || {}, { k:last[id].k });
+      });
+      last = strip(cur);
+      save();
+      soon(300);
+    }
+    function hook() {
+      if (hooked || typeof Store === 'undefined' || !Store._changed) return;
+      hooked = true;
+      const prev = Store._changed;
+      Store._changed = function (k) { prev.call(this, k); if (k === 'mesa_parked' || k === KEY) onLocal(); };
+      last = strip(snapshot());
+      /* La copia general de la nube (al abrir la app) puede traer cuentas
+         viejas: después de bajarla se revisa contra lo que está en vivo. */
+      try {
+        const h = Cloud.hydrate;
+        Cloud.hydrate = async function () { const r = await h.apply(this, arguments); last = strip(snapshot()); soon(200); return r; };
+      } catch (e) {}
+    }
+
+    async function push() {
+      const ids = [...dirty];
+      if (!ids.length) return;
+      const cur = snapshot();
+      const rows = ids.map(id => cur[id]
+        ? { user_id:Cloud.uid, id, kind:cur[id].k, data:cur[id].d, deleted:false }
+        : { user_id:Cloud.uid, id, kind:((s.known[id] || {}).k) || 'comanda', data:{}, deleted:true });
+      const { error } = await Cloud.sb.from(T).upsert(rows, { onConflict:'user_id,id' });
+      if (error) throw error;
+      const now = snapshot();
+      ids.forEach(id => {
+        const a = cur[id] ? cur[id].h : null, b = now[id] ? now[id].h : null;
+        if (a !== b) return;             /* cambió otra vez mientras subía: se sube en la siguiente */
+        dirty.delete(id);
+        if (a) s.known[id] = { k:cur[id].k, h:a }; else delete s.known[id];
+      });
+      save();
+    }
+
+    async function pull() {
+      const since = new Date(Date.now() - 3 * 86400000).toISOString();
+      const { data, error } = await Cloud.sb.from(T).select('id,kind,data,deleted').or('deleted.eq.false,updated_at.gte.' + since).limit(3000);
+      if (error) throw error;
+      const remote = {};
+      (data || []).forEach(r => { remote[r.id] = r; });
+      const cur = snapshot();
+      const orders = {}, tks = {};
+      Object.keys(cur).forEach(id => { (cur[id].k === 'cuenta' ? orders : tks)[id] = cur[id].d; });
+      const antes = {}; tickets().forEach(t => { antes[t.id] = t.status; });
+      let changed = false;
+      (data || []).forEach(r => {
+        if (dirty.has(r.id)) return;
+        const bag = r.kind === 'cuenta' ? orders : tks;
+        if (r.deleted) {
+          if (bag[r.id]) { delete bag[r.id]; changed = true; }
+          delete s.known[r.id];
+          return;
+        }
+        const h = JSON.stringify(r.data);
+        s.known[r.id] = { k:r.kind, h };
+        if (!cur[r.id] || cur[r.id].h !== h) { bag[r.id] = r.data; changed = true; }
+      });
+      Object.keys(cur).forEach(id => {
+        if (remote[id] || dirty.has(id)) return;
+        if (s.known[id]) {                          /* ya no existe en la nube */
+          delete (cur[id].k === 'cuenta' ? orders : tks)[id]; delete s.known[id]; changed = true;
+        } else dirty.add(id);                       /* nunca se subió: se sube */
+      });
+      if (changed) {
+        muted = true;
+        try {
+          DB.saveTableOrders(Object.values(orders));
+          Store.set(KEY, Object.values(tks));
+        } finally { muted = false; }
+        last = strip(snapshot());
+        avisos(antes, Object.values(tks));
+        refresh();
+      }
+      save();
+    }
+
+    async function run() {
+      if (!can()) return;
+      if (busy) { again = true; return; }
+      busy = true;
+      try {
+        if (s.uid !== Cloud.uid) load(Cloud.uid);
+        await push();
+        await pull();
+        if (dirty.size) await push();
+      } catch (e) {
+        console.warn('Vendo plus · comandas en vivo', e);
+        soon(8000);
+      } finally {
+        busy = false;
+        if (again) { again = false; soon(200); }
+      }
+    }
+    function soon(ms) { clearTimeout(timer); timer = setTimeout(run, ms || 300); }
+
+    function listen() {
+      if (ch && chUid === Cloud.uid) return;
+      try { if (ch) Cloud.sb.removeChannel(ch); } catch (e) {}
+      ch = null; chUid = null;
+      try {
+        const uid = Cloud.uid;
+        chUid = uid;
+        ch = Cloud.sb.channel('vp-comandas-' + uid)
+          .on('postgres_changes', { event:'*', schema:'public', table:T, filter:'user_id=eq.' + uid }, () => soon(150))
+          .subscribe(status => {
+            if (status === 'SUBSCRIBED') soon(200);
+            else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              if (chUid !== uid) return;
+              setTimeout(() => { ch = null; chUid = null; tick(); }, 4000);
+            }
+          });
+      } catch (e) { ch = null; chUid = null; }
+    }
+
+    /* Se llama en cada render y cada pocos segundos */
+    function tick() {
+      hook();
+      if (!can() || !inUse()) return;
+      if (s.uid !== Cloud.uid) load(Cloud.uid);
+      listen();
+      if (!poll) {
+        poll = setInterval(() => { if (can() && inUse() && document.visibilityState !== 'hidden') run(); }, 20000);
+        soon(400);
+      }
+    }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { tick(); soon(300); } });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hook); else setTimeout(hook, 0);
+    setInterval(tick, 5000);
+
+    return { tick, online, run };
+  })();
 
   return {
     abrir, guard, esMesero, esCocina, esCajero, puedeAdministrar,
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
-    mesa, cobrar, saleHead, salirMesa, cartActions, enviar, cancelarOrden,
-    listo, historial, cambiar
+    tocarMesa, abrirCuenta, verLista, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
+    cobrar, editarCuenta, cancelarOrden, cerrarOrden,
+    filtro, abrirComanda, estado, historial, cambiar, sync:() => Sync.run()
   };
 })();
