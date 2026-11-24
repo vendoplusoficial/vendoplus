@@ -5189,6 +5189,14 @@ input:-webkit-autofill:focus{
 }
 input:autofill{ background-color:var(--surface, #fff) !important; }
 </style>
+<style>
+/* ===== PREMIUM OCULTO (por mientras) =====
+   Se esconde aquí, desde el arranque, para que el botón de la corona no
+   aparezca ni un segundo mientras carga vendo-premium.js.
+   Para volver a mostrar Premium: borra este bloque y pon
+   PREMIUM_OCULTO = false en vendo-premium.js. */
+#topPremium, .vp-top-prem, .navbtn[data-view="premium"], .ud-premium{ display:none !important; }
+</style>
 </head>
 <body>
 <noscript>
