@@ -557,15 +557,16 @@
     '.vpa-page .stf-scroll{display:block;}',
     '.vpa-in{max-width:620px;margin:0 auto;padding:14px 16px calc(28px + env(safe-area-inset-bottom));zoom:var(--z,1);}',
     '.vpa-vinc .vpa-in{padding-bottom:110px;}',
-    /* Barra de las 3 apps: sin fondo gris ni sombras; cada app es un botón con borde fino */
-    '.vpa-seg{display:flex;gap:8px;margin:0 0 16px;}',
-    '.vpa-seg button{flex:1;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border,#E6E9EF);background:var(--surface,#fff);border-radius:999px;padding:9px 6px;font:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;}',
+    /* Barra de las 3 apps dentro de la sección: con su fondo gris */
+    '.vpa-seg{display:flex;gap:2px;background:var(--surface-alt,#F1F3F7);border-radius:999px;padding:4px;margin:0 0 16px;}',
+    '.vpa-seg button{flex:1;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;border-radius:999px;padding:9px 6px;font:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;}',
     '.vpa-seg .vpa-logo.sm{width:18px;height:18px;border-radius:5px;flex:none;box-shadow:0 0 0 1px rgba(16,22,42,.08);}',
     '.vp-sheet .vpa-seg.mas .vpa-logo.sm{width:20px;height:20px;}',
-    '.vpa-seg button.active{border-color:var(--app-b,var(--ink));color:var(--ink);box-shadow:inset 0 0 0 1px var(--app-b,var(--ink));}',
+    '.vpa-seg button.active{background:var(--surface,#fff);color:var(--ink);box-shadow:0 1px 3px rgba(22,33,62,.12);}',
     /* en la hoja de "Más" (celular): mismo estilo, sin heredar el de los renglones */
     '.vpa-mas-tit{margin:2px 8px 8px;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}',
-    '.vp-sheet .vpa-seg.mas{margin:0 0 10px;}',
+    /* En "Más": sin fondo gris ni sombras; cada app es un botón con borde fino */
+    '.vp-sheet .vpa-seg.mas{margin:0 0 10px;gap:8px;padding:0;background:none;border-radius:0;}',
     '.vp-sheet .vpa-seg.mas button{width:auto;flex:1;display:inline-flex;gap:6px;padding:10px 4px;border-radius:999px;border:1px solid var(--border,#E6E9EF);font:700 13px var(--sans);color:var(--ink);text-align:center;background:var(--surface,#fff);box-shadow:none;}',
     '.vp-sheet .vpa-seg.mas button:active{background:var(--vp-soft,#EEF1F5);}',
     '.vpa-logo{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;border-radius:8px;color:#fff;font-weight:800;font-size:14px;object-fit:cover;box-shadow:0 0 0 1px rgba(16,22,42,.08);}',
