@@ -1,7 +1,8 @@
 IMÁGENES PROMOCIONALES DE VENDOPLUS PREMIUM  (nota para Claude)
 ==============================================================
-El usuario manda las imágenes y Claude las agrega. Sale una vez al día a
-quien tiene el plan Básico; nunca a Premium ni el día del registro. Solo se
+El usuario manda las imágenes y Claude las agrega. Sale cada vez que se
+entra a VendoPlus (no al recargar), solo a quien tiene el plan Básico, y los
+anuncios se turnan uno y uno; nunca a Premium ni el día del registro. Solo se
 cierra con la × del anuncio. Tocar la imagen abre "Elige tu plan"; si sale
 de los planes o del pago sin contratar, regresa al anuncio.
 

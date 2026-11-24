@@ -1311,9 +1311,10 @@
 
   /* =======================================================================
      10c. ANUNCIO DIARIO DE PREMIUM (solo plan Básico)
-     · Sale UNA vez al día, la primera vez que se abre VendoPlus ese día.
+     · Sale CADA VEZ que se entra a VendoPlus (abrir la app o la pestaña).
+       NO sale al recargar la página: solo al salir y volver a entrar.
      · Nunca a Premium, nunca el día del registro (empieza al día siguiente).
-     · Cada día una imagen al azar, sin repetir la del día anterior.
+     · Los anuncios se van turnando: uno y uno (nunca el mismo dos veces seguidas).
      · Imagen grande (no toda la pantalla), esquinas rectas, × arriba.
        Tocar la imagen abre los planes de Premium.
      Las imágenes van en la carpeta promos/ (ver promos/LEEME.txt).
@@ -1413,15 +1414,27 @@
     document.head.appendChild(st);
   }
 
+  /** Se turnan en orden: 1, 2, 1, 2… (con más anuncios: 1, 2, 3, 1…) */
   function elegirPromo() {
     if (!PROMOS.length) return -1;
     var k = 'vp_promo_ultima_' + llaveUsuario();
     var ultima = parseInt(lsGet(k), 10);
-    var opciones = [];
-    for (var i = 0; i < PROMOS.length; i++) if (PROMOS.length === 1 || i !== ultima) opciones.push(i);
-    var elegida = opciones[Math.floor(Math.random() * opciones.length)];
-    lsSet(k, String(elegida));
-    return elegida;
+    var sig = isNaN(ultima) ? Math.floor(Math.random() * PROMOS.length) : (ultima + 1) % PROMOS.length;
+    lsSet(k, String(sig));
+    return sig;
+  }
+
+  /* ¿Es una entrada nueva? sessionStorage sobrevive a recargar la página,
+     pero se borra al cerrar la pestaña o la app. Así el anuncio sale al
+     volver a entrar y no cada vez que se recarga. */
+  function ssGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function ssSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+  function esRecarga() {
+    try {
+      var n = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      if (n) return n.type === 'reload';
+      return performance.navigation && performance.navigation.type === 1;
+    } catch (e) { return false; }
   }
 
   function mostrarPromo(promo) {
@@ -1481,15 +1494,15 @@
   function revisarPromo() {
     if (!promoListo()) return false;
     if (activo()) return true;                           /* Premium: nunca */
-    var hoy = diaLocal(new Date());
-    var kDia = 'vp_promo_dia_' + llaveUsuario();
-    if (lsGet(kDia) === hoy) return true;                /* ya salió hoy */
+    var kSes = 'vp_promo_entrada_' + llaveUsuario();
+    if (ssGet(kSes)) return true;                        /* ya salió en esta entrada */
+    ssSet(kSes, '1');
+    if (esRecarga()) return true;                        /* recargó la página: no */
     var reg = diaRegistro();
-    if (!reg || reg === hoy) return true;                /* el día del registro no */
+    if (!reg || reg === diaLocal(new Date())) return true;   /* el día del registro no */
     if (!PROMOS.length) return true;                     /* todavía no hay imágenes */
     var i = elegirPromo();
     if (i < 0) return true;
-    lsSet(kDia, hoy);
     mostrarPromo(PROMOS[i]);
     return true;
   }
