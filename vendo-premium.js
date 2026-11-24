@@ -1322,9 +1322,11 @@
      (PC / pantalla acostada). Si falta una, se usa la otra.
        vertical:   1080 x 1620 px (2:3)
        horizontal: 1920 x 1080 px (16:9)                                   */
+  var IMG = window.VP_PROMOS_IMG || {};     /* incrustadas en index.html */
   var PROMOS = [
-    /* { vertical: 'promos/premium-01-v.webp', horizontal: 'promos/premium-01-h.webp' }, */
-  ];
+    { vertical: IMG['asistente-v'], horizontal: IMG['asistente-h'] }   /* 1 · Asistente: "Tus ventas, en una pregunta" */
+    /* , { vertical: 'promos/premium-02-v.webp', horizontal: 'promos/premium-02-h.webp' } */
+  ].filter(function (p) { return p && (p.vertical || p.horizontal); });
   function esHorizontal() { return (window.innerWidth || 0) > (window.innerHeight || 0); }
   function srcPromo(p) {
     if (!p) return null;
@@ -1446,8 +1448,29 @@
     /* Solo la × cierra. Tocar fuera no hace nada (ni pica lo de atrás). */
     cont.querySelector('.vp-promo-x').addEventListener('click', function (e) { e.stopPropagation(); vibra(6); cerrarPromo(); });
     cont.addEventListener('click', function (e) { e.stopPropagation(); });
+    /* Tocar el anuncio abre "Elige tu plan". El anuncio se esconde (no se
+       cierra): si la persona sale de los planes o del pago SIN contratar
+       (×, atrás, Esc, tocar fuera), regresa al anuncio. Solo la × del
+       anuncio lo quita. Si contrata, el anuncio ya no vuelve. */
     var pieza = cont.querySelector('.vp-promo-img, .vp-promo-vacio');
-    pieza.addEventListener('click', function () { cerrarPromo(); setTimeout(function () { abrir('promo'); }, 240); });
+    pieza.addEventListener('click', function () {
+      if (cont.classList.contains('sale')) return;
+      vibra(8);
+      cont.style.display = 'none';
+      abrir('promo');
+      var visto = false, t0 = Date.now();
+      var vigila = setInterval(function () {
+        var abierta = !!document.querySelector('#modal-layer .modal-overlay:not(.is-closing) .vp-pr');
+        if (abierta) { visto = true; return; }
+        if (!visto && Date.now() - t0 < 1500) return;       /* todavía no termina de abrir */
+        if (document.querySelector('#modal-layer .modal-overlay.is-closing')) return;   /* esperando su animación */
+        clearInterval(vigila);
+        if (activo()) { cont.remove(); return; }           /* ya es Premium: listo */
+        cont.style.display = '';
+        var caja = cont.querySelector('.vp-promo-caja');
+        if (caja) { caja.style.animation = 'none'; void caja.offsetWidth; caja.style.animation = ''; }
+      }, 150);
+    });
     var img = cont.querySelector('.vp-promo-img');
     /* Si la imagen no carga, el anuncio se quita solo: nadie se queda trabado */
     if (img) img.addEventListener('error', function () { cont.remove(); });
