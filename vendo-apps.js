@@ -205,6 +205,7 @@
   }
 
   function abrir(k) {
+    if (!window.VP_APPS_ACTIVO) return;   /* apagado por ahora */
     if (typeof isOwner === 'function' && !isOwner()) { toast('Solo el Dueño puede enlazar las apps', { icon: icon('alert') }); return; }
     if (k && VP_APPS[k]) st.app = k;
     st.form = false;
@@ -672,5 +673,5 @@
     confirmar: confirmar, quitar: quitar, agregar: agregar, agregarGuardar: agregarGuardar, guardarVinc: guardarVinc,
     sincronizar: sincronizar, premium: premium, _ventaDe: ventaDe
   };
-  arrancar();
+  if (window.VP_APPS_ACTIVO) arrancar();
 })();

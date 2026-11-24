@@ -30,3 +30,9 @@ Qué revisar en Android:
 - Icono de Play Store 512×512 y cualquier copia de `index.html`, `icon.svg`, favicons dentro de `assets/`
 - Colores del verde viejo ligados al logo (`colors.xml`) si se usan para el icono
 - Busca también restos del dibujo de la bolsa (path `M5.3 8.6h13.4...` o `M150 180h212...`)
+
+## Apps de delivery (Rappi, DiDi Food, Uber Eats): APAGADO por ahora
+El usuario pidió ocultarlas "como si no existieran" hasta que contacte a esas empresas.
+Todo sigue programado (vendo-apps.js, función `apps-delivery` y tablas `vp_apps_*` en Supabase).
+Para activarlas: en `index.html` cambia `window.VP_APPS_ACTIVO = false;` a `true` y sube la
+versión de `vendo-apps.js` y `vendo-premium.js` en sus `<script src=...?v=>`.

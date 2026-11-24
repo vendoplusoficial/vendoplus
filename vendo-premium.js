@@ -447,7 +447,7 @@
   }
 
   function planesHTML(clave, esDueno, precio) {
-    var filas = function (plan) { return PLAN_FILAS.map(function (f) { return planFila(f, plan, clave); }).join(''); };
+    var filas = function (plan) { return PLAN_FILAS.filter(function (f) { return f.k !== 'apps' || window.VP_APPS_ACTIVO; }).map(function (f) { return planFila(f, plan, clave); }).join(''); };
     var monto = String(precio).replace(/\s*MXN\s*$/i, '');
     var boton = esDueno
       ? '<button type="button" class="vp-pl-btn" id="payBtn" onclick="VPPremium.pagar()">Contratar</button>'
