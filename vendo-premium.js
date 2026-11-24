@@ -1436,7 +1436,7 @@
   ======================================================================= */
   /* Llave PUBLICABLE de Stripe (pk_live_...). Es pública: puede ir aquí.
      También puede venir de la función (secreto STRIPE_PUBLISHABLE_KEY). */
-  var STRIPE_PK = '';
+  var STRIPE_PK = 'pk_live_51TQvX0Pj0LIsQQbTzBSEaWDCk0uPXV5Tv95Wx8qPLdrri3qrxFH8QEeoOGCunIUzwGao0aQtoETY9XwXxclEu5Jq005wno6Pc2';
 
   var pago = { stripe: null, elements: null, subId: null, monto: null, ocupado: false };
 
