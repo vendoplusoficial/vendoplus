@@ -1120,18 +1120,46 @@
     var st = document.createElement('style');
     st.id = 'vp-limite-css';
     st.textContent = [
-      '.vp-lim{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 8px 9px 12px;border-radius:12px;',
-      'background:var(--surface,#fff);border:1px solid var(--border,#E4E8EF);font-size:13px;line-height:1.35;font-weight:400;color:var(--ink,#15181C);',
-      'animation:vp-lim-in .3s cubic-bezier(.22,1,.36,1) both;}',
-      '@keyframes vp-lim-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}',
-      '.vp-lim-pt{flex:none;width:7px;height:7px;border-radius:50%;background:#F5A524;}',
-      '.vp-lim.alto .vp-lim-pt,.vp-lim.tope .vp-lim-pt{background:#E5484D;}',
-      '.vp-lim-txt{flex:1;min-width:0;}',
-      '.vp-lim-txt b{font-weight:600;}',
-      '.vp-lim-ver{flex:none;border:none;background:none;padding:6px 6px;font-family:inherit;font-size:13px;font-weight:600;color:var(--vp-pr-verde,#16A34A);cursor:pointer;white-space:nowrap;}',
-      '.vp-lim-x{flex:none;width:28px;height:28px;border:none;border-radius:8px;background:none;color:var(--ink-soft,#6C7480);display:flex;align-items:center;justify-content:center;cursor:pointer;}',
+      /* La pastilla vive DENTRO del título "Nueva venta", pegada a la derecha:
+         no agrega renglones ni mueve nada del diseño. */
+      'h1.page-title.vp-lim-h1{position:relative;}',
+      '.vp-lim{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:60;}',   /* no ocupa lugar: cero movimiento */
+      '.vp-lim-pill{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px 0 9px;border-radius:99px;',
+      'border:1px solid #F5D9A8;background:#FFF8EB;color:#92400E;font-family:inherit;font-size:12px;font-weight:600;letter-spacing:0;',
+      'white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease;',
+      'animation:vp-lim-in .35s cubic-bezier(.22,1,.36,1) both;}',
+      '.vp-lim-pill:active{transform:scale(.96);}',
+      '.vp-lim.alto .vp-lim-pill,.vp-lim.tope .vp-lim-pill{border-color:#F6C9C4;background:#FEF3F2;color:#B42318;}',
+      '.vp-lim-pill i{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none;}',
+      '.vp-lim-pill svg{width:12px;height:12px;flex:none;opacity:.8;}',
+      '@keyframes vp-lim-in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}',
+      /* Tarjetita con el detalle (se abre al tocar la pastilla) */
+      '.vp-lim-pop{position:absolute;right:0;top:calc(100% + 8px);z-index:40;width:min(300px,calc(100vw - 32px));',
+      'background:#fff;border:1px solid var(--border,#E4E8EF);border-radius:16px;box-shadow:0 14px 34px rgba(16,22,42,.14);',
+      'padding:14px 14px 12px;text-align:left;font-family:inherit;letter-spacing:0;',
+      'opacity:0;visibility:hidden;transform:translateY(-4px) scale(.98);transform-origin:top right;',
+      'transition:opacity .16s ease,transform .18s cubic-bezier(.22,1,.36,1),visibility 0s linear .18s;}',
+      '.vp-lim.abierto .vp-lim-pop{opacity:1;visibility:visible;transform:none;transition:opacity .16s ease,transform .18s cubic-bezier(.22,1,.36,1);}',
+      '.vp-lim-pop-top{display:flex;align-items:flex-start;gap:8px;}',
+      '.vp-lim-pop-top b{flex:1;font-size:14px;font-weight:600;line-height:1.3;color:var(--ink,#15181C);}',
+      '.vp-lim-x{flex:none;width:26px;height:26px;margin:-4px -4px 0 0;border:none;border-radius:8px;background:none;color:var(--ink-soft,#6C7480);',
+      'display:flex;align-items:center;justify-content:center;cursor:pointer;}',
       '.vp-lim-x:active{background:var(--surface-alt,#F1F3F7);}',
       '.vp-lim-x svg{width:14px;height:14px;}',
+      '.vp-lim-barra{height:6px;border-radius:99px;background:#EEF1F5;overflow:hidden;margin:10px 0 6px;}',
+      '.vp-lim-barra span{display:block;height:100%;border-radius:99px;background:#F5A524;}',
+      '.vp-lim.alto .vp-lim-barra span,.vp-lim.tope .vp-lim-barra span{background:#E5484D;}',
+      '.vp-lim-cuenta{display:flex;justify-content:space-between;font-size:11.5px;font-weight:500;color:var(--ink-soft,#6C7480);}',
+      /* Va dentro del h1: se le quitan el interlineado y el peso del título */
+      '.vp-lim-pop,.vp-lim-pop *{line-height:1.4;white-space:normal;letter-spacing:0;}',
+      '.vp-lim-pop > span{display:block;}',
+      '.vp-lim-pop .vp-lim-pop-top{display:flex;}',
+      '.vp-lim-pop .vp-lim-cuenta{display:flex;}',
+      '.vp-lim-txt{margin:10px 0 12px;font-size:13px;line-height:1.45 !important;font-weight:400;color:var(--ink-soft,#6C7480);}',
+      '.vp-lim-ver{width:100%;border:none;border-radius:11px;padding:10px;font-family:inherit;font-size:13.5px;font-weight:600;',
+      'background:var(--vp-pr-verde-claro,#25D366);color:#fff;cursor:pointer;}',
+      '.vp-lim-ver:active{transform:scale(.98);}',
+      /* Hoja que sale al intentar cobrar ya bloqueado */
       '.vp-lim-hoja{text-align:center;padding:6px 4px 2px;}',
       '.vp-lim-ico{width:52px;height:52px;margin:4px auto 14px;border-radius:16px;background:#FEF3F2;color:#D92D20;display:flex;align-items:center;justify-content:center;}',
       '.vp-lim-ico svg{width:24px;height:24px;}',
@@ -1139,7 +1167,8 @@
       '.vp-lim-hoja p{margin:0 auto 18px;max-width:340px;font-size:14px;line-height:1.5;font-weight:400;color:var(--ink-soft,#6C7480);}',
       '.vp-lim-hoja .vp-pl-btn{margin-bottom:8px;}',
       '.vp-lim-hoja .vp-lim-no{width:100%;border:none;background:none;padding:10px;font-family:inherit;font-size:14px;font-weight:500;color:var(--ink-soft,#6C7480);cursor:pointer;}',
-      '@media (prefers-reduced-motion: reduce){.vp-lim{animation:none;}}'
+      '@media (max-width:359px){.vp-lim-pill{height:27px;padding:0 9px 0 8px;font-size:11px;}.vp-lim-pill svg{display:none;}}',
+      '@media (prefers-reduced-motion: reduce){.vp-lim-pill,.vp-lim-pop{animation:none;transition:none;}}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -1156,26 +1185,70 @@
   function llaveCerrado(etapa) { return 'vp_lim_cerrado_' + mesLocal(new Date()) + '_' + etapa + (etapa === 'tope' ? '_' + diaLocal(new Date()) : ''); }
   function cerradoAviso(etapa) { try { return localStorage.getItem(llaveCerrado(etapa)) === '1'; } catch (e) { return false; } }
 
+  /** La pastilla (y su tarjetita) que va dentro del título "Nueva venta". */
   function avisoLimiteHTML() {
     var e = ventasMes(), etapa = etapaLimite(e);
     if (!etapa || (etapa !== 'bloqueado' && cerradoAviso(etapa))) return '';
     cssLimite();
-    var txt;
-    if (etapa === 'aviso') txt = 'Llevas <b>' + e.n + ' de ' + VENTAS_LIMITE + '</b> ventas este mes en el plan Básico.';
-    else if (etapa === 'ultimas') txt = 'Te queda' + (e.restan === 1 ? '' : 'n') + ' <b>' + e.restan + ' venta' + (e.restan === 1 ? '' : 's') + '</b> este mes en el plan Básico.';
-    else if (etapa === 'tope') txt = 'Llegaste a <b>' + VENTAS_LIMITE + ' ventas</b>. Hoy puedes seguir cobrando; desde mañana necesitas Premium.';
-    else txt = 'Llegaste a <b>' + VENTAS_LIMITE + ' ventas</b> este mes. Los cobros vuelven el ' + fechaLarga(primeroDelMesQueSigue()) + ' o con Premium.';
+    var pill, titulo, texto;
+    var vuelve = fechaLarga(primeroDelMesQueSigue());
+    if (etapa === 'aviso') {
+      pill = e.n + ' de ' + VENTAS_LIMITE + ' ventas';
+      titulo = 'Llevas ' + e.n + ' de ' + VENTAS_LIMITE + ' ventas este mes';
+      texto = 'El plan Básico incluye ' + VENTAS_LIMITE + ' ventas al mes. Con Premium vendes sin límite.';
+    } else if (etapa === 'ultimas') {
+      pill = (e.restan === 1 ? 'Queda 1 venta' : 'Quedan ' + e.restan + ' ventas');
+      titulo = (e.restan === 1 ? 'Te queda 1 venta' : 'Te quedan ' + e.restan + ' ventas') + ' este mes';
+      texto = 'Al llegar a ' + VENTAS_LIMITE + ' podrás seguir cobrando ese día. Desde el día siguiente necesitarás Premium para cobrar.';
+    } else if (etapa === 'tope') {
+      pill = 'Límite de ventas';
+      titulo = 'Llegaste a ' + VENTAS_LIMITE + ' ventas este mes';
+      texto = 'Hoy puedes seguir cobrando normal. Desde mañana los cobros se pausan hasta el ' + vuelve + ', o actívalos ya con Premium.';
+    } else {
+      pill = 'Cobros en pausa';
+      titulo = 'Cobros en pausa hasta el ' + vuelve;
+      texto = 'Ya usaste las ' + VENTAS_LIMITE + ' ventas del plan Básico de este mes. Activa Premium para seguir cobrando sin límite.';
+    }
+    var pct = Math.min(100, Math.round(e.n / VENTAS_LIMITE * 100));
     var clase = etapa === 'aviso' ? '' : (etapa === 'ultimas' ? ' alto' : ' tope');
-    return '<div class="vp-lim' + clase + '" role="status" id="vpLimAviso">' +
-        '<span class="vp-lim-pt" aria-hidden="true"></span>' +
-        '<span class="vp-lim-txt">' + txt + '</span>' +
-        '<button type="button" class="vp-lim-ver" onclick="VPPremium.abrir(\'ventas\')">Ver Premium</button>' +
-        (etapa === 'bloqueado' ? '' :
-          '<button type="button" class="vp-lim-x" aria-label="Cerrar aviso" onclick="VPPremium.cerrarAvisoVentas(\'' + etapa + '\')">' + ico('close') + '</button>') +
-      '</div>';
+    return '<span class="vp-lim' + clase + '" id="vpLimAviso">' +
+        '<button type="button" class="vp-lim-pill" aria-expanded="false" onclick="VPPremium.abrirAvisoVentas(event)">' +
+          '<i aria-hidden="true"></i>' + esc(pill) + ico('chevronDown') +
+        '</button>' +
+        '<span class="vp-lim-pop" role="dialog" aria-label="Límite de ventas">' +
+          '<span class="vp-lim-pop-top"><b>' + esc(titulo) + '</b>' +
+            (etapa === 'bloqueado' ? '' :
+              '<button type="button" class="vp-lim-x" aria-label="Ocultar aviso" onclick="VPPremium.cerrarAvisoVentas(\'' + etapa + '\', event)">' + ico('close') + '</button>') +
+          '</span>' +
+          '<span class="vp-lim-barra" aria-hidden="true"><span style="width:' + pct + '%"></span></span>' +
+          '<span class="vp-lim-cuenta"><span>' + Math.min(e.n, 9999) + ' ventas</span><span>Límite: ' + VENTAS_LIMITE + '</span></span>' +
+          '<span class="vp-lim-txt">' + esc(texto) + '</span>' +
+          '<button type="button" class="vp-lim-ver" onclick="VPPremium.abrir(\'ventas\')">Ver Premium</button>' +
+        '</span>' +
+      '</span>';
   }
 
-  function cerrarAvisoVentas(etapa) {
+  function abrirAvisoVentas(ev) {
+    if (ev) ev.stopPropagation();
+    var w = document.getElementById('vpLimAviso');
+    if (!w) return;
+    var abre = !w.classList.contains('abierto');
+    w.classList.toggle('abierto', abre);
+    var b = w.querySelector('.vp-lim-pill'); if (b) b.setAttribute('aria-expanded', abre ? 'true' : 'false');
+    vibra(6);
+    if (abre) {
+      var fuera = function (e) {
+        if (w.contains(e.target)) return;
+        w.classList.remove('abierto');
+        if (b) b.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('pointerdown', fuera, true);
+      };
+      setTimeout(function () { document.addEventListener('pointerdown', fuera, true); }, 0);
+    }
+  }
+
+  function cerrarAvisoVentas(etapa, ev) {
+    if (ev) ev.stopPropagation();
     try { localStorage.setItem(llaveCerrado(etapa), '1'); } catch (e) {}
     var el = document.getElementById('vpLimAviso');
     if (el) el.remove();
@@ -1224,7 +1297,11 @@
         if (typeof html !== 'string') return html;
         var aviso = '';
         try { aviso = avisoLimiteHTML(); } catch (e) {}
-        return aviso + html;
+        if (!aviso) return html;
+        /* Va dentro del título, a la derecha: no mueve nada del diseño */
+        var t = '<h1 class="page-title">Nueva venta</h1>';
+        if (html.indexOf(t) < 0) return html;
+        return html.replace(t, '<h1 class="page-title vp-lim-h1">Nueva venta' + aviso + '</h1>');
       };
       env2.__vpLim = true;
       try { window.renderSale = env2; } catch (e) {}
@@ -2010,6 +2087,7 @@
     pagoListo: pagoListo,
     ventasMes: ventasMes,
     cerrarAvisoVentas: cerrarAvisoVentas,
+    abrirAvisoVentas: abrirAvisoVentas,
     puerta: puerta,
     precio: PRECIO,
     precioTxt: precioTxt,
