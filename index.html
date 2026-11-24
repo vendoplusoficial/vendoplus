@@ -5138,6 +5138,69 @@ body.pg-mode{ background:#F4F6FA; }
 .pg-safe svg{ width:18px; height:18px; flex:none; margin-top:1px; color:#009EE3; }
 .pg-safe b{ font-weight:800; color:#16213E; }
 .pg-brick{ min-height:120px; }
+
+/* ===== Stripe en "Pago con tarjeta" (Menú Digital) ===== */
+.st-box{ display:flex; align-items:center; gap:14px; margin:14px 0 0; padding:14px 14px 14px 18px; min-height:74px; border-radius:20px; background:#F3F1FD; border:1.5px solid transparent; }
+.st-box.on{ background:#F2ECFD; border-color:#7B61F8; padding-right:18px; }
+.st-box-logo{ display:inline-flex; flex:none; color:#5A45F2; }
+.st-logo{ display:block; width:66px; height:auto; }
+.st-box-sep{ flex:none; width:2px; align-self:stretch; margin:4px 0; border-radius:2px; background:#CFC6FB; }
+.st-box-txt{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:3px; }
+.st-box-txt b{ font-size:17px; font-weight:800; letter-spacing:-.2px; color:#5A45F2; line-height:1.2; }
+.st-box-msg{ font-size:15px; font-weight:600; color:#0E1A3D; line-height:1.3; }
+.st-box-lnk{ padding:0; border:0; background:none; font:inherit; font-size:14.5px; font-weight:700; color:#5A45F2; text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:4px; cursor:pointer; }
+.st-box-lnk.sm{ font-size:12.5px; text-decoration-thickness:1.5px; text-underline-offset:3px; }
+.st-box-go{ flex:none; min-height:46px; padding:0 22px; border:0; border-radius:999px; background:#5A3FF2; color:#fff; font:inherit; font-size:15px; font-weight:800; cursor:pointer; box-shadow:0 8px 18px -10px rgba(90,63,242,.7); transition:transform .15s ease, opacity .15s ease; }
+.st-box-go:active{ transform:scale(.97); }
+.st-box-go:disabled{ opacity:.6; }
+.st-box-note{ margin:8px 4px 0; font-size:12px; font-weight:600; line-height:1.45; color:var(--ink-soft); }
+@media (max-width:380px){
+  .st-box{ gap:10px; padding-left:14px; }
+  .st-logo{ width:54px; }
+  .st-box-msg{ font-size:13.5px; }
+  .st-box-go{ padding:0 16px; font-size:14px; }
+}
+.mdi-pay-pill.st-pill{ color:#5A45F2 !important; }
+
+/* ===== Pantalla de pago con Stripe del cliente (…#pagar/<pedido>) ===== */
+.sp-card{ padding:20px 18px 22px; }
+.sp-h1{ margin:2px 0 14px !important; font-size:23px !important; font-weight:800; letter-spacing:-.4px; }
+.sp-resumen{ background:#F7F8FA; border:1px solid #EEF1F5; border-radius:16px; padding:14px 16px; margin-bottom:18px; }
+.sp-fila{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; font-size:14px; color:#15181C; }
+.sp-fila b{ font-weight:700; }
+.sp-fila small{ display:block; font-size:12px; color:#6C7480; margin-top:2px; }
+.sp-fila.total{ align-items:baseline; }
+.sp-fila.total b{ font-size:21px; font-weight:800; letter-spacing:-.4px; }
+.sp-fila.total small{ display:inline; margin:0; }
+.sp-linea{ height:1px; background:#E6E9EF; margin:12px 0; }
+.sp-lbl{ font-size:13px; font-weight:600; color:#6C7480; margin:0 2px 8px; }
+.sp-tarjeta{ position:relative; min-height:150px; width:100%; min-width:0; overflow:hidden; }
+#spEl{ width:100%; min-width:0; }
+#spEl iframe{ max-width:100% !important; }
+.sp-esq{ display:flex; flex-direction:column; gap:12px; }
+.sp-esq i{ display:block; height:46px; border-radius:12px; background:linear-gradient(90deg,#F1F3F7 25%,#F8F9FB 50%,#F1F3F7 75%); background-size:200% 100%; animation:sp-brillo 1.2s linear infinite; }
+.sp-esq i.dos{ display:flex; gap:12px; background:none; animation:none; }
+.sp-esq em{ flex:1; border-radius:12px; background:linear-gradient(90deg,#F1F3F7 25%,#F8F9FB 50%,#F1F3F7 75%); background-size:200% 100%; animation:sp-brillo 1.2s linear infinite; }
+@keyframes sp-brillo{ from{ background-position:200% 0; } to{ background-position:-200% 0; } }
+.sp-tarjeta.lista .sp-esq{ display:none; }
+.sp-error{ margin:12px 0 0; padding:10px 12px; border-radius:12px; background:#FEF3F2; color:#B42318; font-size:13px; font-weight:600; line-height:1.4; }
+.sp-btn{ position:relative; display:flex; align-items:center; justify-content:center; width:100%; min-height:54px; margin:16px 0 0; border:0; border-radius:14px; background:#635BFF; color:#fff; font:inherit; font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 12px 24px -14px rgba(99,91,255,.8); transition:transform .15s ease, opacity .15s ease; }
+.sp-btn:active{ transform:scale(.985); }
+.sp-btn:disabled{ opacity:.55; cursor:default; }
+.sp-spin{ display:none; width:20px; height:20px; border-radius:50%; border:2.5px solid rgba(255,255,255,.35); border-top-color:#fff; animation:sp-gira .7s linear infinite; }
+.sp-btn.cargando .sp-btn-txt{ display:none; }
+.sp-btn.cargando .sp-spin{ display:block; }
+.sp-btn.cargando{ opacity:1; }
+@keyframes sp-gira{ to{ transform:rotate(360deg); } }
+.sp-seguro{ display:flex; align-items:flex-start; gap:9px; margin:14px 0 0; padding:11px 12px; border-radius:13px; background:#F4F6FA; font-size:12.5px; font-weight:600; line-height:1.45; color:#6B7487; }
+.sp-seguro svg{ width:18px; height:18px; flex:none; margin-top:1px; color:#635BFF; }
+.sp-seguro b{ color:#16213E; }
+.sp-check{ display:flex; justify-content:center; margin:6px 0 2px; }
+.sp-check svg{ width:74px; height:74px; }
+.sp-check circle{ fill:none; stroke:#16A34A; stroke-width:2.5; stroke-dasharray:151; stroke-dashoffset:151; animation:sp-traza .6s ease-out forwards; }
+.sp-check path{ fill:none; stroke:#16A34A; stroke-width:3.5; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:36; stroke-dashoffset:36; animation:sp-traza .35s .5s ease-out forwards; }
+@keyframes sp-traza{ to{ stroke-dashoffset:0; } }
+@media (prefers-reduced-motion:reduce){ .sp-check circle,.sp-check path{ animation:none; stroke-dashoffset:0; } .sp-esq i,.sp-esq em{ animation:none; } }
 .pg-err{ margin-top:12px; padding:11px 12px; border-radius:12px; background:#FDECEA; color:#A5362B; font-size:13px; font-weight:700; line-height:1.4; }
 .pg-mini{ margin:14px 0 0; font-size:11.5px; font-weight:600; color:#9AA3B5; text-align:center; }
 .pg-card h1{ margin:14px 0 8px; font-size:20px; font-weight:800; }
@@ -16169,6 +16232,14 @@ function mdCleanPayments(p){
       publicKey: String(m.publicKey || '').slice(0, 120),
       liveMode: m.liveMode !== false,
       at: m.at || null
+    },
+    /* Stripe: solo si está conectado, si Stripe ya le deja cobrar y el nombre
+       de la cuenta. Las llaves secretas viven en el servidor, nunca aquí. */
+    st: {
+      on: !!(p.st && p.st.on === true),
+      ready: !!(p.st && p.st.ready === true),
+      name: String((p.st && p.st.name) || '').slice(0, 60),
+      at: (p.st && p.st.at) || null
     }
   };
 }
@@ -16177,6 +16248,8 @@ function mdOpenCardForm(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
   mdPayKind = 'card'; mdPayDraft = { on:mdCfg().payments.card };
   mdRenderPayForm();
+  /* Se revisa cómo va Stripe por si cambió mientras tanto */
+  stSyncStatus(true).then(j => { if(j && j.cambio) stRepaintForm(); });
 }
 function mdOpenTransferForm(){
   if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
@@ -16217,7 +16290,7 @@ function mdRenderPayForm(){
       ${card
         ? (mpVisible()
             ? opt(true, 'card', 'Sí, con Mercado Pago', 'Tus clientes pagan con su tarjeta desde tu menú y el dinero llega a tu cuenta de Mercado Pago')
-            : opt(true, 'card', 'Sí, acepto tarjeta', 'Tus clientes eligen Tarjeta y tú se las cobras con tu terminal al entregar'))
+            : opt(true, 'card', 'Sí, acepto tarjeta', stLinked() ? 'Tus clientes pagan con su tarjeta en línea con Stripe' : 'Con tu terminal al entregar, o en línea si conectas Stripe'))
           + opt(false, 'cash', 'No, tarjeta no', 'La opción Tarjeta no le aparece al cliente')
         : opt(true, 'transfer', 'Sí, acepto transferencias', 'El cliente verá tu CLABE y el número de su pedido como concepto')
           + opt(false, 'cash', 'No, transferencia no', 'La opción Transferencia no le aparece al cliente')}
@@ -16225,6 +16298,7 @@ function mdRenderPayForm(){
     ${card && d.on === true && mpVisible() ? (mpLinked()
       ? `<div class="mdi-banner ok" style="margin:14px 0 0;">${icon('check')}<span><b>Mercado Pago enlazado</b>${escapeHtml(mpCfg().nickname || 'Tu cuenta está conectada')} · tus clientes ya pueden pagar con tarjeta. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Ver o desenlazar</button></span></div>`
       : `<div class="mdi-banner warn" style="margin:14px 0 0;">${icon('alert')}<span><b>Falta enlazar tu Mercado Pago</b>Sin enlazarlo, la opción Tarjeta no le aparece a tus clientes. <button type="button" class="mdi-pay-lnk" onclick="mpOpenForm()">Enlazar ahora</button></span></div>`) : ''}
+    ${card && d.on === true ? stBoxHTML() : ''}
     ${!card && d.on === true ? `
       <div class="md-pay-fields">
         <div class="field" id="mdPayClabeField">
@@ -16695,7 +16769,7 @@ function mdChecklist(){
          que el negocio diga sí o no, sin nada que enlazar. */
       if(!mpVisible()){
         return { label:'Pago con tarjeta', ok:pm.card !== null,
-          sub: pm.card === true ? 'Sí · tú se la cobras con tu terminal al entregar'
+          sub: pm.card === true ? (stLinked() ? 'Sí · en línea con Stripe' + (pm.st.name ? ' · ' + escapeHtml(pm.st.name) : '') : (pm.st.on ? 'Sí · falta terminar de configurar tu Stripe' : 'Sí · tú se la cobras con tu terminal al entregar'))
              : pm.card === false ? 'No · la opción Tarjeta no se muestra'
              : '¿Cobras con tarjeta? Toca para responder',
           action:'mdOpenCardForm()' };
@@ -18815,7 +18889,7 @@ function mdiConfirm(id){
   vibrate([15, 60, 15]);
   /* Pago con tarjeta: el total que se va a cobrar queda fijado EN EL SERVIDOR.
      Es el único monto que Mercado Pago puede cobrar por este pedido. */
-  try{ const oc = MDI.get(id); if(oc) mpArm(oc, true); }catch(e){}
+  try{ const oc = MDI.get(id); if(oc){ mpArm(oc, true); stArm(oc, true); } }catch(e){}
   mdiAfterDecision(id);
 }
 
@@ -18966,6 +19040,43 @@ function mdiCobroHTML(o){
         <div class="mdi-pay-live"><i class="mdi-pay-dot"></i>Pendiente en Mercado Pago · se revisa solo</div>
         <div class="mdi-pay-acts">
           <button type="button" class="mdi-pay-go wa" onclick="mpSendLink('${id}')">${icon('whatsapp')} Mandarle el link de pago</button>
+          <button type="button" class="mdi-pay-alt" onclick="mdiChargeOther('${id}')">Pagó de otra forma · abrir el cobro</button>
+        </div>
+      </div>`;
+  }
+
+  /* Stripe: el cliente paga en línea, pero la venta la registras TÚ con el
+     botón (sale la pantalla de "Venta realizada" con confeti como siempre). */
+  const st = (pid === 'tarjeta') ? stOrderState(o) : null;
+  if(st && st.pagado){
+    return `
+      <div class="mdi-pay st-live">
+        <div class="mdi-pay-top">
+          <span class="mdi-pay-ico">${icon('check')}</span>
+          <b>Pagado con tarjeta</b>
+          <span class="mdi-pay-pill st-pill">Stripe</span>
+        </div>
+        <div class="mdi-pay-amt">${formatMoney(total)}<small>Stripe confirmó el pago del cliente</small></div>
+        <p class="mdi-pay-txt">El dinero ya va a tu cuenta de Stripe. Toca el botón para registrar la venta.</p>
+        <div class="mdi-pay-acts">
+          <button type="button" class="mdi-pay-go" onclick="stChargePaid('${id}')">${icon('check')} Ya pagó con tarjeta</button>
+        </div>
+      </div>`;
+  }
+  if(st && st.enlazado){
+    return `
+      <div class="mdi-pay st-wait">
+        <div class="mdi-pay-top">
+          <span class="mdi-pay-ico">${icon('card')}</span>
+          <b>Cobro · Tarjeta</b>
+          <span class="mdi-pay-pill st-pill">Stripe</span>
+        </div>
+        <div class="mdi-pay-amt">${formatMoney(total)}<small>${st.procesando ? 'Stripe está procesando el pago' : 'esperando el pago del cliente'}</small></div>
+        <p class="mdi-pay-txt">El cliente paga con su tarjeta desde el link y el dinero llega a tu cuenta de Stripe. Cuando veas que pagó, toca «Ya pagó con tarjeta».</p>
+        <div class="mdi-pay-live"><i class="mdi-pay-dot"></i>${st.rechazado ? 'El último intento fue rechazado por el banco' : 'Pendiente en Stripe · se revisa solo'}</div>
+        <div class="mdi-pay-acts">
+          <button type="button" class="mdi-pay-go wa" onclick="stSendLink('${id}')">${icon('whatsapp')} Mandarle el link de pago</button>
+          <button type="button" class="mdi-pay-go" onclick="mdiAskPaid('${id}')">${icon('check')} Ya pagó con tarjeta</button>
           <button type="button" class="mdi-pay-alt" onclick="mdiChargeOther('${id}')">Pagó de otra forma · abrir el cobro</button>
         </div>
       </div>`;
@@ -19365,10 +19476,12 @@ const MpWatch = {
     try{
       const ids = lista.map(o => o.id).slice(0, 60);
       const { data, error } = await Cloud.sb.from(MDI_TABLE)
-        .select('id, charge_status, mp_payment_id, paid_amount, paid_at')
+        .select('id, charge_status, mp_payment_id, paid_amount, paid_at, pay_provider')
         .eq('user_id', Cloud.uid).in('id', ids);
       if(error || !Array.isArray(data)) return;
       data.forEach(row => {
+        /* Los pagos con Stripe NO se cobran solos: el negocio confirma en el POS */
+        if(row.pay_provider === 'stripe') return;
         const o = MDI.get(row.id);
         if(!o || mdiIsPaid(o) || o.status !== 'confirmado' || o.pendingNext) return;
         const st = row.charge_status || 'pending';
@@ -19407,6 +19520,298 @@ const MpWatch = {
     document.addEventListener('visibilitychange', () => { if(!document.hidden){ this.listen(); this.pull(); } });
     window.addEventListener('online', () => { this.listen(); this.pull(); });
     setTimeout(() => { this.listen(); this.pull(); }, 2500);
+  }
+};
+
+/* =========================================================================
+   STRIPE · cada negocio conecta SU PROPIA cuenta de Stripe
+   -------------------------------------------------------------------------
+   En Menú Digital › Pago con tarjeta aparece el recuadro de Stripe:
+     · "Conectar": Stripe abre su página para crear la cuenta o entrar con
+       una que ya tengas. Al regresar se revisa solo.
+     · "Stripe enlazado · Desenlazar": ya está; tus clientes pagan en línea.
+   Con Stripe enlazado, cuando aceptas un pedido con tarjeta:
+     · El total se fija EN EL SERVIDOR (el cliente no lo puede cambiar).
+     · Le mandas el link de pago por WhatsApp (va en el mismo aviso).
+     · El cliente paga y el dinero cae DIRECTO en tu cuenta de Stripe.
+     · El pedido NO se cobra solo: tú tocas «Ya pagó con tarjeta» y sale la
+       pantalla de venta realizada con confeti, como en cualquier venta.
+   Las llaves secretas viven en Supabase (stripe-negocio / stripe-pago).
+========================================================================= */
+const ST_FN = { negocio:'stripe-negocio', pago:'stripe-pago' };
+const STRIPE_LOGO = '<svg class="st-logo" viewBox="0 0 60 25" role="img" aria-label="Stripe"><path fill="currentColor" d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32a8.33 8.33 0 0 1-4.56 1.1c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.04 1.26-.06 1.48zm-5.92-5.62c-1.03 0-2.17.73-2.17 2.58h4.25c0-1.85-1.07-2.58-2.08-2.58zM40.95 20.3c-1.44 0-2.32-.6-2.9-1.04l-.02 4.63-4.12.87V5.57h3.76l.08 1.02a4.7 4.7 0 0 1 3.23-1.29c2.9 0 5.62 2.6 5.62 7.4 0 5.23-2.7 7.6-5.65 7.6zM40 8.95c-.95 0-1.54.34-1.97.81l.02 6.12c.4.44.98.78 1.95.78 1.52 0 2.54-1.65 2.54-3.87 0-2.15-1.04-3.84-2.54-3.84zM28.24 5.57h4.13v14.44h-4.13V5.57zm0-4.7L32.37 0v3.36l-4.13.88V.88zm-4.32 9.35v9.79H19.8V5.57h3.7l.12 1.22c1-1.77 3.07-1.41 3.62-1.22v3.79c-.52-.17-2.29-.43-3.32.86zm-8.55 4.72c0 2.43 2.6 1.68 3.12 1.46v3.36c-.55.3-1.54.54-2.89.54a4.15 4.15 0 0 1-4.27-4.24l.01-13.17 4.02-.86v3.54h3.14V9.1h-3.13v5.85zm-4.91.7c0 2.97-2.31 4.66-5.73 4.66a11.2 11.2 0 0 1-4.46-.93v-3.93c1.38.75 3.1 1.31 4.46 1.31.92 0 1.53-.24 1.53-1C6.26 13.77 0 14.51 0 9.95 0 7.04 2.28 5.3 5.62 5.3c1.36 0 2.72.2 4.09.75v3.88a9.23 9.23 0 0 0-4.1-1.06c-.86 0-1.44.25-1.44.9 0 1.85 6.29.97 6.29 5.88z"/></svg>';
+
+function stCfg(){ const s = (mdCfg().payments || {}).st || {}; return { on:!!s.on, ready:!!s.ready, name:s.name || '', at:s.at || null }; }
+function stLinked(){ const s = stCfg(); return s.on && s.ready; }
+function stSaveCfg(j){
+  const cfg = mdCfg();
+  const antes = JSON.stringify(cfg.payments.st || {});
+  cfg.payments.st = { on:!!(j && j.connected), ready:!!(j && j.connected && j.ready), name:(j && j.name) || '', at:(j && j.connected) ? ((cfg.payments.st && cfg.payments.st.at) || new Date().toISOString()) : null };
+  const cambio = antes !== JSON.stringify(cfg.payments.st);
+  if(cambio) mdSaveCfg(cfg);
+  return cambio;
+}
+
+/** Llamada a una función de Stripe en Supabase (con la sesión del negocio). */
+async function stCall(fn, body, conSesion){
+  if(!mpReady()) throw new Error('Falta configurar Supabase');
+  let auth = VENDO_CONFIG.SUPABASE_ANON_KEY;
+  if(conSesion){
+    let s = null;
+    try{ s = (await Cloud.sb.auth.getSession()).data.session; }catch(e){}
+    if(!s || !s.access_token) throw new Error('Inicia sesión en tu cuenta para hacer esto');
+    auth = s.access_token;
+  }
+  const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const t = ctl ? setTimeout(() => ctl.abort(), 25000) : null;
+  let r;
+  try{
+    r = await fetch(mpBase() + '/functions/v1/' + fn, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', apikey:VENDO_CONFIG.SUPABASE_ANON_KEY, Authorization:'Bearer ' + auth },
+      body:JSON.stringify(body || {}), signal: ctl ? ctl.signal : undefined
+    });
+  }finally{ if(t) clearTimeout(t); }
+  let j = null;
+  try{ j = await r.json(); }catch(e){}
+  if(!r.ok || (j && j.ok === false)){
+    const e = new Error((j && j.error) || (r.status === 401 ? 'Tu sesión venció. Vuelve a entrar e inténtalo otra vez' : 'No se pudo conectar con Stripe (error ' + r.status + ')'));
+    e.code = j && j.code; throw e;
+  }
+  return j || {};
+}
+
+/** Le pregunta al servidor cómo va la cuenta de Stripe del negocio. */
+async function stSyncStatus(silencio){
+  if(!mpReady() || !Cloud.ready || !Cloud.uid) return null;
+  try{
+    const j = await stCall(ST_FN.negocio, { action:'status' }, true);
+    j.cambio = stSaveCfg(j);
+    return j;
+  }catch(e){
+    if(!silencio) console.warn('Vendo plus · Stripe', e);
+    return null;
+  }
+}
+
+/* ---------- El recuadro de Stripe (dentro de "Pago con tarjeta") ---------- */
+function stBoxHTML(){
+  const s = stCfg();
+  if(s.on && s.ready){
+    return `<div class="st-box on" id="stBox">
+      <span class="st-box-logo">${STRIPE_LOGO}</span>
+      <span class="st-box-sep" aria-hidden="true"></span>
+      <span class="st-box-txt"><b>Stripe enlazado</b><button type="button" class="st-box-lnk" onclick="stAskUnlink()">Desenlazar</button></span>
+    </div>
+    <p class="st-box-note">${s.name ? 'Cuenta ' + escapeHtml(s.name) + ' · ' : ''}tus clientes ya pueden pagar con tarjeta desde tu menú. El dinero llega a tu cuenta de Stripe.</p>`;
+  }
+  const pendiente = s.on && !s.ready;
+  return `<div class="st-box" id="stBox">
+      <span class="st-box-logo">${STRIPE_LOGO}</span>
+      <span class="st-box-sep" aria-hidden="true"></span>
+      <span class="st-box-txt"><span class="st-box-msg">${pendiente ? 'Termina de configurar tu Stripe.' : 'Cobra en línea con Stripe.'}</span></span>
+      <button type="button" class="st-box-go" id="stGoBtn" onclick="stConnect(this)">${pendiente ? 'Continuar' : 'Conectar'}</button>
+    </div>
+    <p class="st-box-note">${pendiente
+      ? 'Stripe todavía no te deja cobrar: faltan datos de tu cuenta. ' + (s.on ? '<button type="button" class="st-box-lnk sm" onclick="stAskUnlink()">Desenlazar</button>' : '')
+      : 'Crea tu cuenta de Stripe o entra con la que ya tienes. Tus clientes pagarán con tarjeta desde tu menú y el dinero llega directo a tu cuenta.'}</p>`;
+}
+function stRepaintForm(){ if(mdPayDraft && mdPayKind === 'card' && document.getElementById('stBox')) mdRenderPayForm(); }
+
+async function stConnect(btn){
+  if(!mpCanLink()){ toast('No tienes permiso para cambiar el Menú Digital', { icon:icon('alert'), variant:'toast-danger' }); return; }
+  if(!Cloud.ready || !Cloud.uid){ toast('Entra a tu cuenta para conectar Stripe', { icon:icon('alert'), variant:'toast-danger' }); return; }
+  const txt = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Abriendo…'; }
+  /* La ventana se abre YA (en el toque) para que el navegador no la bloquee */
+  let w = null;
+  try{ w = window.open('', '_blank'); }catch(e){}
+  try{
+    const j = await stCall(ST_FN.negocio, { action:'start' }, true);
+    if(j.connected && j.ready){
+      if(w) try{ w.close(); }catch(e){}
+      stSaveCfg(j);
+      vibrate([15, 60, 15]);
+      toast('Stripe enlazado', { icon:icon('check'), variant:'toast-success', subtitle:'Tus clientes ya pueden pagar con tarjeta' });
+      stRepaintForm(); mdRerenderIfMenu();
+      return;
+    }
+    if(!j.url) throw new Error('Stripe no devolvió el enlace');
+    stSaveCfg({ connected:true, ready:false, name:stCfg().name });
+    if(w && !w.closed){ w.location.href = j.url; }
+    else { location.href = j.url; return; }
+    toast('Termina en Stripe y regresa aquí', { icon:icon('external'), subtitle:'Al volver, revisamos tu cuenta sola', duration:3800 });
+    stRepaintForm();
+    stWaitLink();
+  }catch(e){
+    if(w) try{ w.close(); }catch(x){}
+    if(btn){ btn.disabled = false; btn.textContent = txt || 'Conectar'; }
+    toast(e && e.code === 'connect_off' ? 'Stripe aún no está listo en VendoPlus' : 'No se pudo abrir Stripe', { icon:icon('alert'), variant:'toast-danger', subtitle:String((e && e.message) || e).slice(0, 120), duration:4200 });
+  }
+}
+/** Al volver de Stripe se revisa la cuenta unas cuantas veces. */
+function stWaitLink(){
+  let n = 0;
+  const avisa = j => {
+    toast('Stripe enlazado', { icon:icon('check'), variant:'toast-success', subtitle:j.name ? 'Cuenta ' + j.name : 'Ya puedes cobrar con tarjeta' });
+    vibrate([15, 60, 15]); stRepaintForm(); mdRerenderIfMenu();
+  };
+  const revisa = async () => {
+    n++;
+    const j = await stSyncStatus(true);
+    if(j && j.connected && j.ready){ if(j.cambio) avisa(j); return; }
+    if(j && j.cambio){ stRepaintForm(); mdRerenderIfMenu(); }
+    if(n < 30) setTimeout(revisa, 4000);
+  };
+  setTimeout(revisa, 4000);
+  const alVolver = () => {
+    if(document.hidden) return;
+    document.removeEventListener('visibilitychange', alVolver);
+    setTimeout(() => stSyncStatus(true).then(j => { if(j && j.connected && j.ready && j.cambio) avisa(j); else if(j && j.cambio){ stRepaintForm(); mdRerenderIfMenu(); } }), 700);
+  };
+  document.addEventListener('visibilitychange', alVolver);
+}
+function stAskUnlink(){
+  askConfirm({
+    title:'¿Desenlazar tu Stripe?',
+    text:'Tus clientes dejarán de poder pagar con tarjeta en línea desde tu menú. Los pagos que ya te hicieron no se tocan y tu cuenta de Stripe sigue siendo tuya. Puedes volver a enlazarla cuando quieras.',
+    ok:'Desenlazar', cancel:'Volver', danger:true, icon:icon('alert')
+  }, async () => {
+    try{
+      await stCall(ST_FN.negocio, { action:'unlink' }, true);
+      stSaveCfg({ connected:false });
+      toast('Stripe desenlazado', { icon:icon('check') });
+      stRepaintForm(); mdRerenderIfMenu();
+    }catch(e){
+      toast('No se pudo desenlazar', { icon:icon('alert'), variant:'toast-danger', subtitle:String(e.message || e).slice(0, 120) });
+    }
+  });
+}
+
+/** Al arrancar: revisa el enlace y, si se regresó de Stripe, avisa. */
+function stBoot(){
+  let vuelta = null;
+  try{
+    const q = new URLSearchParams(location.search);
+    vuelta = q.get('stripe');
+    if(vuelta){ q.delete('stripe'); const qs = q.toString(); history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash); }
+  }catch(e){}
+  setTimeout(async () => {
+    const j = await stSyncStatus(true);
+    if(j && j.cambio){ stRepaintForm(); mdRerenderIfMenu(); }
+    if(vuelta === 'listo'){
+      if(j && j.connected && j.ready) toast('Stripe enlazado', { icon:icon('check'), variant:'toast-success', subtitle:'Tus clientes ya pueden pagar con tarjeta desde tu menú' });
+      else if(j && j.connected) toast('Falta terminar tu Stripe', { icon:icon('alert'), subtitle:'Menú Digital › Pago con tarjeta › Continuar', duration:4200 });
+    }else if(vuelta === 'reintentar'){
+      toast('El enlace de Stripe venció', { icon:icon('alert'), subtitle:'Menú Digital › Pago con tarjeta › Continuar', duration:4200 });
+    }
+  }, vuelta ? 1500 : 4500);
+}
+
+/* ---------- El pedido y su pago con Stripe ---------- */
+function stOrderState(o){
+  const enlazado = stLinked() && mdCfg().payments.card === true;
+  const s = (o && o.st) || null;
+  const status = s ? s.status : null;
+  return {
+    enlazado: enlazado,
+    status: status,
+    pi: s ? s.pi : null,
+    pagado: status === 'paid',
+    procesando: status === 'processing',
+    rechazado: status === 'rejected'
+  };
+}
+function stPayUrl(o){
+  const base = location.protocol === 'file:' ? location.href.split(/[?#]/)[0] : location.origin + location.pathname;
+  return base + '#pagar/' + encodeURIComponent(o.id);
+}
+/** Fija EN EL SERVIDOR cuánto se cobra por este pedido. */
+async function stArm(o, silencio){
+  if(!o || !stLinked() || mdiPayId(o) !== 'tarjeta') return false;
+  if(!Cloud.ready || !Cloud.uid) return false;
+  try{
+    await stCall(ST_FN.negocio, { action:'arm', order_id:o.id, code:o.code, total:mdiOrderTotal(o) }, true);
+    return true;
+  }catch(e){
+    if(!silencio) console.warn('Vendo plus · preparar cobro Stripe', e);
+    return false;
+  }
+}
+async function stSendLink(id){
+  const o = MDI.get(id); if(!o) return;
+  /* Por si el total cambió (envío, productos): se vuelve a fijar antes de mandar el link */
+  stArm(o, true);
+  const tel = String((o.customer && o.customer.phone) || '').replace(/\D/g, '');
+  const b = bizData();
+  const nombre = (o.customer && o.customer.name) ? ' ' + o.customer.name.split(/\s+/)[0] : '';
+  const msg = '¡Hola' + nombre + '! Aquí puedes pagar con tarjeta tu pedido ' + o.code + (b.name ? ' en ' + b.name : '') +
+    '.\n\n*Total: ' + formatMoney(mdiOrderTotal(o)) + ' MXN*\n' + stPayUrl(o) +
+    '\n\nEl pago es seguro y lo procesa Stripe.';
+  const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(msg);
+  const w = window.open(url, '_blank');
+  if(!w) location.href = url;
+}
+/** Stripe ya confirmó el pago: el negocio toca el botón y se registra la venta
+    (con la pantalla de "Venta realizada" y su confeti, como siempre). */
+function stChargePaid(id){
+  const o = MDI.get(id); if(!o) return;
+  const s = o.st || {};
+  mdiChargeNow(id, 'tarjeta', { ref:String(s.pi || '').slice(0, 40) });
+}
+
+/* ---------- Vigilante: avisa cuando el cliente ya pagó (NO cobra solo) ---------- */
+const StWatch = {
+  t:null, busy:false, n:0,
+  pendientes(){
+    return MDI.all().filter(o => o.status === 'confirmado' && !o.pendingNext && !mdiIsPaid(o) && mdiPayId(o) === 'tarjeta');
+  },
+  canRun(){ return mpReady() && Cloud.ready && !!Cloud.uid && stLinked() && !document.body.classList.contains('dm-mode'); },
+  async pull(){
+    if(this.busy || !this.canRun()) return;
+    const lista = this.pendientes();
+    if(!lista.length) return;
+    this.busy = true; this.n++;
+    let cambio = false;
+    try{
+      const ids = lista.map(o => o.id).slice(0, 60);
+      const { data, error } = await Cloud.sb.from(MDI_TABLE)
+        .select('id, charge_status, stripe_pi_id, pay_provider')
+        .eq('user_id', Cloud.uid).in('id', ids);
+      if(error || !Array.isArray(data)) return;
+      /* Si hay un pago empezado que aún no sale como pagado, se le pregunta a
+         Stripe (por si el cliente cerró la pantalla antes de terminar). */
+      const revisar = data.filter(r => r.stripe_pi_id && r.charge_status !== 'paid').slice(0, 3);
+      if(revisar.length && (this.n % 2 === 1)){
+        await Promise.all(revisar.map(async r => {
+          try{ const j = await stCall(ST_FN.pago, { order_id:r.id }, false); if(j && j.status) r.charge_status = j.status === 'pending' ? r.charge_status : j.status; }catch(e){}
+        }));
+      }
+      data.forEach(row => {
+        const o = MDI.get(row.id);
+        if(!o || mdiIsPaid(o) || o.status !== 'confirmado') return;
+        if(row.pay_provider !== 'stripe' && !row.stripe_pi_id) return;
+        const st = row.charge_status || 'pending';
+        const antes = (o.st && o.st.status) || null;
+        if(antes === st && o.st && o.st.pi === (row.stripe_pi_id || null)) return;
+        MDI.update(row.id, x => { x.st = { status:st, pi:row.stripe_pi_id || null }; });
+        cambio = true;
+        if(st === 'paid' && antes !== 'paid'){
+          vibrate([20, 80, 20]);
+          toast('El cliente pagó con tarjeta · ' + o.code, { icon:icon('check'), variant:'toast-success toast-top',
+            subtitle:'Stripe confirmó ' + formatMoney(mdiOrderTotal(o)) + ' · toca «Ya pagó con tarjeta»', duration:4200 });
+        }
+      });
+      if(cambio) mdiRefresh();
+    }catch(e){ /* sin internet: se vuelve a intentar */ }
+    finally{ this.busy = false; }
+  },
+  start(){
+    if(this.t) return;
+    this.t = setInterval(() => { if(!document.hidden) this.pull(); }, 10000);
+    document.addEventListener('visibilitychange', () => { if(!document.hidden) this.pull(); });
+    window.addEventListener('online', () => this.pull());
+    setTimeout(() => this.pull(), 3000);
   }
 };
 
@@ -19587,7 +19992,9 @@ function mdiNotify(id){
     }
     if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
     /* Con tarjeta y Mercado Pago enlazado, el link de pago va en el mismo aviso */
-    if(c.payment === 'tarjeta' && mpVisible() && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
+    if(c.payment === 'tarjeta' && stLinked() && mdCfg().payments.card === true && !mdiIsPaid(o)){
+      extra.push('Paga con tu tarjeta aquí: ' + stPayUrl(o));
+    }else if(c.payment === 'tarjeta' && mpVisible() && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
       extra.push('Paga con tu tarjeta aquí: ' + mpPayUrl(o));
     }
     if(extra.length) msg += '\n\n' + extra.join('\n');
@@ -20010,6 +20417,12 @@ function dmPayInfoHTML(){
     </div>`;
   }
   if(co.pay === 'tarjeta'){
+    if(pm.st && pm.st.on){
+      return `<div class="dm-pi">
+        ${head('card', 'Pago con tarjeta', 'Pagas en línea con Stripe, desde tu celular.')}
+        <small class="dm-pi-note">Al confirmarte el pedido, el negocio te manda por WhatsApp tu link de pago. Ahí pones tu tarjeta y listo. Tus datos de tarjeta los procesa Stripe: no los ve el negocio ni esta app.</small>
+      </div>`;
+    }
     const mpOn = !!(pm.mp && pm.mp.on);
     if(mpOn){
       return `<div class="dm-pi">
@@ -25242,7 +25655,7 @@ function mdPublicSnapshot(){
          /* Formas de pago: la CLABE solo se publica si aceptas transferencias */
          /* El banner y las redes viajan junto con el resto del menú */
          banner: mdCleanBanner(cfg.banner),
-         payments:{ card: cfg.payments.card === true, mp:{ on: mpVisible() && cfg.payments.card === true && !!(cfg.payments.mp && cfg.payments.mp.on && cfg.payments.mp.publicKey) }, transfer: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe), clabe: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe) ? cfg.payments.clabe : '', holder: cfg.payments.transfer === true ? cfg.payments.holder : '' } },
+         payments:{ card: cfg.payments.card === true, mp:{ on: mpVisible() && cfg.payments.card === true && !!(cfg.payments.mp && cfg.payments.mp.on && cfg.payments.mp.publicKey) }, st:{ on: cfg.payments.card === true && !!(cfg.payments.st && cfg.payments.st.on && cfg.payments.st.ready) }, transfer: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe), clabe: cfg.payments.transfer === true && mdClabeOk(cfg.payments.clabe) ? cfg.payments.clabe : '', holder: cfg.payments.transfer === true ? cfg.payments.holder : '' } },
     wa: mdWhatsappDigits(),
     biz:{ name:b.name || '', logo:b.logo || u.photo || null, giro:b.giro || '', type:b.type || '', hours:hrsClean(b.hours) },
     tax:{ taxMode:pc.taxMode, taxRate:pc.taxRate },
@@ -25834,6 +26247,213 @@ function pgSubmit(datos){
       listo();
     }
   });
+}
+
+/* =========================================================================
+   PÁGINA DE PAGO CON STRIPE  ·  …#pagar/<id del pedido>
+   -------------------------------------------------------------------------
+   La abre EL CLIENTE con el link que le llega por WhatsApp. No pide cuenta.
+   · El monto lo da el servidor (lo fijó el negocio al aceptar el pedido).
+   · La tarjeta se escribe en el formulario de Stripe: va directo de este
+     celular a Stripe, a la cuenta del negocio. Vendo Plus no la ve.
+   · "Ya pagaste" sale solo cuando el servidor le preguntó a Stripe.
+========================================================================= */
+const sp = { id:null, data:null, stripe:null, elements:null, ocupado:false, t:null };
+const SP_CANDADO = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+function spRoute(){
+  const m = location.hash.match(/^#pagar\/([A-Za-z0-9_-]+)/);
+  return m ? { id:decodeURIComponent(m[1]) } : null;
+}
+function bootStripePago(route){
+  document.body.classList.add('dm-mode', 'pg-mode');
+  const s = document.getElementById('splash'); if(s) s.remove();
+  sp.id = route.id;
+  const root = document.createElement('div'); root.id = 'spRoot'; root.className = 'pg sp';
+  document.body.appendChild(root);
+  spLoad();
+}
+function spPaint(html){ const r = document.getElementById('spRoot'); if(r) r.innerHTML = html; }
+function spCabeza(){
+  const d = sp.data || {};
+  return `<div class="pg-head sp-head">
+      ${d.business_logo ? `<img class="pg-logo" src="${pgEsc(d.business_logo)}" alt="">` : `<span class="pg-logo pg-logo-ph">${pgEsc((d.business || 'N').slice(0, 1).toUpperCase())}</span>`}
+      <div class="pg-head-txt"><b>${pgEsc(d.business || 'Tu pedido')}</b><small>Pedido ${pgEsc(d.code || '')}</small></div>
+    </div>`;
+}
+function spError(titulo, texto, reintentar){
+  spPaint(`<div class="pg-card pg-center sp-card">
+    ${sp.data ? spCabeza() : ''}
+    <span class="pg-big pg-bad">!</span>
+    <h1>${pgEsc(titulo)}</h1>
+    <p>${pgEsc(texto)}</p>
+    ${reintentar ? `<button class="sp-btn" onclick="spLoad()"><span class="sp-btn-txt">Intentar otra vez</span></button>` : ''}
+  </div>`);
+}
+async function spLoad(){
+  spPaint(`<div class="pg-card sp-card"><div class="pg-load"><i></i><i></i><i></i></div><p class="pg-load-txt">Buscando tu pedido…</p></div>`);
+  try{
+    const j = await pgFetch(ST_FN.pago, { order_id:sp.id });
+    sp.data = j;
+    if(j.status === 'paid') return spOk();
+    if(j.status === 'processing') return spEsperando();
+    if(!j.can_pay) return spError('Este negocio aún no cobra con tarjeta en línea', 'Escríbele por WhatsApp para pagar de otra forma.', false);
+    if(!(Number(j.amount) > 0)) return spError('Tu pedido todavía no tiene total', 'El negocio te mandará el link en cuanto confirme cuánto es.', true);
+    spForm(j.status === 'rejected' ? (j.status_text || 'Tu banco no autorizó el pago anterior. Puedes intentar con otra tarjeta.') : '');
+  }catch(e){
+    const m = String(e.message || e);
+    if(/no existe|404/i.test(m)) spError('No encontramos ese pedido', 'Revisa que el link esté completo o pídele al negocio que te lo mande otra vez.', true);
+    else spError('No se pudo abrir tu pago', m.slice(0, 140), true);
+  }
+}
+function spForm(aviso){
+  const d = sp.data;
+  const total = pgMoney(d.amount);
+  spPaint(`
+    <div class="pg-card sp-card">
+      ${spCabeza()}
+      <h1 class="sp-h1">Completa tu pago</h1>
+      <div class="sp-resumen">
+        <div class="sp-fila"><span><b>Pedido ${pgEsc(d.code || '')}</b><small>${pgEsc(d.business || '')}</small></span><span>${total}</span></div>
+        <div class="sp-linea"></div>
+        <div class="sp-fila total"><span>Total a pagar</span><span><b>${total}</b> <small>MXN</small></span></div>
+      </div>
+      <div class="sp-lbl">Método de pago</div>
+      <div class="sp-tarjeta" id="spTarjeta">
+        <div class="sp-esq"><i></i><i></i><i class="dos"><em></em><em></em></i></div>
+        <div id="spEl"></div>
+      </div>
+      <div class="sp-error" id="spErr" role="alert" ${aviso ? '' : 'hidden'}>${pgEsc(aviso || '')}</div>
+      <button type="button" class="sp-btn" id="spBtn" onclick="spPagar()" disabled>
+        <span class="sp-btn-txt">Pagar ${total} MXN</span><span class="sp-spin" aria-hidden="true"></span>
+      </button>
+      <div class="sp-seguro">${SP_CANDADO}<span>Pago seguro y cifrado. Tus datos de tarjeta los procesa <b>Stripe</b>: este negocio y Vendo Plus no los ven ni los guardan.</span></div>
+      ${d.livemode === false ? '<p class="pg-mini">Modo de prueba · no se hace ningún cargo real</p>' : ''}
+    </div>`);
+  spMontar();
+}
+function spCargarJs(){
+  if(window.Stripe) return Promise.resolve(window.Stripe);
+  if(spCargarJs.p) return spCargarJs.p;
+  spCargarJs.p = new Promise((ok, mal) => {
+    const s = document.createElement('script');
+    s.src = 'https://js.stripe.com/v3/'; s.async = true;
+    s.onload = () => window.Stripe ? ok(window.Stripe) : mal(new Error('Stripe.js'));
+    s.onerror = () => { spCargarJs.p = null; mal(new Error('No se pudo cargar Stripe. Revisa tu internet.')); };
+    document.head.appendChild(s);
+  });
+  return spCargarJs.p;
+}
+/* En celular la app usa "zoom"; el recuadro de Stripe (iframe) se ve mal con
+   zoom, así que a ese recuadro se le quita. */
+function spSinZoom(box){
+  if(!box) return;
+  let z = 1, n = box.parentElement;
+  while(n && n !== document.documentElement){ const v = parseFloat(getComputedStyle(n).zoom); if(v && isFinite(v)) z *= v; n = n.parentElement; }
+  if(Math.abs(z - 1) < 0.01) return;
+  box.style.zoom = String(1 / z); box.style.width = '100%';
+}
+function spErr(msg){ const b = document.getElementById('spErr'); if(!b) return; b.hidden = !msg; b.textContent = msg || ''; }
+function spBoton(estado){
+  const b = document.getElementById('spBtn'); if(!b) return;
+  b.disabled = estado !== 'listo';
+  b.classList.toggle('cargando', estado === 'cargando');
+}
+async function spMontar(){
+  try{
+    const [S, j] = await Promise.all([spCargarJs(), pgFetch(ST_FN.pago, { order_id:sp.id, action:'intent' })]);
+    if(j.status === 'paid') return spOk();
+    if(j.status === 'processing') return spEsperando();
+    if(!j.client_secret || !j.publishable_key) throw new Error('No se pudo preparar el pago');
+    sp.stripe = S(j.publishable_key, { stripeAccount:j.account, locale:'es-419' });
+    sp.elements = sp.stripe.elements({
+      clientSecret: j.client_secret,
+      locale: 'es-419',
+      appearance: {
+        theme: 'stripe',
+        variables: {
+          colorPrimary:'#635BFF', colorText:'#15181C', colorTextSecondary:'#6C7480', colorTextPlaceholder:'#A3AAB5',
+          colorDanger:'#B42318', colorBackground:'#FFFFFF', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontSizeBase:'15px', borderRadius:'12px', spacingUnit:'4px'
+        },
+        rules: {
+          '.Input': { border:'1.5px solid #E4E8EF', boxShadow:'none', padding:'13px 14px' },
+          '.Input:focus': { border:'1.5px solid #635BFF', boxShadow:'0 0 0 3px rgba(99,91,255,.14)' },
+          '.Input--invalid': { border:'1.5px solid #F1B4AE', boxShadow:'none' },
+          '.Label': { fontWeight:'500', fontSize:'13px', color:'#6C7480' },
+          '.Tab': { border:'1.5px solid #E4E8EF', boxShadow:'none' },
+          '.Tab--selected': { border:'1.5px solid #635BFF', boxShadow:'none' }
+        }
+      }
+    });
+    const el = sp.elements.create('payment', { layout:'tabs', terms:{ card:'never' }, wallets:{ applePay:'auto', googlePay:'auto' } });
+    el.on('ready', () => { const t = document.getElementById('spTarjeta'); if(t) t.classList.add('lista'); spBoton('listo'); });
+    el.on('change', () => spErr(''));
+    el.on('loaderror', () => spErr('No se pudo cargar el formulario de pago. Revisa tu internet e inténtalo de nuevo.'));
+    spSinZoom(document.getElementById('spEl'));
+    el.mount('#spEl');
+  }catch(e){
+    const t = document.getElementById('spTarjeta'); if(t) t.classList.add('lista');
+    const m = String((e && e.message) || '');
+    spErr(/failed to fetch|network|load failed/i.test(m) || !m ? 'No pudimos conectar. Revisa tu internet e inténtalo de nuevo.' : m.slice(0, 160));
+    const b = document.getElementById('spBtn');
+    if(b){ b.disabled = false; b.onclick = () => spLoad(); const tx = b.querySelector('.sp-btn-txt'); if(tx) tx.textContent = 'Intentar otra vez'; }
+  }
+}
+async function spPagar(){
+  if(sp.ocupado || !sp.stripe || !sp.elements) return;
+  sp.ocupado = true;
+  spErr(''); spBoton('cargando');
+  try{
+    const res = await sp.stripe.confirmPayment({
+      elements: sp.elements,
+      redirect: 'if_required',
+      confirmParams: { return_url: location.origin + location.pathname + '?pagado=1#pagar/' + encodeURIComponent(sp.id) }
+    });
+    if(res.error){
+      sp.ocupado = false; spBoton('listo');
+      spErr(res.error.type === 'card_error' || res.error.type === 'validation_error' ? res.error.message : 'No se pudo completar el pago. Inténtalo de nuevo.');
+      return;
+    }
+    spEsperando();
+  }catch(e){
+    sp.ocupado = false; spBoton('listo');
+    spErr('No se pudo completar el pago. Revisa tu internet e inténtalo de nuevo.');
+  }
+}
+/** Espera a que el servidor confirme con Stripe. */
+function spEsperando(){
+  spPaint(`<div class="pg-card pg-center sp-card">
+      ${spCabeza()}
+      <div class="pg-load"><i></i><i></i><i></i></div>
+      <h1>Confirmando tu pago…</h1>
+      <p>No cierres esta pantalla. En cuanto Stripe lo confirme te avisamos aquí.</p>
+    </div>`);
+  if(sp.t) clearInterval(sp.t);
+  let n = 0;
+  const revisa = async () => {
+    n++;
+    try{
+      const j = await pgFetch(ST_FN.pago, { order_id:sp.id });
+      sp.data = Object.assign({}, sp.data, j);
+      if(j.status === 'paid'){ clearInterval(sp.t); sp.t = null; spOk(); return; }
+      if(j.status === 'rejected'){ clearInterval(sp.t); sp.t = null; sp.ocupado = false; spForm(j.status_text || 'Tu banco no autorizó el pago. Puedes intentar con otra tarjeta.'); return; }
+    }catch(e){}
+    if(n >= 60){ clearInterval(sp.t); sp.t = null; }
+  };
+  sp.t = setInterval(revisa, 2500);
+  revisa();
+}
+function spOk(){
+  const d = sp.data || {};
+  if(sp.t){ clearInterval(sp.t); sp.t = null; }
+  spPaint(`<div class="pg-card pg-center sp-card sp-ok">
+      ${spCabeza()}
+      <div class="sp-check"><svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M15 27l7.5 7.5L37.5 19"/></svg></div>
+      <h1>¡Listo, ya pagaste!</h1>
+      <p>Tu pago de <b>${pgMoney(d.amount)}</b> quedó confirmado. El negocio ya lo puede ver.</p>
+      <p class="pg-mini">Pedido ${pgEsc(d.code || '')} · pagado con Stripe</p>
+    </div>`);
 }
 
 /* ---------- Aviso de pedido nuevo (lo usan Realtime, la revisión y otra pestaña) ---------- */
@@ -27119,6 +27739,8 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
   /* Link de pago con tarjeta que el negocio le mandó a su cliente */
   const rutaPago = pgRoute();
   if(rutaPago){ bootPago(rutaPago); return; }
+  const rutaStripe = spRoute();
+  if(rutaStripe){ bootStripePago(rutaStripe); return; }
 
   /* Link "registrar en caja" de mensajes de WhatsApp anteriores */
   let llegado = null, malo = false;
@@ -27132,6 +27754,8 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
   mdiWatch();
   /* Mercado Pago: revisa los pedidos que ya pagaron y los cobra solos */
   try{ MpWatch.start(); setTimeout(() => mpSyncStatus(true), 4000); }catch(e){}
+  /* Stripe: revisa si el cliente ya pagó (no cobra solo) y el estado del enlace */
+  try{ StWatch.start(); stBoot(); }catch(e){}
   mdiPaintBadge();
   /* "hace 5 min" se mantiene al día */
   setInterval(() => { if(currentView === 'menu' && !document.querySelector('#modal-layer .modal-sheet')){ const y = window.scrollY; render(); window.scrollTo(0, y); } }, 60000);
