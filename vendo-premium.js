@@ -1309,6 +1309,175 @@
     return !!(window.confirmarCobro && window.confirmarCobro.__vpLim && window.renderSale && window.renderSale.__vpLim);
   }
 
+  /* =======================================================================
+     10c. ANUNCIO DIARIO DE PREMIUM (solo plan Básico)
+     · Sale UNA vez al día, la primera vez que se abre VendoPlus ese día.
+     · Nunca a Premium, nunca el día del registro (empieza al día siguiente).
+     · Cada día una imagen al azar, sin repetir la del día anterior.
+     · Imagen grande (no toda la pantalla), esquinas rectas, × arriba.
+       Tocar la imagen abre los planes de Premium.
+     Las imágenes van en la carpeta promos/ (ver promos/LEEME.txt).
+  ======================================================================= */
+  var PROMOS = [
+    /* 'promos/premium-01.webp', */
+  ];
+
+  function llaveUsuario() {
+    var c = nube();
+    if (c && c.uid) return String(c.uid);
+    try { var u = fn('currentUser') ? ref('currentUser')() : null; if (u && (u.id || u.email)) return String(u.id || u.email); } catch (e) {}
+    return 'local';
+  }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  /** Fecha de registro: la del perfil en la nube (o la del usuario local). */
+  function diaRegistro() {
+    var c = nube(), f = null;
+    try { if (c && c.sub && c.sub.trial_start) f = c.sub.trial_start; } catch (e) {}
+    if (!f) { try { var u = fn('currentUser') ? ref('currentUser')() : null; if (u) f = u.trialStart || u.createdAt; } catch (e) {} }
+    if (!f) {
+      /* Sin fecha: la primera vez que este aparato vio la cuenta cuenta como registro */
+      var k = 'vp_promo_visto_' + llaveUsuario();
+      f = lsGet(k);
+      if (!f) { f = new Date().toISOString(); lsSet(k, f); }
+    }
+    var d = new Date(f);
+    return isNaN(d) ? null : diaLocal(d);
+  }
+
+  /** ¿Ya se puede decidir? (sesión iniciada, app visible y estado de Premium ya cargado) */
+  function promoListo() {
+    var b = document.body;
+    if (!b || b.classList.contains('auth-open') || b.classList.contains('dm-mode')) return false;
+    if (document.querySelector('#modal-layer .modal-overlay, #confirm-layer > *, #scan-layer > *, .vp-promo')) return false;
+    var v = document.getElementById('view');
+    if (!v || !v.dataset.v) return false;
+    var c = nube();
+    if (c) {
+      if (!c.uid) return false;
+      if (!c.sub) return false;            /* todavía no llega el estado de la membresía */
+    }
+    return true;
+  }
+
+  function cssPromo() {
+    if (document.getElementById('vp-promo-css')) return;
+    var st = document.createElement('style');
+    st.id = 'vp-promo-css';
+    st.textContent = [
+      '.vp-promo{position:fixed;inset:0;z-index:650;display:flex;align-items:center;justify-content:center;',
+      'padding:max(56px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom));',
+      'background:rgba(10,14,28,.62);animation:vp-promo-fondo .25s ease both;}',
+      '.vp-promo-caja{position:relative;max-width:min(560px,100%);max-height:100%;display:flex;',
+      'animation:vp-promo-entra .42s cubic-bezier(.22,1,.36,1) both;}',
+      '.vp-promo-img{display:block;max-width:100%;max-height:calc(100vh - 110px);max-height:calc(100dvh - 110px);',
+      'width:auto;height:auto;border-radius:0;box-shadow:0 24px 60px rgba(0,0,0,.4);cursor:pointer;background:#fff;}',
+      /* Sin imagen todavía (vista previa): un recuadro con la medida sugerida */
+      '.vp-promo-vacio{width:min(420px,calc(100vw - 32px));aspect-ratio:2/3;max-height:calc(100dvh - 110px);border-radius:0;',
+      'background:linear-gradient(160deg,#0A2368,#01164F);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;',
+      'gap:10px;text-align:center;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.4);cursor:pointer;font-family:inherit;}',
+      '.vp-promo-vacio b{font-size:22px;font-weight:700;letter-spacing:-.3px;}',
+      '.vp-promo-vacio span{font-size:13px;font-weight:400;opacity:.75;line-height:1.45;max-width:260px;}',
+      '.vp-promo-x{position:absolute;top:-14px;right:-14px;width:36px;height:36px;border:none;border-radius:50%;',
+      'background:#fff;color:#15181C;display:flex;align-items:center;justify-content:center;cursor:pointer;',
+      'box-shadow:0 6px 16px rgba(0,0,0,.25);-webkit-tap-highlight-color:transparent;}',
+      '.vp-promo-x:active{transform:scale(.92);}',
+      '.vp-promo-x svg{width:16px;height:16px;}',
+      '@media (max-width:480px){.vp-promo-x{top:-46px;right:0;}}',
+      '.vp-promo.sale{animation:vp-promo-fondo-sale .22s ease both;}',
+      '.vp-promo.sale .vp-promo-caja{animation:vp-promo-sale .22s ease-in both;}',
+      '@keyframes vp-promo-fondo{from{opacity:0}to{opacity:1}}',
+      '@keyframes vp-promo-fondo-sale{from{opacity:1}to{opacity:0}}',
+      '@keyframes vp-promo-entra{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}',
+      '@keyframes vp-promo-sale{from{opacity:1;transform:none}to{opacity:0;transform:scale(.96)}}',
+      '@media (prefers-reduced-motion: reduce){.vp-promo,.vp-promo-caja,.vp-promo.sale,.vp-promo.sale .vp-promo-caja{animation:none;}}'
+    ].join('\n');
+    document.head.appendChild(st);
+  }
+
+  function elegirPromo() {
+    if (!PROMOS.length) return -1;
+    var k = 'vp_promo_ultima_' + llaveUsuario();
+    var ultima = parseInt(lsGet(k), 10);
+    var opciones = [];
+    for (var i = 0; i < PROMOS.length; i++) if (PROMOS.length === 1 || i !== ultima) opciones.push(i);
+    var elegida = opciones[Math.floor(Math.random() * opciones.length)];
+    lsSet(k, String(elegida));
+    return elegida;
+  }
+
+  function mostrarPromo(src) {
+    cssPromo();
+    var cont = document.createElement('div');
+    cont.className = 'vp-promo';
+    cont.setAttribute('role', 'dialog');
+    cont.setAttribute('aria-label', 'VendoPlus Premium');
+    cont.innerHTML = '<div class="vp-promo-caja">' +
+        (src
+          ? '<img class="vp-promo-img" src="' + esc(src) + '" alt="VendoPlus Premium" decoding="async">'
+          : '<div class="vp-promo-vacio"><b>Aquí va tu imagen</b><span>Imagen promocional de VendoPlus Premium · 1080 × 1620 px (vertical)</span></div>') +
+        '<button type="button" class="vp-promo-x" aria-label="Cerrar">' + ico('close') + '</button>' +
+      '</div>';
+    function cerrarPromo() {
+      if (cont.classList.contains('sale')) return;
+      cont.classList.add('sale');
+      setTimeout(function () { cont.remove(); }, 230);
+      document.removeEventListener('keydown', tecla, true);
+    }
+    function tecla(e) { if (e.key === 'Escape') { e.stopImmediatePropagation(); cerrarPromo(); } }
+    cont.querySelector('.vp-promo-x').addEventListener('click', function (e) { e.stopPropagation(); vibra(6); cerrarPromo(); });
+    cont.addEventListener('click', function (e) { if (e.target === cont) cerrarPromo(); });
+    var pieza = cont.querySelector('.vp-promo-img, .vp-promo-vacio');
+    pieza.addEventListener('click', function () { cerrarPromo(); setTimeout(function () { abrir('promo'); }, 240); });
+    var img = cont.querySelector('.vp-promo-img');
+    if (img) img.addEventListener('error', function () { cont.remove(); });
+    document.addEventListener('keydown', tecla, true);
+    document.body.appendChild(cont);
+  }
+
+  /** Revisa si hoy toca anuncio. Se llama al abrir y al volver a la app. */
+  function revisarPromo() {
+    if (!promoListo()) return false;
+    if (activo()) return true;                           /* Premium: nunca */
+    var hoy = diaLocal(new Date());
+    var kDia = 'vp_promo_dia_' + llaveUsuario();
+    if (lsGet(kDia) === hoy) return true;                /* ya salió hoy */
+    var reg = diaRegistro();
+    if (!reg || reg === hoy) return true;                /* el día del registro no */
+    if (!PROMOS.length) return true;                     /* todavía no hay imágenes */
+    var i = elegirPromo();
+    if (i < 0) return true;
+    lsSet(kDia, hoy);
+    mostrarPromo(PROMOS[i]);
+    return true;
+  }
+
+  var promoTimer = null;
+  function arrancarPromo() {
+    /* Vista previa: vendoplusoficial.com/?promo=prueba (no cuenta como el del día) */
+    if (/[?&]promo=prueba\b/.test(location.search)) {
+      var t0 = Date.now();
+      var tv = setInterval(function () {
+        if (document.getElementById('view') && document.getElementById('view').dataset.v && !document.body.classList.contains('auth-open') || Date.now() - t0 > 8000) {
+          clearInterval(tv);
+          var i = PROMOS.length ? Math.floor(Math.random() * PROMOS.length) : -1;
+          mostrarPromo(i >= 0 ? PROMOS[i] : null);
+        }
+      }, 400);
+      return;
+    }
+    var n = 0;
+    clearInterval(promoTimer);
+    promoTimer = setInterval(function () {
+      /* Se espera hasta ~2 min a que la sesión y la membresía estén listas */
+      if (revisarPromo() || ++n > 120) clearInterval(promoTimer);
+    }, 1000);
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') arrancarPromo();   /* por si cambió el día con la app abierta */
+  });
+
   function engancharTodo() {
     soltarLaApp();
     quitarBienvenida();
@@ -1325,6 +1494,7 @@
 
   function arrancar() {
     ocultarPremium();
+    setTimeout(arrancarPromo, 1200);
     estilos();
     registrarFunciones();
     /* La tecla Esc cierra la pantalla de Premium (computadora) */
@@ -2088,6 +2258,7 @@
     ventasMes: ventasMes,
     cerrarAvisoVentas: cerrarAvisoVentas,
     abrirAvisoVentas: abrirAvisoVentas,
+    verPromo: function () { mostrarPromo(PROMOS.length ? PROMOS[Math.floor(Math.random() * PROMOS.length)] : null); },
     puerta: puerta,
     precio: PRECIO,
     precioTxt: precioTxt,

@@ -1,0 +1,17 @@
+IMÁGENES PROMOCIONALES DE VENDOPLUS PREMIUM
+===========================================
+Aquí van las imágenes del anuncio que sale una vez al día a quien tiene el
+plan Básico (gratis). Nunca le sale a Premium ni el día en que se registró.
+
+1. Sube aquí tus imágenes, por ejemplo:
+     promos/premium-01.webp
+     promos/premium-02.webp
+2. Agrega sus nombres en vendo-premium.js, en la lista PROMOS:
+     var PROMOS = ['promos/premium-01.webp', 'promos/premium-02.webp'];
+
+Tamaño recomendado: 1080 x 1620 px (vertical, proporción 2:3), formato WebP
+o JPG, de menos de 300 KB cada una. Se muestran completas, sin recortar,
+con esquinas rectas.
+
+Para ver cómo se ve sin esperar al día siguiente, abre:
+  https://vendoplusoficial.com/?promo=prueba
