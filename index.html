@@ -5193,11 +5193,13 @@ body.st-fin-lock .st-nav-lock{ display:inline-flex; }
 .stf-fn-chev, .stf-fn-lock{ display:inline-flex; flex:none; color:var(--ink-faint, #A3AAB5); }
 .stf-fn-chev svg, .stf-fn-lock svg{ width:18px; height:18px; }
 @media (min-width:900px){ .stf-fn:not(:disabled):hover{ background:var(--surface-alt, #F6F7FA); } }
-/* Barra lateral de PC: solo si el Dueño tiene Stripe enlazado (va pegado a Caja y corte) */
+/* Barra lateral de PC y tablet: solo para el Dueño; va hasta abajo de la
+   lista, debajo de Clientes y crédito (mismo número de orden: en el HTML
+   viene después, así que queda justo debajo y antes de Premium). */
 .navbtn.st-nav{ display:none !important; }
 @media (min-width:700px){
   body.st-fin-on .navbtn.st-nav{ display:flex !important; }
-  .bottomnav .navbtn[data-view="stripefin"]{ order:4 !important; }
+  .bottomnav .navbtn[data-view="stripefin"]{ order:7 !important; }
 }
 
 /* ===== Finanzas de Stripe (pantalla completa) ===== */
