@@ -5193,9 +5193,10 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
 /* ===== PREMIUM OCULTO (por mientras) =====
    Se esconde aquí, desde el arranque, para que el botón de la corona no
    aparezca ni un segundo mientras carga vendo-premium.js.
-   Para volver a mostrar Premium: borra este bloque y pon
+   Solo se oculta la corona; la pantalla para pagar Premium sigue igual.
+   Para volver a mostrar la corona: borra este bloque y pon
    PREMIUM_OCULTO = false en vendo-premium.js. */
-#topPremium, .vp-top-prem, .navbtn[data-view="premium"], .ud-premium{ display:none !important; }
+#topPremium, .vp-top-prem, .navbtn[data-view="premium"]{ display:none !important; }
 </style>
 <style id="vp-indice-temprano">
 /* ===== Índice de categorías desde el arranque =====
@@ -28207,7 +28208,7 @@ function cartSanitize(){
 <script src="vendo-mascota.js"></script>
 
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
-<script src="vendo-premium.js?v=20261124"></script>
+<script src="vendo-premium.js?v=20261124b"></script>
 
 <style id="vp-fotos-cuadradas">
 /* FOTOS DE PRODUCTO: siempre cuadradas y completas (sin recortar) en celular,

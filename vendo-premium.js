@@ -41,11 +41,10 @@
   var PRECIO = 249;
 
   /* ===== PREMIUM OCULTO (por mientras) =====
-     true  = nadie puede entrar a la pantalla de Premium ni contratarlo:
-             se esconde la corona (arriba y en el menú) y todas las
-             invitaciones ("Ver Premium", "Contratar Premium", etc.).
-             Quien YA tiene Premium activo lo sigue usando normal.
-     false = Premium vuelve a verse y a venderse como antes. */
+     true  = se esconde SOLO la corona (arriba y en el menú) y su pantalla
+             "Funciones premium". La pantalla para pagar Premium y todas
+             las invitaciones a contratarlo siguen funcionando normal.
+     false = la corona vuelve a verse. */
   var PREMIUM_OCULTO = true;
 
   function ocultarPremium() {
@@ -53,8 +52,7 @@
     var st = document.createElement('style');
     st.id = 'vp-premium-oculto';
     st.textContent =
-      '#topPremium, .vp-top-prem, .navbtn[data-view="premium"], .ud-premium,' +
-      '.vp-pr-cuenta-btn, .vp-stats-lock-copy .btn, .vp-stats-lock-note{ display:none !important; }';
+      '#topPremium, .vp-top-prem, .navbtn[data-view="premium"]{ display:none !important; }';
     (document.head || document.documentElement).appendChild(st);
   }
 
@@ -488,7 +486,6 @@
   var origen = null;
 
   function abrir(clave, vistaInicial) {
-    if (PREMIUM_OCULTO) return;          /* Premium oculto: no se abre nada */
     estilos();
     estilosFunciones();
     origen = (clave === 'usuarios') ? 'usuarios' : null;
@@ -698,7 +695,6 @@
         '</div>';
     }
 
-    if (PREMIUM_OCULTO) return '';
     return '<div class="section-title">Membresía</div>' +
       '<div class="vp-pr-cuenta">' +
         '<span class="vp-pr-cuenta-txt"><b>Versión gratis</b>' +
@@ -1088,7 +1084,7 @@
     return '';
   }
   /** "Funciones premium": la misma pantalla de "Todo lo que incluye Premium". */
-  function funciones() { abrir(null, 'mas'); }
+  function funciones() { if (PREMIUM_OCULTO) return; abrir(null, 'mas'); }   /* la pantalla de la corona */
 
   function funcionesVista() {
     estilosFunciones();
