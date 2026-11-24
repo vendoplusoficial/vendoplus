@@ -5176,16 +5176,18 @@ body.st-fin-lock .st-nav-lock{ display:inline-flex; }
 .stf-lock .btn{ margin-top:4px; }
 .stf-lbl{ margin:18px 2px 8px; font-size:12.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.3px; }
 .stf-col-b > .stf-lbl:first-child{ margin-top:4px; }
-.stf-fns{ display:flex; flex-direction:column; gap:8px; }
-.stf-fn{ display:flex; align-items:center; gap:12px; width:100%; padding:13px 14px; border:1px solid var(--border, #EEF1F5); border-radius:14px; background:var(--surface, #fff); font:inherit; text-align:left; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.stf-fns{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.stf-fn{ display:flex; flex-direction:column; align-items:stretch; gap:10px; width:100%; min-width:0; padding:12px 12px 13px; border:1px solid var(--border, #EEF1F5); border-radius:14px; background:var(--surface, #fff); font:inherit; text-align:left; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .stf-fn:active:not(:disabled){ background:var(--surface-alt, #F6F7FA); }
 .stf-fn.off{ cursor:default; opacity:1; }
 .stf-fn-ico{ display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; flex:none; border-radius:12px; background:#E6F7EE; color:#0E7A3D; }
 .stf-fn.off .stf-fn-ico{ background:var(--surface-alt, #F1F3F7); color:var(--ink-soft); }
 .stf-fn-ico svg{ width:19px; height:19px; }
+.stf-fn-top{ display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; }
+.stf-fn-top .stf-pill{ font-size:10.5px; }
 .stf-fn-txt{ flex:1; min-width:0; }
-.stf-fn-txt b{ display:block; font-size:14.5px; font-weight:700; color:var(--ink); }
-.stf-fn-txt small{ display:block; margin-top:2px; font-size:12.5px; font-weight:500; color:var(--ink-soft); line-height:1.35; }
+.stf-fn-txt b{ display:block; font-size:14px; line-height:1.25; font-weight:700; color:var(--ink); }
+.stf-fn-txt small{ display:block; margin-top:3px; font-size:12px; font-weight:500; color:var(--ink-soft); line-height:1.35; }
 .stf-fn-chev, .stf-fn-lock{ display:inline-flex; flex:none; color:var(--ink-faint, #A3AAB5); }
 .stf-fn-chev svg, .stf-fn-lock svg{ width:18px; height:18px; }
 @media (min-width:900px){ .stf-fn:not(:disabled):hover{ background:var(--surface-alt, #F6F7FA); } }
@@ -5204,6 +5206,8 @@ body.st-fin-lock .st-nav-lock{ display:inline-flex; }
 body.stf-abierta{ overflow:hidden; }
 .stf-top-in{ display:flex; align-items:center; gap:6px; width:100%; max-width:1120px; margin:0 auto; }
 .stf-top{ flex:none; display:flex; align-items:center; gap:6px; padding:calc(10px + env(safe-area-inset-top)) 12px 10px; background:var(--surface, #fff); border-bottom:1px solid var(--border, #EEF1F5); zoom:var(--z, 1); }
+.stf-logo{ display:inline-flex; flex:none; width:30px; height:30px; margin:0 4px 0 2px; }
+.stf-logo svg{ width:30px; height:30px; display:block; }
 .stf-top h1{ flex:1; margin:0; font-size:18px; font-weight:800; letter-spacing:-.2px; color:var(--ink); }
 .stf-atras, .stf-actualizar{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; flex:none; border:0; border-radius:12px; background:none; color:var(--ink); cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .stf-atras:active, .stf-actualizar:active{ background:var(--surface-alt, #F1F3F7); }
@@ -5211,6 +5215,13 @@ body.stf-abierta{ overflow:hidden; }
 .stf-actualizar svg{ width:19px; height:19px; color:var(--ink-soft); }
 .stf-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
 .stf-scroll > .stf{ max-width:620px; margin:0 auto; padding:16px 16px calc(28px + env(safe-area-inset-bottom)); zoom:var(--z, 1); }
+/* Pagos e Historial: la lista baja dentro de su propio cuadro, el resto
+   de la pantalla se queda en su lugar. */
+.stf-scroll{ display:flex; flex-direction:column; }
+.stf-scroll > .stf{ flex:1 1 auto; min-height:0; width:100%; box-sizing:border-box; display:flex; flex-direction:column; }
+.stf-scroll > .stf > .stf-col-b{ flex:1 1 auto; min-height:300px; display:flex; flex-direction:column; margin-top:18px; padding:12px 12px 0; border-radius:18px; background:var(--surface, #fff); border:1px solid var(--border, #EEF1F5); }
+.stf-col-b .stf-lista{ flex:1 1 0; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; margin:6px -12px 0; padding:0 12px 10px; }
+.stf-col-b > .stf-tip{ flex:none; }
 /* PC: dos columnas. A la izquierda el saldo y los botones (se quedan fijos
    al bajar); a la derecha los pagos y el historial en una tarjeta. */
 @media (min-width:900px){
@@ -5223,8 +5234,11 @@ body.stf-abierta{ overflow:hidden; }
   .stf-saldo > b{ font-size:36px; }
   .stf-acts{ flex-direction:column; }
   .stf-acts .btn{ width:100%; min-height:48px; }
-  .stf-col-b{ padding:18px 20px 10px; border-radius:20px; background:var(--surface, #fff); border:1px solid var(--border, #EEF1F5); box-shadow:0 10px 30px -24px rgba(16,22,42,.35); min-height:420px; }
+  .stf-scroll > .stf{ flex:0 0 auto; }
+  .stf-scroll > .stf > .stf-col-b{ margin-top:0; padding:18px 20px 0; border-radius:20px; box-shadow:0 10px 30px -24px rgba(16,22,42,.35); min-height:420px; height:calc(100dvh - 160px); position:sticky; top:28px; }
+  .stf-col-b .stf-lista{ margin:6px -20px 0; padding:0 20px 12px; }
   .stf-tabs{ max-width:360px; }
+  .stf-lupa{ margin-left:auto; }
   .stf-row{ padding:13px 6px; border-radius:10px; }
   button.stf-row:not(:disabled):hover{ background:var(--surface-alt, #F6F7FA); }
   .stf-vacio{ margin:80px 0; }
@@ -5246,6 +5260,17 @@ body.stf-abierta{ overflow:hidden; }
 .stf-acts{ display:flex; gap:8px; margin:12px 0 14px; }
 .stf-acts .btn.primary{ flex:1; }
 .stf-acts .btn svg{ width:16px; height:16px; }
+.stf-tabs-fila{ display:flex; align-items:center; gap:8px; flex:none; }
+.stf-tabs-fila .stf-tabs{ flex:1; min-width:0; }
+.stf-lupa{ display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; flex:none; border:0; border-radius:12px; background:var(--surface-alt, #F1F3F7); color:var(--ink-soft); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s ease, color .15s ease; }
+.stf-lupa svg{ width:19px; height:19px; }
+.stf-lupa.on{ background:var(--ink, #15181C); color:#fff; }
+.stf-lupa:active{ transform:scale(.96); }
+.stf-buscar{ display:flex; align-items:center; gap:8px; flex:none; margin-top:10px; padding:0 12px; height:42px; border-radius:12px; background:var(--surface, #fff); border:1px solid var(--border, #E3E7EE); cursor:text; }
+.stf-buscar:focus-within{ border-color:#0E7A3D; box-shadow:0 0 0 3px rgba(22,193,91,.15); }
+.stf-buscar svg{ width:17px; height:17px; flex:none; color:var(--ink-soft); }
+.stf-buscar input{ flex:1; min-width:0; height:100%; border:0; outline:0; background:none; font:inherit; font-size:16px; font-weight:500; color:var(--ink); }
+.stf-buscar input::-webkit-search-cancel-button{ display:none; }
 .stf-tabs{ display:flex; gap:4px; padding:4px; border-radius:12px; background:var(--surface-alt, #F1F3F7); }
 .stf-tabs button{ flex:1; min-height:36px; border:0; border-radius:9px; background:none; font:inherit; font-size:13.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
 .stf-tabs button.on{ background:var(--surface, #fff); color:var(--ink); box-shadow:0 1px 3px rgba(16,22,42,.12); }
@@ -20055,7 +20080,7 @@ const StWatch = {
      con depósitos automáticos Stripe deposita solo y avisa por qué no).
    · Devolver: regresa un pago (todo o una parte) a la tarjeta del cliente.
 ========================================================================= */
-const stFin = { data:null, tab:'pagos', cargando:false, err:'' };
+const stFin = { data:null, tab:'pagos', cargando:false, err:'', buscar:false, q:'' };
 
 /* Pantalla completa, separada del resto, con "<" arriba a la izquierda.
    El botón de atrás del celular también la cierra. */
@@ -20064,6 +20089,7 @@ function stOpenFinanzas(){
   stNavSync();
   try{ closeModal(); }catch(e){}
   stFin.tab = stFin.tab || 'pagos';
+  stFin.buscar = false; stFin.q = '';
   let pg = document.getElementById('stfPage');
   if(!pg){
     pg = document.createElement('div'); pg.id = 'stfPage'; pg.className = 'stf-page';
@@ -20085,18 +20111,18 @@ function stOpenFinanzas(){
 function stFinFuncionesHTML(bloqueado){
   const pm = mdCfg().payments;
   const menuOn = stLinked() && pm.card === true;
+  /* Dos tarjetas en una sola fila: ícono y estado arriba, texto abajo */
   const fila = (ico, titulo, sub, accion, extra) => `
     <button type="button" class="stf-fn ${accion ? '' : 'off'}" ${accion ? `onclick="${accion}"` : 'disabled'}>
-      <span class="stf-fn-ico">${icon(ico)}</span>
+      <span class="stf-fn-top"><span class="stf-fn-ico">${icon(ico)}</span>
+      ${extra || (accion ? `<span class="stf-fn-chev">${icon('chevronRight')}</span>` : '')}</span>
       <span class="stf-fn-txt"><b>${titulo}</b><small>${sub}</small></span>
-      ${extra || (accion ? `<span class="stf-fn-chev">${icon('chevronRight')}</span>` : '')}
     </button>`;
   return `<div class="stf-fns">
-    ${fila('card', 'Pago con tarjeta en tu Menú Digital',
-        menuOn ? 'Activo · tus clientes pagan con tarjeta al hacer su pedido' : 'Tus clientes pagan con tarjeta al hacer su pedido',
+    ${fila('card', 'Pago con tarjeta', 'En tu Menú Digital, al hacer su pedido',
         bloqueado ? 'stFinDesbloquear()' : 'stFinIrMenu()',
         bloqueado ? `<span class="stf-fn-lock">${icon('lock')}</span>` : (menuOn ? '<span class="stf-pill ok">Activo</span>' : ''))}
-    ${fila('mobile', 'Pago con NFC', 'Cobra acercando la tarjeta a tu celular', bloqueado ? 'stFinDesbloquear()' : null,
+    ${fila('mobile', 'Pago con NFC', 'Acercando la tarjeta a tu celular', bloqueado ? 'stFinDesbloquear()' : null,
         bloqueado ? `<span class="stf-fn-lock">${icon('lock')}</span>` : '<span class="stf-pill gris">Próximamente</span>')}
   </div>`;
 }
@@ -20159,6 +20185,50 @@ function stFinMovNombre(m){
   if(/dispute|adjustment/.test(t)) return 'Ajuste o disputa';
   return 'Movimiento';
 }
+/* Texto en minúsculas y sin acentos, para buscar sin importar cómo se escriba */
+function stFinNorm(t){ return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+/** La lista de Pagos o de Historial, ya filtrada por lo que se busca. */
+function stFinListaHTML(d){
+  const q = stFinNorm(stFin.q).trim();
+  const hay = (...partes) => !q || q.split(/\s+/).every(w => stFinNorm(partes.join(' ')).includes(w));
+  const pagos = (d.charges || []).filter(c => c.status !== 'failed').filter(c => hay(
+    c.code ? 'Pedido ' + c.code : (c.description || 'Pago con tarjeta'), c.card && c.card.brand, c.card && c.card.last4,
+    formatMoney(c.amount), c.amount, stFinFecha(c.created, true), stFinPill(c).replace(/<[^>]+>/g, '')));
+  const movs = (d.movements || []).filter(m => hay(stFinMovNombre(m), formatMoney(Math.abs(m.net)), Math.abs(m.net), stFinFecha(m.created, true), m.status === 'pending' ? 'en camino' : ''));
+  if(q && !(stFin.tab === 'pagos' ? pagos : movs).length) return `<p class="stf-vacio">No encontramos nada con “${escapeHtml(stFin.q.trim())}”.</p>`;
+  return stFin.tab === 'pagos'
+      ? (pagos.length ? pagos.map(c => {
+          const puede = c.status === 'succeeded' && !c.refunded && !c.disputed && (c.amount - c.refunded_amount) > 0.004;
+          return `<button type="button" class="stf-row" ${puede ? `onclick="stFinDevolver('${c.id}')"` : 'disabled'}>
+            <span class="stf-ico">${icon('card')}</span>
+            <span class="stf-txt"><b>${escapeHtml(c.code ? 'Pedido ' + c.code : (c.description || 'Pago con tarjeta'))}</b>
+              <small>${stFinFecha(c.created, true)}${c.card ? ' · ' + escapeHtml(String(c.card.brand || '').replace(/^./, x => x.toUpperCase())) + ' ····' + escapeHtml(c.card.last4 || '') : ''}</small></span>
+            <span class="stf-der"><b>${formatMoney(c.amount)}</b>${stFinPill(c)}</span>
+          </button>`;
+        }).join('') : `<p class="stf-vacio">Todavía no recibes pagos con tarjeta.</p>`)
+      : (() => {
+          return movs.length ? movs.map(m => {
+            const pend = m.status === 'pending';
+            return `<div class="stf-row">
+              <span class="stf-ico ${m.net < 0 ? 'out' : 'in'}">${icon(m.type === 'payout' ? 'bank' : (m.net < 0 ? 'undo' : 'coin'))}</span>
+              <span class="stf-txt"><b>${stFinMovNombre(m)}</b>
+                <small>${stFinFecha(m.created, true)}${m.fee > 0 ? ' · comisión ' + formatMoney(m.fee) : ''}${pend ? ' · disponible el ' + stFinFecha(m.available_on) : ''}</small></span>
+              <span class="stf-der"><b class="${m.net < 0 ? 'neg' : 'pos'}">${m.net < 0 ? '−' : '+'}${formatMoney(Math.abs(m.net))}</b>${pend ? '<span class="stf-pill warn">En camino</span>' : ''}</span>
+            </div>`;
+          }).join('') : `<p class="stf-vacio">Aún no hay movimientos.</p>`;
+        })();
+}
+function stFinBuscarToggle(){
+  stFin.buscar = !stFin.buscar;
+  if(!stFin.buscar) stFin.q = '';
+  stFinPaint(false);
+  if(stFin.buscar) setTimeout(() => { const i = document.getElementById('stfQ'); if(i) i.focus(); }, 30);
+}
+function stFinBuscar(v){
+  stFin.q = v;
+  const l = document.querySelector('#stfPage .stf-lista');
+  if(l && stFin.data){ l.innerHTML = stFinListaHTML(stFin.data); l.scrollTop = 0; }
+}
 function stFinPaint(primera){
   const d = stFin.data;
   const estado = stFinEstado();
@@ -20187,28 +20257,6 @@ function stFinPaint(primera){
       <div class="sheet-actions"><button class="btn primary block" onclick="stFinCargar()">${icon('refresh')} Intentar otra vez</button></div>`;
     if(!d) return '';
     const pagos = (d.charges || []).filter(c => c.status !== 'failed');
-    const lista = stFin.tab === 'pagos'
-      ? (pagos.length ? pagos.map(c => {
-          const puede = c.status === 'succeeded' && !c.refunded && !c.disputed && (c.amount - c.refunded_amount) > 0.004;
-          return `<button type="button" class="stf-row" ${puede ? `onclick="stFinDevolver('${c.id}')"` : 'disabled'}>
-            <span class="stf-ico">${icon('card')}</span>
-            <span class="stf-txt"><b>${escapeHtml(c.code ? 'Pedido ' + c.code : (c.description || 'Pago con tarjeta'))}</b>
-              <small>${stFinFecha(c.created, true)}${c.card ? ' · ' + escapeHtml(String(c.card.brand || '').replace(/^./, x => x.toUpperCase())) + ' ····' + escapeHtml(c.card.last4 || '') : ''}</small></span>
-            <span class="stf-der"><b>${formatMoney(c.amount)}</b>${stFinPill(c)}</span>
-          </button>`;
-        }).join('') : `<p class="stf-vacio">Todavía no recibes pagos con tarjeta.</p>`)
-      : (() => {
-          const movs = (d.movements || []);
-          return movs.length ? movs.map(m => {
-            const pend = m.status === 'pending';
-            return `<div class="stf-row">
-              <span class="stf-ico ${m.net < 0 ? 'out' : 'in'}">${icon(m.type === 'payout' ? 'bank' : (m.net < 0 ? 'undo' : 'coin'))}</span>
-              <span class="stf-txt"><b>${stFinMovNombre(m)}</b>
-                <small>${stFinFecha(m.created, true)}${m.fee > 0 ? ' · comisión ' + formatMoney(m.fee) : ''}${pend ? ' · disponible el ' + stFinFecha(m.available_on) : ''}</small></span>
-              <span class="stf-der"><b class="${m.net < 0 ? 'neg' : 'pos'}">${m.net < 0 ? '−' : '+'}${formatMoney(Math.abs(m.net))}</b>${pend ? '<span class="stf-pill warn">En camino</span>' : ''}</span>
-            </div>`;
-          }).join('') : `<p class="stf-vacio">Aún no hay movimientos.</p>`;
-        })();
     return `
       <div class="stf-col-a">
       <div class="stf-saldo">
@@ -20225,12 +20273,16 @@ function stFinPaint(primera){
       ${stFinFuncionesHTML(false)}
       </div>
       <div class="stf-col-b">
-      <div class="stf-tabs" role="tablist">
-        <button type="button" class="${stFin.tab === 'pagos' ? 'on' : ''}" onclick="stFin.tab='pagos'; stFinPaint(false)">Pagos</button>
-        <button type="button" class="${stFin.tab === 'historial' ? 'on' : ''}" onclick="stFin.tab='historial'; stFinPaint(false)">Historial</button>
+      <div class="stf-tabs-fila">
+        <div class="stf-tabs" role="tablist">
+          <button type="button" class="${stFin.tab === 'pagos' ? 'on' : ''}" onclick="stFin.tab='pagos'; stFinPaint(false)">Pagos</button>
+          <button type="button" class="${stFin.tab === 'historial' ? 'on' : ''}" onclick="stFin.tab='historial'; stFinPaint(false)">Historial</button>
+        </div>
+        <button type="button" class="stf-lupa ${stFin.buscar ? 'on' : ''}" onclick="stFinBuscarToggle()" aria-label="${stFin.buscar ? 'Cerrar búsqueda' : 'Buscar'}" aria-pressed="${stFin.buscar}">${icon(stFin.buscar ? 'close' : 'search')}</button>
       </div>
+      ${stFin.buscar ? `<label class="stf-buscar">${icon('search')}<input id="stfQ" type="search" enterkeyhint="search" autocomplete="off" value="${escapeHtml(stFin.q)}" placeholder="${stFin.tab === 'pagos' ? 'Buscar pedido, tarjeta o monto' : 'Buscar retiro, cobro o monto'}" oninput="stFinBuscar(this.value)"></label>` : ''}
       ${stFin.tab === 'pagos' && pagos.some(c => c.status === 'succeeded' && !c.refunded) ? '<p class="stf-tip">Toca un pago para devolverlo.</p>' : ''}
-      <div class="stf-lista">${lista}</div>
+      <div class="stf-lista">${stFinListaHTML(d)}</div>
       ${d.livemode === false ? '<p class="stf-tip">Modo de prueba: nada de esto es dinero real.</p>' : ''}
       </div>`;
   })();
@@ -20241,6 +20293,7 @@ function stFinPaint(primera){
   pg.innerHTML = `
     <div class="stf-top"><div class="stf-top-in">
       <button type="button" class="stf-atras" onclick="stCerrarFinanzas()" aria-label="Regresar">${icon('chevronLeft')}</button>
+      <span class="stf-logo" aria-hidden="true">${icon('stripeLogo')}</span>
       <h1>Finanzas de Stripe</h1>
       ${estado === 'ok' ? `<button type="button" class="stf-actualizar" onclick="stFinCargar()" aria-label="Actualizar">${icon('refresh')}</button>` : ''}
     </div></div>
