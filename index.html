@@ -14906,7 +14906,7 @@ function openUsersSheet(){
 
     ${soyDueno ? (usersLimitReached() ? `
       <button class="btn block ud-add ud-premium" style="margin-top:14px;" onclick="VPPremium.abrir('usuarios')">
-        ¿Quieres agregar más usuarios? Contrata Premium
+        ${icon('plus')} Agregar usuarios · Contrata Premium
       </button>` : `
       <button class="btn block ud-add" style="margin-top:14px;" onclick="startAddUser()">
         ${icon('plus')} Agregar usuario
@@ -14930,17 +14930,16 @@ function openUsersSheet(){
 }
 
 /* ---------- Agregar usuario ---------- */
-/* Gratis: el Dueño + 1 usuario extra. Del tercero en adelante, Premium.
-   Si ya tenías más usuarios, se quedan; solo se frena agregar nuevos. */
-const FREE_MAX_USERS = 2;
+/* Agregar usuarios (empleados) es SOLO de Premium. En el plan Básico no se
+   puede crear ninguno: solo existe el Dueño.
+   Si ya tenías usuarios de antes, se quedan; solo se frena agregar nuevos. */
 function usersLimitReached(){
-  if(DB.getUsers().length < FREE_MAX_USERS) return false;
   try{ if(window.VPPremium && VPPremium.activo()) return false; }catch(e){}
   return true;
 }
 function offerMoreUsers(){
   if(window.VPPremium) VPPremium.abrir('usuarios');
-  else toast('Para agregar más usuarios contrata Premium');
+  else toast('Para agregar usuarios contrata Premium');
 }
 function startAddUser(){
   if(!requireOwner('Solo el Dueño puede agregar usuarios')) return;
