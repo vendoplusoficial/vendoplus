@@ -644,7 +644,7 @@
     pantallaInicio();
     consumo();
   }
-  /** ¿Se le acabaron los escaneos gratis del mes?
+  /** ¿Se le acabaron los 3 escaneos de prueba? (son 3 en total, no por mes)
       Si este archivo todavía no le ha preguntado al servidor, se usa el
       contador que ya tenga vendo-premium.js: así los dos siempre dicen lo
       mismo y no hay que preguntar dos veces. */
@@ -693,7 +693,7 @@
       Cloud.sb.rpc('vp_ia_mi_consumo').then(function(r){
         var d = r && r.data;
         if(!d || !d.ok) return;
-        /* El servidor manda la verdad: cuántos gratis van al mes, si este
+        /* El servidor manda la verdad: cuántas pruebas gratis hay (en total), si este
            negocio es Premium y cuántos le quedan. "limite: null" quiere
            decir SIN LÍMITE. */
         if(d.gratis_mes != null) GRATIS_AL_MES = Number(d.gratis_mes) || GRATIS_AL_MES;
@@ -892,9 +892,12 @@
           pantallaError('Esa foto ya se está leyendo', info.message, true);
           return;
         }
-        /* Se acabaron los escaneos gratis del mes: en vez de un error, se
+        /* Se acabaron los escaneos de prueba: en vez de un error, se
            ofrece Premium. Con Premium activo esto no debería pasar. */
         if(info.error === 'limite_usuario'){
+          /* El servidor todavía dice "se renuevan el mes que entra": no es así,
+             las pruebas gratis son 3 EN TOTAL. El texto lo ponemos aquí. */
+          info.message = 'Ya usaste tus ' + GRATIS_AL_MES + ' escaneos de prueba. Con Premium escaneas todas las fotos que quieras, sin límite.';
           restantes = 0;
           try{ if(window.VPPremium && VPPremium.fijarRestantes) VPPremium.fijarRestantes(0); }catch(e){}
           if(!premium() && ofrecerPremium()) return;
@@ -904,7 +907,7 @@
         if(['lector','servidor','red','sin_conexion'].indexOf(info.error) >= 0) consumo();
         var reintentable = ['sin_conexion','lector','servidor','red'].indexOf(info.error) >= 0 || !info.error;
         pantallaError(
-          info.error === 'limite_usuario' ? 'Llegaste a tu límite del mes'
+          info.error === 'limite_usuario' ? 'Ya usaste tus pruebas gratis'
           : info.error === 'sin_presupuesto' ? 'El escáner está en pausa'
           : info.error === 'cuenta_pausada' ? 'Tu cuenta está pausada'
           : info.error === 'limite_reanalisis' ? 'Ya no se puede volver a analizar'

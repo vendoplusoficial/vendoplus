@@ -27,7 +27,7 @@
      · Estadísticas   → el botón "Ver estadísticas detalladas" se queda
                         igual que siempre; al tocarlo aparece Premium.
      · Chat con IA    → el robot se queda inactivo; al tocarlo, Premium.
-     · Escáner IA     → 3 gratis al mes; al cuarto, Premium.
+     · Escáner IA     → 3 de prueba EN TOTAL (no se renuevan); al cuarto, Premium.
 
    El cobro NO cambia: en la página web sigue siendo el mismo precio de
    Stripe, y en la app de Play Store la misma suscripción de Google Play.
@@ -421,7 +421,7 @@
     { k: 'tickets',  t: 'Tickets e impresora',           basico: true },
     { k: 'caja',     t: 'Caja e inventario',             basico: true },
     { k: 'clientes', t: 'Clientes y deudas',             basico: true },
-    { k: 'escaner',  t: 'Productos con una foto',        basico: '{N} al mes', premium: 'Sin límite' },
+    { k: 'escaner',  t: 'Productos con una foto',        basico: '{N} de prueba', premium: 'Sin límite' },
     { k: 'menu',     t: 'Menú digital y pedidos',        basico: false },
     { k: 'chat',     t: 'Asistente con IA',              basico: false },
     { k: 'stats',    t: 'Reportes de ventas y ganancias', basico: false },
@@ -986,7 +986,7 @@
 
   /* =======================================================================
      10. PUERTA 4 · ESCÁNER DE CARTA CON IA
-     Gratis: 3 escaneos al mes (los cuenta el servidor, así que no se
+     Gratis: 3 escaneos de prueba EN TOTAL, no por mes (los cuenta el servidor, así que no se
      reinician al cerrar sesión, cambiar de teléfono ni reinstalar).
      Premium: sin límite.
   ======================================================================= */
@@ -1019,7 +1019,7 @@
   }
 
   /**
-   * "Ya usaste tus escaneos gratis del mes".
+   * "Ya usaste tus escaneos de prueba".
    * Antes era una pantalla aparte y se veía distinta a las demás. Ahora
    * es EXACTAMENTE la misma pantalla de pagar la membresía, nada más que
    * entra marcando la tarjeta del escáner.
@@ -1030,7 +1030,7 @@
     var ab = window.vpIaAbrir;
     if (typeof ab !== 'function' || ab.__vpPr) return false;
     /* El escáner SIEMPRE abre, pague o no. Si ya no le quedan escaneos
-       gratis del mes, la propia pantalla del escáner muestra los botones
+       de prueba, la propia pantalla del escáner muestra los botones
        apagados y el aviso para pasarse a Premium (lo hace
        vendo-escaner-ia.js). Así nunca se le cierra la puerta en la cara a
        nadie, y el aviso se ve dentro de la pantalla que ya conoce. */
