@@ -7,6 +7,7 @@
 //                    a Stripe cómo va (nunca se confía en el navegador).
 //  action "intent" → prepara el cobro en la cuenta de Stripe DEL NEGOCIO (cargo
 //                    directo) por el monto que el negocio fijó al aceptar el pedido.
+//  action "cancel" → el cliente regresa al menú a cambiar su pedido (sin pagar).
 //
 // · El monto lo decide el servidor (menu_orders.charge_total), no el navegador.
 // · Los datos de la tarjeta van del celular del cliente directo a Stripe.
@@ -57,6 +58,7 @@ async function cuentaDe(userId: string) {
 /** Le pregunta a Stripe por el cobro del pedido y guarda el resultado. */
 async function revisar(p: Pedido, acct: string | null) {
   if (p.charge_status === "paid") return { estado: "paid", detalle: "" };
+  if (p.charge_status === "cancelled") return { estado: "cancelled", detalle: "" };
   if (!p.stripe_pi_id || !acct) return { estado: p.charge_status === "rejected" ? "rejected" : "pending", detalle: "" };
   let pi: Stripe.PaymentIntent;
   try { pi = await stripe.paymentIntents.retrieve(p.stripe_pi_id, {}, { stripeAccount: acct }); }
@@ -97,9 +99,31 @@ Deno.serve(async (req) => {
     const acct = cuenta?.stripe_account_id ?? null;
 
     // ---------------------------------------------------------------
+    // El cliente regresa al menú a cambiar su pedido antes de pagar: este
+    // pedido se cancela (y el cobro pendiente en Stripe también).
+    if (b?.action === "cancel") {
+      if (p.charge_status === "paid") return json({ error: "Este pedido ya está pagado." }, 409);
+      if (p.stripe_pi_id && acct) {
+        try {
+          const pi = await stripe.paymentIntents.retrieve(p.stripe_pi_id, {}, { stripeAccount: acct });
+          if (pi.status === "succeeded" || pi.status === "processing") {
+            await revisar(p, acct);
+            return json({ error: "Tu pago ya se está procesando. Espera un momento." }, 409);
+          }
+          if (REUSABLE.includes(pi.status)) await stripe.paymentIntents.cancel(pi.id, {}, { stripeAccount: acct });
+        } catch (e) { console.error("cancelar cobro", (e as Error)?.message); }
+      }
+      const { error } = await sb.from("menu_orders").update({ charge_status: "cancelled" })
+        .eq("id", p.id).neq("charge_status", "paid");
+      if (error) throw error;
+      return json({ ok: true, status: "cancelled" });
+    }
+
+    // ---------------------------------------------------------------
     if (b?.action === "intent") {
       if (!acct || !cuenta?.ready) return json({ error: "Este negocio todavía no cobra con tarjeta en línea." }, 409);
       if (p.charge_status === "paid") return json({ status: "paid" });
+      if (p.charge_status === "cancelled") return json({ error: "Este pedido se canceló. Vuelve al menú para hacerlo otra vez." }, 409);
       const monto = centavos(p.charge_total);
       if (!(monto >= 1000)) return json({ error: monto > 0 ? "El pago mínimo con tarjeta es de $10.00." : "Tu pedido todavía no tiene total. Espera a que el negocio lo confirme." }, 409);
 

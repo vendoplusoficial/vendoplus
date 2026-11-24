@@ -5207,6 +5207,10 @@ body.pg-mode{ background:#F4F6FA; }
 .sp-seguro{ display:flex; align-items:flex-start; justify-content:center; gap:7px; margin:14px auto 0; max-width:340px; font-size:11.5px; font-weight:400; line-height:1.45; color:#8A93A0; text-align:left; }
 .sp-seguro svg{ width:15px; height:15px; flex:none; margin-top:1px; }
 .sp-seguro b{ font-weight:600; color:#6C7480; }
+.sp-atras{ display:inline-flex; align-items:center; gap:4px; margin:-4px 0 12px -6px; padding:6px 10px 6px 4px; border:0; border-radius:10px; background:none; font:inherit; font-size:14px; font-weight:500; color:#6C7480; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.sp-atras:active{ background:#F1F3F7; }
+.sp-atras:disabled{ opacity:.6; }
+.sp-atras svg{ width:18px; height:18px; }
 .sp-volver{ display:block; margin:12px auto 0; padding:6px 10px; border:0; background:none; font:inherit; font-size:13.5px; font-weight:500; color:#6C7480; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 .sp-paso{ margin:14px 0 0; padding:12px 14px; border-radius:14px; background:#EAF9F0; color:#0E5C30; font-size:13.5px; font-weight:400; line-height:1.45; text-align:left; }
 .sp-paso b{ display:block; margin-bottom:2px; font-size:14px; font-weight:600; color:#0E7A3D; }
@@ -5214,7 +5218,6 @@ body.pg-mode{ background:#F4F6FA; }
 .sp-btn.sp-wa .sp-btn-txt{ display:inline-flex; align-items:center; gap:8px; }
 .sp-btn.sp-wa svg{ width:20px; height:20px; }
 .sp-btn.sp-wa.sp-wa-sec{ background:#fff; color:#128C4A; border:1.5px solid #BDECCF; box-shadow:none; min-height:46px; font-size:14.5px; }
-.sp-volver{ display:block; margin:12px auto 0; padding:6px 10px; border:0; background:none; font:inherit; font-size:14px; font-weight:700; color:#6B7487; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 .sp-check{ display:flex; justify-content:center; margin:6px 0 2px; }
 .sp-check svg{ width:74px; height:74px; }
 .sp-check circle{ fill:none; stroke:#16A34A; stroke-width:2.5; stroke-dasharray:151; stroke-dashoffset:151; animation:sp-traza .6s ease-out forwards; }
@@ -17709,6 +17712,16 @@ function dmSendWhatsApp(){
   dmToast('Pedido listo en WhatsApp');
 }
 
+/* El cliente regresó de la pantalla de pago para agregar o quitar cosas */
+function dmRestoreCart(){
+  let r = null;
+  try{ r = JSON.parse(sessionStorage.getItem('vp_menu_restore') || 'null'); sessionStorage.removeItem('vp_menu_restore'); }catch(e){}
+  if(!r || r.menu !== dm.id || !Array.isArray(r.cart) || !r.cart.length) return;
+  dm.cart = r.cart;
+  dm.co = r.co || null;
+  dm.restored = true;
+}
+
 /* ---------- Arranque del menú del cliente ---------- */
 function bootMenu(route){
   document.body.classList.add('dm-mode');
@@ -17719,8 +17732,10 @@ function bootMenu(route){
   const layer = document.createElement('div'); layer.id = 'dmLayer'; layer.className = 'dmx';
   const t = document.createElement('div'); t.id = 'dmToast'; t.className = 'dm-toast';
   document.body.append(root, bar, layer, t);
+  dmRestoreCart();
   dmRender();
   dm.sig = dmSig();
+  if(dm.restored){ dm.restored = false; setTimeout(() => { try{ dmOpenSheet('cart'); }catch(e){} }, 350); }
   setTimeout(() => { const r = document.getElementById('dmRoot'); if(r) r.classList.add('dm-booted'); }, 2200);
   let dmSpyRaf = 0;
   window.addEventListener('scroll', () => { if(dmSpyRaf) return; dmSpyRaf = requestAnimationFrame(() => { dmSpyRaf = 0; dmSpy(); }); }, { passive:true });
@@ -19810,6 +19825,16 @@ const StWatch = {
       data.forEach(row => {
         const o = MDI.get(row.id);
         if(!o || mdiIsPaid(o) || (o.status !== 'confirmado' && o.status !== 'nuevo')) return;
+        if(row.charge_status === 'cancelled' && o.stripeCheckout){
+          /* El cliente regresó al menú a cambiar su pedido: llega uno nuevo */
+          MDI.update(row.id, x => {
+            if(x.status === 'nuevo'){ x.status = 'rechazado'; x.rejectReason = 'El cliente cambió su pedido'; delete x.pendingNext; delete x.notifiedAt; x.decidedAt = new Date().toISOString(); }
+            else if(x.status === 'confirmado' && !x.saleId){ x.status = 'cancelado'; delete x.pendingNext; }
+            x.st = { status:'cancelled', pi:row.stripe_pi_id || null };
+          });
+          cambio = true;
+          return;
+        }
         if(row.pay_provider !== 'stripe' && !row.stripe_pi_id) return;
         const st = row.charge_status || 'pending';
         const antes = (o.st && o.st.status) || null;
@@ -20636,7 +20661,13 @@ async function dmSendAndPay(order){
     return;
   }
   /* Lo que mandará por WhatsApp después de pagar, y a qué menú regresar */
-  try{ sessionStorage.setItem('vp_pago_wa_txt_' + order.id, order.waText); sessionStorage.setItem('vp_pago_menu_' + order.id, dm.id); }catch(e){}
+  try{
+    sessionStorage.setItem('vp_pago_wa_txt_' + order.id, order.waText);
+    sessionStorage.setItem('vp_pago_menu_' + order.id, dm.id);
+    /* Por si regresa a agregar o quitar cosas: su carrito y sus datos */
+    const co = Object.assign({}, dm.co || {}); delete co.code;
+    sessionStorage.setItem('vp_pago_cart_' + order.id, JSON.stringify({ cart:dm.cart, co:co }));
+  }catch(e){}
   dm.cart = []; dm.co = null;
   dmVib([60, 40, 60]);
   location.replace(location.pathname + location.search + '#pagar/' + encodeURIComponent(order.id));
@@ -26079,6 +26110,8 @@ function mdiRepriceLine(l){
 function mdiFromCloud(row){
   try{
     if(!row || !/^o[a-z0-9]{6,24}$/.test(row.id || '')) return null;
+    /* El cliente regresó a cambiar su pedido antes de pagar: este ya no va */
+    if(row.charge_status === 'cancelled') return null;
     const d = row.data || {};
     const lines = (Array.isArray(d.original) ? d.original : []).slice(0, 150)
       .map(mdiCleanLine).filter(l => l.qty > 0).map(mdiRepriceLine);
@@ -26376,6 +26409,7 @@ function spForm(aviso){
   const total = pgMoney(d.amount);
   spPaint(`
     <div class="pg-card sp-card">
+      ${spMenuId() ? `<button type="button" class="sp-atras" id="spAtras" onclick="spCambiar()">${icon('chevronLeft')}<span>Agregar o quitar cosas</span></button>` : ''}
       ${spCabeza()}
       <h1 class="sp-h1">Completa tu pago</h1>
       <div class="sp-resumen">
@@ -26538,6 +26572,27 @@ function spOk(){
       <p class="pg-mini">Pedido ${pgEsc(d.code || '')}</p>
     </div>`);
 }
+/** Regresa al menú con su carrito para agregar o quitar cosas. Este pedido
+    (sin pagar) se cancela y al volver a enviar se hace uno nuevo. */
+async function spCambiar(){
+  if(sp.ocupado) return;
+  const b = document.getElementById('spAtras');
+  if(b){ b.disabled = true; const t = b.querySelector('span'); if(t) t.textContent = 'Regresando…'; }
+  try{
+    await pgFetch(ST_FN.pago, { order_id:sp.id, action:'cancel' });
+  }catch(e){
+    if(b){ b.disabled = false; const t = b.querySelector('span'); if(t) t.textContent = 'Agregar o quitar cosas'; }
+    spErr(String((e && e.message) || 'No se pudo regresar. Inténtalo de nuevo.').slice(0, 160));
+    return;
+  }
+  const m = spMenuId();
+  try{
+    const guardado = sessionStorage.getItem('vp_pago_cart_' + sp.id);
+    if(guardado) sessionStorage.setItem('vp_menu_restore', JSON.stringify(Object.assign({ menu:m }, JSON.parse(guardado))));
+  }catch(e){}
+  location.replace(location.pathname + '#menu/' + encodeURIComponent(m));
+  location.reload();
+}
 function spMenuId(){ try{ return sessionStorage.getItem('vp_pago_menu_' + sp.id) || ''; }catch(e){ return ''; } }
 function spVolverMenu(){ const m = spMenuId(); if(!m) return; location.replace(location.pathname + '#menu/' + encodeURIComponent(m)); location.reload(); }
 function spWaKey(){ return 'vp_pago_wa_' + sp.id; }
@@ -26699,7 +26754,7 @@ const MdiCloud = {
            (y los marcó como recibidos), este también los tiene que ver. Lo que ya está aquí no se duplica. */
         const desde = new Date(Date.now() - 3 * 86400000).toISOString();
         const { data, error } = await mdiTimeout(Cloud.sb.from(MDI_TABLE)
-          .select('id,code,data,created_at').or('received_at.is.null,created_at.gte.' + desde)
+          .select('id,code,data,created_at,charge_status').or('received_at.is.null,created_at.gte.' + desde)
           .order('created_at', { ascending:true }).limit(150), 20000);
         if(error) throw error;
         await this.merge(force);
