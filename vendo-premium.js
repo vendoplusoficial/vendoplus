@@ -1324,7 +1324,7 @@
        horizontal: 1920 x 1080 px (16:9)                                   */
   var IMG = window.VP_PROMOS_IMG || {};     /* incrustadas en index.html */
   var PROMOS = [
-    { vertical: IMG['asistente-v'], horizontal: IMG['asistente-h'] }   /* 1 · Asistente: "Tus ventas, en una pregunta" */
+    { vertical: IMG['asistente-v'], horizontal: IMG['asistente-h'] }   /* 1 · Asistente: "Tus ventas, en una pregunta" ($249 al mes) */
     /* , { vertical: 'promos/premium-02-v.webp', horizontal: 'promos/premium-02-h.webp' } */
   ].filter(function (p) { return p && (p.vertical || p.horizontal); });
   function esHorizontal() { return (window.innerWidth || 0) > (window.innerHeight || 0); }

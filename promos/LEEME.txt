@@ -13,6 +13,6 @@ id="vp-promos-img", window.VP_PROMOS_IMG) para que salgan al instante.
 Luego se agregan a la lista PROMOS de vendo-premium.js.
 
 Anuncios actuales:
-  1. asistente-v / asistente-h · "Tus ventas, en una pregunta"
+  1. asistente-v / asistente-h · "Tus ventas, en una pregunta" (con precio $249 al mes)
 
 Vista previa sin esperar al día siguiente: https://vendoplusoficial.com/?promo=prueba
