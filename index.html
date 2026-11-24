@@ -13488,8 +13488,8 @@ function authNameHTML(){
         <input id="regName" type="text" autocomplete="name" placeholder="Ana Martínez" oninput="refreshNameBtn()">
       </div>
       <div class="field">
-        <label for="regBiz">Nombre de tu negocio <span style="font-weight:600;">(opcional)</span></label>
-        <input id="regBiz" type="text" placeholder="Fonda La Esquina" maxlength="60" oninput="authShopPaint()">
+        <label for="regBiz">Nombre de tu negocio</label>
+        <input id="regBiz" type="text" placeholder="La Burger" maxlength="60" oninput="authShopPaint(); refreshNameBtn()">
       </div>
 
       <div class="auth-actions">
@@ -13500,7 +13500,9 @@ function authNameHTML(){
 }
 function refreshNameBtn(){
   const v = (document.getElementById('regName').value || '').trim();
-  document.getElementById('regBtn').disabled = v.length < 2;
+  const biz = ((document.getElementById('regBiz') || {}).value || '').trim();
+  /* El nombre del negocio ya es obligatorio */
+  document.getElementById('regBtn').disabled = v.length < 2 || biz.length < 2;
 }
 
 /* ---------- El letrero de la tienda se escribe solo ----------
@@ -13564,7 +13566,7 @@ window.addEventListener('resize', () => { if(document.getElementById('authShopNa
 function saveRegistrationName(){
   const name = document.getElementById('regName').value.trim();
   const biz = document.getElementById('regBiz').value.trim();
-  if(name.length < 2) return;
+  if(name.length < 2 || biz.length < 2) return;   /* nombre y negocio son obligatorios */
   const u = currentUser();
   u.name = name;
   u.business = Object.assign({ name:'', type:'', address:'', phone:'' }, u.business, { name:biz });
@@ -14121,7 +14123,7 @@ function openBusinessForm(){
     <h3 class="sheet-title">Información de mi negocio</h3>
     <div class="field">
       <label for="bizName">Nombre del negocio</label>
-      <input id="bizName" type="text" value="${escapeHtml(b.name || '')}" placeholder="Fonda La Esquina">
+      <input id="bizName" type="text" value="${escapeHtml(b.name || '')}" placeholder="La Burger">
     </div>
     <div class="field">
       <label for="bizType">Giro</label>
