@@ -5201,6 +5201,7 @@ body.pg-mode{ background:#F4F6FA; }
 .sp-btn.sp-wa .sp-btn-txt{ display:inline-flex; align-items:center; gap:8px; }
 .sp-btn.sp-wa svg{ width:20px; height:20px; }
 .sp-btn.sp-wa.sp-wa-sec{ background:#fff; color:#128C4A; border:1.5px solid #BDECCF; box-shadow:none; min-height:48px; font-size:15px; }
+.sp-volver{ display:block; margin:12px auto 0; padding:6px 10px; border:0; background:none; font:inherit; font-size:14px; font-weight:700; color:#6B7487; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 .sp-check{ display:flex; justify-content:center; margin:6px 0 2px; }
 .sp-check svg{ width:74px; height:74px; }
 .sp-check circle{ fill:none; stroke:#16A34A; stroke-width:2.5; stroke-dasharray:151; stroke-dashoffset:151; animation:sp-traza .6s ease-out forwards; }
@@ -19078,10 +19079,10 @@ function mdiCobroHTML(o){
           <span class="mdi-pay-pill st-pill">Stripe</span>
         </div>
         <div class="mdi-pay-amt">${formatMoney(total)}<small>${st.procesando ? 'Stripe está procesando el pago' : 'esperando el pago del cliente'}</small></div>
-        <p class="mdi-pay-txt">El cliente paga con su tarjeta desde el link y el dinero llega a tu cuenta de Stripe. Cuando veas que pagó, toca «Ya pagó con tarjeta».</p>
+        <p class="mdi-pay-txt">El cliente paga con su tarjeta en tu menú y el dinero llega a tu cuenta de Stripe. Cuando veas que pagó, toca «Ya pagó con tarjeta».</p>
         <div class="mdi-pay-live"><i class="mdi-pay-dot"></i>${st.rechazado ? 'El último intento fue rechazado por el banco' : 'Pendiente en Stripe · se revisa solo'}</div>
         <div class="mdi-pay-acts">
-          <button type="button" class="mdi-pay-go wa" onclick="stSendLink('${id}')">${icon('whatsapp')} Mandarle el link de pago</button>
+          ${o.stripeCheckout ? '' : `<button type="button" class="mdi-pay-go wa" onclick="stSendLink('${id}')">${icon('whatsapp')} Mandarle el link de pago</button>`}
           <button type="button" class="mdi-pay-go" onclick="mdiAskPaid('${id}')">${icon('check')} Ya pagó con tarjeta</button>
           <button type="button" class="mdi-pay-alt" onclick="mdiChargeOther('${id}')">Pagó de otra forma · abrir el cobro</button>
         </div>
@@ -19734,7 +19735,7 @@ function stPayUrl(o){
 }
 /** Fija EN EL SERVIDOR cuánto se cobra por este pedido. */
 async function stArm(o, silencio){
-  if(!o || !stLinked() || mdiPayId(o) !== 'tarjeta') return false;
+  if(!o || !stLinked() || mdiPayId(o) !== 'tarjeta' || o.stripeCheckout) return false;
   if(!Cloud.ready || !Cloud.uid) return false;
   try{
     await stCall(ST_FN.negocio, { action:'arm', order_id:o.id, code:o.code, total:mdiOrderTotal(o) }, true);
@@ -19770,7 +19771,7 @@ function stChargePaid(id){
 const StWatch = {
   t:null, busy:false, n:0,
   pendientes(){
-    return MDI.all().filter(o => o.status === 'confirmado' && !o.pendingNext && !mdiIsPaid(o) && mdiPayId(o) === 'tarjeta');
+    return MDI.all().filter(o => (o.status === 'confirmado' || o.status === 'nuevo') && !mdiIsPaid(o) && mdiPayId(o) === 'tarjeta');
   },
   canRun(){ return mpReady() && Cloud.ready && !!Cloud.uid && stLinked() && !document.body.classList.contains('dm-mode'); },
   async pull(){
@@ -19795,7 +19796,7 @@ const StWatch = {
       }
       data.forEach(row => {
         const o = MDI.get(row.id);
-        if(!o || mdiIsPaid(o) || o.status !== 'confirmado') return;
+        if(!o || mdiIsPaid(o) || (o.status !== 'confirmado' && o.status !== 'nuevo')) return;
         if(row.pay_provider !== 'stripe' && !row.stripe_pi_id) return;
         const st = row.charge_status || 'pending';
         const antes = (o.st && o.st.status) || null;
@@ -19805,7 +19806,7 @@ const StWatch = {
         if(st === 'paid' && antes !== 'paid'){
           vibrate([20, 80, 20]);
           toast('El cliente pagó con tarjeta · ' + o.code, { icon:icon('check'), variant:'toast-success toast-top',
-            subtitle:'Stripe confirmó ' + formatMoney(mdiOrderTotal(o)) + ' · toca «Ya pagó con tarjeta»', duration:4200 });
+            subtitle:'Stripe confirmó el pago' + (o.status === 'nuevo' ? ' · confirma el pedido y toca «Ya pagó con tarjeta»' : ' · toca «Ya pagó con tarjeta»'), duration:4200 });
         }
       });
       if(cambio) mdiRefresh();
@@ -19998,7 +19999,7 @@ function mdiNotify(id){
     }
     if(c.payment) extra.push('Pago: ' + paymentOf(c.payment).name + '.');
     /* Con tarjeta y Mercado Pago enlazado, el link de pago va en el mismo aviso */
-    if(c.payment === 'tarjeta' && stLinked() && mdCfg().payments.card === true && !mdiIsPaid(o)){
+    if(c.payment === 'tarjeta' && stLinked() && mdCfg().payments.card === true && !mdiIsPaid(o) && !o.stripeCheckout && !((o.st || {}).status === 'paid')){
       extra.push('Paga con tu tarjeta aquí: ' + stPayUrl(o));
     }else if(c.payment === 'tarjeta' && mpVisible() && typeof mpLinked === 'function' && mpLinked() && !mdiIsPaid(o)){
       extra.push('Paga con tu tarjeta aquí: ' + mpPayUrl(o));
@@ -20350,12 +20351,12 @@ dmConfirmHTML = function(){
       <div class="dm-pi-box" id="dmPayInfo">${dmPayInfoHTML()}</div>
     </div>
 
-    <div class="dm-banner wa" style="margin:16px 0 0;">${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span></div>
+    <div class="dm-banner wa" id="dmSendNote" style="margin:16px 0 0;">${dmSendNoteHTML(nombre)}</div>
     <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Enviar pedido» otra vez.</span></div>
     <div class="dm-banner" id="dmSendErr" style="display:none; margin:10px 0 0;">${icon('alert')}<span><b>Tu pedido no se pudo enviar</b>Revisa tu conexión a internet y toca «Enviar pedido» otra vez.</span></div>
     <div class="dm-actions dm-co-actions">
       <button class="btn" onclick="dmCoBack()">Volver</button>
-      <button class="btn dm-green" id="dmSendBtn" onclick="dmSendWhatsApp()">${icon('whatsapp')} Enviar pedido</button>
+      <button class="btn dm-green" id="dmSendBtn" onclick="dmSendWhatsApp()">${dmSendBtnHTML()}</button>
     </div>
     `}`;
 };
@@ -20398,6 +20399,13 @@ function dmCoSvc(id){
     setTimeout(() => { try{ del.scrollIntoView({ behavior:prefersLessMotion() ? 'auto' : 'smooth', block:'start' }); }catch(e){} }, 90);
   }
 }
+/* Con tarjeta y Stripe, el cliente paga aquí mismo al enviar su pedido */
+function dmPaysOnline(){ const co = dmCoState(); const pm = mdCfg().payments; return co.pay === 'tarjeta' && !!(pm.st && pm.st.on) && !!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY); }
+function dmSendNoteHTML(nombre){
+  if(dmPaysOnline()) return `${icon('card')}<span><b>Paga y listo</b>Al enviar tu pedido pagas con tu tarjeta aquí mismo. Después lo mandas por WhatsApp.</span>`;
+  return `${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span>`;
+}
+function dmSendBtnHTML(){ return dmPaysOnline() ? icon('card') + ' Enviar y pagar' : icon('whatsapp') + ' Enviar pedido'; }
 function dmCoPay(id){
   const co = dmCoState(); const changed = co.pay !== id;
   co.pay = id;
@@ -20406,6 +20414,10 @@ function dmCoPay(id){
   const box = document.getElementById('dmCoPay'); if(box) box.classList.remove('need');
   const info = document.getElementById('dmPayInfo');
   if(info && changed){ info.innerHTML = dmPayInfoHTML(); }
+  const note = document.getElementById('dmSendNote');
+  if(note) note.innerHTML = dmSendNoteHTML(((((currentUser() || {}).business) || {}).name || '').trim());
+  const sb = document.getElementById('dmSendBtn');
+  if(sb && !sb.disabled) sb.innerHTML = dmSendBtnHTML();
 }
 /* Lo que ve el cliente según cómo va a pagar */
 function dmCoCash(v){ const co = dmCoState(); const n = Number(v); co.cashWith = n > 0 ? n : null; }
@@ -20425,8 +20437,8 @@ function dmPayInfoHTML(){
   if(co.pay === 'tarjeta'){
     if(pm.st && pm.st.on){
       return `<div class="dm-pi">
-        ${head('card', 'Pago con tarjeta', 'Pagas en línea con Stripe, desde tu celular.')}
-        <small class="dm-pi-note">Al confirmarte el pedido, el negocio te manda por WhatsApp tu link de pago. Ahí pones tu tarjeta y listo. Tus datos de tarjeta los procesa Stripe: no los ve el negocio ni esta app.</small>
+        ${head('card', 'Pago con tarjeta', 'Pagas aquí mismo al enviar tu pedido.')}
+        <small class="dm-pi-note">Es seguro: el negocio no ve los datos de tu tarjeta.</small>
       </div>`;
     }
     const mpOn = !!(pm.mp && pm.mp.on);
@@ -20531,6 +20543,9 @@ dmSendWhatsApp = async function(){
   order.waText = mdiMessage(order);          /* solo el número de pedido */
   const url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(order.waText);
   const conNube = !!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY);
+  /* Tarjeta con Stripe: el pedido llega al negocio y el cliente paga AQUÍ
+     MISMO; después de pagar, lo manda por WhatsApp. */
+  if(dmPaysOnline()){ dmSendAndPay(order); return; }
   if(!conNube || !order.autoDelivery) mdiReceive(order, 'menu');
   const enEsteAparato = !order.autoDelivery && !!MDI.get(order.id);
   const listo = msg => {
@@ -20585,6 +20600,35 @@ dmSendWhatsApp = async function(){
   if(!abierto) location.href = url;
 };
 dmWhatsappMessage = function(){ return mdiMessage(mdiBuildFromCart(dm.cart, '')); };
+
+/** Manda el pedido (con el total calculado en el servidor) y abre el pago con tarjeta. */
+async function dmSendAndPay(order){
+  const btn = document.getElementById('dmSendBtn');
+  const errBox = document.getElementById('dmSendErr');
+  const btnHTML = btn ? btn.innerHTML : '';
+  order.stripeCheckout = true;
+  dm.sending = true;
+  if(btn){ btn.disabled = true; btn.textContent = 'Enviando tu pedido…'; }
+  if(errBox) errBox.style.display = 'none';
+  let ok = false, sendError = '';
+  try{
+    ok = await Promise.race([ mdiCloudSend(order), new Promise(r => setTimeout(() => r(false), 15000)) ]);
+  }catch(e){ sendError = e.message || ''; }
+  dm.sending = false;
+  if(!ok){
+    if(btn && btn.isConnected){ btn.disabled = false; btn.innerHTML = btnHTML; }
+    if(errBox && errBox.isConnected) errBox.style.display = '';
+    dmVib([20, 40, 20]);
+    dmToast(sendError || 'No pudimos enviar tu pedido. Revisa tu internet e inténtalo otra vez', 'warn');
+    return;
+  }
+  /* Lo que mandará por WhatsApp después de pagar, y a qué menú regresar */
+  try{ sessionStorage.setItem('vp_pago_wa_txt_' + order.id, order.waText); sessionStorage.setItem('vp_pago_menu_' + order.id, dm.id); }catch(e){}
+  dm.cart = []; dm.co = null;
+  dmVib([60, 40, 60]);
+  location.replace(location.pathname + location.search + '#pagar/' + encodeURIComponent(order.id));
+  location.reload();
+}
 
 /* =========================================================
    6. VENTAS: origen (en caja / Menú Digital) y estadísticas del menú
@@ -25987,6 +26031,7 @@ function mdiCloudSend(order){
       v:1, id:order.id, code:order.code, createdAt:order.createdAt,
       deliveryQuote:order.autoDelivery ? order.deliveryFee : undefined,
       customer: mdiCleanCustomer(order.customer),   /* nombre, tipo de servicio, pago y ubicación */
+      stripeCheckout: order.stripeCheckout === true ? true : undefined,
       original:(order.original || []).slice(0, 150)
     }
   });
@@ -25999,9 +26044,9 @@ function mdiCloudSend(order){
       body
     }).then(async r => {
       const result = await r.json().catch(() => null);
-      if(result?.ok === false && order.autoDelivery) throw new Error(result.error || '');
+      if(result?.ok === false && (order.autoDelivery || order.stripeCheckout)) throw new Error(result.error || '');
       return r.ok && result?.ok === true;
-    }).catch(error => { if(order.autoDelivery) throw error; return false; });
+    }).catch(error => { if(order.autoDelivery || order.stripeCheckout) throw error; return false; });
   }catch(e){ return Promise.resolve(false); }
 }
 
@@ -26035,7 +26080,8 @@ function mdiFromCloud(row){
       original: lines,
       lines: lines.map(l => Object.assign({}, l)),
       status:'nuevo', service:customer.service || 'llevar', payment:customer.payment || 'efectivo', online:true,
-      autoDelivery:d.autoDelivery === true, deliveryFee:d.autoDelivery === true ? d.deliveryFee : undefined
+      autoDelivery:d.autoDelivery === true, deliveryFee:d.autoDelivery === true ? d.deliveryFee : undefined,
+      stripeCheckout:d.stripeCheckout === true     /* el cliente paga con tarjeta desde el menú */
     };
   }catch(e){ return null; }
 }
@@ -26465,16 +26511,23 @@ function spOk(){
       <button type="button" class="sp-btn sp-wa${enviado ? ' sp-wa-sec' : ''}" onclick="spEnviarWa()">
         <span class="sp-btn-txt">${icon('whatsapp')} ${enviado ? 'Enviar otra vez por WhatsApp' : 'Enviar a WhatsApp'}</span>
       </button>
+      ${enviado && spMenuId() ? `<button type="button" class="sp-volver" onclick="spVolverMenu()">Volver al menú</button>` : ''}
       <p class="pg-mini">Pedido ${pgEsc(d.code || '')}</p>
     </div>`);
 }
+function spMenuId(){ try{ return sessionStorage.getItem('vp_pago_menu_' + sp.id) || ''; }catch(e){ return ''; } }
+function spVolverMenu(){ const m = spMenuId(); if(!m) return; location.replace(location.pathname + '#menu/' + encodeURIComponent(m)); location.reload(); }
 function spWaKey(){ return 'vp_pago_wa_' + sp.id; }
 function spWaEnviado(){ try{ return localStorage.getItem(spWaKey()) === '1'; }catch(e){ return false; } }
 /** El cliente SÍ O SÍ le manda su pedido pagado al negocio por WhatsApp. */
 function spEnviarWa(){
   const d = sp.data || {};
-  const msg = '¡Hola' + (d.business ? ' ' + d.business : '') + '! Ya pagué con tarjeta mi pedido ' + (d.code || '') + '.' +
-    '\n\n*Total pagado: ' + pgMoney(d.amount) + ' MXN*\nPago confirmado ✅';
+  let base = '';
+  try{ base = sessionStorage.getItem('vp_pago_wa_txt_' + sp.id) || ''; }catch(e){}
+  const msg = base
+    ? base.replace(/\n\nQuedo en espera[^]*$/, '') + '\n\nYa pagué con tarjeta: *' + pgMoney(d.amount) + ' MXN* ✅'
+    : '¡Hola' + (d.business ? ' ' + d.business : '') + '! Ya pagué con tarjeta mi pedido ' + (d.code || '') + '.' +
+      '\n\n*Total pagado: ' + pgMoney(d.amount) + ' MXN*\nPago confirmado ✅';
   const url = 'https://wa.me/' + String(d.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
   try{ localStorage.setItem(spWaKey(), '1'); }catch(e){}
   const w = window.open(url, '_blank');
