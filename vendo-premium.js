@@ -1372,9 +1372,25 @@
     var c = nube();
     if (c) {
       if (!c.uid) return false;
-      if (!c.sub) return false;            /* todavía no llega el estado de la membresía */
+      /* Mientras llega el estado de la membresía se usa el último conocido
+         de esta cuenta (guardado en el aparato): así el anuncio sale al
+         instante. Si al llegar resulta que sí es Premium, se quita solo. */
+      if (!c.sub && !estadoGuardado()) return false;
     }
     return true;
+  }
+  function llaveEstado() { return 'vp_promo_estado_' + llaveUsuario(); }
+  function estadoGuardado() { try { return JSON.parse(lsGet(llaveEstado()) || 'null'); } catch (e) { return null; } }
+  function guardarEstado() {
+    var c = nube();
+    if (!c || !c.sub) return;
+    var reg = null; try { reg = c.sub.trial_start ? diaLocal(new Date(c.sub.trial_start)) : null; } catch (e) {}
+    lsSet(llaveEstado(), JSON.stringify({ premium: activo(), reg: reg }));
+  }
+  function esPremiumAhora() {
+    var c = nube();
+    if (c && !c.sub) { var g = estadoGuardado(); return !!(g && g.premium); }
+    return activo();
   }
 
   function cssPromo() {
@@ -1518,7 +1534,8 @@
   /** Revisa si hoy toca anuncio. Se llama al abrir y al volver a la app. */
   function revisarPromo() {
     if (!promoListo()) return false;
-    if (activo()) return true;                           /* Premium: nunca */
+    guardarEstado();
+    if (esPremiumAhora()) return true;                   /* Premium: nunca */
     var kSes = 'vp_promo_entrada_' + llaveUsuario();
     var nueva = entradaNueva;                            /* acaba de iniciar sesión */
     entradaNueva = false;
@@ -1527,13 +1544,30 @@
       if (esRecarga()) { ssSet(kSes, '1'); return true; }   /* recargó la página: no */
     }
     ssSet(kSes, '1');
-    var reg = diaRegistro();
+    var c0 = nube(), g0 = estadoGuardado();
+    var reg = (c0 && !c0.sub && g0) ? g0.reg : diaRegistro();
     if (!reg || reg === diaLocal(new Date())) return true;   /* el día del registro no */
     if (!PROMOS.length) return true;                     /* todavía no hay imágenes */
     var i = elegirPromo();
     if (i < 0) return true;
     mostrarPromo(PROMOS[i]);
+    vigilarPremium();
     return true;
+  }
+
+  /* Si se mostró con el estado guardado, al llegar el real se confirma:
+     si resultó Premium (pagó en otro aparato, por ejemplo), se quita. */
+  function vigilarPremium() {
+    var n = 0;
+    var t = setInterval(function () {
+      var c = nube(), ad = document.querySelector('.vp-promo');
+      if (!ad || ++n > 200) { clearInterval(t); return; }
+      if (c && c.sub) {
+        clearInterval(t);
+        guardarEstado();
+        if (activo()) { if (ad.__vpSoltar) ad.__vpSoltar(); ad.remove(); }
+      }
+    }, 150);
   }
 
   var promoTimer = null;
@@ -1561,15 +1595,16 @@
           var i = PROMOS.length ? Math.floor(Math.random() * PROMOS.length) : -1;
           mostrarPromo(i >= 0 ? PROMOS[i] : null);
         }
-      }, 400);
+      }, 100);
       return;
     }
     var n = 0;
     clearInterval(promoTimer);
+    if (revisarPromo()) return;                          /* al instante si ya se puede */
     promoTimer = setInterval(function () {
-      /* Se espera hasta ~2 min a que la sesión y la membresía estén listas */
-      if (revisarPromo() || ++n > 120) clearInterval(promoTimer);
-    }, 1000);
+      /* Se revisa seguido (cada 100 ms) hasta ~2 min a que la sesión esté lista */
+      if (revisarPromo() || ++n > 1200) clearInterval(promoTimer);
+    }, 100);
   }
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') arrancarPromo();   /* por si cambió el día con la app abierta */
@@ -1591,7 +1626,7 @@
 
   function arrancar() {
     ocultarPremium();
-    setTimeout(arrancarPromo, 1200);
+    arrancarPromo();
     engancharEntrada();
     estilos();
     registrarFunciones();
