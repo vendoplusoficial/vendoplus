@@ -2234,6 +2234,38 @@
     }
   }
 
+  /* Llama a vp-suscripcion SIEMPRE con una sesión vigente. Si la app se acaba
+     de abrir (o estuvo mucho tiempo dormida), la sesión puede venir vencida
+     y el servidor contesta 401: se renueva y se intenta una vez más. */
+  function sesionVigente(c) {
+    return c.sb.auth.getSession().then(function (r) {
+      var ses = r && r.data && r.data.session;
+      if (ses && ses.expires_at && ses.expires_at * 1000 - Date.now() > 60000) return ses;
+      return c.sb.auth.refreshSession().then(function (r2) { return (r2 && r2.data && r2.data.session) || ses || null; });
+    }).catch(function () { return null; });
+  }
+  function es401(err) {
+    try {
+      var st = err && (err.status || (err.context && err.context.status));
+      return st === 401 || /401|jwt|token|sesi/i.test(String(err && err.message || ''));
+    } catch (e) { return false; }
+  }
+  function llamarSuscripcion(c, cuerpo, reintento) {
+    return sesionVigente(c).then(function (ses) {
+      if (!ses) { var e = new Error('sin_sesion'); e.sinSesion = true; throw e; }
+      return c.sb.functions.invoke('vp-suscripcion', {
+        body: cuerpo,
+        headers: { Authorization: 'Bearer ' + ses.access_token }
+      });
+    }).then(function (r) {
+      if (r && r.error && es401(r.error) && !reintento) {
+        return c.sb.auth.refreshSession().catch(function () {}).then(function () { return llamarSuscripcion(c, cuerpo, true); });
+      }
+      if (r && r.error && es401(r.error)) { var e2 = new Error('sin_sesion'); e2.sinSesion = true; throw e2; }
+      return r;
+    });
+  }
+
   function abrirPago() {
     var c = nube();
     estilosPago();
@@ -2244,7 +2276,7 @@
     pintarPago(pagoHTML(), 'vp-pr-pago-v');
     vibra(6);
 
-    c.sb.functions.invoke('vp-suscripcion', { body: { action: 'iniciar' } }).then(function (r) {
+    llamarSuscripcion(c, { action: 'iniciar' }).then(function (r) {
       if (vista !== 'pago') return;
       var d = r && r.data;
       if (r.error || !d) throw (r.error || new Error('sin datos'));
@@ -2309,7 +2341,11 @@
       console.error(e);
       if (vista !== 'pago') return;
       var t = document.querySelector('.vp-pg-tarjeta'); if (t) t.classList.add('lista');
-      errorPago('No pudimos preparar tu pago. Revisa tu internet e inténtalo de nuevo.');
+      errorPago(e && e.sinSesion
+        ? 'Tu sesión expiró. Cierra sesión y vuelve a entrar para pagar.'
+        : (navigator.onLine === false
+          ? 'No tienes conexión a internet. Revísala e inténtalo de nuevo.'
+          : 'No pudimos preparar tu pago. Inténtalo de nuevo en un momento.'));
       var b = document.getElementById('vpPgBtn');
       if (b) { b.disabled = false; b.onclick = function () { abrirPago(); }; var tx = b.querySelector('.vp-pg-btn-txt'); if (tx) tx.textContent = 'Reintentar'; }
     });
@@ -2317,7 +2353,7 @@
 
   function confirmarEnServidor(intentos) {
     var c = nube();
-    return c.sb.functions.invoke('vp-suscripcion', { body: { action: 'confirmar', subscriptionId: pago.subId } })
+    return llamarSuscripcion(c, { action: 'confirmar', subscriptionId: pago.subId })
       .then(function (r) {
         var d = r && r.data;
         if (d && d.activo) return true;
