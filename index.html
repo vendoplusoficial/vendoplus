@@ -5162,7 +5162,7 @@ body.pg-mode{ background:#F4F6FA; }
 }
 .mdi-pay-pill.st-pill{ color:#5A45F2 !important; }
 .st-fin-btn{ margin-top:12px; }
-.st-nav-lock{ display:none; margin-left:auto; color:var(--ink-faint, #A3AAB5); }
+.st-nav-lock{ display:none; margin-left:6px; vertical-align:-2px; color:var(--ink-faint, #A3AAB5); }
 .st-nav-lock svg{ width:15px; height:15px; }
 body.st-fin-lock .st-nav-lock{ display:inline-flex; }
 .vp-more-lock{ display:inline-flex; margin-left:8px; vertical-align:-2px; color:#A3AAB5; }
@@ -5264,10 +5264,10 @@ body.stf-abierta{ overflow:hidden; }
 .stf-tabs-fila .stf-tabs{ flex:1; min-width:0; }
 .stf-lupa{ display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; flex:none; border:0; border-radius:12px; background:var(--surface-alt, #F1F3F7); color:var(--ink-soft); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s ease, color .15s ease; }
 .stf-lupa svg{ width:19px; height:19px; }
-.stf-lupa.on{ background:var(--ink, #15181C); color:#fff; }
+.stf-lupa.on{ color:var(--ink); }
 .stf-lupa:active{ transform:scale(.96); }
 .stf-buscar{ display:flex; align-items:center; gap:8px; flex:none; margin-top:10px; padding:0 12px; height:42px; border-radius:12px; background:var(--surface, #fff); border:1px solid var(--border, #E3E7EE); cursor:text; }
-.stf-buscar:focus-within{ border-color:#0E7A3D; box-shadow:0 0 0 3px rgba(22,193,91,.15); }
+.stf-buscar:focus-within{ border-color:#C9CEDD; }
 .stf-buscar svg{ width:17px; height:17px; flex:none; color:var(--ink-soft); }
 .stf-buscar input{ flex:1; min-width:0; height:100%; border:0; outline:0; background:none; font:inherit; font-size:16px; font-weight:500; color:var(--ink); }
 .stf-buscar input::-webkit-search-cancel-button{ display:none; }
@@ -5580,7 +5580,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
     <button class="navbtn" data-view="products" data-icon="box" onclick="goTo('products')"><span class="navicon"></span><span>Inventarios</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
-    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="stripeLogo" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe</span><em class="st-nav-lock"></em></button>
+    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="stripeLogo" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe<em class="st-nav-lock"></em></span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
 </div>
