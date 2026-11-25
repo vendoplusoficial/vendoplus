@@ -906,6 +906,9 @@
   }
   function teclaPortada(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrarPortada(); } }
   function portada(clave) {
+    /* Igual que Comandas: una pantalla normal de la app (encabezado y menú
+       de abajo visibles), con la imagen ajustada y "Activar Premium" */
+    try { if (window.VPComandas && VPComandas.portada && VPComandas.portada(clave)) return; } catch (e) {}
     var p = datosPortada(clave);
     if (!p || !(p.h || p.v)) { abrir(clave); return; }
     cssPortada();

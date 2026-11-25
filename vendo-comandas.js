@@ -78,6 +78,7 @@ window.VPComandas = (() => {
   /* Se llama al inicio de cada render(): cada quien ve solo su sección */
   function guard() {
     if (typeof EXTRA_VIEWS !== 'undefined' && EXTRA_VIEWS.comandas !== view) EXTRA_VIEWS.comandas = view;
+    if (typeof EXTRA_VIEWS !== 'undefined' && EXTRA_VIEWS.portada !== portadaVista) EXTRA_VIEWS.portada = portadaVista;
     const area = myArea();
     if (area === 'mesero') {
       if (!(currentView === 'sale' && checkout.floorTableId)) currentView = 'comandas';
@@ -331,23 +332,51 @@ window.VPComandas = (() => {
     </picture>`;
   }
   /* Sin Premium: presentación de Comandas (no es un anuncio que estorba: es la portada de la sección) */
-  function promoHTML() {
-    const go = "VPPremium && VPPremium.abrir ? VPPremium.abrir('comandas') : toast('Las comandas son de Premium')";
+  /* Portadas de funciones Premium (misma pantalla para todas) */
+  const PORTADAS = {
+    comandas: { nombre:'Comandas', abrir:'comandas', h:'img/promo-comandas-h.webp?v=1', v:'img/promo-comandas-v.webp?v=1',
+      alt:'VendoPlus Premium: coordina caja, mesas y cocina desde el celular',
+      titulo:'Comandas viene incluido en Premium', sub:'Mesero, cocina y caja conectados en tiempo real.' },
+    menu: { nombre:'Menú Digital', abrir:'menu', h:'img/promo-menu-h.webp?v=2', v:'img/promo-menu-v.webp?v=2',
+      alt:'VendoPlus Premium: tu menú en internet, recibe pedidos desde ahí',
+      titulo:'El Menú Digital viene incluido en Premium', sub:'Tus clientes ven tu menú y te mandan su pedido.' },
+    stripe: { nombre:'Finanzas de Stripe', abrir:null, h:'img/promo-stripe-h.webp?v=1', v:'img/promo-stripe-v.webp?v=1',
+      alt:'VendoPlus Premium: cobra sin contacto con NFC y deja que tus clientes paguen con tarjeta en el menú digital',
+      titulo:'Los cobros con Stripe vienen en Premium', sub:'Cobra con NFC y recibe pagos con tarjeta en tu menú digital.' }
+  };
+  function promoHTML(o) {
+    o = o || PORTADAS.comandas;
+    const arg = o.abrir ? `'${o.abrir}'` : 'null';
+    const go = `window.VPPremium && VPPremium.abrir ? VPPremium.abrir(${arg}) : toast('Esta función es de Premium')`;
     return `<section class="cm-promo cm-fit" data-max="2000" data-min="200">
       <button type="button" class="cm-promo-img" onclick="${go}" aria-label="Ver Premium">
         <picture>
-          <source media="(max-width:699px)" srcset="img/promo-comandas-v.webp?v=1">
-          <img class="cm-fit-img" src="img/promo-comandas-h.webp?v=1" alt="VendoPlus Premium: coordina caja, mesas y cocina desde el celular" decoding="async" fetchpriority="high" draggable="false">
+          <source media="(max-width:699px)" srcset="${o.v}">
+          <img class="cm-fit-img" src="${o.h}" alt="${o.alt}" decoding="async" fetchpriority="high" draggable="false">
         </picture>
       </button>
       <div class="cm-promo-foot">
         <span class="cm-promo-txt">
-          <b>Comandas viene incluido en Premium</b>
-          <small>Mesero, cocina y caja conectados en tiempo real.</small>
+          <b>${o.titulo}</b>
+          <small>${o.sub}</small>
         </span>
         <button type="button" class="btn primary cm-promo-btn" onclick="${go}">Activar Premium</button>
       </div>
     </section>`;
+  }
+  /* Pantalla "portada" para Menú Digital y Finanzas de Stripe sin Premium */
+  let portadaClave = 'menu';
+  function portadaVista() {
+    const o = PORTADAS[portadaClave] || PORTADAS.menu;
+    fitSoon();
+    return `<h1 class="page-title cm-promo-title">${o.nombre}</h1>${promoHTML(o)}`;
+  }
+  function portada(clave) {
+    if (!PORTADAS[clave]) return false;
+    portadaClave = clave;
+    if (typeof EXTRA_VIEWS !== 'undefined') EXTRA_VIEWS.portada = portadaVista;
+    goTo('portada');
+    return true;
   }
 
   /* Ajuste a la pantalla: se mide si la página quedó con scroll y se
@@ -2197,7 +2226,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    portada, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
