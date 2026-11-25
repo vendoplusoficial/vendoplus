@@ -322,12 +322,40 @@ window.VPComandas = (() => {
     return `<span class="acc-ico ${u.role === 'admin' ? 'blue' : 'green'} ${ph ? 'has-photo' : ''}">${ph ? `<img src="${ph}" alt="">` : `<span class="ini">${userInitials(u)}</span>`}</span>`;
   }
 
+  /* Fotos de cada área: recorte horizontal en celular, vertical en tablet/PC */
+  const ALT_AREA = { caja:'Cajero cobrando en VendoPlus', mesero:'Mesera tomando pedidos en VendoPlus', cocina:'Cocinero viendo las comandas en VendoPlus' };
+  function fotoArea(id) {
+    return `<picture>
+      <source media="(max-width:699px)" srcset="img/comandas-${id}-cel.webp?v=1">
+      <img src="img/comandas-${id}-pc.webp?v=1" alt="${ALT_AREA[id] || ''}" loading="lazy" decoding="async" draggable="false">
+    </picture>`;
+  }
+  /* Sin Premium: presentación de Comandas (no es un anuncio que estorba: es la portada de la sección) */
+  function promoHTML() {
+    return `<section class="cm-promo">
+      <button type="button" class="cm-promo-img" onclick="VPPremium && VPPremium.abrir ? VPPremium.abrir('comandas') : toast('Las comandas son de Premium')" aria-label="Ver Premium">
+        <picture>
+          <source media="(max-width:699px)" srcset="img/promo-comandas-v.webp?v=1">
+          <img src="img/promo-comandas-h.webp?v=1" alt="VendoPlus Premium: coordina caja, mesas y cocina desde el celular" decoding="async" fetchpriority="high" draggable="false">
+        </picture>
+      </button>
+      <div class="cm-promo-foot">
+        <span class="cm-promo-txt">
+          <b>Comandas viene incluido en Premium</b>
+          <small>Mesero, cocina y caja conectados en tiempo real, cada quien desde su celular o tablet.</small>
+        </span>
+        <button type="button" class="btn primary cm-promo-btn" onclick="VPPremium && VPPremium.abrir ? VPPremium.abrir('comandas') : toast('Las comandas son de Premium')">Activar Premium</button>
+      </div>
+    </section>`;
+  }
+
   function homeHTML() {
     const vivo = Sync.online();
     return `
       <h1 class="page-title">Comandas</h1>
       <p class="page-sub">Elige un área para ver y agregar a tu equipo</p>
-      <label class="cm-on-card ${activas() ? 'on' : ''}">
+      ${premiumOk() ? '' : promoHTML()}
+      <label class="cm-on-card ${activas() ? 'on' : ''} ${premiumOk() ? '' : 'cm-on-off'}">
         <span class="acc-ico ${activas() ? 'green' : ''}">${icon('comandas')}</span>
         <span class="acc-txt">
           <span class="acc-label">Comandas ${activas() ? 'activadas' : 'desactivadas'}${premiumOk() ? '' : ' <span class="cm-prem">Premium</span>'}</span>
@@ -339,7 +367,7 @@ window.VPComandas = (() => {
         ${ORDER.map(id => {
           const n = gente(id).length;
           return `<button type="button" class="cm-area" onclick="VPComandas.area('${id}')">
-            <span class="cm-area-art">${ART[id]}</span>
+            <span class="cm-area-art cm-area-foto">${fotoArea(id)}</span>
             <span class="cm-area-foot">
               <span class="cm-area-txt">
                 <b>${AREAS[id].name}</b>

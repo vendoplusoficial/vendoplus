@@ -29,7 +29,15 @@ const BASE = ['./', './vendor/supabase-2.119.0.js',
   './img/promo-asistente-h.webp?v=1',
   './img/promo-asistente-v.webp?v=1',
   './img/promo-menu-h.webp?v=1',
-  './img/promo-menu-v.webp?v=1'
+  './img/promo-menu-v.webp?v=1',
+  './img/comandas-caja-cel.webp?v=1',
+  './img/comandas-caja-pc.webp?v=1',
+  './img/comandas-cocina-cel.webp?v=1',
+  './img/comandas-cocina-pc.webp?v=1',
+  './img/comandas-mesero-cel.webp?v=1',
+  './img/comandas-mesero-pc.webp?v=1',
+  './img/promo-comandas-h.webp?v=1',
+  './img/promo-comandas-v.webp?v=1'
 ];
 
 self.addEventListener('install', e => {

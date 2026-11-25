@@ -376,3 +376,31 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 .cm-p2-cocina.cm-p2-off{ opacity:1; background:var(--surface-alt, #F1F3F7) !important; color:var(--ink-soft, #8A93AC) !important; border-color:transparent !important; cursor:default; }
 .cm-ynq-txt{ display:flex; align-items:center; gap:7px; margin:12px 0 0; font-size:13px; font-weight:700; color:var(--ink-soft); }
 .cm-ynq-txt svg{ width:16px; height:16px; flex:none; }
+
+/* Fotos reales en las tarjetas de Caja, Mesero y Cocinero */
+.cm-area-art.cm-area-foto{ padding:0; background:#EEF1F6; overflow:hidden; line-height:0; }
+.cm-area-foto picture, .cm-area-foto img{ display:block; width:100%; }
+.cm-area-foto img{ aspect-ratio:1/1; height:auto; object-fit:cover; object-position:center 15%; -webkit-user-select:none; user-select:none; }
+@media (max-width:699px){
+  .cm-area{ flex-direction:column; }
+  .cm-area-art.cm-area-foto{ width:auto; padding:0; display:block; }
+  .cm-area-foto img{ aspect-ratio:12/7; object-position:center; }
+}
+
+/* Sin Premium: portada de Comandas */
+.cm-promo{ margin:16px 0 4px; border:1px solid var(--border); border-radius:22px; background:var(--surface, #fff); overflow:hidden; }
+.cm-promo-img{ display:block; width:100%; padding:0; border:0; background:#FBF4EA; cursor:pointer; line-height:0; -webkit-tap-highlight-color:transparent; }
+.cm-promo-img picture, .cm-promo-img img{ display:block; width:100%; height:auto; }
+.cm-promo-img img{ aspect-ratio:16/9; object-fit:cover; -webkit-user-select:none; user-select:none; }
+.cm-promo-foot{ display:flex; align-items:center; gap:16px; padding:16px 18px; }
+.cm-promo-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.cm-promo-txt b{ font-size:16px; font-weight:800; color:var(--ink); }
+.cm-promo-txt small{ font-size:13px; font-weight:600; color:var(--ink-soft); line-height:1.4; }
+.cm-promo-btn{ flex:none; height:46px !important; padding:0 22px !important; border-radius:999px !important; font-size:15px !important; }
+.cm-on-card.cm-on-off{ display:none; }
+
+@media (max-width:699px){
+  .cm-promo-img img{ aspect-ratio:2/3; }
+  .cm-promo-foot{ flex-direction:column; align-items:stretch; text-align:center; gap:12px; padding:16px; }
+  .cm-promo-btn{ width:100%; }
+}
