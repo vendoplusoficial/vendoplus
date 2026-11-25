@@ -4786,9 +4786,9 @@ body[data-section="menu"] #view{ padding-bottom:calc(170px + env(safe-area-inset
 .btn.udc-ok{ height:48px; border-radius:999px; margin-top:4px; }
 
 /* ===== Al entrar a una sección: la pantalla sube desde abajo, suave ===== */
-@keyframes vpViewUp{ from{ opacity:0; transform:translate3d(0, 28px, 0); } to{ opacity:1; transform:translate3d(0, 0, 0); } }
-#view.view-enter > *:not(.cartbar):not(.vp-fixed){ animation:vpViewUp .55s cubic-bezier(.22, 1, .36, 1) both !important; animation-delay:0s !important; }
-#view.view-enter > .vp-fixed{ animation:fadeIn .4s ease both !important; }
+@keyframes vpViewUp{ from{ opacity:0; transform:translate3d(0, 10px, 0); } to{ opacity:1; transform:translate3d(0, 0, 0); } }
+#view.view-enter > *:not(.cartbar):not(.vp-fixed){ animation:vpViewUp .24s cubic-bezier(.22, 1, .36, 1) both !important; animation-delay:0s !important; }
+#view.view-enter > .vp-fixed{ animation:fadeIn .2s ease both !important; }
 @media (prefers-reduced-motion: reduce){ #view.view-enter > *{ animation:none !important; } }
 
 /* Pedidos entrantes: rayita izquierda gris (nuevo y por cobrar) */
@@ -5455,7 +5455,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=21"></script>
+<script src="vendo-comandas.js?v=22"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -5749,6 +5749,50 @@ const DATA_NOT_IN_BACKUP = ['mesa_session','mesa_user_session','mesa_active_user
 /** Id corto y único para cada registro. */
 function uid(prefix){
   return (prefix || '') + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+/* ---------- Miniaturas de las fotos de productos ----------
+   Las fotos se guardan grandes (1200 px) para el Menú Digital. En las
+   pantallas de la app se ven chiquitas, así que se dibuja una copia
+   pequeña (solo en memoria, la foto guardada no cambia). Así el celular
+   no tiene que cargar decenas de fotos enormes y todo corre más ligero. */
+const VP_THUMB_PX = 360;
+const vpThumbs = new Map();
+const vpThumbQ = [];
+let vpThumbBusy = false;
+function vpThumb(src){
+  if(!src || typeof src !== 'string' || src.length < 40000 || src.indexOf('data:image') !== 0) return src;
+  const t = vpThumbs.get(src);
+  if(t) return t;
+  if(t === undefined){ vpThumbs.set(src, null); vpThumbQ.push(src); vpThumbNext(); }
+  return src;
+}
+function vpThumbNext(){
+  if(vpThumbBusy || !vpThumbQ.length) return;
+  vpThumbBusy = true;
+  const go = () => vpThumbMake(vpThumbQ.shift()).catch(() => {}).then(() => { vpThumbBusy = false; vpThumbNext(); });
+  if('requestIdleCallback' in window) requestIdleCallback(go, { timeout:600 }); else setTimeout(go, 30);
+}
+async function vpThumbMake(src){
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = src;
+  try{ await img.decode(); }catch(e){ await new Promise((ok, no) => { img.onload = ok; img.onerror = no; }); }
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if(!w || !h) return;
+  const k = Math.min(1, VP_THUMB_PX / Math.max(w, h));
+  if(k >= 1){ vpThumbs.set(src, src); return; }
+  const c = document.createElement('canvas');
+  c.width = Math.round(w * k); c.height = Math.round(h * k);
+  const g = c.getContext('2d');
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(img, 0, 0, c.width, c.height);
+  const blob = await new Promise(ok => { try{ c.toBlob(ok, 'image/webp', 0.86); }catch(e){ ok(null); } });
+  if(!blob) return;
+  const url = URL.createObjectURL(blob);
+  vpThumbs.set(src, url);
+  /* Las fotos que ya están en pantalla se cambian por la miniatura */
+  document.querySelectorAll('img').forEach(el => { if(el.getAttribute('src') === src) el.setAttribute('src', url); });
 }
 
 const Store = {
@@ -6781,7 +6825,7 @@ function goTo(view){
   void el.offsetWidth;
   el.classList.add('view-enter');
   clearTimeout(goTo._t);
-  goTo._t = setTimeout(() => el.classList.remove('view-enter'), 700);
+  goTo._t = setTimeout(() => el.classList.remove('view-enter'), 350);
 }
 
 function render(){
@@ -7230,7 +7274,7 @@ function renderSale(){
       <div class="cartbar no-print">
         <button class="cartbar-inner" onclick="openCartSheet('cart')">
           <span class="cartbar-pics">
-            ${cartThumbs.map(p => `<span class="cartbar-thumb">${p.image ? `<img src="${p.image}" alt="">` : icon('plate')}</span>`).join('')}
+            ${cartThumbs.map(p => `<span class="cartbar-thumb">${p.image ? `<img src="${vpThumb(p.image)}" alt="" decoding="async">` : icon('plate')}</span>`).join('')}
             <i class="cartbar-count">${cartCount}</i>
           </span>
           <span class="cartbar-sep"></span>
@@ -7285,7 +7329,7 @@ function saleCardHTML(p){
     <div class="pc-tap" onclick="${tapAction}">
       <div class="pc-top" style="background:${cat.color}"></div>
       <div class="pc-photo ${p.image ? '' : 'is-placeholder'}">
-        ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async">` : icon('plateSet')}
+        ${p.image ? `<img src="${vpThumb(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async">` : icon('plateSet')}
       </div>
       <div class="pc-inner">
         <div class="pc-name">${escapeHtml(p.name)}</div>
@@ -8063,7 +8107,7 @@ function cartSheetHTML(step){
       return `
         <div class="cart-item">
           <div class="cart-item-photo" onclick="openLineEditor(${i})">
-            ${p.image ? `<img src="${p.image}" alt="">` : `<span class="cart-item-photo-ph">${icon('plate')}</span>`}
+            ${p.image ? `<img src="${vpThumb(p.image)}" alt="" decoding="async">` : `<span class="cart-item-photo-ph">${icon('plate')}</span>`}
           </div>
           <div class="cart-item-info" onclick="openLineEditor(${i})" role="button" title="Editar cantidad, precio, descuento o nota">
             <div class="cart-item-name">${escapeHtml(label)} <span class="ci-edit">${icon('edit')}</span></div>
@@ -11443,7 +11487,7 @@ function renderStats(){
     <div class="section-title">Productos más vendidos</div>
     <div class="card top-prods">
       ${prods.slice(0, 5).map(p => `<div class="tp-row">
-        <span class="tp-photo">${p.image ? `<img src="${p.image}" alt="" loading="lazy">` : icon('plate')}</span>
+        <span class="tp-photo">${p.image ? `<img src="${vpThumb(p.image)}" alt="" loading="lazy" decoding="async">` : icon('plate')}</span>
         <span class="tp-name">${escapeHtml(p.name)}${p.sizeLabel ? ' · ' + escapeHtml(p.sizeLabel) : ''}</span>
         <b class="tp-qty">${escapeHtml(p.unit && !p.sizeLabel && !unitOf(p.unit).plain ? fmtQty(p.qty, p.unit) : fmtNum(p.qty))}</b>
       </div>`).join('')}
@@ -11894,7 +11938,7 @@ function renderProdRow(p, cat){
   return `
     <div class="prod-row">
       <div class="pr-photo">
-        ${p.image ? `<img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async">` : `<span style="color:${cat.color}">${icon('plate')}</span>`}
+        ${p.image ? `<img src="${vpThumb(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async">` : `<span style="color:${cat.color}">${icon('plate')}</span>`}
       </div>
       <div class="pr-info">
         <div class="pr-name">${escapeHtml(p.name)}</div>
@@ -18988,7 +19032,7 @@ function mdiDetailHTML(o){
     const step = mdiLineStep(l);
     return `
       <div class="mdi-line ${cambiado && mod ? 'changed' : ''} ${!p ? 'unknown' : ''}">
-        <div class="mdi-thumb">${p && p.image ? `<img src="${p.image}" alt="">` : icon('plate')}</div>
+        <div class="mdi-thumb">${p && p.image ? `<img src="${vpThumb(p.image)}" alt="" decoding="async">` : icon('plate')}</div>
         <div class="mdi-line-main">
           <div class="mdi-line-name">${escapeHtml(mdiLineLabel(l))}${cambiado && mod ? ' <span class="mdi-tag">' + (origen ? 'Cambiado' : 'Agregado') + '</span>' : ''}</div>
           <div class="mdi-line-sub">${formatMoney(l.price)} ${l.sizeLabel ? 'c/u' : unitPriceWord(l.unit)}${origen && cambiado && mod && Math.abs(origen.qty - l.qty) > 1e-9 ? ' · antes ' + escapeHtml(mdiQtyText(origen)) : ''}</div>
@@ -21575,7 +21619,7 @@ function mdiStatsHTML(){
       <div class="section-title">Productos más vendidos</div>
       <div class="card top-prods">
         ${top.map(p => `<div class="tp-row">
-          <span class="tp-photo">${p.image ? `<img src="${p.image}" alt="" loading="lazy">` : icon('plate')}</span>
+          <span class="tp-photo">${p.image ? `<img src="${vpThumb(p.image)}" alt="" loading="lazy" decoding="async">` : icon('plate')}</span>
           <span class="tp-name">${escapeHtml(p.name)}${p.sizeLabel ? ' · ' + escapeHtml(p.sizeLabel) : ''}</span>
           <b class="tp-qty">${escapeHtml(p.unit && !p.sizeLabel && !unitOf(p.unit).plain ? fmtQty(p.qty, p.unit) : fmtNum(p.qty))}</b>
         </div>`).join('')}
@@ -23973,7 +24017,7 @@ function inventoryTabHTML(){
       ${list.length ? list.map(p => {
         const st = stockInfo(p);
         return `<div class="prod-row inv-row" onclick="openKardex('${p.id}')">
-          <div class="pr-photo">${p.image ? `<img src="${p.image}" alt="">` : icon('plate')}</div>
+          <div class="pr-photo">${p.image ? `<img src="${vpThumb(p.image)}" alt="" loading="lazy" decoding="async">` : icon('plate')}</div>
           <div class="pr-info">
             <div class="pr-name">${escapeHtml(p.name)}</div>
             <div class="pr-price">Avisa al quedar ${fmtStock(p, st.min)}${p.cost != null && can('verGanancias') ? ' · costo ' + formatMoney(p.cost) : ''}</div>
@@ -29156,7 +29200,7 @@ printTicket = function(venta){
     display:flex !important; position:fixed !important; left:0; top:0; bottom:auto; height:calc(100dvh / var(--z, 1)) !important; width:88px; z-index:61;
     flex-direction:column; align-items:stretch; gap:6px; padding:26px 16px 22px; background:#fff; overflow-x:hidden; overflow-y:auto; scrollbar-width:none;
     animation:none !important; box-shadow:1px 0 0 #EEF0F5 !important;
-    transition:width .5s cubic-bezier(.32,.72,0,1), box-shadow .5s ease; will-change:width; }
+    transition:width .3s cubic-bezier(.32,.72,0,1), box-shadow .3s ease; }
   body.nav-hidden .bottomnav::-webkit-scrollbar{ display:none; }
   body.nav-hidden.nav-peek .bottomnav{ width:248px; box-shadow:14px 0 44px rgba(16,22,42,.16) !important; }
   body.nav-hidden .nav-open-btn, body.nav-hidden .nav-collapse{ display:none !important; }
@@ -29258,7 +29302,6 @@ printTicket = function(venta){
 .sp-card.vp-empty-in .sp-empty{ animation:vpPop .5s cubic-bezier(.34,1.56,.64,1) both; }
 .sp-card.vp-empty-in .sp-empty > *{ animation:vpRise .45s cubic-bezier(.22,1,.36,1) both; }
 .sp-card.vp-empty-in .sp-empty > :nth-child(2){ animation-delay:.08s; } .sp-card.vp-empty-in .sp-empty > :nth-child(3){ animation-delay:.16s; }
-.cart-item{ will-change:height, opacity; }
 </style>
 <style id="md-flow-css">
 /* Pasos del pedido (cliente) */

@@ -192,7 +192,7 @@ window.VPComandas = (() => {
     return true;
   }
   const plural = (n, a, b) => n + ' ' + (n === 1 ? a : b);
-  const thumb = productId => { const p = productId ? findProduct(productId) : null; return p && p.image ? `<img src="${p.image}" alt="">` : icon('plate'); };
+  const thumb = productId => { const p = productId ? findProduct(productId) : null; return p && p.image ? `<img src="${window.vpThumb ? vpThumb(p.image) : p.image}" alt="" decoding="async">` : icon('plate'); };
 
   /* Avisos con sonido (cocina: comanda nueva · mesero: comanda lista) */
   function beep() {
