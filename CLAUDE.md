@@ -44,6 +44,9 @@ versión de `vendo-apps.js` y `vendo-premium.js` en sus `<script src=...?v=>`.
   `<script src=...?v=>` o `<link href=...?v=>`, si no se queda la copia vieja.
 - La librería de Supabase está en `vendor/supabase-2.119.0.js` (ya no se baja de jsdelivr).
   Si se cambia de versión, renombra el archivo y actualiza `index.html` y `BASE` en `sw.js`.
+- **No cambies `CACHE` en `sw.js`** (`vp-app-v2`): cambiarlo borra la copia del teléfono y con señal
+  mala la página guardada se queda sin sus archivos (pasó: el cocinero se veía como POS normal).
+  Al guardar la página, `sw.js` guarda también todos los `?v=` que pide.
 - Las fotos ya NO van incrustadas en base64 en `index.html` (lo hacían pesar 3 MB): viven en `img/`
   con `?v=`. Al agregar una foto: ponla en `img/`, agrégala a `window.VP_IMGS` (index.html, se precarga
   en segundo plano) y a `BASE` en `sw.js` (se guarda en la copia del teléfono). Si cambias una foto,
