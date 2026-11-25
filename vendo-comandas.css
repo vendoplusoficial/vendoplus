@@ -332,3 +332,15 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-perfil b{ font-size:19px; font-weight:800; color:var(--ink); }
 /* Animaciones que no estorban al deslizar */
 .cm-tab.has:not(.on) .cm-tab-n{ animation-iteration-count:3; }
+
+/* Mesero · pestaña Mesas: pantalla fija (sin scroll); el alto del plano lo pone ajustarPlano() */
+html.cm-fija, html.cm-fija body{ overflow:hidden; overscroll-behavior:none; }
+html.cm-fija body{ position:fixed; inset:0; width:100%; }
+html.cm-fija .cm-floor{ max-width:720px; margin-bottom:6px; }
+html.cm-fija .cm-legend{ margin-bottom:0; }
+@media (max-height:700px){
+  html.cm-fija .page-title{ font-size:26px; }
+  html.cm-fija .cm-solo-bar{ margin:8px 0; }
+  html.cm-fija .cm-tabs{ margin-bottom:8px; }
+  html.cm-fija .cm-tab{ padding:9px 10px; }
+}

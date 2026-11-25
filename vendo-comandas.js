@@ -73,7 +73,31 @@ window.VPComandas = (() => {
     b.toggle('cm-mesero', area === 'mesero');
     b.toggle('cm-admin', puedeAdministrar());
     Sync.tick();
+    requestAnimationFrame(ajustarPlano);
   }
+
+  /* ---------- Mesero · pestaña Mesas: una sola pantalla, sin scroll ----------
+     El plano se estira para llenar justo lo que queda de pantalla en cada
+     celular (debajo de las pestañas y arriba de la leyenda). En Avisos sí hay scroll. */
+  function ajustarPlano() {
+    const fijo = currentView === 'comandas' && esMesero() && st.mtab !== 'listos';
+    document.documentElement.classList.toggle('cm-fija', fijo);
+    const floor = fijo && document.querySelector('#view .cm-floor');
+    if (!floor) return;
+    if (window.scrollY) window.scrollTo(0, 0);
+    const r = floor.getBoundingClientRect();
+    const escala = floor.offsetHeight ? r.height / floor.offsetHeight : 1;     /* la app usa zoom en PC */
+    const ley = floor.nextElementSibling;
+    const leyH = ley ? ley.getBoundingClientRect().height + 10 : 0;
+    let pr = document.getElementById('cmSafeB');
+    if (!pr) { pr = document.createElement('div'); pr.id = 'cmSafeB'; pr.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;'; document.body.appendChild(pr); }
+    const abajo = pr.getBoundingClientRect().height || 0;
+    const libre = window.innerHeight - r.top - leyH - 14 - abajo;
+    floor.style.height = Math.max(220, Math.floor(libre / (escala || 1))) + 'px';
+  }
+  window.addEventListener('resize', () => requestAnimationFrame(ajustarPlano));
+  window.addEventListener('orientationchange', () => setTimeout(ajustarPlano, 250));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', () => requestAnimationFrame(ajustarPlano));
 
   function abrir() {
     st.screen = 'home'; st.area = null; st.form = null; st.permsDraft = null;
@@ -834,7 +858,7 @@ window.VPComandas = (() => {
     if (agregar && k) { ronda(k.tableId); return; }
     render();
   }
-  function tabMesero(t) { st.mtab = t; vibrate(6); render(); }
+  function tabMesero(t) { st.mtab = t; vibrate(6); render(); window.scrollTo(0, 0); }
 
   /* Mesa que atiende otro mesero */
   function mesaAjena(o) {
