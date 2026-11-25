@@ -5420,9 +5420,9 @@ div.stf-row{ cursor:default; }
 @media (prefers-reduced-motion: reduce){ .pg-load i{ animation:none; } }
 
 </style>
-<link rel="stylesheet" href="vendo-mesas.css?v=9">
+<link rel="stylesheet" href="vendo-mesas.css?v=10">
 <script src="vendo-mesas.js?v=11"></script>
-<link rel="stylesheet" href="vendo-comandas.css?v=10">
+<link rel="stylesheet" href="vendo-comandas.css?v=11">
 <style>
 .vp-err-card{ max-width:420px; margin:40px auto; padding:22px 20px; border:1px solid var(--border,#E8EBF2); border-radius:18px; background:#fff; display:flex; flex-direction:column; gap:10px; text-align:center; }
 .vp-err-card b{ font-size:17px; color:var(--ink,#16213E); }
@@ -5432,7 +5432,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=11"></script>
+<script src="vendo-comandas.js?v=12"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -5617,7 +5617,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
     <div class="topbar-right">
       <button type="button" class="vp-top-prem" id="topPremium" data-view="premium" onclick="goTo('premium')" aria-label="Funciones premium" title="Funciones premium"><span class="vp-top-prem-ico"></span></button>
       <div class="topbar-clock" id="clock"></div>
-      <button class="user-chip" id="userChip" onclick="goTo('account')" aria-label="Mi cuenta">
+      <button class="user-chip" id="userChip" onclick="vpChipClick()" aria-label="Mi cuenta">
         <span class="avatar-btn" id="avatarBtn"></span>
         <span class="chip-name" id="chipName"></span>
       </button>
@@ -6802,6 +6802,11 @@ function vpRenderError(el, err){
     <button class="btn primary block" onclick="vpReparar()">Reparar</button>
     <small>Detalle para soporte: ${escapeHtml(msg)}${donde ? ' — ' + escapeHtml(donde) : ''}</small>
   </div>`;
+}
+/* El círculo con tu nombre: mesero, cocinero y cajero ven su perfil */
+function vpChipClick(){
+  if(window.VPComandas && VPComandas.esSolo && VPComandas.esSolo()){ VPComandas.perfil(); return; }
+  goTo('account');
 }
 async function vpReparar(){
   try{ const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); }catch(e){}
@@ -15140,7 +15145,10 @@ function enterAsUser(u){
   cart = []; delete checkout.menuOrderId;
   currentView = 'sale';
   paintChrome();
+  render.fresh = true;
   render();
+  window.scrollTo(0, 0);
+  { const v = document.getElementById('view'); if(v) v.scrollTop = 0; }
   toast('Bienvenido, ' + (userFirstName(u) || u.name), { variant:'toast-success', icon:icon('check'), subtitle:'Turno iniciado a las ' + shiftClock(new Date().toISOString()) });
 }
 
@@ -15160,6 +15168,7 @@ function switchUser(){
   checkout = newCheckout(); customItems = {};
   currentView = 'sale';
   authState.pickedUser = null;
+  window.scrollTo(0, 0);
   showAuth('users');
   if(resumen) toast('Turno cerrado', { subtitle: resumen, icon:icon('clock') });
 }
@@ -15466,7 +15475,7 @@ function userOptionsHTML(u){
   </div>`;
 }
 /* A dónde regresar al cerrar foto, NIP o turnos */
-function backToUser(id){ if(id && userById(id)) openUserDetail(id); else openUsersSheet(); }
+function backToUser(id){ if(window.VPComandas && VPComandas.esSolo && VPComandas.esSolo()){ VPComandas.perfil(); return; } if(id && userById(id)) openUserDetail(id); else openUsersSheet(); }
 
 function openUserDetail(id){
   const u = userById(id);

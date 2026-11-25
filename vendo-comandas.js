@@ -567,7 +567,6 @@ window.VPComandas = (() => {
   function soloBar() {
     return `<div class="cm-solo-bar">
       <button class="btn ghost" onclick="VPComandas.historial()">${icon('receipt')} Historial</button>
-      <button class="btn ghost" onclick="VPComandas.cambiar()">${icon('swap')} Cambiar de cuenta</button>
     </div>`;
   }
 
@@ -1406,7 +1405,73 @@ window.VPComandas = (() => {
     `, { dismissible:true });
   }
 
-  function cambiar() { switchUser(); }
+  function cambiar() { closeModal(); window.scrollTo(0, 0); switchUser(); }
+
+  /* ---------- Mi perfil (el círculo con tu nombre, arriba a la derecha) ----------
+     Mismo diseño de filas que Usuarios del POS. Reutiliza la foto y el NIP
+     de siempre (cada quien solo cambia lo suyo). */
+  const esSolo = () => !!myArea();
+  function perfil() {
+    const u = me();
+    if (!u) return;
+    const ph = userPhoto(u);
+    const row = (fn, ico, cls, label, sub) => `
+      <button class="acc-row" onclick="${fn}">
+        <span class="acc-ico ${cls}">${ico}</span>
+        <span class="acc-txt"><span class="acc-label">${label}</span><span class="acc-sub">${sub}</span></span>
+        <span class="acc-chev">${icon('chevronRight')}</span>
+      </button>`;
+    openModal(`
+      <div class="sheet-header">
+        <h2>Mi perfil</h2>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      <div class="cm-perfil">
+        <span class="cm-perfil-av">${ph ? `<img src="${ph}" alt="">` : userInitials(u)}</span>
+        <b>${escapeHtml(u.name)}</b>
+        <span class="role-chip ${u.role}">${AREAS[u.area] ? AREAS[u.area].name : roleOf(u.role).name}</span>
+      </div>
+      <div class="acc-list">
+        ${row('VPComandas.nombre()', icon('person'), 'green', 'Mi nombre', escapeHtml(u.name))}
+        ${row(`openSetPinForm('${u.id}', true)`, icon('key'), 'gold', 'Mi contraseña (NIP)', u.pin ? 'Cambiar tu NIP de 4 dígitos' : 'Crea tu NIP de 4 dígitos')}
+        ${row(`openUserPhotoForm('${u.id}')`, ph ? `<img src="${ph}" alt="">` : icon('camera'), ph ? 'has-photo' : 'blue', 'Mi foto', ph ? 'Cambiar o quitar la foto' : 'Ponle una foto a tu usuario')}
+      </div>
+      <div class="acc-list" style="margin-top:14px;">
+        ${row('VPComandas.cambiar()', icon('swap'), '', 'Cambiar de cuenta', 'Cierra tu turno y entra con otra persona')}
+      </div>
+    `, { dismissible:true });
+  }
+  function nombre() {
+    const u = me();
+    if (!u) return;
+    openModal(`
+      <h3 class="sheet-title">Mi nombre</h3>
+      <p class="sheet-text">Así te verán tus compañeros en las mesas y en cocina.</p>
+      <div class="field">
+        <label for="cmMiNombre">Nombre</label>
+        <input id="cmMiNombre" type="text" maxlength="40" value="${escapeHtml(u.name)}" autocomplete="off">
+      </div>
+      <div class="sheet-actions">
+        <button class="btn ghost block" onclick="VPComandas.perfil()">Cancelar</button>
+        <button class="btn primary block" onclick="VPComandas.guardarNombre()">Guardar</button>
+      </div>
+    `, { dismissible:true });
+  }
+  function guardarNombre() {
+    const el = document.getElementById('cmMiNombre');
+    const name = ((el && el.value) || '').trim();
+    if (name.length < 2) { toast('Escribe tu nombre'); if (el) el.focus(); return; }
+    const yo = me();
+    const list = DB.getUsers();
+    const u = yo && list.find(x => x.id === yo.id);
+    if (!u) return;
+    u.name = name;
+    DB.saveUsers(list);
+    paintChrome();
+    render();
+    perfil();
+    toast('Nombre guardado', { variant:'toast-success', icon:icon('check'), subtitle:name });
+  }
 
   /* ---------- Vista principal ---------- */
   function view() {
@@ -1670,6 +1735,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
+    esSolo, perfil, nombre, guardarNombre,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();

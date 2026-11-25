@@ -32,7 +32,8 @@
 .vp-floor-header h2 { margin: 0; }
 .vp-floor {
   position: relative;
-  height: clamp(274px, 52dvh, 390px);
+  height: clamp(274px, 52vh, 390px);
+  height: clamp(274px, 52svh, 390px);
   margin: 0 0 12px;
   border: 1px solid var(--border);
   border-radius: 20px;
