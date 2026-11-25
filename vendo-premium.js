@@ -849,11 +849,92 @@
      Se entra y se configura igual que siempre. La puerta está en el botón
      de ACTIVAR: ahí es donde aparece Premium.
   ======================================================================= */
+  /* PORTADA DE UNA FUNCIÓN PREMIUM (igual que la de Comandas): imagen
+     grande que cabe completa en la pantalla + botón para contratar.
+     Horizontal en PC/tablet, vertical en celular. */
+  function datosPortada(clave) {
+    var im = window.VP_PROMOS_IMG || {};
+    var P = {
+    menu: { h: im['menu-h'], v: im['menu-v'], alt: 'VendoPlus Premium: tu menú en internet, recibe pedidos desde ahí',
+            titulo: 'El Menú Digital viene incluido en Premium', sub: 'Tus clientes ven tu menú y te mandan su pedido.' }
+    };
+    return P[clave] || null;
+  }
+  function cssPortada() {
+    if (document.getElementById('vp-portada-css')) return;
+    var st = document.createElement('style');
+    st.id = 'vp-portada-css';
+    st.textContent = [
+      '.vp-pt{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;',
+      'background:rgba(13,20,40,.62);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);animation:vp-pt-in .2s ease both;}',
+      '.vp-pt-card{position:relative;width:min(100%, calc((100dvh - 32px - 78px) * 16 / 9), 1400px);background:#fff;border-radius:22px;overflow:hidden;',
+      'box-shadow:0 24px 60px rgba(10,16,34,.35);animation:vp-pt-up .28s cubic-bezier(.22,1,.36,1) both;}',
+      '.vp-pt-img{display:block;width:100%;padding:0;border:0;background:#F3F5F9;cursor:pointer;line-height:0;}',
+      '.vp-pt-img img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;-webkit-user-select:none;user-select:none;}',
+      '.vp-pt-foot{display:flex;align-items:center;gap:16px;padding:14px 18px;min-height:50px;}',
+      '.vp-pt-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}',
+      '.vp-pt-txt b{font-size:16px;font-weight:800;color:var(--ink,#16213E);}',
+      '.vp-pt-txt small{font-size:13px;font-weight:600;color:var(--ink-soft,#6B7592);line-height:1.4;}',
+      '.vp-pt-btn{flex:none;height:46px;padding:0 24px;border:0;border-radius:999px;background:var(--vp-green,#16C15B);color:#fff;',
+      'font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap;}',
+      '.vp-pt-btn:active{transform:scale(.97);}',
+      '.vp-pt-x{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border:0;border-radius:50%;cursor:pointer;',
+      'background:rgba(255,255,255,.92);color:#16213E;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.18);}',
+      '.vp-pt-x svg{width:17px;height:17px;}',
+      '@media (max-width:699px){',
+      '.vp-pt{padding:12px;}',
+      '.vp-pt-card{width:min(100%, calc((100dvh - 24px - 74px) * 2 / 3));background:transparent;box-shadow:none;border-radius:20px;overflow:visible;}',
+      '.vp-pt-img{border-radius:20px;overflow:hidden;}',
+      '.vp-pt-img img{aspect-ratio:2/3;}',
+      '.vp-pt-txt{display:none;}',
+      '.vp-pt-foot{padding:12px 0 0;}',
+      '.vp-pt-btn{width:100%;height:50px;font-size:16px;}',
+      '}',
+      '@keyframes vp-pt-in{from{opacity:0}to{opacity:1}}',
+      '@keyframes vp-pt-up{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}',
+      '@media (prefers-reduced-motion: reduce){.vp-pt,.vp-pt-card{animation:none;}}'
+    ].join('');
+    document.head.appendChild(st);
+  }
+  function cerrarPortada() {
+    var el = document.getElementById('vp-portada');
+    if (el) el.remove();
+    document.removeEventListener('keydown', teclaPortada, true);
+  }
+  function teclaPortada(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrarPortada(); } }
+  function portada(clave) {
+    var p = datosPortada(clave);
+    if (!p || !(p.h || p.v)) { abrir(clave); return; }
+    cssPortada();
+    cerrarPortada();
+    var el = document.createElement('div');
+    el.id = 'vp-portada';
+    el.className = 'vp-pt';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.innerHTML =
+      '<div class="vp-pt-card">' +
+        '<button type="button" class="vp-pt-x" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+        '<button type="button" class="vp-pt-img vp-pt-go" aria-label="Ver Premium"><picture>' +
+          (p.v ? '<source media="(max-width:699px)" srcset="' + esc(p.v) + '">' : '') +
+          '<img src="' + esc(p.h || p.v) + '" alt="' + esc(p.alt || '') + '" decoding="async" draggable="false">' +
+        '</picture></button>' +
+        '<div class="vp-pt-foot"><span class="vp-pt-txt"><b>' + esc(p.titulo) + '</b><small>' + esc(p.sub) + '</small></span>' +
+        '<button type="button" class="vp-pt-btn vp-pt-go">Activar Premium</button></div>' +
+      '</div>';
+    document.body.appendChild(el);
+    el.addEventListener('click', function (e) {
+      if (e.target === el || e.target.closest('.vp-pt-x')) { cerrarPortada(); return; }
+      if (e.target.closest('.vp-pt-go')) { cerrarPortada(); abrir(clave); }
+    });
+    document.addEventListener('keydown', teclaPortada, true);
+  }
+
   function engancharMenu() {
     var act = fn('mdActivate');
     if (act && !act.__vpPr) {
       var envuelto = function () {
-        if (!activo()) { abrir('menu'); return; }
+        if (!activo()) { portada('menu'); return; }
         return act.apply(this, arguments);
       };
       envuelto.__vpPr = true;
@@ -2427,6 +2508,8 @@
   window.VPPremium = {
     activo: activo,
     abrir: abrir,
+    portada: portada,
+    cerrarPortada: cerrarPortada,
     cerrar: cerrar,
     masBeneficios: masBeneficios,
     volver: volver,
