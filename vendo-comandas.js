@@ -327,67 +327,68 @@ window.VPComandas = (() => {
   function fotoArea(id) {
     return `<picture>
       <source media="(max-width:699px)" srcset="img/comandas-${id}-cel.webp?v=1">
-      <img src="img/comandas-${id}-pc.webp?v=1" alt="${ALT_AREA[id] || ''}" loading="lazy" decoding="async" draggable="false">
+      <img class="cm-fit-img" src="img/comandas-${id}-pc.webp?v=1" alt="${ALT_AREA[id] || ''}" loading="lazy" decoding="async" draggable="false">
     </picture>`;
   }
   /* Sin Premium: presentación de Comandas (no es un anuncio que estorba: es la portada de la sección) */
   function promoHTML() {
-    return `<section class="cm-promo" id="cmPromo">
-      <button type="button" class="cm-promo-img" onclick="VPPremium && VPPremium.abrir ? VPPremium.abrir('comandas') : toast('Las comandas son de Premium')" aria-label="Ver Premium">
+    const go = "VPPremium && VPPremium.abrir ? VPPremium.abrir('comandas') : toast('Las comandas son de Premium')";
+    return `<section class="cm-promo cm-fit" data-max="2000" data-min="200">
+      <button type="button" class="cm-promo-img" onclick="${go}" aria-label="Ver Premium">
         <picture>
           <source media="(max-width:699px)" srcset="img/promo-comandas-v.webp?v=1">
-          <img src="img/promo-comandas-h.webp?v=1" alt="VendoPlus Premium: coordina caja, mesas y cocina desde el celular" decoding="async" fetchpriority="high" draggable="false">
+          <img class="cm-fit-img" src="img/promo-comandas-h.webp?v=1" alt="VendoPlus Premium: coordina caja, mesas y cocina desde el celular" decoding="async" fetchpriority="high" draggable="false">
         </picture>
       </button>
       <div class="cm-promo-foot">
         <span class="cm-promo-txt">
           <b>Comandas viene incluido en Premium</b>
-          <small>Mesero, cocina y caja conectados en tiempo real, cada quien desde su celular o tablet.</small>
+          <small>Mesero, cocina y caja conectados en tiempo real.</small>
         </span>
-        <button type="button" class="btn primary cm-promo-btn" onclick="VPPremium && VPPremium.abrir ? VPPremium.abrir('comandas') : toast('Las comandas son de Premium')">Activar Premium</button>
+        <button type="button" class="btn primary cm-promo-btn" onclick="${go}">Activar Premium</button>
       </div>
     </section>`;
   }
 
-  /* Sin Premium la portada se ajusta para caber completa en la pantalla (sin scroll) */
-  function fitPromo() {
-    const sec = document.getElementById('cmPromo');
-    if (!sec) return;
-    sec.style.maxWidth = '';
-    const img = sec.querySelector('.cm-promo-img');
-    const foot = sec.querySelector('.cm-promo-foot');
-    const r = sec.getBoundingClientRect();
-    const z = sec.offsetWidth ? (r.width / sec.offsetWidth) || 1 : 1;
-    let bottom = 14;
-    document.querySelectorAll('.bottomnav, .cartbar').forEach(b => {
-      const br = b.getBoundingClientRect();
-      if (br.height && br.height < innerHeight / 2 && br.top > innerHeight / 2) bottom = Math.max(bottom, innerHeight - br.top + 10);
-    });
-    const ratio = matchMedia('(max-width:699px)').matches ? 2 / 3 : 16 / 9;
-    const fitW = w => {
-      sec.style.maxWidth = Math.floor(w) + 'px';
-      const libre = (innerHeight - r.top - bottom) / z - foot.offsetHeight - 6;
-      return Math.max(160, libre * ratio);
-    };
-    let w = sec.offsetWidth;
-    for (let i = 0; i < 3; i++) { const n = Math.min(sec.parentElement.clientWidth, fitW(w)); if (Math.abs(n - w) < 1) break; w = n; }
-    sec.style.maxWidth = Math.floor(w) + 'px';
-    const se = document.scrollingElement;
-    const sobra = se ? se.scrollHeight - innerHeight : 0;
-    if (sobra > 0 && img) sec.style.maxWidth = Math.max(160, Math.floor(w - (sobra / z + 4) * ratio)) + 'px';
+  /* Ajuste a la pantalla: se mide si la página quedó con scroll y se
+     achican las fotos (variable --cm-h) hasta que todo quepa. Se mide lo que
+     de verdad pasa en pantalla, así funciona igual en PC, Android y iPhone. */
+  function fitCm() {
+    const root = document.querySelector('#view .cm-fit');
+    if (!root) return;
+    if (root.dataset.pc && matchMedia('(max-width:699px)').matches) { root.style.removeProperty('--cm-h'); return; }
+    const ref = root.querySelector('.cm-fit-img');
+    if (!ref) return;
+    const max = +root.dataset.max || 2000, min = +root.dataset.min || 120;
+    root.style.setProperty('--cm-h', max + 'px');
+    const se = document.scrollingElement || document.documentElement;
+    let h = max;
+    for (let i = 0; i < 6; i++) {
+      const over = se.scrollHeight - window.innerHeight;
+      if (over <= 0) break;
+      const k = (ref.getBoundingClientRect().height / (ref.offsetHeight || 1)) || 1;
+      const real = ref.offsetHeight || h;               /* alto que de verdad tiene la foto */
+      const n = Math.max(min, Math.min(h, real) - over / k - 3);
+      if (n >= Math.min(h, real) - 0.5) break;
+      h = n;
+      root.style.setProperty('--cm-h', Math.floor(h) + 'px');
+    }
+    if (h < max) try { window.scrollTo(0, 0); } catch (e) {}
   }
   let fitPuesto = false;
-  function fitPromoSoon() {
-    requestAnimationFrame(() => requestAnimationFrame(fitPromo));
-    if (!fitPuesto) { fitPuesto = true; addEventListener('resize', () => requestAnimationFrame(fitPromo)); }
+  function fitSoon() {
+    requestAnimationFrame(() => requestAnimationFrame(fitCm));
+    if (!fitPuesto) {
+      fitPuesto = true;
+      let t = 0;
+      addEventListener('resize', () => { clearTimeout(t); t = setTimeout(fitCm, 80); });
+    }
   }
 
   function homeHTML() {
     const vivo = Sync.online();
-    if (!premiumOk()) {
-      fitPromoSoon();
-      return `<h1 class="page-title">Comandas</h1>${promoHTML()}`;
-    }
+    fitSoon();
+    if (!premiumOk()) return `<h1 class="page-title cm-promo-title">Comandas</h1>${promoHTML()}`;
     return `
       <h1 class="page-title">Comandas</h1>
       <p class="page-sub">Elige un área para ver y agregar a tu equipo</p>
@@ -399,11 +400,11 @@ window.VPComandas = (() => {
         </span>
         <span class="switch"><input type="checkbox" ${activas() ? 'checked' : ''} onchange="VPComandas.activar(this.checked)"><span class="track"></span></span>
       </label>
-      <div class="cm-areas ${activas() ? '' : 'cm-apagadas'}">
+      <div class="cm-areas cm-fit ${activas() ? '' : 'cm-apagadas'}" data-pc="1" data-max="300" data-min="110">
         ${ORDER.map(id => {
           const n = gente(id).length;
           return `<button type="button" class="cm-area" onclick="VPComandas.area('${id}')">
-            <span class="cm-area-art cm-area-foto">${fotoArea(id)}</span>
+            <span class="cm-area-art cm-area-foto">${fotoArea(id)}${activas() ? '' : `<span class="cm-lock">${icon('lock')} Desactivado</span>`}</span>
             <span class="cm-area-foot">
               <span class="cm-area-txt">
                 <b>${AREAS[id].name}</b>

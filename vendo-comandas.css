@@ -379,31 +379,36 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 .cm-ynq-txt svg{ width:16px; height:16px; flex:none; }
 
 /* Fotos reales en las tarjetas de Caja, Mesero y Cocinero */
-.cm-area-art.cm-area-foto{ padding:0; background:#EEF1F6; overflow:hidden; line-height:0; }
+.cm-area-art.cm-area-foto{ position:relative; padding:0; background:#EEF1F6; overflow:hidden; line-height:0; }
 .cm-area-foto picture, .cm-area-foto img{ display:block; width:100%; }
-.cm-area-foto img{ aspect-ratio:1/1; height:auto; object-fit:cover; object-position:center 15%; -webkit-user-select:none; user-select:none; }
+.cm-area-foto img{ height:var(--cm-h, 300px); object-fit:cover; object-position:center 18%; -webkit-user-select:none; user-select:none; }
+.cm-lock{ position:absolute; left:10px; top:10px; display:inline-flex; align-items:center; gap:5px; padding:5px 10px 5px 8px; border-radius:999px;
+  background:rgba(22,33,62,.78); color:#fff; font-size:12px; font-weight:700; line-height:1; }
+.cm-lock svg{ width:13px; height:13px; }
+.cm-areas.cm-apagadas .cm-area{ opacity:1; filter:none; }
+.cm-areas.cm-apagadas .cm-area .acc-chev{ display:none; }
 @media (max-width:699px){
   .cm-area{ flex-direction:column; }
   .cm-area-art.cm-area-foto{ width:auto; padding:0; display:block; }
-  .cm-area-foto img{ aspect-ratio:12/7; object-position:center; }
+  .cm-area-foto img{ height:auto; aspect-ratio:12/7; object-position:center; }
 }
 
-/* Sin Premium: portada de Comandas */
-.cm-promo{ margin:14px auto 0; border:1px solid var(--border); border-radius:22px; background:var(--surface, #fff); overflow:hidden; }
+/* Sin Premium: portada de Comandas (se ajusta a la pantalla, sin scroll) */
+.cm-promo{ --r:16/9; width:min(100%, calc(var(--cm-h, 2000px) * 16 / 9)); margin:14px auto 0; border:1px solid var(--border); border-radius:22px; background:var(--surface, #fff); overflow:hidden; }
 .cm-promo-img{ display:block; width:100%; padding:0; border:0; background:#FBF4EA; cursor:pointer; line-height:0; -webkit-tap-highlight-color:transparent; }
-.cm-promo-img picture, .cm-promo-img img{ display:block; width:100%; height:auto; }
-.cm-promo-img img{ aspect-ratio:16/9; object-fit:cover; -webkit-user-select:none; user-select:none; }
-.cm-promo-foot{ display:flex; align-items:center; gap:16px; padding:16px 18px; }
-.cm-promo-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.cm-promo-img picture, .cm-promo-img img{ display:block; width:100%; }
+.cm-promo-img img{ height:auto; aspect-ratio:16/9; object-fit:cover; -webkit-user-select:none; user-select:none; }
+.cm-promo-foot{ display:flex; align-items:center; gap:16px; padding:14px 18px; }
+.cm-promo-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 .cm-promo-txt b{ font-size:16px; font-weight:800; color:var(--ink); }
 .cm-promo-txt small{ font-size:13px; font-weight:600; color:var(--ink-soft); line-height:1.4; }
-.cm-promo-btn{ flex:none; height:46px !important; padding:0 22px !important; border-radius:999px !important; font-size:15px !important; }
-
+.cm-promo-btn{ flex:none; height:46px !important; padding:0 24px !important; border-radius:999px !important; font-size:15px !important; white-space:nowrap; }
 @media (max-width:699px){
+  .cm-promo-title{ display:none; }
+  .cm-promo{ width:min(100%, calc(var(--cm-h, 2000px) * 2 / 3)); margin-top:8px; border:0; border-radius:20px; background:transparent; }
+  .cm-promo-img{ border-radius:20px; overflow:hidden; }
   .cm-promo-img img{ aspect-ratio:2/3; }
-  .cm-promo-foot{ flex-direction:column; align-items:stretch; text-align:center; gap:10px; padding:12px 14px 14px; }
-  .cm-promo-txt b{ font-size:15px; }
-  .cm-promo-txt small{ font-size:12.5px; }
-  .cm-promo-btn{ height:44px !important; }
-  .cm-promo-btn{ width:100%; }
+  .cm-promo-txt{ display:none; }
+  .cm-promo-foot{ padding:12px 0 0; }
+  .cm-promo-btn{ width:100%; height:50px !important; font-size:16px !important; }
 }
