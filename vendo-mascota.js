@@ -27,6 +27,8 @@
   }
   function ofrecerPremium() {
     try {
+      /* Sin Premium: la portada del Asistente (solo se cierra con la ×) */
+      if (window.VPPremium && typeof VPPremium.portada === 'function') { VPPremium.portada('chat'); return true; }
       if (window.VPPremium && typeof VPPremium.abrir === 'function') { VPPremium.abrir('chat'); return true; }
     } catch (e) {}
     return false;
