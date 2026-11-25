@@ -389,7 +389,7 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 }
 
 /* Sin Premium: portada de Comandas */
-.cm-promo{ margin:16px 0 4px; border:1px solid var(--border); border-radius:22px; background:var(--surface, #fff); overflow:hidden; }
+.cm-promo{ margin:14px auto 0; border:1px solid var(--border); border-radius:22px; background:var(--surface, #fff); overflow:hidden; }
 .cm-promo-img{ display:block; width:100%; padding:0; border:0; background:#FBF4EA; cursor:pointer; line-height:0; -webkit-tap-highlight-color:transparent; }
 .cm-promo-img picture, .cm-promo-img img{ display:block; width:100%; height:auto; }
 .cm-promo-img img{ aspect-ratio:16/9; object-fit:cover; -webkit-user-select:none; user-select:none; }
@@ -398,10 +398,12 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 .cm-promo-txt b{ font-size:16px; font-weight:800; color:var(--ink); }
 .cm-promo-txt small{ font-size:13px; font-weight:600; color:var(--ink-soft); line-height:1.4; }
 .cm-promo-btn{ flex:none; height:46px !important; padding:0 22px !important; border-radius:999px !important; font-size:15px !important; }
-.cm-on-card.cm-on-off{ display:none; }
 
 @media (max-width:699px){
   .cm-promo-img img{ aspect-ratio:2/3; }
-  .cm-promo-foot{ flex-direction:column; align-items:stretch; text-align:center; gap:12px; padding:16px; }
+  .cm-promo-foot{ flex-direction:column; align-items:stretch; text-align:center; gap:10px; padding:12px 14px 14px; }
+  .cm-promo-txt b{ font-size:15px; }
+  .cm-promo-txt small{ font-size:12.5px; }
+  .cm-promo-btn{ height:44px !important; }
   .cm-promo-btn{ width:100%; }
 }

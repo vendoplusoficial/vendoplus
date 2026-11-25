@@ -332,7 +332,7 @@ window.VPComandas = (() => {
   }
   /* Sin Premium: presentación de Comandas (no es un anuncio que estorba: es la portada de la sección) */
   function promoHTML() {
-    return `<section class="cm-promo">
+    return `<section class="cm-promo" id="cmPromo">
       <button type="button" class="cm-promo-img" onclick="VPPremium && VPPremium.abrir ? VPPremium.abrir('comandas') : toast('Las comandas son de Premium')" aria-label="Ver Premium">
         <picture>
           <source media="(max-width:699px)" srcset="img/promo-comandas-v.webp?v=1">
@@ -349,13 +349,49 @@ window.VPComandas = (() => {
     </section>`;
   }
 
+  /* Sin Premium la portada se ajusta para caber completa en la pantalla (sin scroll) */
+  function fitPromo() {
+    const sec = document.getElementById('cmPromo');
+    if (!sec) return;
+    sec.style.maxWidth = '';
+    const img = sec.querySelector('.cm-promo-img');
+    const foot = sec.querySelector('.cm-promo-foot');
+    const r = sec.getBoundingClientRect();
+    const z = sec.offsetWidth ? (r.width / sec.offsetWidth) || 1 : 1;
+    let bottom = 14;
+    document.querySelectorAll('.bottomnav, .cartbar').forEach(b => {
+      const br = b.getBoundingClientRect();
+      if (br.height && br.height < innerHeight / 2 && br.top > innerHeight / 2) bottom = Math.max(bottom, innerHeight - br.top + 10);
+    });
+    const ratio = matchMedia('(max-width:699px)').matches ? 2 / 3 : 16 / 9;
+    const fitW = w => {
+      sec.style.maxWidth = Math.floor(w) + 'px';
+      const libre = (innerHeight - r.top - bottom) / z - foot.offsetHeight - 6;
+      return Math.max(160, libre * ratio);
+    };
+    let w = sec.offsetWidth;
+    for (let i = 0; i < 3; i++) { const n = Math.min(sec.parentElement.clientWidth, fitW(w)); if (Math.abs(n - w) < 1) break; w = n; }
+    sec.style.maxWidth = Math.floor(w) + 'px';
+    const se = document.scrollingElement;
+    const sobra = se ? se.scrollHeight - innerHeight : 0;
+    if (sobra > 0 && img) sec.style.maxWidth = Math.max(160, Math.floor(w - (sobra / z + 4) * ratio)) + 'px';
+  }
+  let fitPuesto = false;
+  function fitPromoSoon() {
+    requestAnimationFrame(() => requestAnimationFrame(fitPromo));
+    if (!fitPuesto) { fitPuesto = true; addEventListener('resize', () => requestAnimationFrame(fitPromo)); }
+  }
+
   function homeHTML() {
     const vivo = Sync.online();
+    if (!premiumOk()) {
+      fitPromoSoon();
+      return `<h1 class="page-title">Comandas</h1>${promoHTML()}`;
+    }
     return `
       <h1 class="page-title">Comandas</h1>
       <p class="page-sub">Elige un área para ver y agregar a tu equipo</p>
-      ${premiumOk() ? '' : promoHTML()}
-      <label class="cm-on-card ${activas() ? 'on' : ''} ${premiumOk() ? '' : 'cm-on-off'}">
+      <label class="cm-on-card ${activas() ? 'on' : ''}">
         <span class="acc-ico ${activas() ? 'green' : ''}">${icon('comandas')}</span>
         <span class="acc-txt">
           <span class="acc-label">Comandas ${activas() ? 'activadas' : 'desactivadas'}${premiumOk() ? '' : ' <span class="cm-prem">Premium</span>'}</span>
