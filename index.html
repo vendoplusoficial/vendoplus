@@ -17149,24 +17149,6 @@ function mdChecklist(){
     })(),
     (function(){
       const pm = mdCfg().payments;
-      const mpOn = !!(pm.mp && pm.mp.on && pm.mp.publicKey);
-      /* Con Mercado Pago escondido, la tarjeta es tarjeta normal: basta con
-         que el negocio diga sí o no, sin nada que enlazar. */
-      if(!mpVisible()){
-        return { label:'Pago con tarjeta', ok:pm.card !== null,
-          sub: pm.card === true ? (stLinked() ? 'Sí · en línea con Stripe' + (pm.st.name ? ' · ' + escapeHtml(pm.st.name) : '') : (pm.st.on ? 'Sí · falta terminar de configurar tu Stripe' : 'Sí · tú se la cobras con tu terminal al entregar'))
-             : pm.card === false ? 'No · la opción Tarjeta no se muestra'
-             : '¿Cobras con tarjeta? Toca para responder',
-          action:'mdOpenCardForm()' };
-      }
-      return { label:'Pago con tarjeta', ok:pm.card === false || (pm.card === true && mpOn),
-        sub: pm.card === true ? (mpOn ? 'Sí · Mercado Pago enlazado' + (pm.mp.nickname ? ' · ' + escapeHtml(pm.mp.nickname) : '') : 'Falta enlazar tu Mercado Pago · toca para hacerlo')
-           : pm.card === false ? 'No · la opción Tarjeta no se muestra'
-           : '¿Cobras con tarjeta? Toca para responder',
-        action:'mdOpenCardForm()' };
-    })(),
-    (function(){
-      const pm = mdCfg().payments;
       const ok = pm.transfer === false || (pm.transfer === true && mdClabeOk(pm.clabe));
       return { label:'Transferencia', ok:ok,
         sub: pm.transfer === true ? (ok ? 'Sí · ' + (mdBankOf(pm.clabe) ? mdBankOf(pm.clabe) + ' · ' : '') + 'CLABE ···' + pm.clabe.slice(-4) : 'Falta tu CLABE · toca para completarla')
