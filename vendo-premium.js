@@ -126,7 +126,7 @@
       ico: 'chart'
     }
   };
-  var ORDEN = ['menu', 'chat', 'escaner', 'stats'];
+  var ORDEN = ['menu', 'chat', 'escaner', 'usuarios'];
   // Cuando se llega desde "agregar usuario" se muestra esa ventaja primero
   // (se deja fuera la última tarjeta para que la pantalla siga sin scroll).
   var ORDEN_USUARIOS = ['usuarios', 'menu', 'chat', 'escaner'];
@@ -413,7 +413,7 @@
      ("Todo lo que incluye Premium", se abre con Ver más beneficios). */
   var vista = 'principal';
   var claveAbierta = null;
-  var ORDEN_MAS = ['menu', 'chat', 'escaner', 'stats', 'usuarios'];
+  var ORDEN_MAS = ['menu', 'chat', 'escaner', 'usuarios'];
 
   /* Pantalla principal: comparación clásica de planes, Básico vs Premium,
      lado a lado. Cada fila: palomita (incluido) o tache (no incluido). */
@@ -425,7 +425,7 @@
     { k: 'escaner',  t: 'Productos con una foto',        basico: '{N} de prueba', premium: 'Sin límite' },
     { k: 'menu',     t: 'Menú digital y pedidos',        basico: false },
     { k: 'chat',     t: 'Asistente con IA',              basico: false },
-    { k: 'stats',    t: 'Reportes de ventas y ganancias', basico: false },
+    { k: 'stats',    t: 'Reportes de ventas y ganancias', basico: true },
     { k: 'usuarios', t: 'Acceso para tus empleados',     basico: false },
     { k: 'comandas', t: 'Comandas',                      basico: false, premium: 'Caja, mesero y cocina conectados', sub: true },
     /* Cobros con tarjeta por Stripe (solo Premium): debajo, en chiquito,
@@ -1079,6 +1079,9 @@
      El contenido detallado ni siquiera se manda a la pantalla.
   ======================================================================= */
   function engancharStats() {
+    /* Las estadísticas ya son gratis para todos (plan Básico incluido):
+       no se envuelve nada. */
+    return;
     var rs = fn('renderStats');
     if (rs && !rs.__vpPr) {
       var envuelto = function () {
@@ -1815,7 +1818,7 @@
     usuarios: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.'
   };
   /* Esta lista es la de la pantalla "Funciones premium". */
-  var ORDEN_SECCION = ['menu', 'chat', 'escaner', 'stats', 'usuarios'];
+  var ORDEN_SECCION = ['menu', 'chat', 'escaner', 'usuarios'];
 
   var cssFuncPuesto = false;
   function estilosFunciones() {
@@ -2073,7 +2076,7 @@
          sola las estadísticas detalladas; ya no las abre ni se desplaza
          hasta ellas. El botón "Ver estadísticas detalladas" sigue igual
          y ahí adentro, si el dueño quiere, las abre él. */
-      puerta('stats', function () { if (ir) ir('stats'); });
+      if (ir) ir('stats');   /* gratis para todos */
       return;
     }
     if (clave === 'usuarios') {
@@ -2171,7 +2174,7 @@
           '<div class="vp-pg-fila total"><span>Total hoy</span><span><b data-vp-pg-monto>' + total + '</b> <small>MXN</small></span></div>' +
         '</div>' +
         '<div class="vp-pg-incluye"><div class="vp-pg-lbl">Incluye</div><ul>' +
-          ['Menú digital y pedidos', 'Asistente con IA', 'Productos con una foto, sin límite', 'Reportes de ventas y ganancias', 'Acceso para tus empleados']
+          ['Menú digital y pedidos', 'Asistente con IA', 'Productos con una foto, sin límite', 'Acceso para tus empleados', 'Comandas: caja, mesero y cocina']
             .map(function (t) { return '<li>' + SVG_SI + '<span>' + esc(t) + '</span></li>'; }).join('') +
         '</ul></div>' +
        '</div></div>' +
