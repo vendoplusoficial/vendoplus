@@ -4535,6 +4535,20 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .cc2-hero small{ display:block; margin-top:10px; font-size:14px; font-weight:600; line-height:1.4; color:var(--ink-soft,#6B7592); }
 .btn.cc2-close{ margin-top:20px; height:58px; font-size:19px; border-radius:14px; }
 .btn.cc2-cut{ margin-top:12px; height:58px; font-size:19px; border-radius:14px; }
+/* En tablet y PC la caja va más chica y centrada (no a lo ancho de toda la pantalla) */
+@media (min-width:700px){
+  .cc2-wrap{ max-width:520px; margin:0 auto; }
+  .cc2-wrap .alert-card{ width:100%; }
+  .cc2-hero{ padding:20px 16px 18px; border-radius:22px; }
+  .cc2-ico{ width:52px; height:52px; border-radius:14px; }
+  .cc2-ico svg{ width:26px; height:26px; }
+  .cc2-lbl{ font-size:17px; margin-top:8px; }
+  .cc2-amt{ font-size:38px; }
+  .cc2-hero small{ font-size:13px; margin-top:8px; }
+  .btn.cc2-close, .btn.cc2-cut{ height:48px; font-size:16px; border-radius:12px; }
+  .btn.cc2-close{ margin-top:16px; }
+  .btn.cc2-cut{ margin-top:10px; }
+}
 </style>
 <style id="no-side-scroll">
 /* La pantalla nunca se desliza ni se estira hacia los lados.
@@ -21494,7 +21508,7 @@ function renderCash(){
   }
   const sum = cashSummary(sess);
   const vieja = cashIsStale(sess);
-  return head + `
+  return head + `<div class="cc2-wrap">
     ${vieja ? `
       <button class="alert-card danger" style="margin-top:12px;" onclick="${puede ? 'cashCloseOld()' : "toast('Pídele al Dueño o al Administrador que haga el corte')"}">
         <span class="alert-ico">${icon('alert')}</span>
@@ -21509,7 +21523,7 @@ function renderCash(){
     </div>
     ${puede ? `<button class="btn dark block cc2-close" onclick="${vieja ? 'cashCloseOld()' : "openCashCut('Z')"}">${icon('check')} Cerrar caja</button>` : ''}
     <button class="btn ghost block cc2-cut" onclick="openCashCutSheet()">${icon('document')} Corte</button>
-  `;
+  </div>`;
 }
 /* Corte: pantalla completa con corte parcial, entradas/salidas y cortes anteriores */
 /* Todo lo que movió el efectivo de una caja: ventas, abonos, devoluciones,
