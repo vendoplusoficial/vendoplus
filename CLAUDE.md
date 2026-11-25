@@ -44,3 +44,7 @@ versión de `vendo-apps.js` y `vendo-premium.js` en sus `<script src=...?v=>`.
   `<script src=...?v=>` o `<link href=...?v=>`, si no se queda la copia vieja.
 - La librería de Supabase está en `vendor/supabase-2.119.0.js` (ya no se baja de jsdelivr).
   Si se cambia de versión, renombra el archivo y actualiza `index.html` y `BASE` en `sw.js`.
+- Las fotos ya NO van incrustadas en base64 en `index.html` (lo hacían pesar 3 MB): viven en `img/`
+  con `?v=`. Al agregar una foto: ponla en `img/`, agrégala a `window.VP_IMGS` (index.html, se precarga
+  en segundo plano) y a `BASE` en `sw.js` (se guarda en la copia del teléfono). Si cambias una foto,
+  súbele la versión `?v=` en los tres lugares. Las letras (VPInter) sí siguen incrustadas a propósito.

@@ -8,9 +8,26 @@
    - Supabase, Stripe y todo lo que no es de vendoplusoficial.com pasa
      directo: nunca se guarda ni se toca.
 ========================================================= */
-const CACHE = 'vp-app-v1';
+const CACHE = 'vp-app-v2';
 const ESPERA = 2500;
-const BASE = ['./', './vendor/supabase-2.119.0.js'];
+const BASE = ['./', './vendor/supabase-2.119.0.js',
+  './img/auth-carta.webp?v=1',
+  './img/auth-clave.webp?v=1',
+  './img/auth-codigo.webp?v=1',
+  './img/auth-foto-h.webp?v=1',
+  './img/auth-foto-v.webp?v=1',
+  './img/auth-login.webp?v=1',
+  './img/auth-nip.webp?v=1',
+  './img/auth-tienda.webp?v=1',
+  './img/auth-usuarios.webp?v=1',
+  './img/bolsa-pedido.webp?v=1',
+  './img/fundador.jpg?v=1',
+  './img/mercadopago.webp?v=1',
+  './img/promo-asistente-h.webp?v=1',
+  './img/promo-asistente-v.webp?v=1',
+  './img/promo-menu-h.webp?v=1',
+  './img/promo-menu-v.webp?v=1'
+];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
