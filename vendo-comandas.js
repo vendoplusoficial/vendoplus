@@ -337,7 +337,7 @@ window.VPComandas = (() => {
     comandas: { nombre:'Comandas', abrir:'comandas', h:'img/promo-comandas-h.webp?v=1', v:'img/promo-comandas-v.webp?v=1',
       alt:'VendoPlus Premium: coordina caja, mesas y cocina desde el celular',
       titulo:'Comandas viene incluido en Premium', sub:'Mesero, cocina y caja conectados en tiempo real.' },
-    menu: { nombre:'Menú Digital', abrir:'menu', h:'img/promo-menu-h.webp?v=2', v:'img/promo-menu-v.webp?v=2',
+    menu: { nombre:'Menú Digital', abrir:'menu', cerrar:'menu', h:'img/promo-menu-h.webp?v=2', v:'img/promo-menu-v.webp?v=2',
       alt:'VendoPlus Premium: tu menú en internet, recibe pedidos desde ahí',
       titulo:'El Menú Digital viene incluido en Premium', sub:'Tus clientes ven tu menú y te mandan su pedido.' },
     stripe: { nombre:'Finanzas de Stripe', abrir:null, h:'img/promo-stripe-h.webp?v=1', v:'img/promo-stripe-v.webp?v=1',
@@ -348,7 +348,9 @@ window.VPComandas = (() => {
     o = o || PORTADAS.comandas;
     const arg = o.abrir ? `'${o.abrir}'` : 'null';
     const go = `window.VPPremium && VPPremium.abrir ? VPPremium.abrir(${arg}) : toast('Esta función es de Premium')`;
+    const x = o.cerrar ? `<button type="button" class="cm-promo-x" onclick="goTo('${o.cerrar}')" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>` : '';
     return `<section class="cm-promo cm-fit" data-max="2000" data-min="200">
+      ${x}
       <button type="button" class="cm-promo-img" onclick="${go}" aria-label="Ver Premium">
         <picture>
           <source media="(max-width:699px)" srcset="${o.v}">
