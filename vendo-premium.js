@@ -1497,6 +1497,7 @@
     { vertical: IMG['asistente-v'], horizontal: IMG['asistente-h'] }   /* 1 · Asistente: "Tus ventas, en una pregunta" ($249 al mes) */
     , { vertical: IMG['menu-v'], horizontal: IMG['menu-h'] }           /* 2 · Menú digital: "Tu menú en internet" (49 al mes) */
     , { vertical: IMG['stripe-v'], horizontal: IMG['stripe-h'] }       /* 3 · Stripe: "Cobra sin contacto con NFC" ($249 al mes) */
+    , { vertical: IMG['comandas-v'], horizontal: IMG['comandas-h'] }   /* 4 · Comandas: "Coordina caja, mesas y cocina desde el celular" ($249 al mes) */
   ].filter(function (p) { return p && (p.vertical || p.horizontal); });
   function esHorizontal() { return (window.innerWidth || 0) > (window.innerHeight || 0); }
   function srcPromo(p) {
