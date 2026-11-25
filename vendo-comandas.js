@@ -80,7 +80,7 @@ window.VPComandas = (() => {
      El plano se estira para llenar justo lo que queda de pantalla en cada
      celular (debajo de las pestañas y arriba de la leyenda). En Avisos sí hay scroll. */
   function ajustarPlano() {
-    const fijo = currentView === 'comandas' && esMesero();
+    const fijo = currentView === 'comandas' && (esMesero() || esCocina());
     document.documentElement.classList.toggle('cm-fija', fijo);
     if (!fijo) return;
     if (window.scrollY) window.scrollTo(0, 0);
@@ -1187,7 +1187,7 @@ window.VPComandas = (() => {
         <button class="chip ${st.kf === 'listas' ? 'active' : ''}" onclick="VPComandas.filtro('listas')">Listas sin entregar <b>${listas.length}</b></button>
         <button class="chip ${st.kf === 'agotados' ? 'active' : ''}" onclick="VPComandas.filtro('agotados')">Agotados <b>${ags.length}</b></button>
       </div>
-      ${st.kf === 'agotados' ? (ags.length ? `<div class="acc-list cm-ags">${ags.map(a => `
+      <div class="cm-av-scroll">${st.kf === 'agotados' ? (ags.length ? `<div class="acc-list cm-ags">${ags.map(a => `
         <div class="acc-row">
           <span class="mdi-thumb">${thumb(a.productId)}</span>
           <span class="acc-txt"><span class="acc-label">${escapeHtml(a.name)}</span><span class="acc-sub">Agotado desde las ${fmtTime(a.at)}</span></span>
@@ -1213,9 +1213,9 @@ window.VPComandas = (() => {
         <span class="mdi-empty-ico">${icon('inbox')}</span>
         <b>${st.kf === 'listas' ? 'No hay comandas esperando al mesero' : 'Sin comandas por ahora'}</b>
         <span>${st.kf === 'listas' ? 'Las que marques como listas aparecen aquí hasta que el mesero las entregue.' : 'Cuando un mesero mande un pedido, aparecerá aquí con un aviso.'}</span>
-      </div>`}`;
+      </div>`}</div>`;
   }
-  function filtro(f) { st.kf = f; vibrate(6); render(); }
+  function filtro(f) { st.kf = f; vibrate(6); render.fresh = true; render(); window.scrollTo(0, 0); }
 
   function abrirComanda(id) {
     const k = tickets().find(x => x.id === id);
