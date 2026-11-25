@@ -360,6 +360,7 @@ window.VPComandas = (() => {
     const ref = root.querySelector('.cm-fit-img');
     if (!ref) return;
     const max = +root.dataset.max || 2000, min = +root.dataset.min || 120;
+    if (root.classList.contains('cm-promo')) { fitPromo(root, ref, max, min); return; }
     root.style.setProperty('--cm-h', max + 'px');
     const se = document.scrollingElement || document.documentElement;
     let h = max;
@@ -374,6 +375,37 @@ window.VPComandas = (() => {
       root.style.setProperty('--cm-h', Math.floor(h) + 'px');
     }
     if (h < max) try { window.scrollTo(0, 0); } catch (e) {}
+  }
+  /* Portada sin Premium: la foto crece hasta tocar el menú de abajo (o el
+     borde de la pantalla) y a lo ancho hasta el margen, lo que pase primero */
+  function fitPromo(root, ref, max, min) {
+    root.style.setProperty('--cm-h', max + 'px');
+    let piso = window.innerHeight;
+    document.querySelectorAll('.bottomnav, .cartbar').forEach(b => {
+      const br = b.getBoundingClientRect();
+      if (br.height && br.height < piso / 2 && br.top > piso / 2) piso = Math.min(piso, br.top);
+    });
+    const k = (ref.getBoundingClientRect().height / (ref.offsetHeight || 1)) || 1;
+    const foot = root.querySelector('.cm-promo-foot');
+    const footH = foot ? foot.getBoundingClientRect().height : 0;
+    const top = ref.getBoundingClientRect().top;
+    const libre = (piso - 14 - footH - top) / k;      /* alto disponible para la foto */
+    const cel = matchMedia('(max-width:699px)').matches;
+    root.style.removeProperty('--cm-ar');
+    if (libre < (ref.offsetHeight || 0)) root.style.setProperty('--cm-h', Math.max(min, Math.floor(libre)) + 'px');
+    else if (cel && ref.offsetWidth) {
+      /* Celular alto: la foto crece a lo alto (recorta un poco los lados, sin tocar textos) */
+      root.style.setProperty('--cm-ar', String(Math.max(0.6, ref.offsetWidth / libre)));
+    }
+    /* Si aún quedó un poquito de scroll (relleno de abajo de la app), se quita */
+    const se = document.scrollingElement || document.documentElement;
+    const over = se.scrollHeight - window.innerHeight;
+    if (over > 0) {
+      const h = ref.offsetHeight - over / k - 2;
+      if (root.style.getPropertyValue('--cm-ar')) root.style.setProperty('--cm-ar', String(Math.min(2 / 3, ref.offsetWidth / h)));
+      if (!root.style.getPropertyValue('--cm-ar') || ref.offsetWidth / h > 2 / 3) { root.style.removeProperty('--cm-ar'); root.style.setProperty('--cm-h', Math.max(min, Math.floor(h)) + 'px'); }
+    }
+    try { window.scrollTo(0, 0); } catch (e) {}
   }
   let fitPuesto = false;
   function fitSoon() {

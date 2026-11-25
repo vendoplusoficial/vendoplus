@@ -404,10 +404,10 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 .cm-promo-txt small{ font-size:13px; font-weight:600; color:var(--ink-soft); line-height:1.4; }
 .cm-promo-btn{ flex:none; height:46px !important; padding:0 24px !important; border-radius:999px !important; font-size:15px !important; white-space:nowrap; }
 @media (max-width:699px){
-  .cm-promo-title{ display:none; }
-  .cm-promo{ width:min(100%, calc(var(--cm-h, 2000px) * 2 / 3)); margin-top:8px; border:0; border-radius:20px; background:transparent; }
+  h1.page-title.cm-promo-title{ display:none; }
+  .cm-promo{ width:min(100%, calc(var(--cm-h, 2000px) * 2 / 3)); margin-top:4px; border:0; border-radius:20px; background:transparent; }
   .cm-promo-img{ border-radius:20px; overflow:hidden; }
-  .cm-promo-img img{ aspect-ratio:2/3; }
+  .cm-promo-img img{ aspect-ratio:var(--cm-ar, 2/3); object-fit:cover; object-position:78% top; }
   .cm-promo-txt{ display:none; }
   .cm-promo-foot{ padding:12px 0 0; }
   .cm-promo-btn{ width:100%; height:50px !important; font-size:16px !important; }
