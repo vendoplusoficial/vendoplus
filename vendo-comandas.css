@@ -4,7 +4,7 @@
 .navbtn.cm-nav{ display:none !important; }
 @media (min-width:700px){
   body.cm-admin:not(.cm-solo) .navbtn.cm-nav{ display:flex !important; }
-  .bottomnav .navbtn[data-view="comandas"]{ order:4 !important; }
+  .bottomnav .navbtn[data-view="comandas"]{ order:7 !important; }   /* justo arriba de Finanzas de Stripe */
 }
 
 /* Mesero y Cocinero: solo su sección (sin menú ni accesos del POS) */
