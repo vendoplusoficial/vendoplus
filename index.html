@@ -4457,6 +4457,15 @@ p.page-sub{ font-size:15px; color:var(--vp-mute); margin:0 0 18px 17px; }
 .cc-sub{ font-size:14px; font-weight:600; line-height:1.5; color:var(--ink-soft,#6B7592); max-width:310px; margin:8px auto 0; }
 .cc-btn{ display:inline-block; margin-top:24px; background:var(--vp-green,#16C15B); color:#fff; border:0; border-radius:999px; padding:17px 46px; font-size:18px; font-weight:800; font-family:inherit; box-shadow:none; cursor:pointer; }
 .cc-btn:active{ transform:scale(.97); }
+/* Aviso de caja pendiente dentro de Nueva venta: centrado en el espacio libre */
+.cc-stale{ display:flex; align-items:center; justify-content:center; min-height:320px; }
+.cc-stale .cc-empty{ padding:24px 20px; }
+@media (min-width:700px){
+  .cc-stale .cc-ill svg{ width:128px; height:96px; }
+  .cc-stale .cc-title{ font-size:19px; max-width:300px; margin-top:10px; }
+  .cc-stale .cc-sub{ font-size:13.5px; max-width:300px; }
+  .cc-stale .cc-btn{ margin-top:18px; padding:13px 36px; font-size:16px; }
+}
 .cc-link{ display:block; margin:10px auto 0; background:none; border:0; color:var(--ink-soft,#6B7592); font-weight:700; font-size:14px; font-family:inherit; padding:10px 16px; cursor:pointer; }
 .cc-card{ max-width:400px; padding:22px 20px 14px; }
 .cc-card .cc-empty{ padding:4px 4px 0; }
@@ -23925,14 +23934,43 @@ function cashStalePanelHTML(){
   const s = cashCurrent();
   if(!s || !cashIsStale(s)) return '';
   const puede = can('manejarCaja');
-  return cashLockedBodyHTML({
+  cashStaleFitSoon();
+  return '<div class="cc-stale" id="ccStale">' + cashLockedBodyHTML({
     title: 'Tienes un cierre de caja pendiente',
     sub: puede
       ? 'Quedó abierta la caja ' + cashDayName(s.openedAt) + '. Haz su corte y abre la de hoy para poder vender.'
       : 'Quedó abierta la caja ' + cashDayName(s.openedAt) + '. Pídele al Dueño o al Administrador que haga el corte.',
     btn: puede ? 'Hacer el corte' : '',
     onclick: 'cashCloseOld()'
+  }) + '</div>';
+}
+/* Centra el aviso de caja pendiente en el espacio libre de la pantalla
+   (debajo del buscador y arriba del menú de abajo), en cualquier tamaño. */
+function cashStaleFit(){
+  const el = document.getElementById('ccStale');
+  if(!el) return;
+  el.style.minHeight = '';
+  const r = el.getBoundingClientRect();
+  const z = el.offsetWidth ? (r.width / el.offsetWidth) || 1 : 1;
+  let bottom = 16;
+  document.querySelectorAll('.bottomnav, .cartbar').forEach(b => {
+    const br = b.getBoundingClientRect();
+    if(br.height && br.height < window.innerHeight / 2 && br.top > window.innerHeight / 2)
+      bottom = Math.max(bottom, window.innerHeight - br.top + 8);
   });
+  const hint = el.nextElementSibling;
+  if(hint && hint.classList.contains('kbd-hint') && hint.offsetHeight) bottom += hint.getBoundingClientRect().height + 18 * z;
+  const libre = (window.innerHeight - r.top - bottom) / z;
+  if(libre <= 0) return;
+  el.style.minHeight = Math.round(libre) + 'px';
+  /* Si por el relleno de abajo la página quedó con scroll, se quita esa sobra */
+  const se = document.scrollingElement;
+  const sobra = se ? se.scrollHeight - window.innerHeight : 0;
+  if(sobra > 0) el.style.minHeight = Math.max(320, Math.round(libre - sobra / z)) + 'px';
+}
+function cashStaleFitSoon(){
+  requestAnimationFrame(() => requestAnimationFrame(cashStaleFit));
+  if(!window.__ccStaleRs){ window.__ccStaleRs = 1; window.addEventListener('resize', () => cashStaleFit()); }
 }
 /* Ventanita que aparece al querer vender (o cobrar) sin caja del día */
 function cashLockedOverlay(cfg){
