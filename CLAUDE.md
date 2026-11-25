@@ -36,3 +36,11 @@ El usuario pidió ocultarlas "como si no existieran" hasta que contacte a esas e
 Todo sigue programado (vendo-apps.js, función `apps-delivery` y tablas `vp_apps_*` en Supabase).
 Para activarlas: en `index.html` cambia `window.VP_APPS_ACTIVO = false;` a `true` y sube la
 versión de `vendo-apps.js` y `vendo-premium.js` en sus `<script src=...?v=>`.
+
+## Arranque rápido y sin internet (sw.js)
+- `sw.js` guarda una copia de la app: la página se pide a la red con tope de 2.5 s
+  (si no contesta o no hay internet, abre la copia). Supabase y otros dominios pasan directo.
+- Archivos con `?v=` se sirven de la copia: **al cambiar un .js/.css súbele la versión** en su
+  `<script src=...?v=>` o `<link href=...?v=>`, si no se queda la copia vieja.
+- La librería de Supabase está en `vendor/supabase-2.119.0.js` (ya no se baja de jsdelivr).
+  Si se cambia de versión, renombra el archivo y actualiza `index.html` y `BASE` en `sw.js`.
