@@ -857,6 +857,9 @@
     var P = {
     menu: { h: im['menu-h'], v: im['menu-v'], alt: 'VendoPlus Premium: tu menú en internet, recibe pedidos desde ahí',
             titulo: 'El Menú Digital viene incluido en Premium', sub: 'Tus clientes ven tu menú y te mandan su pedido.' },
+    chat: { h: im['asistente-h'], v: im['asistente-v'], soloX: true,
+            alt: 'VendoPlus Premium: tus ventas, en una pregunta, con el Asistente',
+            titulo: 'El Asistente viene incluido en Premium', sub: 'Pregúntale cuánto vendiste, cuánto ganaste o qué se está agotando.' },
     stripe: { h: im['stripe-h'], v: im['stripe-v'], abrirCon: null,
             alt: 'VendoPlus Premium: cobra sin contacto con NFC y deja que tus clientes paguen con tarjeta en el menú digital',
             titulo: 'Cobros con tarjeta con Stripe vienen en Premium', sub: 'Cobra con NFC y recibe pagos con tarjeta en tu menú digital.' }
@@ -870,7 +873,7 @@
     st.textContent = [
       '.vp-pt{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;',
       'background:rgba(13,20,40,.62);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);animation:vp-pt-in .2s ease both;}',
-      '.vp-pt-card{position:relative;width:min(100%, calc((100dvh - 32px - 78px) * 16 / 9), 1400px);background:#fff;border-radius:22px;overflow:hidden;',
+      '.vp-pt-card{position:relative;width:min(100%, 1400px);background:#fff;border-radius:22px;overflow:hidden;',
       'box-shadow:0 24px 60px rgba(10,16,34,.35);animation:vp-pt-up .28s cubic-bezier(.22,1,.36,1) both;}',
       '.vp-pt-img{display:block;width:100%;padding:0;border:0;background:#F3F5F9;cursor:pointer;line-height:0;}',
       '.vp-pt-img img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;-webkit-user-select:none;user-select:none;}',
@@ -886,7 +889,8 @@
       '.vp-pt-x svg{width:17px;height:17px;}',
       '@media (max-width:699px){',
       '.vp-pt{padding:12px;}',
-      '.vp-pt-card{width:min(100%, calc((100dvh - 24px - 74px) * 2 / 3));background:transparent;box-shadow:none;border-radius:20px;overflow:visible;}',
+      '.vp-pt-card{background:transparent;box-shadow:none;border-radius:20px;overflow:visible;}',
+      '.vp-pt-x{top:10px;right:10px;}',
       '.vp-pt-img{border-radius:20px;overflow:hidden;}',
       '.vp-pt-img img{aspect-ratio:2/3;}',
       '.vp-pt-txt{display:none;}',
@@ -899,43 +903,79 @@
     ].join('');
     document.head.appendChild(st);
   }
+  try { window.addEventListener('resize', ajustarPortada); if (window.visualViewport) visualViewport.addEventListener('resize', ajustarPortada); } catch (e) {}
   function cerrarPortada() {
     var el = document.getElementById('vp-portada');
     if (el) el.remove();
     document.removeEventListener('keydown', teclaPortada, true);
   }
   function teclaPortada(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrarPortada(); } }
+  /* Tamaño de la ventana: se mide la pantalla visible (no hay zoom aquí) y
+     la imagen crece hasta donde quepa completa con su botón abajo. */
+  function ajustarPortada() {
+    var el = document.getElementById('vp-portada');
+    if (!el) return;
+    var card = el.querySelector('.vp-pt-card');
+    var cel = window.matchMedia && matchMedia('(max-width:699px)').matches;
+    var vv = window.visualViewport;
+    var vh = (vv && vv.height) || window.innerHeight;
+    var vw = (vv && vv.width) || window.innerWidth;
+    var pad = cel ? 12 : 16;
+    var ratio = cel ? 2 / 3 : 16 / 9;
+    var foot = card.querySelector('.vp-pt-foot');
+    for (var i = 0; i < 2; i++) {
+      var fh = foot ? foot.getBoundingClientRect().height : 0;
+      var w = Math.min(vw - 2 * pad, (vh - 2 * pad - fh) * ratio, 1400);
+      card.style.width = Math.max(200, Math.floor(w)) + 'px';
+    }
+  }
   function portada(clave) {
     /* Igual que Comandas: una pantalla normal de la app (encabezado y menú
        de abajo visibles), con la imagen ajustada y "Activar Premium" */
     if (clave === 'menu') { irMenuPortada(); return; }
-    try { if (window.VPComandas && VPComandas.portada && VPComandas.portada(clave)) return; } catch (e) {}
     var p = datosPortada(clave);
     if (!p || !(p.h || p.v)) { abrir(clave); return; }
+    if (!p.soloX) {
+      try { if (window.VPComandas && VPComandas.portada && VPComandas.portada(clave)) return; } catch (e) {}
+    }
+    if (document.getElementById('vp-portada')) return;
     cssPortada();
-    cerrarPortada();
-    var el = document.createElement('div');
-    el.id = 'vp-portada';
-    el.className = 'vp-pt';
-    el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-modal', 'true');
-    el.innerHTML =
-      '<div class="vp-pt-card">' +
-        '<button type="button" class="vp-pt-x" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
-        '<button type="button" class="vp-pt-img vp-pt-go" aria-label="Ver Premium"><picture>' +
-          (p.v ? '<source media="(max-width:699px)" srcset="' + esc(p.v) + '">' : '') +
-          '<img src="' + esc(p.h || p.v) + '" alt="' + esc(p.alt || '') + '" decoding="async" draggable="false">' +
-        '</picture></button>' +
-        '<div class="vp-pt-foot"><span class="vp-pt-txt"><b>' + esc(p.titulo) + '</b><small>' + esc(p.sub) + '</small></span>' +
-        '<button type="button" class="vp-pt-btn vp-pt-go">Activar Premium</button></div>' +
-      '</div>';
-    document.body.appendChild(el);
-    el.addEventListener('click', function (e) {
-      if (e.target === el || e.target.closest('.vp-pt-x')) { cerrarPortada(); return; }
-      if (e.target.closest('.vp-pt-go')) { cerrarPortada(); abrir('abrirCon' in p ? p.abrirCon : clave); }
-    });
-    document.addEventListener('keydown', teclaPortada, true);
+    /* Se espera a que la imagen esté lista: así aparece completa de una vez */
+    var cel = window.matchMedia && matchMedia('(max-width:699px)').matches;
+    var src = (cel ? (p.v || p.h) : (p.h || p.v));
+    var listo = false;
+    var mostrar = function () {
+      if (listo) return; listo = true;
+      cerrarPortada();
+      var el = document.createElement('div');
+      el.id = 'vp-portada';
+      el.className = 'vp-pt';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-modal', 'true');
+      el.innerHTML =
+        '<div class="vp-pt-card">' +
+          '<button type="button" class="vp-pt-x" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+          '<button type="button" class="vp-pt-img vp-pt-go" aria-label="Ver Premium"><picture>' +
+            (p.v ? '<source media="(max-width:699px)" srcset="' + esc(p.v) + '">' : '') +
+            '<img src="' + esc(p.h || p.v) + '" alt="' + esc(p.alt || '') + '" decoding="sync" draggable="false">' +
+          '</picture></button>' +
+          '<div class="vp-pt-foot"><span class="vp-pt-txt"><b>' + esc(p.titulo) + '</b><small>' + esc(p.sub) + '</small></span>' +
+          '<button type="button" class="vp-pt-btn vp-pt-go">Activar Premium</button></div>' +
+        '</div>';
+      document.body.appendChild(el);
+      ajustarPortada();
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('.vp-pt-x') || (!p.soloX && e.target === el)) { cerrarPortada(); return; }
+        if (e.target.closest('.vp-pt-go')) { cerrarPortada(); abrir('abrirCon' in p ? p.abrirCon : clave); }
+      });
+      if (!p.soloX) document.addEventListener('keydown', teclaPortada, true);
+    };
+    var im = new Image();
+    im.src = src;
+    if (im.decode) im.decode().then(mostrar, mostrar); else { im.onload = mostrar; im.onerror = mostrar; }
+    setTimeout(mostrar, 1500);
   }
+
 
   /* Sin Premium, la sección Menú Digital es directamente la portada (sin ×):
      no se puede configurar ni activar. */
@@ -1002,13 +1042,13 @@
 
     var _abrir = M.abrir;
     M.abrir = function () {
-      if (!activo()) { abrir('chat'); return; }
+      if (!activo()) { portada('chat'); return; }
       return _abrir.apply(this, arguments);
     };
     var _preg = M.preguntar;
     if (typeof _preg === 'function') {
       M.preguntar = function () {
-        if (!activo()) { abrir('chat'); return; }
+        if (!activo()) { portada('chat'); return; }
         return _preg.apply(this, arguments);
       };
     }
