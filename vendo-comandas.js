@@ -54,6 +54,12 @@ window.VPComandas = (() => {
   const esMesero = () => myArea() === 'mesero';
   const esCocina = () => myArea() === 'cocina';
   const esCajero = () => myArea() === 'caja';
+  /* Mesero, o cajero armando un pedido (para llevar o de una mesa) */
+  const pideEnVenta = () => esMesero() || (esCajero() && !!checkout.cmCaja);
+  /* Botón "Mandar a cocina" del carrito: mesero, o cajero en una mesa */
+  const accionesComanda = () => esMesero() || (esCajero() && !!checkout.cmCaja && !!checkout.floorTableId);
+  /* ¿El negocio tiene cocina? (alguien en el área Cocinero) */
+  const hayCocina = () => { try { return DB.getUsers().some(u => u.area === 'cocina'); } catch (e) { return false; } };
   function puedeAdministrar() { try { return isOwner(); } catch (e) { return false; } }
   const me = () => { try { return activeUser(); } catch (e) { return null; } };
 
@@ -63,14 +69,16 @@ window.VPComandas = (() => {
     const area = myArea();
     if (area === 'mesero') {
       if (!(currentView === 'sale' && checkout.floorTableId)) currentView = 'comandas';
-    } else if (area === 'cocina' || area === 'caja') {
+    } else if (area === 'caja') {
+      if (!(currentView === 'sale' && checkout.cmCaja)) currentView = 'comandas';
+    } else if (area === 'cocina') {
       currentView = 'comandas';
     } else if (currentView === 'comandas' && !puedeAdministrar()) {
       currentView = 'sale';
     }
     const b = document.body.classList;
     b.toggle('cm-solo', !!area);
-    b.toggle('cm-mesero', area === 'mesero');
+    b.toggle('cm-mesero', area === 'mesero' || area === 'caja');
     b.toggle('cm-admin', puedeAdministrar());
     Sync.tick();
     requestAnimationFrame(ajustarPlano);
@@ -607,7 +615,7 @@ window.VPComandas = (() => {
   }
 
   /* ---------- Cada mesero con sus mesas ---------- */
-  const duenoDe = o => (o && ((o.cm && o.cm.waiterId) || o.byId)) || '';
+  const duenoDe = o => (o && o.cm && o.cm.sinMesero) ? '' : ((o && ((o.cm && o.cm.waiterId) || o.byId)) || '');
   const nombreDe = o => (o && ((o.cm && o.cm.waiterName) || o.by)) || 'otro mesero';
   function esMiMesa(o) { const yo = me(); return !!o && !!yo && (duenoDe(o) === yo.id || !duenoDe(o)); }
   /* Comandas listas que le tocan a este mesero (de sus mesas) */
@@ -636,7 +644,7 @@ window.VPComandas = (() => {
   /* Juntas por mesa: dos rondas de la misma mesa = un solo aviso */
   function listasPorMesa() {
     const g = {};
-    misListas().forEach(k => { const key = k.orderId || k.tableId; (g[key] = g[key] || { key, table:k.table, ks:[] }).ks.push(k); });
+    misListas().forEach(k => { const key = k.orderId || k.tableId || k.id; (g[key] = g[key] || { key, table:k.table, llevar:!!k.llevar, ks:[] }).ks.push(k); });
     return Object.values(g).map(x => {
       x.ks.sort((a, b) => (a.round || 1) - (b.round || 1));
       x.at = x.ks.reduce((m, k) => Math.min(m, new Date(k.readyAt || k.at).getTime()), Infinity);
@@ -757,6 +765,7 @@ window.VPComandas = (() => {
     if (caja) {
       acts = `
         <button class="btn primary block" onclick="VPComandas.cobrar('${o.id}')">${icon('cash')} Cobrar · ${formatMoney(o.total)}</button>
+        ${esCajero() && !cuenta ? `<button class="btn ghost block" onclick="VPComandas.ronda('${escapeHtml(o.checkout.floorTableId)}')">${icon('plus')} Agregar productos</button>` : ''}
         <button class="btn ghost block" onclick="VPComandas.editarCuenta('${o.id}')">${icon('edit')} Revisar o corregir la cuenta</button>`;
     } else {
       acts = `
@@ -906,7 +915,7 @@ window.VPComandas = (() => {
 
   /* Empieza una ronda nueva en la mesa: el catálogo con el carrito vacío */
   function ronda(tableId) {
-    if (!esMesero()) return;
+    if (!esMesero() && !esCajero()) return;
     const t = VPMesas.layout().find(x => x.id === tableId);
     if (!t) return;
     const o = VPMesas.openOrders().get(tableId);
@@ -916,15 +925,20 @@ window.VPComandas = (() => {
     checkout.floorTableId = t.id;
     checkout.serviceType = 'mesa';
     checkout.table = t.name;
+    if (esCajero()) checkout.cmCaja = true;
     goTo('sale');
   }
 
   function saleHead() {
-    if (!esMesero() || !checkout.floorTableId) return '';
+    if (esCajero() && checkout.cmLlevar) return `
+      <button class="cm-back" onclick="VPComandas.salirMesa()">${icon('chevronLeft')} Caja</button>
+      <h1 class="page-title">Para llevar <span class="cm-round-tag">${escapeHtml(checkout.cmLlevar.name || 'Mostrador')}</span></h1>
+      <p class="page-sub">Agrega los productos y cobra: se manda solo a cocina.</p>`;
+    if (!pideEnVenta() || !checkout.floorTableId) return '';
     const o = VPMesas.openOrders().get(checkout.floorTableId);
     const n = o ? ticketsOf(o.id).length + 1 : 1;
     return `
-      <button class="cm-back" onclick="VPComandas.salirMesa()">${icon('chevronLeft')} Mesas</button>
+      <button class="cm-back" onclick="VPComandas.salirMesa()">${icon('chevronLeft')} ${esCajero() ? 'Caja' : 'Mesas'}</button>
       <h1 class="page-title">${escapeHtml(checkout.table || 'Mesa')} <span class="cm-round-tag">Ronda ${n}</span></h1>
       <p class="page-sub">Agrega los productos. En el carrito toca un producto para ponerle nota.</p>`;
   }
@@ -933,8 +947,8 @@ window.VPComandas = (() => {
     const leave = () => { cart = []; customItems = {}; checkout = newCheckout(); closeModal(); goTo('comandas'); };
     if (cart.length) {
       askConfirm({
-        title: '¿Salir sin mandar a cocina?',
-        text: 'Los productos que agregaste a ' + escapeHtml(checkout.table || 'esta mesa') + ' no se mandarán.',
+        title: checkout.cmLlevar ? '¿Salir sin cobrar?' : '¿Salir sin mandar a cocina?',
+        text: checkout.cmLlevar ? 'Los productos de este pedido para llevar se quitarán.' : 'Los productos que agregaste a ' + escapeHtml(checkout.table || 'esta mesa') + ' no se mandarán.',
         ok: 'Salir sin mandar', danger: true, icon: icon('alert')
       }, leave);
       return;
@@ -966,7 +980,8 @@ window.VPComandas = (() => {
   }
 
   function enviar() {
-    if (!esMesero() || !checkout.floorTableId) return;
+    if (!accionesComanda() || !checkout.floorTableId) return;
+    const porCaja = esCajero();
     if (!cart.length) { toast('Agrega productos a la comanda'); return; }
     const t = VPMesas.layout().find(x => x.id === checkout.floorTableId);
     if (!t) { toast('Esta mesa ya no existe'); return; }
@@ -998,8 +1013,9 @@ window.VPComandas = (() => {
       byId: prev ? prev.byId : (yo ? yo.id : meId()),
       cart: mergedCart, customItems: mergedCustom, checkout: ordCheckout, total, units,
       cm: Object.assign({}, prev && prev.cm, {
-        waiterId: (prev && prev.cm && prev.cm.waiterId) || (yo ? yo.id : ''),
-        waiterName: (prev && prev.cm && prev.cm.waiterName) || (yo ? yo.name : ''),
+        waiterId: (prev && prev.cm && prev.cm.waiterId) || (porCaja ? '' : (yo ? yo.id : '')),
+        waiterName: (prev && prev.cm && prev.cm.waiterName) || (porCaja ? '' : (yo ? yo.name : '')),
+        sinMesero: prev ? !!(prev.cm && prev.cm.sinMesero) : porCaja,
         openedAt: (prev && prev.cm && prev.cm.openedAt) || (prev ? prev.at : nowIso()),
         rounds: rondas + 1,
         updatedAt: nowIso()
@@ -1035,7 +1051,7 @@ window.VPComandas = (() => {
   /* Recoger: "¿Ya tienes el pedido?" con todo lo listo de esa mesa */
   function verLista(key) {
     const g = listasPorMesa().find(x => x.key === key)
-      || (() => { const k = tickets().find(x => x.id === key && x.status === 'listo'); return k ? { key:k.orderId || k.tableId, table:k.table, ks:[k], items:k.items } : null; })();
+      || (() => { const k = tickets().find(x => x.id === key && x.status === 'listo'); return k ? { key:k.orderId || k.tableId || k.id, table:k.table, llevar:!!k.llevar, ks:[k], items:k.items } : null; })();
     if (!g) { closeModal(); render(); return; }
     openModal(`
       <div class="sheet-header">
@@ -1045,7 +1061,7 @@ window.VPComandas = (() => {
       <div class="cm-todo">
         <span class="cm-todo-step"><i>${icon('inbox')}</i><small>Recoge en cocina</small></span>
         <b class="cm-todo-arrow">${icon('chevronRight')}</b>
-        <span class="cm-todo-step"><i>${VPMesas.tableIcon}</i><small>Lleva a ${escapeHtml(g.table)}</small></span>
+        <span class="cm-todo-step"><i>${g.llevar ? icon('person') : VPMesas.tableIcon}</i><small>${g.llevar ? 'Entrégalo al cliente' : 'Lleva a ' + escapeHtml(g.table)}</small></span>
       </div>
       <div class="cm-lines">${lineasHTML(g.items)}</div>
       <div class="cm-sheet-acts">
@@ -1064,7 +1080,7 @@ window.VPComandas = (() => {
     saveTickets(list);
     if (!listasPorMesa().length) st.mtab = 'mesas';
     render();
-    toast('¡Listo! Llévalo a ' + mesa, { variant:'toast-success', icon:icon('check') });
+    toast(/^Para llevar/.test(mesa) ? '¡Listo! Entrégalo al cliente' : '¡Listo! Llévalo a ' + mesa, { variant:'toast-success', icon:icon('check') });
   }
 
   function pedirCuenta(orderId) {
@@ -1091,10 +1107,20 @@ window.VPComandas = (() => {
       .sort((a, b) => ((b.cm && b.cm.billAt) ? 1 : 0) - ((a.cm && a.cm.billAt) ? 1 : 0) || new Date(a.at) - new Date(b.at));
     const tks = tickets();
     const total = orders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+    const listos = listasPorMesa();
     return `
       <h1 class="page-title">Caja</h1>
       <p class="page-sub">Hola, ${escapeHtml(userFirstName(yo) || yo.name)} · ${orders.length ? plural(orders.length, 'cuenta abierta', 'cuentas abiertas') + ' · ' + formatMoney(total) : 'Aquí aparecen las cuentas de las mesas'}</p>
-      ${soloBar()}
+      <div class="cm-solo-bar">
+        <button class="btn ghost" onclick="VPComandas.historial()">${icon('receipt')} Historial</button>
+        <button class="btn primary" onclick="VPComandas.nuevoPedido()">${icon('plus')} Nuevo pedido</button>
+      </div>
+      ${listos.length ? `<div class="cm-av-t">${icon('bell')} Listos para entregar</div><div class="cm-pick" style="margin-bottom:14px;">${listos.map(g => `
+        <button type="button" class="cm-pick-card" onclick="VPComandas.verLista('${escapeHtml(g.key)}')">
+          <span class="cm-pick-mesa">${escapeHtml(g.llevar ? 'Llevar' : g.table)}</span>
+          <span class="cm-pick-txt"><b>${escapeHtml(g.table)}</b><small>${resumen(g.items)}</small></span>
+          <span class="cm-pick-go">Entregar ${icon('chevronRight')}</span>
+        </button>`).join('')}</div>` : ''}
       ${planoHTML('caja')}
       <div class="section-title">Cuentas abiertas ${orders.length ? `<span class="title-count">${orders.length}</span>` : ''}</div>
       ${orders.length ? `<div class="mdi-list cm-kds">${orders.map(o => {
@@ -1146,6 +1172,83 @@ window.VPComandas = (() => {
     openCartSheet('checkout');
   }
   function editarCuenta(orderId) { if (cargar(orderId)) openCartSheet('cart'); }
+
+  /* ---------- Nuevo pedido desde caja ---------- */
+  function nuevoPedido() {
+    if (!esCajero()) return;
+    const orders = VPMesas.openOrders();
+    openModal(`
+      <div class="sheet-header">
+        <h2>Nuevo pedido</h2>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      <div class="cm-np-t">${icon('shop')} Para llevar o en mostrador</div>
+      <div class="field">
+        <label for="cmLlevarNom">Nombre del cliente (opcional)</label>
+        <input id="cmLlevarNom" type="text" maxlength="30" placeholder="Ej. Juan" autocomplete="off">
+      </div>
+      <button class="btn primary block" onclick="VPComandas.pedidoLlevar()">${icon('plus')} Agregar productos</button>
+      <div class="cm-np-t" style="margin-top:20px;">${VPMesas.tableIcon} En una mesa</div>
+      <div class="cm-np-mesas">${VPMesas.layout().map(t => {
+        const o = orders.get(t.id);
+        const cuenta = !!(o && o.cm && o.cm.billAt);
+        return `<button type="button" class="cm-np-mesa ${o ? 'on' : ''}" ${cuenta ? 'disabled' : ''} onclick="VPComandas.ronda('${escapeHtml(t.id)}')">
+          <b>${escapeHtml(t.name)}</b><small>${cuenta ? 'Pidió cuenta' : (o ? formatMoney(o.total) : 'Libre')}</small></button>`;
+      }).join('')}</div>
+    `, { dismissible:true });
+  }
+  function pedidoLlevar() {
+    if (!esCajero()) return;
+    const el = document.getElementById('cmLlevarNom');
+    const name = ((el && el.value) || '').trim().slice(0, 30);
+    closeModal();
+    cart = []; customItems = {}; checkout = newCheckout();
+    checkout.serviceType = 'llevar';
+    checkout.cmCaja = true;
+    checkout.cmLlevar = { name };
+    checkout.cmCocina = true;
+    goTo('sale');
+  }
+
+  /* Interruptor del cobro: "Mandar a cocina" (Nueva venta del Dueño o del cajero) */
+  function cocinaToggleHTML() {
+    if (!hayCocina() || esMesero()) return '';
+    if (checkout.floorOrderId && ticketsOf(checkout.floorOrderId).length) return '';   /* ya se mandó por comandas */
+    if (checkout.cmCocina == null) { try { checkout.cmCocina = localStorage.getItem('cm_cobro_cocina') === '1'; } catch (e) { checkout.cmCocina = false; } }
+    return `<label class="p2-card cm-cobro-cocina">
+      <span class="acc-ico green">${icon('comandas')}</span>
+      <span class="acc-txt"><span class="acc-label">Mandar a cocina</span><span class="acc-sub">Al cobrar, cocina recibe este pedido</span></span>
+      <span class="switch"><input type="checkbox" ${checkout.cmCocina ? 'checked' : ''} onchange="VPComandas.cocinaToggle(this.checked)"><span class="track"></span></span>
+    </label>`;
+  }
+  function cocinaToggle(v) {
+    checkout.cmCocina = !!v;
+    if (!checkout.cmLlevar) { try { localStorage.setItem('cm_cobro_cocina', v ? '1' : '0'); } catch (e) {} }
+  }
+  /* Después de cobrar (lo llama confirmarCobro antes de vaciar el carrito) */
+  function trasCobro(sale, chk) {
+    try {
+      if (!chk || !chk.cmCocina || !hayCocina() || !cart.length) return;
+      if (chk.floorOrderId && ticketsOf(chk.floorOrderId).length) return;
+      const yo = me();
+      const items = cart.map(c => {
+        const p = findProduct(c.productId);
+        return { productId:c.productId, sizeId:c.sizeId || '', name:p ? p.name : 'Producto', size:c.sizeLabel || '', qty:Number(c.qty) || 0, note:(c.note || '').trim() };
+      });
+      const llevar = !!chk.cmLlevar || chk.serviceType === 'llevar' || chk.serviceType === 'domicilio';
+      const nombre = (chk.cmLlevar && chk.cmLlevar.name) || (chk.table || '').trim();
+      const etiqueta = chk.floorTableId ? (chk.table || 'Mesa')
+        : (llevar ? 'Para llevar' + (nombre ? ' · ' + nombre : ' · ' + orderNumberLabel(sale.number)) : (nombre || 'Pedido ' + orderNumberLabel(sale.number)));
+      const tks = tickets();
+      tks.push({
+        id: uid('cm'), orderId:null, saleId:sale.id, tableId:chk.floorTableId || '', table:etiqueta, round:1, items, llevar:true,
+        by: yo ? yo.name : meName(), byId: yo ? yo.id : meId(),
+        at: nowIso(), status:'nuevo'
+      });
+      saveTickets(tks);
+      setTimeout(() => toast('Mandado a cocina', { variant:'toast-success toast-top', icon:icon('comandas'), subtitle:etiqueta }), 900);
+    } catch (e) { console.warn('[comandas] no se pudo mandar a cocina', e); }
+  }
 
   /* Al borrar la cuenta: lo que quedaba en cocina se cancela.
      Al cobrarla: lo que ya estaba listo se da por entregado. */
@@ -1570,6 +1673,11 @@ window.VPComandas = (() => {
       beep(); vibrate([30, 80, 30]);
       toast(nuevas.length === 1 ? 'Nueva comanda · ' + nuevas[0].table : nuevas.length + ' comandas nuevas', { icon:icon('bell'), variant:'toast-success toast-top', subtitle:nuevas.length === 1 ? 'De ' + (nuevas[0].by || 'el mesero') : '', duration:3500 });
     }
+    const deCaja = area === 'caja' ? listas.filter(k => !!yo && k.byId === yo.id && !orderById(k.orderId)) : [];
+    if (deCaja.length) {
+      beep(); vibrate([30, 80, 30]);
+      toast(deCaja[0].table + ' · lista', { icon:icon('bell'), variant:'toast-success toast-top', subtitle:'Recógela en cocina y entrégala', duration:4000 });
+    }
     const mias = area === 'mesero' ? listas.filter(k => { const o = orderById(k.orderId); return o ? esMiMesa(o) : (!!yo && k.byId === yo.id); }) : [];
     if (mias.length) {
       beep(); vibrate([30, 80, 30]);
@@ -1771,7 +1879,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    esSolo, perfil, nombre, guardarNombre,
+    esSolo, perfil, nombre, guardarNombre, pideEnVenta, accionesComanda, nuevoPedido, pedidoLlevar, cocinaToggleHTML, cocinaToggle, trasCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
