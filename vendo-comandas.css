@@ -348,17 +348,3 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 /* Avisos: solo la lista se desliza (lo de arriba se queda fijo) */
 .cm-av-scroll{ overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:2px 2px 14px; margin:0 -2px; }
 .cm-av-scroll .mdi-empty{ margin-top:0; }
-
-/* Caja: nuevo pedido */
-.cm-np-t{ display:flex; align-items:center; gap:7px; margin:0 0 10px; font-size:14px; font-weight:800; color:var(--ink); }
-.cm-np-t svg{ width:18px; height:18px; color:var(--brand-ink, #0F8F46); }
-.cm-np-mesas{ display:grid; grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); gap:8px; }
-.cm-np-mesa{ display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px 6px; border:1px solid var(--border); border-radius:14px; background:var(--surface, #fff); color:var(--ink); font:inherit; cursor:pointer; }
-.cm-np-mesa b{ font-size:14px; font-weight:800; }
-.cm-np-mesa small{ font-size:11.5px; font-weight:700; color:var(--ink-soft); }
-.cm-np-mesa.on{ border-color:var(--brand); background:var(--brand-soft); }
-.cm-np-mesa:disabled{ opacity:.45; }
-/* Cobro: interruptor "Mandar a cocina" */
-.cm-cobro-cocina{ display:flex; align-items:center; gap:12px; padding:12px 14px !important; cursor:pointer; }
-.cm-cobro-cocina .acc-txt{ flex:1; min-width:0; }
-.cm-cobro-cocina .acc-ico svg{ width:18px; height:18px; }
