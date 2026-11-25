@@ -29935,7 +29935,6 @@ function cartSanitize(){
 .sth-toggle-t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 .sth-toggle-t b{ font-size:15px; font-weight:800; color:var(--ink,#16213E); }
 .sth-toggle-t small{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.35; }
-.sth-toggle .switch input:checked + .track{ background:#635BFF !important; }
 .sth-pasos{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; height:48px; margin-top:12px; border:1.5px solid #635BFF; border-radius:14px;
   background:#fff; color:#635BFF; font:800 15px var(--sans, inherit); cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .sth-pasos svg{ width:18px; height:18px; }
@@ -29967,6 +29966,26 @@ button.cm-back:active, button.page-back:active{ transform:scale(.94); }
   cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent; }
 .p2-nfc-btn:active{ transform:scale(.97); background:#F6F5FF; }
 @media (max-width:360px){ .p2-nfc{ gap:12px; padding:14px; } .p2-nfc-marca .st-logo{ height:24px; } .p2-nfc-btn{ font-size:13.5px; } }
+/* Apartados: switch al lado del título y estado */
+.sth-tit{ display:flex; align-items:center; gap:14px; }
+.sth-tit .page-title{ flex:1; min-width:0; }
+.sth-sw{ flex:none; transform:scale(1.15); transform-origin:right center; cursor:pointer; }
+.sth-estado{ display:inline-flex; align-items:center; gap:7px; margin:10px 0 0; padding:7px 12px 7px 10px; border-radius:999px; background:#EEF1F6; font-size:12.5px; line-height:1.25; }
+.sth-estado i{ flex:none; width:8px; height:8px; border-radius:50%; background:#A3AAB8; }
+.sth-estado b{ font-weight:800; color:#5B6478; }
+.sth-estado span{ font-weight:600; color:var(--ink-soft,#6B7592); }
+.sth-estado.on{ background:#EAF8F0; }
+.sth-estado.on i{ background:var(--vp-green,#16C15B); box-shadow:0 0 0 0 rgba(22,193,91,.55); animation:sthLatido 1.8s ease-out infinite; }
+.sth-estado.on b{ color:#0B6F37; }
+.sth-estado.on span{ color:#2E7D59; }
+@keyframes sthLatido{ 0%{ box-shadow:0 0 0 0 rgba(22,193,91,.5); } 70%{ box-shadow:0 0 0 7px rgba(22,193,91,0); } 100%{ box-shadow:0 0 0 0 rgba(22,193,91,0); } }
+@media (prefers-reduced-motion:reduce){ .sth-estado.on i{ animation:none; } }
+.sth-sub .sth-art{ position:relative; transition:filter .25s ease; }
+.sth-sub .sth-art.off{ filter:grayscale(.55) brightness(1.02); }
+.sth-sub .sth-art.on{ box-shadow:0 0 0 3px var(--vp-green,#16C15B); }
+.sth-art-on{ position:absolute; top:12px; left:12px; display:inline-flex; align-items:center; gap:5px; padding:6px 11px 6px 8px; border-radius:999px;
+  background:var(--vp-green,#16C15B); color:#fff; font-size:12.5px; font-weight:800; line-height:1; box-shadow:0 4px 12px rgba(0,0,0,.18); }
+.sth-art-on svg{ width:14px; height:14px; }
 /* Pasos con fotos (se van pasando) */
 .sth-car{ position:relative; }
 .sth-car-track{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; gap:0; border-radius:18px; }
@@ -30016,9 +30035,9 @@ const ST_ART_SVG = {
 };
 /* Si se pone una foto (img/...), se usa en lugar de la ilustración */
 const ST_ARTE = { connect:'', nfc:'', menu:'' };
-function stArt(k){
+function stArt(k, on){
   const src = ST_ARTE[k];
-  return `<span class="sth-art">${src ? `<img src="${src}" alt="" decoding="async" draggable="false">` : ST_ART_SVG[k]}</span>`;
+  return `<span class="sth-art${on === true ? ' on' : (on === false ? ' off' : '')}">${src ? `<img src="${src}" alt="" decoding="async" draggable="false">` : ST_ART_SVG[k]}${on === true ? `<span class="sth-art-on">${ST_CHECK} Activado</span>` : ''}</span>`;
 }
 const ST_PASOS = {
   nfc: [
@@ -30110,32 +30129,33 @@ function stHubView(){
     </button>
   </div>`;
 }
-function stHubSubHead(titulo){
+function stHubSubHead(titulo, on, accion){
   return `<button class="cm-back" onclick="stHubIr('home')" aria-label="Regresar a Stripe">${icon('chevronLeft')} Stripe</button>
-    <h1 class="page-title">${titulo}</h1>`;
+    <div class="sth-tit">
+      <h1 class="page-title">${titulo}</h1>
+      <label class="switch sth-sw" aria-label="${on ? 'Apagar' : 'Encender'} ${titulo}"><input type="checkbox" ${on ? 'checked' : ''} onchange="${accion}"><span class="track"></span></label>
+    </div>`;
+}
+/** Chip debajo del título: verde con punto cuando está encendido */
+function stEstadoHTML(on, siTxt, noTxt){
+  return `<span class="sth-estado ${on ? 'on' : ''}"><i></i><b>${on ? 'Activado' : 'Desactivado'}</b><span>${on ? siTxt : noTxt}</span></span>`;
 }
 function stHubNfcHTML(){
   const on = stNfcOn();
-  return `<div class="sth sth-sub">${stHubSubHead('Cobro con NFC')}
+  return `<div class="sth sth-sub">${stHubSubHead('Cobro con NFC', on, 'stNfcSet(this.checked)')}
     <p class="page-sub">Cobra con tarjeta acercándola a tu celular, sin terminal.</p>
-    ${stArt('nfc')}
-    <label class="sth-toggle ${on ? 'on' : ''}">
-      <span class="sth-toggle-t"><b>${on ? 'Cobro con NFC activado' : 'Cobro con NFC desactivado'}</b><small>${on ? 'Ya puedes cobrar con NFC desde Nueva venta.' : 'Actívalo para cobrar acercando la tarjeta.'}</small></span>
-      <span class="switch"><input type="checkbox" ${on ? 'checked' : ''} onchange="stNfcSet(this.checked)"><span class="track"></span></span>
-    </label>
+    ${stEstadoHTML(on, 'Ya puedes cobrar con NFC desde Nueva venta', 'Enciéndelo para cobrar acercando la tarjeta')}
+    ${stArt('nfc', on)}
     <button type="button" class="sth-pasos" onclick="stPasos('nfc')">${ST_PLAY} Ver pasos para usarlo</button>
   </div>`;
 }
 function stHubMenuHTML(){
   const on = stMenuOn();
   const menuActivo = !!mdCfg().active;
-  return `<div class="sth sth-sub">${stHubSubHead('Pago con tarjeta en tu Menú Digital')}
+  return `<div class="sth sth-sub">${stHubSubHead('Pago en tu Menú Digital', on, 'stMenuSet(this.checked)')}
     <p class="page-sub">Tus clientes pagan su pedido en línea y el dinero llega a tu Stripe.</p>
-    ${stArt('menu')}
-    <label class="sth-toggle ${on ? 'on' : ''}">
-      <span class="sth-toggle-t"><b>${on ? 'Pago con tarjeta activado' : 'Pago con tarjeta desactivado'}</b><small>${on ? 'Tus clientes ya ven la opción «Tarjeta» al pagar.' : 'Actívalo para que tus clientes paguen con tarjeta.'}</small></span>
-      <span class="switch"><input type="checkbox" ${on ? 'checked' : ''} onchange="stMenuSet(this.checked)"><span class="track"></span></span>
-    </label>
+    ${stEstadoHTML(on, 'Tus clientes ya ven la opción «Tarjeta» al pagar', 'Enciéndelo para que tus clientes paguen con tarjeta')}
+    ${stArt('menu', on)}
     ${!menuActivo ? `<div class="sth-aviso">${icon('alert')}<span>Tu Menú Digital todavía no está activado: tus clientes no lo pueden ver. <button type="button" onclick="goTo('menu')">Ir a Menú Digital</button></span></div>` : ''}
     <button type="button" class="sth-pasos" onclick="stPasos('menu')">${ST_PLAY} Ver pasos para usarlo</button>
   </div>`;
