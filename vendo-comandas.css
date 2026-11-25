@@ -389,6 +389,8 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
   background:rgba(22,33,62,.78); color:#fff; font-size:12px; font-weight:700; line-height:1; }
 .cm-lock svg{ width:13px; height:13px; }
 .cm-areas.cm-apagadas .cm-area{ opacity:1; filter:none; }
+/* Apagadas: fotos medio grises (igual que en Stripe) */
+.cm-areas.cm-apagadas .cm-area-foto img{ filter:grayscale(.55) brightness(1.02); transition:filter .25s ease; }
 .cm-areas.cm-apagadas .cm-area .acc-chev{ display:none; }
 @media (max-width:699px){
   .cm-areas.cm-fit{ gap:8px; }
@@ -434,3 +436,10 @@ section.cm-promo.cm-fit:not(.cm-fit-ok){ visibility:hidden; }
   background:rgba(255,255,255,.92); color:#16213E; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.18); -webkit-tap-highlight-color:transparent; }
 .cm-promo-x svg{ width:17px; height:17px; }
 .cm-promo-x:active{ transform:scale(.92); }
+
+/* Botón "?" debajo de las áreas */
+.cm-ayuda-fila{ display:flex; justify-content:center; margin-top:16px; }
+.cm-ayuda{ width:44px; height:44px; border-radius:50%; border:1px solid var(--border,#E6E9F2); background:var(--surface,#fff); color:var(--ink,#16213E);
+  font:800 20px/1 var(--sans, inherit); cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(22,33,62,.06); -webkit-tap-highlight-color:transparent; }
+.cm-ayuda:active{ transform:scale(.94); }
+.cm-how-sheet{ margin-top:0; border:0; padding:0; background:none; }

@@ -472,6 +472,24 @@ window.VPComandas = (() => {
     }
   }
 
+  /* "?": cómo trabajan juntos Caja, Mesero y Cocinero */
+  function ayuda() {
+    const vivo = Sync.online();
+    openModal(`
+      <div class="sheet-header"><h2>Así trabajan juntos</h2><button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button></div>
+      <div class="cm-how cm-how-sheet">
+        <ol>
+          <li><b>Mesero</b> abre la mesa, toma el pedido y lo manda a cocina.</li>
+          <li><b>Cocinero</b> recibe la comanda, la prepara y la marca como lista.</li>
+          <li><b>Mesero</b> recibe el aviso, la sirve y pide la cuenta cuando el cliente quiere pagar.</li>
+          <li><b>Caja</b> ve la cuenta de cada mesa y la cobra. La mesa queda libre.</li>
+        </ol>
+        <p class="cm-live ${vivo ? 'on' : ''}">${icon(vivo ? 'check' : 'alert')} ${vivo
+          ? 'En vivo: cada quien puede usar su propio celular o tablet con tu misma cuenta.'
+          : 'Sin conexión a la nube: por ahora solo funciona en este aparato.'}</p>
+      </div>`, { dismissible:true });
+  }
+
   function homeHTML() {
     const vivo = Sync.online();
     fitSoon();
@@ -486,7 +504,7 @@ window.VPComandas = (() => {
         ${ORDER.map(id => {
           const n = gente(id).length;
           return `<button type="button" class="cm-area" onclick="VPComandas.area('${id}')">
-            <span class="cm-area-art cm-area-foto">${fotoArea(id)}${activas() ? '' : `<span class="cm-lock">${icon('lock')} Desactivado</span>`}</span>
+            <span class="cm-area-art cm-area-foto">${fotoArea(id)}</span>
             <span class="cm-area-foot">
               <span class="cm-area-txt">
                 <b>${AREAS[id].name}</b>
@@ -497,18 +515,7 @@ window.VPComandas = (() => {
           </button>`;
         }).join('')}
       </div>
-      <div class="cm-how">
-        <div class="cm-how-t">Así trabajan juntos</div>
-        <ol>
-          <li><b>Mesero</b> abre la mesa, toma el pedido y lo manda a cocina.</li>
-          <li><b>Cocinero</b> recibe la comanda, la prepara y la marca como lista.</li>
-          <li><b>Mesero</b> recibe el aviso, la sirve y pide la cuenta cuando el cliente quiere pagar.</li>
-          <li><b>Caja</b> ve la cuenta de cada mesa y la cobra. La mesa queda libre.</li>
-        </ol>
-        <p class="cm-live ${vivo ? 'on' : ''}">${icon(vivo ? 'check' : 'alert')} ${vivo
-          ? 'En vivo: cada quien puede usar su propio celular o tablet con tu misma cuenta.'
-          : 'Sin conexión a la nube: por ahora solo funciona en este aparato.'}</p>
-      </div>`;
+      <div class="cm-ayuda-fila"><button type="button" class="cm-ayuda" onclick="VPComandas.ayuda()" aria-label="¿Cómo funcionan las comandas?">?</button></div>`;
   }
 
   function areaHTML() {
@@ -2230,7 +2237,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    portada, portadaHTML, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    portada, portadaHTML, ayuda, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
