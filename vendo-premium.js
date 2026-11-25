@@ -908,6 +908,7 @@
   function portada(clave) {
     /* Igual que Comandas: una pantalla normal de la app (encabezado y menú
        de abajo visibles), con la imagen ajustada y "Activar Premium" */
+    if (clave === 'menu') { irMenuPortada(); return; }
     try { if (window.VPComandas && VPComandas.portada && VPComandas.portada(clave)) return; } catch (e) {}
     var p = datosPortada(clave);
     if (!p || !(p.h || p.v)) { abrir(clave); return; }
@@ -936,11 +937,37 @@
     document.addEventListener('keydown', teclaPortada, true);
   }
 
+  /* Sin Premium, la sección Menú Digital es directamente la portada (sin ×):
+     no se puede configurar ni activar. */
+  function irMenuPortada() {
+    try { if (fn('closeModal')) ref('closeModal')(); } catch (e) {}
+    try { if (ref('currentView') !== 'menu' && fn('goTo')) ref('goTo')('menu'); else if (fn('render')) ref('render')(); } catch (e) {}
+  }
   function engancharMenu() {
+    var rmd = fn('renderMenuDigital');
+    if (rmd && !rmd.__vpPr) {
+      var env0 = function () {
+        if (!activo() && window.VPComandas && VPComandas.portadaHTML) return VPComandas.portadaHTML('menu');
+        return rmd.apply(this, arguments);
+      };
+      env0.__vpPr = true;
+      try { window.renderMenuDigital = env0; } catch (e) {}
+      try { renderMenuDigital = env0; } catch (e) {}
+    }
+    var setup = fn('mdOpenSetup');
+    if (setup && !setup.__vpPr) {
+      var env1 = function () {
+        if (!activo()) { irMenuPortada(); return; }
+        return setup.apply(this, arguments);
+      };
+      env1.__vpPr = true;
+      try { window.mdOpenSetup = env1; } catch (e) {}
+      try { mdOpenSetup = env1; } catch (e) {}
+    }
     var act = fn('mdActivate');
     if (act && !act.__vpPr) {
       var envuelto = function () {
-        if (!activo()) { portada('menu'); return; }
+        if (!activo()) { irMenuPortada(); return; }
         return act.apply(this, arguments);
       };
       envuelto.__vpPr = true;

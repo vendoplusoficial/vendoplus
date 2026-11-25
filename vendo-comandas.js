@@ -337,7 +337,7 @@ window.VPComandas = (() => {
     comandas: { nombre:'Comandas', abrir:'comandas', h:'img/promo-comandas-h.webp?v=1', v:'img/promo-comandas-v.webp?v=1',
       alt:'VendoPlus Premium: coordina caja, mesas y cocina desde el celular',
       titulo:'Comandas viene incluido en Premium', sub:'Mesero, cocina y caja conectados en tiempo real.' },
-    menu: { nombre:'Menú Digital', abrir:'menu', cerrar:'menu', h:'img/promo-menu-h.webp?v=2', v:'img/promo-menu-v.webp?v=2',
+    menu: { nombre:'Menú Digital', abrir:'menu', h:'img/promo-menu-h.webp?v=2', v:'img/promo-menu-v.webp?v=2',
       alt:'VendoPlus Premium: tu menú en internet, recibe pedidos desde ahí',
       titulo:'El Menú Digital viene incluido en Premium', sub:'Tus clientes ven tu menú y te mandan su pedido.' },
     stripe: { nombre:'Finanzas de Stripe', abrir:null, h:'img/promo-stripe-h.webp?v=1', v:'img/promo-stripe-v.webp?v=1',
@@ -372,6 +372,11 @@ window.VPComandas = (() => {
     const o = PORTADAS[portadaClave] || PORTADAS.menu;
     fitSoon();
     return `<h1 class="page-title cm-promo-title">${o.nombre}</h1>${promoHTML(o)}`;
+  }
+  /* HTML de la portada para usarlo dentro de otra sección (Menú Digital sin Premium) */
+  function portadaHTML(clave) {
+    if (PORTADAS[clave]) portadaClave = clave;
+    return portadaVista();
   }
   function portada(clave) {
     if (!PORTADAS[clave]) return false;
@@ -2230,7 +2235,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    portada, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    portada, portadaHTML, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
