@@ -477,16 +477,11 @@ window.VPComandas = (() => {
     fitSoon();
     if (!premiumOk()) return `<h1 class="page-title cm-promo-title">Comandas</h1>${promoHTML()}`;
     return `
-      <h1 class="page-title">Comandas</h1>
+      <div class="sth-tit">
+        <h1 class="page-title">Comandas</h1>
+        <label class="switch sth-sw" aria-label="${activas() ? 'Desactivar' : 'Activar'} comandas"><input type="checkbox" ${activas() ? 'checked' : ''} onchange="VPComandas.activar(this.checked)"><span class="track"></span></label>
+      </div>
       <p class="page-sub">Elige un área para ver y agregar a tu equipo</p>
-      <label class="cm-on-card ${activas() ? 'on' : ''}">
-        <span class="acc-ico ${activas() ? 'green' : ''}">${icon('comandas')}</span>
-        <span class="acc-txt">
-          <span class="acc-label">Comandas ${activas() ? 'activadas' : 'desactivadas'}${premiumOk() ? '' : ' <span class="cm-prem">Premium</span>'}</span>
-          <span class="acc-sub">${activas() ? 'Caja, Mesero y Cocinero ya trabajan conectados.' : 'Actívalas para que tu equipo use Caja, Mesero y Cocinero.'}</span>
-        </span>
-        <span class="switch"><input type="checkbox" ${activas() ? 'checked' : ''} onchange="VPComandas.activar(this.checked)"><span class="track"></span></span>
-      </label>
       <div class="cm-areas cm-fit ${activas() ? '' : 'cm-apagadas'}" data-pc="1" data-max="300" data-min="110">
         ${ORDER.map(id => {
           const n = gente(id).length;
