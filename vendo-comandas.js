@@ -377,39 +377,56 @@ window.VPComandas = (() => {
     if (h < max) try { window.scrollTo(0, 0); } catch (e) {}
   }
   /* Portada sin Premium: la foto crece hasta tocar el menú de abajo (o el
-     borde de la pantalla) y a lo ancho hasta el margen, lo que pase primero */
+     borde de la pantalla) y a lo ancho hasta el margen, lo que pase primero.
+     No se calcula con fórmulas (la app usa zoom y cada navegador lo mide
+     distinto): se prueba con dos tamaños, se mide en pantalla cuánto
+     crece y se pone el tamaño exacto. */
   function fitPromo(root, ref, max, min) {
-    root.style.setProperty('--cm-h', max + 'px');
+    const cel = matchMedia('(max-width:699px)').matches;
+    root.style.removeProperty('--cm-ar');
     let piso = window.innerHeight;
     document.querySelectorAll('.bottomnav, .cartbar').forEach(b => {
       const br = b.getBoundingClientRect();
       if (br.height && br.height < piso / 2 && br.top > piso / 2) piso = Math.min(piso, br.top);
     });
-    const k = (ref.getBoundingClientRect().height / (ref.offsetHeight || 1)) || 1;
-    const foot = root.querySelector('.cm-promo-foot');
-    const footH = foot ? foot.getBoundingClientRect().height : 0;
-    const top = ref.getBoundingClientRect().top;
-    const libre = (piso - 14 - footH - top) / k;      /* alto disponible para la foto */
-    const cel = matchMedia('(max-width:699px)').matches;
-    root.style.removeProperty('--cm-ar');
-    if (libre < (ref.offsetHeight || 0)) root.style.setProperty('--cm-h', Math.max(min, Math.floor(libre)) + 'px');
-    else if (cel && ref.offsetWidth) {
-      /* Celular alto: la foto crece a lo alto (recorta un poco los lados, sin tocar textos) */
-      root.style.setProperty('--cm-ar', String(Math.max(0.6, ref.offsetWidth / libre)));
+    const meta = piso - (cel ? 12 : 20);
+    const set = h => root.style.setProperty('--cm-h', Math.round(h) + 'px');
+    const abajo = () => root.getBoundingClientRect().bottom;
+    /* Se va ajustando con medidas reales (el texto de abajo cambia de
+       renglones según el ancho, por eso se repite hasta quedar exacto) */
+    let h0 = 200; set(h0); let b0 = abajo();
+    let h = 300; set(h); let b = abajo();
+    let c = 1;
+    for (let i = 0; i < 8; i++) {
+      c = (b - b0) / (h - h0);
+      if (!(c > 0.01)) { if (b < meta) { h0 = h; b0 = b; h = Math.min(max, h * 1.6); set(h); b = abajo(); continue; } break; }
+      const n = Math.max(min, Math.min(max, h + (meta - b) / c));
+      if (Math.abs(n - h) < 1) break;
+      h0 = h; b0 = b; h = n; set(h); b = abajo();
+      if (Math.abs(b - meta) < 1.5) break;
     }
-    /* Si aún quedó un poquito de scroll (relleno de abajo de la app), se quita */
+    for (let i = 0; i < 6 && abajo() > meta && h > min; i++) { h = Math.max(min, h - Math.max(2, (abajo() - meta) / (c > 0.01 ? c : 1))); set(h); }
+    /* Si ya llegó al ancho completo y sobra alto (celular alto), la foto crece a lo alto */
+    const sobra = meta - abajo();
+    if (cel && sobra > 4) {
+      const r = ref.getBoundingClientRect();
+      if (r.width && r.height) root.style.setProperty('--cm-ar', String(Math.max(0.6, r.width / (r.height + sobra))));
+    }
+    /* Seguro final: si algo quedó fuera de la pantalla, se achica lo que falte */
+    if (abajo() > meta + 1) root.style.removeProperty('--cm-ar');
+    /* Último seguro: si la página quedó con scroll (márgenes de la app), se achica eso */
     const se = document.scrollingElement || document.documentElement;
-    const over = se.scrollHeight - window.innerHeight;
-    if (over > 0) {
-      const h = ref.offsetHeight - over / k - 2;
-      if (root.style.getPropertyValue('--cm-ar')) root.style.setProperty('--cm-ar', String(Math.min(2 / 3, ref.offsetWidth / h)));
-      if (!root.style.getPropertyValue('--cm-ar') || ref.offsetWidth / h > 2 / 3) { root.style.removeProperty('--cm-ar'); root.style.setProperty('--cm-h', Math.max(min, Math.floor(h)) + 'px'); }
+    for (let i = 0; i < 4; i++) {
+      const over = se.scrollHeight - window.innerHeight;
+      if (over <= 0 || h <= min) break;
+      if (root.style.getPropertyValue('--cm-ar')) { root.style.removeProperty('--cm-ar'); continue; }
+      h = Math.max(min, h - over / (c > 0.01 ? c : 1) - 1); set(h);
     }
-    try { window.scrollTo(0, 0); } catch (e) {}
   }
   let fitPuesto = false;
   function fitSoon() {
     requestAnimationFrame(() => requestAnimationFrame(fitCm));
+    setTimeout(fitCm, 450);   /* otra vez cuando termina la animación de entrada */
     if (!fitPuesto) {
       fitPuesto = true;
       let t = 0;
