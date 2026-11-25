@@ -369,3 +369,10 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 .acc-ico.cm-chef-ico{ background:#fff !important; color:var(--ink, #16213E) !important; border:1.5px solid var(--border, #E8EBF2); }
 .acc-ico.cm-chef-ico svg{ width:19px; height:19px; }
 .cm-esp-pill{ margin-left:6px; vertical-align:1px; }
+
+/* Lo que ya está en cocina: etiqueta discreta en el carrito y botón bloqueado */
+.ci-tag.cm-ci-cocina{ display:inline-flex; align-items:center; gap:3px; background:#fff; border:1px solid var(--border, #E8EBF2); color:var(--ink-soft, #8A93AC); }
+.ci-tag.cm-ci-cocina svg{ width:11px; height:11px; }
+.cm-p2-cocina.cm-p2-off{ opacity:1; background:var(--surface-alt, #F1F3F7) !important; color:var(--ink-soft, #8A93AC) !important; border-color:transparent !important; cursor:default; }
+.cm-ynq-txt{ display:flex; align-items:center; gap:7px; margin:12px 0 0; font-size:13px; font-weight:700; color:var(--ink-soft); }
+.cm-ynq-txt svg{ width:16px; height:16px; flex:none; }

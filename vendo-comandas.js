@@ -156,12 +156,13 @@ window.VPComandas = (() => {
     return 'hace ' + h + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
   }
   /* Lo que de verdad se va a servir: lo pedido menos lo que no hubo */
-  const efect = i => Math.max(0, Math.round(((Number(i.qty) || 0) - (Number(i.falta) || 0)) * 1000) / 1000);
+  const efect = i => Math.max(0, Math.round(((Number(i.qty) || 0) - (Number(i.falta) || 0) - (Number(i.cancelado) || 0)) * 1000) / 1000);
+  const r3n = n => Math.round(n * 1000) / 1000;
   const unitsOf = items => items.reduce((a, i) => { const q = efect(i); return a + (q <= 0 ? 0 : (Number.isInteger(q) ? q : 1)); }, 0);
   /* Texto de un producto en rondas e historial, con lo que no hubo */
   const itemTxt = i => {
     const q = efect(i);
-    return `<span class="${q <= 0 ? 'cm-x' : ''}"><b>${fmtN(q > 0 ? q : i.qty)}×</b> ${escapeHtml(i.name)}${i.size ? ' · ' + escapeHtml(i.size) : ''}${i.note ? ` <i>(${escapeHtml(i.note)})</i>` : ''}${i.falta ? ` <em class="cm-nohay-tag">No hubo ${fmtN(i.falta)}</em>` : ''}</span>`;
+    return `<span class="${q <= 0 ? 'cm-x' : ''}"><b>${fmtN(q > 0 ? q : i.qty)}×</b> ${escapeHtml(i.name)}${i.size ? ' · ' + escapeHtml(i.size) : ''}${i.note ? ` <i>(${escapeHtml(i.note)})</i>` : ''}${i.falta ? ` <em class="cm-nohay-tag">No hubo ${fmtN(i.falta)}</em>` : ''}${i.cancelado ? ` <em class="cm-nohay-tag">Ya no lo quiso ${fmtN(i.cancelado)}</em>` : ''}</span>`;
   };
 
   /* ---------- Agotados del día (los marca cocina, los ven todos) ---------- */
@@ -726,6 +727,7 @@ window.VPComandas = (() => {
           <div class="mdi-line-name">${escapeHtml(i.name)}${i.size ? ' <span class="cm-size">' + escapeHtml(i.size) + '</span>' : ''}</div>
           ${i.note ? `<div class="dm-line-note cm-note">${icx('note')}${escapeHtml(i.note)}</div>` : ''}
           ${i.falta ? `<div class="cm-nohay-tag">${icon('alert')} No hubo ${fmtN(i.falta)}</div>` : ''}
+          ${i.cancelado ? `<div class="cm-nohay-tag">${icon('close')} Ya no lo quiere ${fmtN(i.cancelado)}</div>` : ''}
           ${tid && q > 0 ? `<button type="button" class="cm-nohay-btn" onclick="VPComandas.noHay('${tid}', ${n})">No hay</button>` : ''}
         </div>
         <div class="cm-qty">${q > 0 ? '×' + fmtN(q) : '<s>×' + fmtN(i.qty) + '</s>'}</div>
@@ -1180,9 +1182,173 @@ window.VPComandas = (() => {
   }
   function editarCuenta(orderId) { if (cargar(orderId)) openCartSheet('cart'); }
 
+  /* ---------- Lo que ya está en cocina (sale de las comandas reales del pedido) ---------- */
+  const keyItem = i => [i.productId, i.sizeId || '', (i.note || '').trim()].join('|');
+  const keyCart = c => [c.productId, c.sizeId || '', (c.note || '').trim()].join('|');
+  /* El pedido abierto: cuenta de mesa o pedido mandado desde el cobro */
+  const ordenActual = () => checkout.floorOrderId || checkout.cmRef || null;
+  function enviadoMap(orderId) {
+    const m = {};
+    if (!orderId) return m;
+    tickets().forEach(k => {
+      if (k.orderId !== orderId || k.status === 'cancelado') return;
+      k.items.forEach(i => { const q = efect(i); if (q > 0) { const kk = keyItem(i); m[kk] = r3n((m[kk] || 0) + q); } });
+    });
+    return m;
+  }
+  function pendientesCobro() {
+    const sent = enviadoMap(ordenActual());
+    const m = {};
+    cart.forEach(c => { const k = keyCart(c); m[k] = r3n((m[k] || 0) + (Number(c.qty) || 0)); });
+    const out = [];
+    Object.keys(m).forEach(k => {
+      const q = r3n(m[k] - (sent[k] || 0));
+      if (q <= 0) return;
+      const c = cart.find(x => keyCart(x) === k);
+      const p = findProduct(c.productId);
+      out.push({ productId:c.productId, sizeId:c.sizeId || '', name:p ? p.name : 'Producto', size:c.sizeLabel || '', qty:q, note:(c.note || '').trim() });
+    });
+    return out;
+  }
+  /* Cuánto de esta línea del carrito ya está en cocina */
+  function enviadoDeLinea(i) {
+    const c = cart[i];
+    if (!c || !activas()) return 0;
+    const k = keyCart(c);
+    const sent = enviadoMap(ordenActual())[k] || 0;
+    if (!sent) return 0;
+    const antes = cart.slice(0, i).reduce((a, x) => a + (keyCart(x) === k ? Number(x.qty) || 0 : 0), 0);
+    return Math.max(0, Math.min(Number(c.qty) || 0, r3n(sent - antes)));
+  }
+  /* Etiqueta discreta en el carrito */
+  function enCocinaTag(c) {
+    const i = cart.indexOf(c);
+    const n = i >= 0 ? enviadoDeLinea(i) : 0;
+    return n ? `<span class="ci-tag cm-ci-cocina">${icon('chefHat')} ${n >= c.qty ? 'En cocina' : fmtN(n) + ' en cocina'}</span>` : '';
+  }
+  /* ¿Quitar o bajar esto toca algo que ya está en cocina? Entonces se pregunta */
+  function bloqueaQuitar(i, nueva) {
+    const n = enviadoDeLinea(i);
+    if (!n || nueva >= n - 1e-9) return false;
+    yaNoQuiere(i, r3n(n - Math.max(0, nueva)), n);
+    return true;
+  }
+  function bloqueaNota(i, nota) {
+    const c = cart[i];
+    if (!c || !enviadoDeLinea(i) || (nota || '').trim() === (c.note || '').trim()) return false;
+    vibrate([18, 60, 18]);
+    toast('Ya está en cocina', { icon:icon('chefHat'), subtitle:'Para otra nota, agrega el producto otra vez.' });
+    return true;
+  }
+  const tieneEnviado = () => cart.some((c, i) => enviadoDeLinea(i) > 0);
+
+  /* "¿Ya no lo quiere?": se avisa a cocina y se quita (mantener presionado) */
+  function yaNoQuiere(i, n, max) {
+    const c = cart[i];
+    if (!c) return;
+    st.ynq = { i, n:Math.max(1, Math.min(n, max)), max };
+    ynqDibujar();
+  }
+  function ynqDibujar() {
+    const q = st.ynq;
+    const c = q && cart[q.i];
+    if (!c) { cerrarCapa(); return; }
+    const p = findProduct(c.productId);
+    q.n = Math.min(Math.max(1, q.n), q.max);
+    capa(`
+      <div class="sheet-header">
+        <div class="sheet-header-left" style="min-width:0;"><h2>¿Ya no lo quiere?</h2><span class="mdi-pill prep">Ya está en cocina</span></div>
+        <button class="sheet-close" onclick="VPComandas.cerrarCapa()">${icon('close')}</button>
+      </div>
+      <div class="cm-nh-prod">
+        <span class="mdi-thumb">${thumb(c.productId)}</span>
+        <b>${escapeHtml(p ? p.name : 'Producto')}${c.sizeLabel ? ' · ' + escapeHtml(c.sizeLabel) : ''}</b>
+      </div>
+      ${q.max > 1 ? `
+      <div class="cm-nh-cant">
+        <span>¿Cuántos ya no quiere?</span>
+        <div class="cm-step-qty">
+          <button type="button" onclick="VPComandas.ynqCant(-1)" ${q.n <= 1 ? 'disabled' : ''} aria-label="Menos">−</button>
+          <b>${fmtN(q.n)}</b>
+          <button type="button" onclick="VPComandas.ynqCant(1)" ${q.n >= q.max ? 'disabled' : ''} aria-label="Más">+</button>
+        </div>
+        <small>de ${fmtN(q.max)}</small>
+      </div>` : ''}
+      <p class="cm-ynq-txt">${icon('chefHat')} Cocina recibe el aviso para no prepararlo.</p>
+      <div class="cm-sheet-acts">
+        ${holdBtn('cm-go cm-go-no', icon('alert') + ' Avisar a cocina y quitar', 'confirmarYaNoQuiere', [])}
+        <button class="cm-undo" onclick="VPComandas.cancelarTodoPedido()">Cancelar todo el pedido</button>
+      </div>
+    `);
+  }
+  function ynqCant(d) { if (st.ynq) { st.ynq.n += d; ynqDibujar(); } }
+  function avisarCancelacion(orderId, key, n) {
+    let rest = n;
+    const list = tickets();
+    list.filter(t => t.orderId === orderId && t.status !== 'cancelado').sort((a, b) => new Date(b.at) - new Date(a.at)).forEach(t => {
+      t.items.forEach(it => {
+        if (rest <= 0 || keyItem(it) !== key) return;
+        const q = Math.min(efect(it), rest);
+        if (q <= 0) return;
+        it.cancelado = r3n((Number(it.cancelado) || 0) + q);
+        rest = r3n(rest - q);
+        t.cancelAlertas = (t.cancelAlertas || []).concat([{ id:uid('ca'), name:it.name, size:it.size || '', qty:q, at:nowIso(), by:meName() }]);
+        if (t.items.every(x => efect(x) <= 0)) { t.status = 'cancelado'; t.cancelReason = 'El cliente ya no lo quiso'; }
+      });
+    });
+    saveTickets(list);
+  }
+  function confirmarYaNoQuiere() {
+    const q = st.ynq;
+    const c = q && cart[q.i];
+    if (!c) { cerrarCapa(); return; }
+    const p = findProduct(c.productId);
+    const key = keyCart(c);
+    const n = Math.min(q.n, q.max);
+    avisarCancelacion(ordenActual(), key, n);
+    /* Primero la cuenta guardada (con su propia copia) y después el carrito */
+    if (checkout.floorOrderId) {
+      const r = quitarDeCuenta(checkout.floorOrderId, { productId:c.productId, sizeId:c.sizeId || '', note:(c.note || '').trim() }, n);
+      if (r === 'vacia') delete checkout.floorOrderId;
+    }
+    cart = JSON.parse(JSON.stringify(cart));
+    const linea = cart[q.i];
+    linea.qty = r3n(linea.qty - n);
+    if (linea.qty <= 0) cart.splice(q.i, 1);
+    st.ynq = null;
+    cerrarCapa();
+    render();
+    if (document.querySelector('#modal-layer .modal-sheet')) openCartSheet('cart');
+    toast('Le avisamos a cocina', { variant:'toast-success', icon:icon('chefHat'), subtitle:'Ya no quiere ' + fmtN(n) + '× ' + (p ? p.name : 'producto') });
+  }
+  function cancelarTodoPedido() {
+    askConfirm({ title:'¿Cancelar todo el pedido?', text:'Cocina deja de prepararlo y recibe el aviso. No se cobra nada.', ok:'Cancelar pedido', cancel:'No', danger:true, icon:icon('trash') }, () => {
+      const oid = ordenActual();
+      const list = tickets();
+      list.forEach(t => {
+        if (t.orderId !== oid || t.status === 'cancelado' || t.status === 'entregado') return;
+        t.items.forEach(it => { const q = efect(it); if (q > 0) it.cancelado = r3n((Number(it.cancelado) || 0) + q); });
+        t.cancelAlertas = (t.cancelAlertas || []).concat([{ id:uid('ca'), todo:true, name:'Todo el pedido', qty:0, at:nowIso(), by:meName() }]);
+        t.status = 'cancelado'; t.cancelReason = 'Pedido cancelado';
+      });
+      saveTickets(list);
+      if (checkout.floorOrderId) DB.saveTableOrders(DB.getTableOrders().filter(o => o.id !== checkout.floorOrderId));
+      if (checkout.cmPedidoId) quitarPedido(checkout.cmPedidoId);
+      cart = []; customItems = {}; checkout = newCheckout();
+      st.ynq = null;
+      cerrarCapa();
+      closeModal();
+      render();
+      toast('Pedido cancelado', { icon:icon('trash'), subtitle:'Cocina ya está avisada' });
+    });
+  }
+
   /* ---------- Cobro: "Mandar a cocina" junto a "Cobrar" (solo con comandas activadas) ---------- */
   function cobroDividido() { return activas() && !esMesero() && cart.length > 0; }
   function botonCocinaHTML() {
+    if (!pendientesCobro().length) return `<button type="button" class="btn block cm-p2-cocina cm-p2-off" disabled title="No hay nada nuevo para cocina">
+      <span class="cm-hold-in">${icon('chefHat')} Ya está en cocina</span>
+    </button>`;
     return `<button type="button" class="btn block cm-hold cm-p2-cocina" data-hold="mandarDesdeCobro" data-args="[]" title="Mantén presionado">
       <span class="cm-hold-fill" aria-hidden="true"></span>
       <span class="cm-hold-in">${icon('comandas')} Mandar a cocina</span>
@@ -1194,14 +1360,7 @@ window.VPComandas = (() => {
     if (!cobroDividido()) return;
     const sent = checkout.cmSent || {};
     const mapa = cartMap();
-    const items = [];
-    Object.keys(mapa).forEach(k => {
-      const q = Math.round((mapa[k] - (sent[k] || 0)) * 1000) / 1000;
-      if (q <= 0) return;
-      const c = cart.find(x => lineKey(x) === k);
-      const p = findProduct(c.productId);
-      items.push({ productId:c.productId, sizeId:c.sizeId || '', name:p ? p.name : 'Producto', size:c.sizeLabel || '', qty:q, note:(c.note || '').trim() });
-    });
+    const items = pendientesCobro();
     if (!items.length) { toast('Todo esto ya está en cocina', { icon:icon('check'), subtitle:'Solo falta cobrar.' }); return; }
     const yo = me();
     let orderId, label, donde;
@@ -1273,7 +1432,13 @@ window.VPComandas = (() => {
     if (!orderId) return;
     const list = tickets();
     let changed = false;
-    list.forEach(k => { if (k.orderId === orderId && (k.status === 'nuevo' || k.status === 'preparando')) { k.status = 'cancelado'; changed = true; } });
+    list.forEach(k => {
+      if (k.orderId === orderId && (k.status === 'nuevo' || k.status === 'preparando')) {
+        k.status = 'cancelado'; k.cancelReason = 'Pedido cancelado';
+        k.cancelAlertas = (k.cancelAlertas || []).concat([{ id:uid('ca'), todo:true, name:'Todo el pedido', qty:0, at:nowIso(), by:meName() }]);
+        changed = true;
+      }
+    });
     if (changed) saveTickets(list);
   }
   function cerrarOrden(orderId) {
@@ -1326,7 +1491,7 @@ window.VPComandas = (() => {
           </div>
           <div class="mdi-name">${icon('person')} ${escapeHtml(k.by || 'Mesero')}</div>
           <div class="mdi-items">${resumen(k.items)}</div>
-          <div class="mdi-card-foot"><span>${plural(unitsOf(k.items), 'producto', 'productos')}${notas ? ` · <i class="cm-has-note">${icx('note')} Con notas</i>` : ''}${k.items.some(i => i.falta) ? ` · <i class="cm-has-out">${icon('alert')} Falta algo</i>` : ''}</span><b>${fmtTime(k.at)}</b></div>
+          <div class="mdi-card-foot"><span>${plural(unitsOf(k.items), 'producto', 'productos')}${notas ? ` · <i class="cm-has-note">${icx('note')} Con notas</i>` : ''}${k.items.some(i => i.falta) ? ` · <i class="cm-has-out">${icon('alert')} Falta algo</i>` : ''}${k.items.some(i => i.cancelado) ? ` · <i class="cm-has-out">${icon('close')} Cancelaron algo</i>` : ''}</span><b>${fmtTime(k.at)}</b></div>
         </button>`;
       }).join('')}</div>` : `
       <div class="mdi-empty">
@@ -1452,7 +1617,8 @@ window.VPComandas = (() => {
   }
   /* Quita de la cuenta lo que no hubo (para que caja no lo cobre) */
   function quitarDeCuenta(orderId, it, n) {
-    const list = DB.getTableOrders();
+    /* Copia propia: el carrito abierto puede compartir las mismas líneas en memoria */
+    const list = JSON.parse(JSON.stringify(DB.getTableOrders()));
     const o = list.find(x => x.id === orderId);
     if (!o) return false;
     let falta = n;
@@ -1666,9 +1832,18 @@ window.VPComandas = (() => {
   setInterval(() => { if (currentView === 'comandas' && myArea() && !document.querySelector('#modal-layer .modal-overlay')) render(); }, 30000);
 
   /* Avisos de lo que llega desde otro aparato */
-  function avisos(antes, despues, antesAl) {
+  function avisos(antes, despues, antesAl, antesCan) {
     const area = myArea();
     const yo = me();
+    if (area === 'cocina' && antesCan) {
+      const cans = [];
+      despues.forEach(k => { (k.cancelAlertas || []).slice(antesCan[k.id] || 0).forEach(a => cans.push(Object.assign({ table:k.table }, a))); });
+      if (cans.length) {
+        beep(); vibrate([60, 60, 60]);
+        const a = cans[0];
+        toast(a.todo ? a.table + ': cancelaron el pedido' : a.table + ': ya no quiere ' + fmtN(a.qty) + '× ' + a.name, { icon:icon('close'), variant:'toast-danger toast-top', subtitle:'No lo prepares', duration:5000 });
+      }
+    }
     if (area === 'mesero' && antesAl) {
       const nuevos = [];
       despues.forEach(k => {
@@ -1801,7 +1976,7 @@ window.VPComandas = (() => {
       const orders = {}, tks = {}, ags = {};
       const bagOf = k => k === 'cuenta' ? orders : (k === 'agotado' ? ags : tks);
       Object.keys(cur).forEach(id => { bagOf(cur[id].k)[id] = cur[id].d; });
-      const antes = {}, antesAl = {}; tickets().forEach(t => { antes[t.id] = t.status; antesAl[t.id] = (t.alertas || []).length; });
+      const antes = {}, antesAl = {}, antesCan = {}; tickets().forEach(t => { antes[t.id] = t.status; antesAl[t.id] = (t.alertas || []).length; antesCan[t.id] = (t.cancelAlertas || []).length; });
       let changed = false;
       (data || []).forEach(r => {
         if (dirty.has(r.id)) return;
@@ -1829,7 +2004,7 @@ window.VPComandas = (() => {
           Store.set(AKEY, Object.values(ags));
         } finally { muted = false; }
         last = strip(snapshot());
-        avisos(antes, Object.values(tks), antesAl);
+        avisos(antes, Object.values(tks), antesAl, antesCan);
         refresh();
       }
       save();
@@ -1896,7 +2071,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();

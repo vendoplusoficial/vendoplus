@@ -5422,7 +5422,7 @@ div.stf-row{ cursor:default; }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=10">
 <script src="vendo-mesas.js?v=11"></script>
-<link rel="stylesheet" href="vendo-comandas.css?v=19">
+<link rel="stylesheet" href="vendo-comandas.css?v=20">
 <style>
 .vp-err-card{ max-width:420px; margin:40px auto; padding:22px 20px; border:1px solid var(--border,#E8EBF2); border-radius:18px; background:#fff; display:flex; flex-direction:column; gap:10px; text-align:center; }
 .vp-err-card b{ font-size:17px; color:var(--ink,#16213E); }
@@ -5432,7 +5432,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=20"></script>
+<script src="vendo-comandas.js?v=21"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -7412,6 +7412,7 @@ function changeQtyFromGrid(productId, delta){
   const step = isFracProduct(p) ? productStep(p) : 1;
   const lines = cart.filter(c => c.productId === productId);
   const item = lines.find(c => !c.sizeId && !c.note && !c.disc && c.manualPrice == null) || lines[lines.length - 1];
+  if(delta < 0 && item && window.VPComandas && VPComandas.bloqueaQuitar(cart.indexOf(item), r3(item.qty + delta * step))) return;   /* ya está en cocina */
   if(delta > 0 && st.control && cartStockUse(productId) + step > st.stock + 1e-9){
     vibrate(40);
     toast(st.stock <= 0 ? 'Se acabó este producto' : 'Solo te quedan ' + fmtStock(p, st.stock), {
@@ -7590,6 +7591,7 @@ function changeSizeQty(productId, sizeId, delta){
   const size = p && p.sizes.find(s => s.id === sizeId);
   if(!size) return;
   let item = cart.find(c => c.productId === productId && c.sizeId === sizeId);
+  if(delta < 0 && item && window.VPComandas && VPComandas.bloqueaQuitar(cart.indexOf(item), item.qty + delta)) return;   /* ya está en cocina */
   /* Con existencias, cada tamaño descuenta lo que mide (medio kilo = 0.5). */
   const stSz = stockInfo(p);
   if(delta > 0 && stSz.control){
@@ -8034,6 +8036,7 @@ function cartSheetHTML(step){
       else if(wholesaleApplies(c, p)) tags.push(`<span class="ci-tag ok">Mayoreo</span>`);
       if(d > 0) tags.push(`<span class="ci-tag disc">−${formatMoney(d)}${c.disc.type === 'pct' ? ' (' + fmtPct(c.disc.value) + '%)' : ''}</span>`);
       if(p.custom) tags.push(`<span class="ci-tag">Venta libre</span>`);
+      if(window.VPComandas && VPComandas.enCocinaTag){ const tc = VPComandas.enCocinaTag(c); if(tc) tags.push(tc); }
       return `
         <div class="cart-item">
           <div class="cart-item-photo" onclick="openLineEditor(${i})">
@@ -8084,6 +8087,7 @@ function changeLineQty(i, dir){
   const c = cart[i]; if(!c) return;
   const p = findProduct(c.productId);
   const step = c.sizeId ? 1 : (isFracProduct(p) ? productStep(p) : 1);
+  if(dir < 0 && window.VPComandas && VPComandas.bloqueaQuitar(i, r3(c.qty - step))) return;   /* ya está en cocina */
   if(dir > 0 && p){
     const st = stockInfo(p);
     if(st.control){
@@ -8111,6 +8115,7 @@ function cartLinkCheck(){
 }
 function removeLine(i){
   const c = cart[i]; if(!c) return;
+  if(window.VPComandas && VPComandas.bloqueaQuitar(i, 0)) return;   /* ya está en cocina */
   cart.splice(i, 1);
   cartLinkCheck();
   if(isCustomId(c.productId) && !cart.some(x => x.productId === c.productId)) delete customItems[c.productId];
@@ -8119,6 +8124,7 @@ function removeLine(i){
   renderBackgroundIfSale();
 }
 function clearCart(){
+  if(window.VPComandas && VPComandas.tieneEnviado && VPComandas.tieneEnviado()){ VPComandas.cancelarTodoPedido(); return; }
   askConfirm({ title:'¿Vaciar el carrito?', text:'Se quitan todos los productos de esta venta.', ok:'Vaciar', danger:true, icon:icon('trash') }, () => {
     cart = []; customItems = {};
     if(checkout.floorOrderId) openCartSheet('cart');
@@ -8221,6 +8227,8 @@ function saveLineEditor(){
   if(!(r.q > 0)){ toast('Escribe una cantidad mayor a 0'); return; }
   if(!isFinite(r.pr) || r.pr < 0){ toast('Escribe un precio válido'); return; }
   const q = c.sizeId || !isFracProduct(p) ? Math.max(1, Math.round(r.q)) : r.q;
+  if(window.VPComandas && VPComandas.bloqueaNota && VPComandas.bloqueaNota(lineEd.i, r.note)) return;
+  if(q < c.qty && window.VPComandas && VPComandas.bloqueaQuitar(lineEd.i, q)) return;   /* ya está en cocina */
   const st = stockInfo(p);
   if(st.control){
     const otros = r3(cartStockUse(p.id) - lineStockUse(p, c));
