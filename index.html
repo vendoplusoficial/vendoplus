@@ -42,6 +42,8 @@ window.VP_IMGS = [
   'img/promo-asistente-v.webp?v=1',
   'img/promo-menu-h.webp?v=2',
   'img/promo-menu-v.webp?v=2',
+  'img/promo-stripe-h.webp?v=1',
+  'img/promo-stripe-v.webp?v=1',
   'img/comandas-caja-cel.webp?v=1',
   'img/comandas-caja-pc.webp?v=1',
   'img/comandas-cocina-cel.webp?v=1',
@@ -20287,6 +20289,12 @@ const stFin = { data:null, tab:'pagos', cargando:false, err:'', buscar:false, q:
 /* Pantalla completa, separada del resto, con "<" arriba a la izquierda.
    El botón de atrás del celular también la cierra. */
 function stOpenFinanzas(){
+  /* Sin Premium: en vez de la pantalla bloqueada sale la portada con "Activar Premium" */
+  if(isOwner() && stFinEstado() === 'bloqueado' && window.VPPremium && VPPremium.portada){
+    try{ closeModal(); }catch(e){}
+    VPPremium.portada('stripe');
+    return;
+  }
   if(!isOwner()){ toast('Solo el Dueño puede ver las finanzas', { icon:icon('alert'), variant:'toast-danger' }); return; }
   stNavSync();
   try{ closeModal(); }catch(e){}
@@ -29864,10 +29872,12 @@ window.VP_PROMOS_IMG = {
   'asistente-v': 'img/promo-asistente-v.webp?v=1',
   'asistente-h': 'img/promo-asistente-h.webp?v=1',
   'menu-v': 'img/promo-menu-v.webp?v=2',
-  'menu-h': 'img/promo-menu-h.webp?v=2'
+  'menu-h': 'img/promo-menu-h.webp?v=2',
+  'stripe-v': 'img/promo-stripe-v.webp?v=1',
+  'stripe-h': 'img/promo-stripe-h.webp?v=1'
 };
 </script>
-<script src="vendo-premium.js?v=20261125d"></script>
+<script src="vendo-premium.js?v=20261125e"></script>
 <script src="vendo-apps.js?v=20261125a"></script>
 
 <style id="vp-fotos-cuadradas">

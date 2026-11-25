@@ -856,7 +856,10 @@
     var im = window.VP_PROMOS_IMG || {};
     var P = {
     menu: { h: im['menu-h'], v: im['menu-v'], alt: 'VendoPlus Premium: tu menú en internet, recibe pedidos desde ahí',
-            titulo: 'El Menú Digital viene incluido en Premium', sub: 'Tus clientes ven tu menú y te mandan su pedido.' }
+            titulo: 'El Menú Digital viene incluido en Premium', sub: 'Tus clientes ven tu menú y te mandan su pedido.' },
+    stripe: { h: im['stripe-h'], v: im['stripe-v'], abrirCon: null,
+            alt: 'VendoPlus Premium: cobra sin contacto con NFC y deja que tus clientes paguen con tarjeta en el menú digital',
+            titulo: 'Cobros con tarjeta con Stripe vienen en Premium', sub: 'Cobra con NFC y recibe pagos con tarjeta en tu menú digital.' }
     };
     return P[clave] || null;
   }
@@ -925,7 +928,7 @@
     document.body.appendChild(el);
     el.addEventListener('click', function (e) {
       if (e.target === el || e.target.closest('.vp-pt-x')) { cerrarPortada(); return; }
-      if (e.target.closest('.vp-pt-go')) { cerrarPortada(); abrir(clave); }
+      if (e.target.closest('.vp-pt-go')) { cerrarPortada(); abrir('abrirCon' in p ? p.abrirCon : clave); }
     });
     document.addEventListener('keydown', teclaPortada, true);
   }
@@ -1420,6 +1423,7 @@
   var PROMOS = [
     { vertical: IMG['asistente-v'], horizontal: IMG['asistente-h'] }   /* 1 · Asistente: "Tus ventas, en una pregunta" ($249 al mes) */
     , { vertical: IMG['menu-v'], horizontal: IMG['menu-h'] }           /* 2 · Menú digital: "Tu menú en internet" (49 al mes) */
+    , { vertical: IMG['stripe-v'], horizontal: IMG['stripe-h'] }       /* 3 · Stripe: "Cobra sin contacto con NFC" ($249 al mes) */
   ].filter(function (p) { return p && (p.vertical || p.horizontal); });
   function esHorizontal() { return (window.innerWidth || 0) > (window.innerHeight || 0); }
   function srcPromo(p) {
