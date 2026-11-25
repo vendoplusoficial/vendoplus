@@ -355,7 +355,8 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 .cm-on-card .acc-txt{ flex:1; min-width:0; }
 .cm-on-card .acc-ico svg{ width:18px; height:18px; }
 .cm-prem{ display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; background:var(--accent-soft); color:#8A6000; font-size:11px; font-weight:800; vertical-align:2px; }
-.cm-areas.cm-apagadas .cm-area{ opacity:.6; }
+.cm-areas.cm-apagadas .cm-area{ opacity:.55; filter:grayscale(.5); }
+.cm-areas.cm-apagadas .cm-area .acc-chev{ display:none; }
 
 /* Cobro dividido: Mandar a cocina (blanco) | Cobrar (igual que siempre) */
 .p2-actions.cm-p2-split{ display:grid !important; grid-template-columns:1fr 1fr; gap:10px; }

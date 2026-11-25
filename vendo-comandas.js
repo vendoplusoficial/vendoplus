@@ -532,23 +532,33 @@ window.VPComandas = (() => {
       </div>`;
   }
 
+  /* Con las comandas apagadas no se entra a las áreas ni se tocan usuarios */
+  function apagadas() {
+    if (activas()) return false;
+    if (!premiumOk()) { if (window.VPPremium && VPPremium.abrir) VPPremium.abrir('comandas'); else toast('Las comandas son de Premium'); }
+    else toast('Primero activa las comandas', { icon:icon('alert'), subtitle:'Así podrás agregar y modificar a tu equipo.' });
+    return true;
+  }
   function area(id) {
-    if (!AREAS[id]) return;
+    if (!AREAS[id] || apagadas()) return;
     st.area = id; st.form = null; st.permsDraft = null;
     show('area');
   }
   function agregar() {
+    if (apagadas()) return;
     if (!requireOwner('Solo el Dueño puede agregar personas')) return;
     if (disponibles(st.area).length) show('add');
     else nuevo();
   }
   function nuevo() {
+    if (apagadas()) return;
     if (!requireOwner('Solo el Dueño puede agregar personas')) return;
     if (usersLimitReached()) { offerMoreUsers(); return; }
     st.form = { editId:null, name:'', role:'empleado', pin:'', ownerPin:'', perms:defaultPerms('empleado') };
     show('form');
   }
   function editar(id) {
+    if (apagadas()) return;
     const u = userById(id);
     if (!u || !requireOwner('Solo el Dueño puede modificar usuarios')) return;
     st.form = { editId:u.id, name:u.name, role:u.role, pin:'', ownerPin:'', perms:Object.assign(defaultPerms(u.role), u.perms || {}) };
@@ -636,6 +646,7 @@ window.VPComandas = (() => {
   }
 
   function quitar(id) {
+    if (apagadas()) return;
     if (!requireOwner('Solo el Dueño puede quitar personas')) return;
     const u = userById(id);
     if (!u) return;
@@ -1830,6 +1841,7 @@ window.VPComandas = (() => {
     if (area === 'cocina') return cocinaHTML();
     if (area === 'caja') return cajaHTML();
     if (!puedeAdministrar()) return '';
+    if (!activas()) { st.screen = 'home'; st.area = null; st.form = null; st.permsDraft = null; }
     if (st.screen === 'area' && AREAS[st.area]) return areaHTML();
     if (st.screen === 'add' && AREAS[st.area]) return addHTML();
     if (st.screen === 'form' && st.form && AREAS[st.area]) return formHTML();
