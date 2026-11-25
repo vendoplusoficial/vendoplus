@@ -46,6 +46,7 @@ window.VP_IMGS = [
   'img/promo-stripe-v.webp?v=1',
   'img/stripe-conectar.webp?v=2',
   'img/stripe-menu.webp?v=1',
+  'img/stripe-saldo.webp?v=1',
   'img/stripe-nfc.webp?v=1',
   'img/comandas-caja-cel.webp?v=2',
   'img/comandas-caja-pc.webp?v=2',
@@ -5328,8 +5329,10 @@ body.stf-abierta{ overflow:hidden; }
 .stf-carga i{ width:8px; height:8px; border-radius:50%; background:var(--ink-faint, #C9CEDD); animation:stf-pulso 1s ease-in-out infinite; }
 .stf-carga i:nth-child(2){ animation-delay:.15s; } .stf-carga i:nth-child(3){ animation-delay:.3s; }
 @keyframes stf-pulso{ 0%,100%{ opacity:.3; transform:scale(.8); } 50%{ opacity:1; transform:none; } }
-.stf-saldo{ padding:16px 16px 14px; border-radius:18px; background:linear-gradient(135deg,#EAF9F0,#F4FBF7); border:1px solid #D3F0DF; }
-.stf-saldo small{ display:block; font-size:12.5px; font-weight:600; color:#0E7A3D; }
+.stf-saldo{ padding:16px 16px 14px; border-radius:18px; background:#F7F4FF url('img/stripe-saldo.webp?v=1') right center / cover no-repeat; border:1px solid #E4DCFB; }
+.stf-saldo > *{ max-width:64%; }
+.stf-saldo p{ max-width:60%; }
+.stf-saldo small{ display:block; font-size:12.5px; font-weight:700; color:#5146F0; }
 .stf-saldo > b{ display:block; margin-top:2px; font-size:30px; font-weight:800; letter-spacing:-.6px; color:var(--ink); }
 .stf-saldo-fila{ display:flex; gap:10px; margin-top:6px; font-size:13px; font-weight:600; color:var(--ink-soft); }
 .stf-saldo-fila span{ display:inline-flex; align-items:center; gap:5px; }
