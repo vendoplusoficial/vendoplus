@@ -30,3 +30,25 @@ Qué revisar en Android:
 - Icono de Play Store 512×512 y cualquier copia de `index.html`, `icon.svg`, favicons dentro de `assets/`
 - Colores del verde viejo ligados al logo (`colors.xml`) si se usan para el icono
 - Busca también restos del dibujo de la bolsa (path `M5.3 8.6h13.4...` o `M150 180h212...`)
+
+## Apps de delivery (Rappi, DiDi Food, Uber Eats): APAGADO por ahora
+El usuario pidió ocultarlas "como si no existieran" hasta que contacte a esas empresas.
+Todo sigue programado (vendo-apps.js, función `apps-delivery` y tablas `vp_apps_*` en Supabase).
+Para activarlas: en `index.html` cambia `window.VP_APPS_ACTIVO = false;` a `true` y sube la
+versión de `vendo-apps.js` y `vendo-premium.js` en sus `<script src=...?v=>`.
+
+## Arranque rápido y sin internet (sw.js)
+- `sw.js` es SOLO para cuando no hay internet: con internet todo se pide al servidor como una
+  página normal (no meter esperas ni "copia primero" para js/css: eso dejaba versiones viejas
+  pegadas y el cocinero veía la pantalla en blanco al recargar).
+- La copia solo se sirve si falla la red. Al bajar bien la página se guardan también sus `?v=`.
+- Fotos (`img/`) y `vendor/` sí van "copia primero" porque nunca cambian (cambia el `?v=` o el nombre).
+- **No cambies `CACHE` en `sw.js`** (`vp-app-v2`): cambiarlo borra la copia del teléfono.
+- Al cambiar un .js/.css súbele la versión `?v=` en `index.html`.
+- La librería de Supabase está en `vendor/supabase-2.119.0.js` (ya no se baja de jsdelivr).
+  Si se cambia de versión, renombra el archivo y actualiza `index.html` y `BASE` en `sw.js`.
+- Las fotos ya NO van incrustadas en base64 en `index.html`: viven en `img/` con `?v=`. Al agregar
+  una foto: ponla en `img/`, agrégala a `window.VP_IMGS` (index.html) y a `BASE` en `sw.js`.
+  Si cambias una foto, súbele la versión `?v=` en los tres lugares. Las letras (VPInter) siguen
+  incrustadas a propósito.
+- Si una pantalla falla al dibujarse sale un aviso con «Reparar» (`vpRenderError` / `vpReparar`).

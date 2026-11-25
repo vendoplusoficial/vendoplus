@@ -32,7 +32,8 @@
 .vp-floor-header h2 { margin: 0; }
 .vp-floor {
   position: relative;
-  height: clamp(274px, 52dvh, 390px);
+  height: clamp(274px, 52vh, 390px);
+  height: clamp(274px, 52svh, 390px);
   margin: 0 0 12px;
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -73,3 +74,7 @@
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+.vp-floor-table.cm-bill { background: var(--accent-soft, #FFF0C2); border-color: var(--accent-strong, #F5BF3C); }
+.vp-floor-table.cm-bill small { color: #8A6000; font-weight: 800; }
+.vp-floor-count.is-bill { background: var(--accent-strong, #F5BF3C); color: #16213E; }
+.sale-tools .vp-floor-quick.has-bill { border-color: var(--accent-strong, #F5BF3C); }

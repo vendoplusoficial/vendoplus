@@ -57,10 +57,12 @@ window.VPMesas = (() => {
         ${tables.map(t => {
           const order = orders.get(t.id);
           const active = !!order;
-          return `<button type="button" class="vp-floor-table ${t.id === 'bar' ? 'is-bar' : ''} ${active ? 'is-occupied' : ''} ${editing && selected === t.id ? 'is-selected' : ''}"
+          const bill = !!(order && order.cm && order.cm.billAt);
+          const label = bill ? 'Pide cuenta' : (active ? 'Ocupada' : 'Libre');
+          return `<button type="button" class="vp-floor-table ${t.id === 'bar' ? 'is-bar' : ''} ${active ? 'is-occupied' : ''} ${bill ? 'cm-bill' : ''} ${editing && selected === t.id ? 'is-selected' : ''}"
             data-floor-id="${escapeHtml(t.id)}" style="--x:${t.x}%;--y:${t.y}%"
-            aria-label="${escapeHtml(t.name)} · ${active ? 'Ocupada' : 'Libre'}"><b>${escapeHtml(t.name)}</b>
-            <small>${active ? 'Ocupada' : 'Libre'}</small></button>`;
+            aria-label="${escapeHtml(t.name)} · ${label}"><b>${escapeHtml(t.name)}</b>
+            <small>${label}</small></button>`;
         }).join('')}
       </div>
       ${editing ? `
@@ -245,7 +247,9 @@ window.VPMesas = (() => {
         customItems = {};
         checkout = newCheckout();
       }
+      if (window.VPComandas) VPComandas.cancelarOrden(id);
       closeModal();
+      if (window.VPComandas?.esMesero() || window.VPComandas?.esCajero()) { goTo('comandas'); return; }
       render();
       open('sale');
     });
@@ -255,9 +259,10 @@ window.VPMesas = (() => {
     const count = openOrders().size;
     if (!count) return '<span class="tool-btn vp-floor-placeholder" aria-hidden="true"></span>';
     const label = count === 1 ? 'Mesas, 1 mesa abierta' : 'Mesas, ' + count + ' mesas abiertas';
-    const badge = `<span class="vp-floor-count" aria-hidden="true">${count}</span>`;
-    return `<button class="tool-btn vp-floor-quick" onclick="VPMesas.open('sale')" title="Mesas" aria-label="${label}">${tableIcon}${badge}</button>`;
+    const bills = [...openOrders().values()].filter(o => o.cm && o.cm.billAt).length;
+    const badge = `<span class="vp-floor-count ${bills ? 'is-bill' : ''}" aria-hidden="true">${count}</span>`;
+    return `<button class="tool-btn vp-floor-quick ${bills ? 'has-bill' : ''}" onclick="VPMesas.open('sale')" title="Mesas" aria-label="${label}">${tableIcon}${badge}</button>`;
   }
 
-  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon };
+  return { open, back, edit, add, remove, reset, save, park, discard, canCharge, quickButton, tableIcon, layout, openOrders };
 })();
