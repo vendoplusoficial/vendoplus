@@ -327,8 +327,8 @@ window.VPComandas = (() => {
   const ALT_AREA = { caja:'Cajero cobrando en VendoPlus', mesero:'Mesera tomando pedidos en VendoPlus', cocina:'Cocinero viendo las comandas en VendoPlus' };
   function fotoArea(id) {
     return `<picture>
-      <source media="(max-width:699px)" srcset="img/comandas-${id}-cel.webp?v=1">
-      <img class="cm-fit-img" src="img/comandas-${id}-pc.webp?v=1" alt="${ALT_AREA[id] || ''}" loading="lazy" decoding="async" draggable="false">
+      <source media="(max-width:699px)" srcset="img/comandas-${id}-cel.webp?v=2">
+      <img class="cm-fit-img" src="img/comandas-${id}-pc.webp?v=2" alt="${ALT_AREA[id] || ''}" loading="lazy" decoding="async" draggable="false">
     </picture>`;
   }
   /* Sin Premium: presentación de Comandas (no es un anuncio que estorba: es la portada de la sección) */
@@ -482,7 +482,7 @@ window.VPComandas = (() => {
         <label class="switch sth-sw" aria-label="${activas() ? 'Desactivar' : 'Activar'} comandas"><input type="checkbox" ${activas() ? 'checked' : ''} onchange="VPComandas.activar(this.checked)"><span class="track"></span></label>
       </div>
       <p class="page-sub">Elige un área para ver y agregar a tu equipo</p>
-      <div class="cm-areas cm-fit ${activas() ? '' : 'cm-apagadas'}" data-pc="1" data-max="300" data-min="110">
+      <div class="cm-areas cm-fit ${activas() ? '' : 'cm-apagadas'}" data-pc="1" data-max="620" data-min="200">
         ${ORDER.map(id => {
           const n = gente(id).length;
           return `<button type="button" class="cm-area" onclick="VPComandas.area('${id}')">
