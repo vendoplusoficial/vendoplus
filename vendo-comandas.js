@@ -371,7 +371,8 @@ window.VPComandas = (() => {
   function portadaVista() {
     const o = PORTADAS[portadaClave] || PORTADAS.menu;
     fitSoon();
-    return `<h1 class="page-title cm-promo-title">${o.nombre}</h1>${promoHTML(o)}`;
+    const logo = portadaClave === 'stripe' ? `<span class="sth-logo" aria-hidden="true">${icon('stripeLogo')}</span>` : '';
+    return `<h1 class="page-title cm-promo-title${logo ? ' sth-titulo' : ''}">${logo}${o.nombre}</h1>${promoHTML(o)}`;
   }
   /* HTML de la portada para usarlo dentro de otra sección (Menú Digital sin Premium) */
   function portadaHTML(clave) {

@@ -5468,7 +5468,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=36"></script>
+<script src="vendo-comandas.js?v=37"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -29869,6 +29869,12 @@ function cartSanitize(){
 .sth{ max-width:1040px; }
 .sth-head{ display:flex; align-items:flex-start; gap:12px; }
 .sth-head .page-title{ flex:1; min-width:0; }
+/* Título "Stripe" con el logo de Stripe a la izquierda (en lugar de la rayita de color) */
+h1.page-title.sth-titulo::before{ display:none; }
+h1.page-title.sth-titulo{ align-items:center; gap:12px; }
+.sth-logo{ flex:none; display:inline-flex; width:40px; height:40px; }
+.sth-logo svg{ width:100%; height:100%; display:block; }
+@media (max-width:699px){ .sth-logo{ width:34px; height:34px; } }
 .sth-unlink{ flex:none; margin-top:8px; border:1px solid var(--border,#E6E9F2); background:var(--surface,#fff); color:var(--ink-soft,#6B7592);
   font:700 12.5px var(--sans, inherit); padding:7px 12px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .sth-unlink:hover{ color:#C0392B; border-color:#F3C9C4; }
@@ -30071,7 +30077,7 @@ function stHubView(){
   if(stHub.screen === 'menu') return stHubMenuHTML();
   const pend = s.on && !s.ready;
   const head = `<div class="sth-head">
-      <h1 class="page-title">Stripe</h1>
+      <h1 class="page-title sth-titulo"><span class="sth-logo" aria-hidden="true">${icon('stripeLogo')}</span>Stripe</h1>
       ${s.on ? `<button type="button" class="sth-unlink" onclick="stAskUnlink()">Desenlazar</button>` : ''}
     </div>`;
   if(!stLinked()) return `<div class="sth">${head}
@@ -30092,7 +30098,6 @@ function stHubView(){
     </section></div>`;
   return `<div class="sth">${head}
     <p class="page-sub">Elige cómo quieres cobrar con tarjeta.</p>
-    <span class="sth-cuenta">${ST_CHECK} Stripe enlazado${s.name ? ' · ' + escapeHtml(s.name) : ''}</span>
     <div class="sth-cards">
       <button type="button" class="sth-card" onclick="stHubIr('nfc')">
         ${stArt('nfc')}
