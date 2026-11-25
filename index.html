@@ -5465,7 +5465,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=32"></script>
+<script src="vendo-comandas.js?v=33"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -5668,7 +5668,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
     <button class="navbtn nav-pc nav-2l" data-view="customers" data-icon="users" onclick="goTo('customers')"><span class="navicon"></span><span>Clientes y crédito</span></button>
     <button class="navbtn nav-pc nav-2l" data-view="cash" data-icon="cashbox" onclick="goTo('cash')"><span class="navicon"></span><span>Caja y corte</span></button>
     <button class="navbtn nav-pc cm-nav" data-view="comandas" data-icon="comandas" onclick="VPComandas.abrir()"><span class="navicon"></span><span>Comandas</span></button>
-    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="stripeLogo" onclick="stOpenFinanzas()"><span class="navicon"></span><span>Finanzas de Stripe</span></button>
+    <button class="navbtn nav-pc nav-2l st-nav" data-view="stripefin" data-icon="stripeLogo" onclick="stAbrir()"><span class="navicon"></span><span>Stripe</span></button>
     <button class="navbtn nav-pc nav-2l st-nav" data-view="apps" data-icon="truck" onclick="if(window.VPApps) VPApps.abrir()"><span class="navicon"></span><span>Apps de delivery</span></button>
     <button class="navbtn" data-view="account" data-icon="person" onclick="goTo('account')"><span class="navicon"></span><span>Mi cuenta</span></button>
   </nav>
@@ -16602,6 +16602,8 @@ function mdCleanPayments(p){
     },
     /* Stripe: solo si está conectado, si Stripe ya le deja cobrar y el nombre
        de la cuenta. Las llaves secretas viven en el servidor, nunca aquí. */
+    /* Cobro con NFC: apagado hasta que el dueño lo enciende en Stripe */
+    nfc: p.nfc === true,
     st: {
       on: !!(p.st && p.st.on === true),
       ready: !!(p.st && p.st.ready === true),
@@ -19978,6 +19980,8 @@ function stSaveCfg(j){
   const cambio = antes !== JSON.stringify(cfg.payments.st);
   if(cambio) mdSaveCfg(cfg);
   stNavSync();
+  /* Si estás en la sección Stripe, se vuelve a dibujar con el estado nuevo */
+  if(cambio) try{ if(currentView === 'stripefin') setTimeout(render, 0); }catch(e){}
   return cambio;
 }
 
@@ -20303,7 +20307,7 @@ function stOpenFinanzas(){
   let pg = document.getElementById('stfPage');
   if(!pg){
     pg = document.createElement('div'); pg.id = 'stfPage'; pg.className = 'stf-page';
-    pg.setAttribute('role', 'dialog'); pg.setAttribute('aria-modal', 'true'); pg.setAttribute('aria-label', 'Finanzas de Stripe');
+    pg.setAttribute('role', 'dialog'); pg.setAttribute('aria-modal', 'true'); pg.setAttribute('aria-label', 'Stripe');
     document.body.appendChild(pg);
   }
   stFinPaint(true);
@@ -20479,8 +20483,6 @@ function stFinPaint(primera){
         <button class="btn primary block" onclick="stFinRetirar()" ${d.available >= 1 ? '' : 'disabled'}>${icon('bank')} Retirar a mi banco</button>
         <button class="btn ghost" onclick="window.open('https://dashboard.stripe.com/', '_blank')" aria-label="Abrir mi panel de Stripe">${icon('external')} Stripe</button>
       </div>
-      <div class="stf-lbl stf-lbl-fns">Cobros con Stripe</div>
-      ${stFinFuncionesHTML(false)}
       </div>
       <div class="stf-col-b">
       <div class="stf-tabs-fila">
@@ -20504,7 +20506,7 @@ function stFinPaint(primera){
     <div class="stf-top"><div class="stf-top-in">
       <button type="button" class="stf-atras" onclick="stCerrarFinanzas()" aria-label="Regresar">${icon('chevronLeft')}</button>
       <span class="stf-logo" aria-hidden="true">${icon('stripeLogo')}</span>
-      <h1>Finanzas de Stripe</h1>
+      <h1>Stripe</h1>
       ${estado === 'ok' ? `<button type="button" class="stf-actualizar" onclick="stFinCargar()" aria-label="Actualizar">${icon('refresh')}</button>` : ''}
     </div></div>
     <div class="stf-scroll"><div class="${clase}">${cuerpo}</div></div>`;
@@ -28880,7 +28882,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
     try{
       if(typeof stFinEstado==='function' && isOwner()){
         var i=l.findIndex(function(x){return x[0]==='account';});
-        l.splice(i<0?l.length:i,0,['stripefin','stripeLogo','Finanzas de Stripe']);
+        l.splice(i<0?l.length:i,0,['stripefin','stripeLogo','Stripe']);
       }
     }catch(e){}
     return l;
@@ -28891,7 +28893,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
       bg=document.createElement('div'); bg.className='vp-sheet-bg';
       bg.addEventListener('click',function(e){
         var t=e.target.closest('[data-go]');
-        if(t){ hideMore(bg); if(t.dataset.go==='feedback'){ if(typeof openFeedback==='function') openFeedback(); } else if(t.dataset.go==='stripefin'){ stOpenFinanzas(); } else if(t.dataset.go.indexOf('app:')===0){ if(window.VPApps) VPApps.abrir(t.dataset.go.slice(4)); } else goTo(t.dataset.go); }
+        if(t){ hideMore(bg); if(t.dataset.go==='feedback'){ if(typeof openFeedback==='function') openFeedback(); } else if(t.dataset.go==='stripefin'){ stAbrir(); } else if(t.dataset.go.indexOf('app:')===0){ if(window.VPApps) VPApps.abrir(t.dataset.go.slice(4)); } else goTo(t.dataset.go); }
         else if(e.target===bg) hideMore(bg);
       });
       document.body.appendChild(bg);
@@ -28907,7 +28909,7 @@ if(window.VendoNative && window.VendoApp && !window.__vpAppLoaded){ document.wri
   }
   function markMore(){
     var m=q('.vp-more'); if(!m) return;
-    var on=MORE.some(function(i){return i[0]===document.body.dataset.section;})||document.body.dataset.section==='comandas';
+    var on=MORE.some(function(i){return i[0]===document.body.dataset.section;})||document.body.dataset.section==='comandas'||document.body.dataset.section==='stripefin';
     m.classList.toggle('active',on);
   }
   function emptyCta(){
@@ -29863,6 +29865,308 @@ function cartSanitize(){
 <script src="vendo-cerebro.js?v=20261125"></script>
 <script src="vendo-mascota.js?v=20261125b"></script>
 
+<!-- ===== STRIPE (sección propia, solo Premium): conectar, NFC, Menú Digital y tu dinero ===== -->
+<style id="st-hub-css">
+.sth{ max-width:1040px; }
+.sth-head{ display:flex; align-items:flex-start; gap:12px; }
+.sth-head .page-title{ flex:1; min-width:0; }
+.sth-unlink{ flex:none; margin-top:8px; border:1px solid var(--border,#E6E9F2); background:var(--surface,#fff); color:var(--ink-soft,#6B7592);
+  font:700 12.5px var(--sans, inherit); padding:7px 12px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.sth-unlink:hover{ color:#C0392B; border-color:#F3C9C4; }
+.sth-cuenta{ display:inline-flex; align-items:center; gap:6px; margin:6px 0 0; font-size:12.5px; font-weight:700; color:#0B6F37;
+  background:#EAF8F0; border-radius:999px; padding:5px 11px 5px 9px; }
+.sth-cuenta svg{ width:14px; height:14px; }
+.sth-art{ display:block; width:100%; aspect-ratio:16/9; overflow:hidden; line-height:0; background:#635BFF; }
+.sth-art svg, .sth-art img{ display:block; width:100%; height:100%; object-fit:cover; }
+/* Sin enlazar: portada con botón */
+.sth-connect{ margin-top:16px; border:1px solid var(--border,#E6E9F2); border-radius:22px; background:var(--surface,#fff); overflow:hidden; display:grid; grid-template-columns:1.15fr 1fr; }
+.sth-connect .sth-art{ aspect-ratio:auto; height:100%; min-height:260px; }
+.sth-connect-b{ padding:26px 26px 24px; display:flex; flex-direction:column; justify-content:center; gap:12px; }
+.sth-connect-b h2{ margin:0; font-size:22px; font-weight:800; color:var(--ink,#16213E); letter-spacing:-.3px; line-height:1.2; }
+.sth-connect-b p{ margin:0; font-size:14px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.45; }
+.sth-list{ list-style:none; margin:2px 0 0; padding:0; display:flex; flex-direction:column; gap:7px; }
+.sth-list li{ display:flex; gap:8px; align-items:flex-start; font-size:13.5px; font-weight:600; color:var(--ink,#16213E); line-height:1.35; }
+.sth-list li svg{ flex:none; width:17px; height:17px; color:#635BFF; margin-top:1px; }
+.sth-go{ display:flex; align-items:center; justify-content:center; gap:10px; height:52px; border:0; border-radius:14px; cursor:pointer; margin-top:6px;
+  background:#635BFF; color:#fff; font:800 16px var(--sans, inherit); box-shadow:0 8px 20px rgba(99,91,255,.28); -webkit-tap-highlight-color:transparent; }
+.sth-go:hover{ background:#5146F0; } .sth-go:active{ transform:scale(.98); } .sth-go:disabled{ opacity:.7; cursor:default; }
+.sth-go .st-logo{ height:20px; width:auto; color:#fff; }
+.sth-nota{ font-size:12px !important; font-weight:600; color:var(--ink-faint,#9AA2B8) !important; }
+/* Enlazado: las dos tarjetas con imagen */
+.sth-cards{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; margin-top:18px; }
+.sth-card{ display:flex; flex-direction:column; text-align:left; padding:0; border:1px solid var(--border,#E6E9F2); border-radius:20px; overflow:hidden;
+  background:var(--surface,#fff); color:inherit; font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:box-shadow .15s ease, transform .15s ease; }
+.sth-card:active{ transform:scale(.985); }
+@media (hover:hover){ .sth-card:hover{ box-shadow:0 10px 26px rgba(22,33,62,.12); } }
+.sth-card-b{ display:flex; flex-direction:column; gap:4px; padding:14px 16px 16px; }
+.sth-card-t{ display:flex; align-items:center; gap:8px; }
+.sth-card-t b{ flex:1; min-width:0; font-size:16.5px; font-weight:800; color:var(--ink,#16213E); }
+.sth-card-b small{ font-size:13px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.4; }
+.sth-pill{ flex:none; font-size:11.5px; font-weight:800; padding:4px 9px; border-radius:999px; background:#EEF1F6; color:#6B7592; }
+.sth-pill.on{ background:#EAF8F0; color:#0B6F37; }
+.sth-row{ display:flex; align-items:center; gap:14px; width:100%; margin-top:16px; padding:16px 18px; border:1px solid var(--border,#E6E9F2); border-radius:18px;
+  background:var(--surface,#fff); color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.sth-row:active{ transform:scale(.99); }
+.sth-row-ico{ flex:none; width:44px; height:44px; border-radius:12px; background:#F0EFFF; color:#635BFF; display:flex; align-items:center; justify-content:center; }
+.sth-row-ico svg{ width:22px; height:22px; }
+.sth-row-t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.sth-row-t b{ font-size:15.5px; font-weight:800; color:var(--ink,#16213E); }
+.sth-row-t small{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); }
+.sth-row > svg{ flex:none; width:18px; height:18px; color:var(--ink-soft,#6B7592); }
+/* Apartados (NFC y Menú Digital) */
+.sth-sub{ max-width:760px; }
+.sth-sub .sth-art{ border-radius:20px; margin-top:14px; }
+.sth-toggle{ display:flex; align-items:center; gap:12px; margin-top:14px; padding:14px 16px; border:1px solid var(--border,#E6E9F2); border-radius:18px; background:var(--surface,#fff); cursor:pointer; }
+.sth-toggle.on{ border-color:#635BFF; background:#F6F5FF; }
+.sth-toggle-t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.sth-toggle-t b{ font-size:15px; font-weight:800; color:var(--ink,#16213E); }
+.sth-toggle-t small{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.35; }
+.sth-toggle .switch input:checked + .track{ background:#635BFF !important; }
+.sth-pasos{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; height:48px; margin-top:12px; border:1.5px solid #635BFF; border-radius:14px;
+  background:#fff; color:#635BFF; font:800 15px var(--sans, inherit); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.sth-pasos svg{ width:18px; height:18px; }
+.sth-sec{ margin-top:14px; padding:16px 18px; border:1px solid var(--border,#E6E9F2); border-radius:18px; background:var(--surface,#fff); }
+.sth-sec-t{ font-size:15px; font-weight:800; color:var(--ink,#16213E); margin-bottom:8px; }
+.sth-sec ol{ margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; font-size:13.5px; color:var(--ink,#16213E); line-height:1.45; }
+.sth-aviso{ display:flex; gap:10px; align-items:flex-start; margin-top:12px; padding:12px 14px; border-radius:14px; background:#FFF7E6; color:#8A5A00; font-size:13px; font-weight:600; line-height:1.4; }
+.sth-aviso svg{ flex:none; width:18px; height:18px; margin-top:1px; }
+.sth-aviso button{ border:0; background:none; padding:0; color:#635BFF; font:800 13px var(--sans, inherit); cursor:pointer; text-decoration:underline; }
+/* Pasos con fotos (se van pasando) */
+.sth-car{ position:relative; }
+.sth-car-track{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; gap:0; border-radius:18px; }
+.sth-car-track::-webkit-scrollbar{ display:none; }
+.sth-slide{ flex:0 0 100%; scroll-snap-align:center; display:flex; flex-direction:column; gap:12px; }
+.sth-slide .sth-art{ border-radius:18px; }
+.sth-slide-t{ display:flex; gap:10px; align-items:flex-start; padding:0 2px; }
+.sth-slide-n{ flex:none; width:28px; height:28px; border-radius:50%; background:#635BFF; color:#fff; font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; }
+.sth-slide-t b{ display:block; font-size:16px; font-weight:800; color:var(--ink,#16213E); }
+.sth-slide-t > span > span{ display:block; font-size:13.5px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.4; margin-top:2px; }
+.sth-dots{ display:flex; justify-content:center; gap:6px; margin:14px 0 4px; }
+.sth-dots i{ width:7px; height:7px; border-radius:999px; background:#D7DBE6; transition:width .2s ease, background .2s ease; }
+.sth-dots i.on{ width:20px; background:#635BFF; }
+.sth-car-btns{ display:flex; gap:10px; margin-top:10px; }
+.sth-car-btns .btn{ flex:1; }
+@media (max-width:699px){
+  .sth-connect{ grid-template-columns:1fr; }
+  .sth-connect .sth-art{ aspect-ratio:16/9; min-height:0; height:auto; }
+  .sth-connect-b{ padding:18px 16px 18px; }
+  .sth-connect-b h2{ font-size:20px; }
+  .sth-cards{ grid-template-columns:1fr; gap:12px; }
+}
+</style>
+<script id="st-hub">
+/* =========================================================================
+   STRIPE · sección propia (antes "Finanzas de Stripe")
+   · Sin Premium → portada con "Activar Premium".
+   · Sin enlazar → imagen + "Conectar con Stripe".
+   · Enlazado → "Desenlazar" discreto arriba, dos tarjetas con imagen
+     (Cobro con NFC · Pago con tarjeta en el Menú Digital) y abajo
+     "Tu dinero e historial" (la pantalla de finanzas de siempre).
+   Las fotos de los pasos todavía no existen: van ilustraciones. Para poner
+   una foto, llena `img` en ST_PASOS / ST_ARTE con la ruta (img/...).
+========================================================================= */
+const stHub = { screen:'home' };
+const ST_ART_SVG = {
+  connect: `<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sthg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7A73FF"/><stop offset="1" stop-color="#4B3FE0"/></linearGradient><linearGradient id="sthc1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F2B57"/><stop offset="1" stop-color="#0E1636"/></linearGradient></defs><rect width="640" height="360" fill="url(#sthg1)"/><circle cx="560" cy="40" r="140" fill="#fff" opacity=".07"/><circle cx="70" cy="330" r="120" fill="#fff" opacity=".06"/><g transform="translate(150 70) rotate(-8)"><rect width="250" height="158" rx="18" fill="url(#sthc1)"/><rect x="24" y="40" width="40" height="30" rx="6" fill="#E8C26A"/><rect x="24" y="104" width="120" height="10" rx="5" fill="#fff" opacity=".55"/><rect x="24" y="124" width="70" height="10" rx="5" fill="#fff" opacity=".35"/><circle cx="200" cy="130" r="14" fill="#fff" opacity=".35"/><circle cx="218" cy="130" r="14" fill="#fff" opacity=".2"/></g><g transform="translate(372 96)"><rect width="118" height="214" rx="22" fill="#fff"/><rect x="10" y="14" width="98" height="186" rx="14" fill="#F3F2FF"/><rect x="22" y="34" width="74" height="10" rx="5" fill="#635BFF"/><rect x="22" y="58" width="74" height="44" rx="10" fill="#fff"/><rect x="22" y="112" width="74" height="44" rx="10" fill="#fff"/><rect x="22" y="168" width="74" height="18" rx="9" fill="#16C15B"/><circle cx="59" cy="132" r="9" fill="#16C15B"/><path d="M55 132l3 3 6-7" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`,
+  nfc: `<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sthg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#635BFF"/><stop offset="1" stop-color="#2F1FB8"/></linearGradient></defs><rect width="640" height="360" fill="url(#sthg2)"/><circle cx="110" cy="60" r="160" fill="#fff" opacity=".06"/><g transform="translate(200 60)"><rect width="140" height="250" rx="26" fill="#fff"/><rect x="12" y="16" width="116" height="218" rx="16" fill="#F3F2FF"/><circle cx="70" cy="110" r="34" fill="#635BFF" opacity=".15"/><path d="M58 92c10 10 10 26 0 36M68 84c15 15 15 37 0 52M78 76c20 20 20 48 0 68" stroke="#635BFF" stroke-width="6" fill="none" stroke-linecap="round"/><rect x="30" y="180" width="80" height="24" rx="12" fill="#16C15B"/></g><g transform="translate(330 150) rotate(-14)"><rect width="170" height="108" rx="14" fill="#0E1636"/><rect x="18" y="28" width="30" height="22" rx="5" fill="#E8C26A"/><path d="M128 30c6 6 6 16 0 22M138 24c10 10 10 24 0 34" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" opacity=".8"/><rect x="18" y="72" width="90" height="8" rx="4" fill="#fff" opacity=".5"/></g></svg>`,
+  menu: `<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sthg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E2A5A"/><stop offset="1" stop-color="#635BFF"/></linearGradient></defs><rect width="640" height="360" fill="url(#sthg3)"/><circle cx="540" cy="320" r="160" fill="#fff" opacity=".06"/><g transform="translate(150 40)"><rect width="150" height="280" rx="26" fill="#fff"/><rect x="12" y="16" width="126" height="248" rx="16" fill="#F7F8FB"/><rect x="24" y="30" width="60" height="10" rx="5" fill="#16213E"/><rect x="24" y="52" width="48" height="56" rx="10" fill="#FFD9A8"/><rect x="78" y="52" width="48" height="56" rx="10" fill="#FFE7C4"/><rect x="24" y="116" width="48" height="56" rx="10" fill="#FFE7C4"/><rect x="78" y="116" width="48" height="56" rx="10" fill="#FFD9A8"/><rect x="24" y="188" width="102" height="30" rx="10" fill="#fff" stroke="#E6E9F2"/><rect x="34" y="198" width="18" height="12" rx="3" fill="#635BFF"/><rect x="58" y="200" width="50" height="8" rx="4" fill="#16213E" opacity=".6"/><rect x="24" y="226" width="102" height="26" rx="13" fill="#16C15B"/></g><g transform="translate(340 120) rotate(8)"><rect width="190" height="120" rx="16" fill="#fff"/><rect x="18" y="20" width="60" height="10" rx="5" fill="#635BFF"/><rect x="18" y="44" width="154" height="16" rx="8" fill="#F0F1F6"/><rect x="18" y="68" width="100" height="16" rx="8" fill="#F0F1F6"/><rect x="18" y="92" width="154" height="16" rx="8" fill="#635BFF"/></g></svg>`
+};
+/* Si se pone una foto (img/...), se usa en lugar de la ilustración */
+const ST_ARTE = { connect:'', nfc:'', menu:'' };
+function stArt(k){
+  const src = ST_ARTE[k];
+  return `<span class="sth-art">${src ? `<img src="${src}" alt="" decoding="async" draggable="false">` : ST_ART_SVG[k]}</span>`;
+}
+const ST_PASOS = {
+  nfc: [
+    { t:'Activa el NFC de tu celular', d:'En los Ajustes de tu celular busca «NFC» y enciéndelo.', img:'', art:'nfc' },
+    { t:'Enciende «Cobro con NFC»', d:'Aquí en VendoPlus, en Stripe › Cobro con NFC.', img:'', art:'connect' },
+    { t:'Arma la venta y cobra', d:'En Nueva venta toca Cobrar y elige pago con tarjeta por NFC.', img:'', art:'menu' },
+    { t:'El cliente acerca su tarjeta', d:'Que la acerque a la parte de atrás de tu celular hasta que se confirme.', img:'', art:'nfc' }
+  ],
+  menu: [
+    { t:'Tu cliente arma su pedido', d:'Entra a tu Menú Digital, elige sus productos y va a pagar.', img:'', art:'menu' },
+    { t:'Elige «Tarjeta»', d:'Al terminar su pedido le aparece la opción de pagar con tarjeta.', img:'', art:'connect' },
+    { t:'Le llega su link de pago', d:'Cuando aceptas el pedido, el link de pago va en el mismo aviso de WhatsApp.', img:'', art:'menu' },
+    { t:'El dinero llega a tu Stripe', d:'Cuando pague, tocas «Ya pagó con tarjeta» y la venta queda registrada.', img:'', art:'nfc' }
+  ]
+};
+const ST_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const ST_PLAY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>';
+
+function stNfcOn(){ return mdCfg().payments.nfc === true; }
+function stMenuOn(){ return stLinked() && mdCfg().payments.card === true; }
+
+/** Se abre desde el menú lateral (PC) y desde "Más" (celular) */
+function stAbrir(){
+  if(!isOwner()){ toast('Solo el Dueño puede ver Stripe', { icon:icon('alert'), variant:'toast-danger' }); return; }
+  try{ closeModal(); }catch(e){}
+  stHub.screen = 'home';
+  goTo('stripefin');
+}
+function stHubIr(screen){ stHub.screen = screen; goTo('stripefin'); }
+
+function stHubView(){
+  if(stFinEstado() === 'bloqueado') return window.VPComandas && VPComandas.portadaHTML ? VPComandas.portadaHTML('stripe') : '';
+  if(!isOwner()) return `<h1 class="page-title">Stripe</h1><p class="page-sub">Solo el Dueño puede ver esta sección.</p>`;
+  const s = stCfg();
+  if(!stLinked()) stHub.screen = 'home';
+  if(stHub.screen === 'nfc') return stHubNfcHTML();
+  if(stHub.screen === 'menu') return stHubMenuHTML();
+  const pend = s.on && !s.ready;
+  const head = `<div class="sth-head">
+      <h1 class="page-title">Stripe</h1>
+      ${s.on ? `<button type="button" class="sth-unlink" onclick="stAskUnlink()">Desenlazar</button>` : ''}
+    </div>`;
+  if(!stLinked()) return `<div class="sth">${head}
+    <p class="page-sub">Cobra con tarjeta y recibe tu dinero directo en tu cuenta.</p>
+    <section class="sth-connect">
+      ${stArt('connect')}
+      <div class="sth-connect-b">
+        <h2>${pend ? 'Termina de configurar tu Stripe' : 'Conecta tu cuenta de Stripe'}</h2>
+        <p>${pend ? 'Stripe todavía no te deja cobrar: faltan algunos datos de tu cuenta.' : 'Crea tu cuenta o entra con la que ya tienes. Tarda solo unos minutos.'}</p>
+        <ul class="sth-list">
+          <li>${ST_CHECK}Cobra con NFC acercando la tarjeta a tu celular</li>
+          <li>${ST_CHECK}Tus clientes pagan con tarjeta en tu Menú Digital</li>
+          <li>${ST_CHECK}El dinero llega directo a tu cuenta de Stripe</li>
+        </ul>
+        <button type="button" class="sth-go" id="stGoBtn" onclick="stConnect(this)">${pend ? 'Continuar en' : 'Conectar con'} ${STRIPE_LOGO}</button>
+        <p class="sth-nota">Te llevamos a la página segura de Stripe y regresas aquí solo.</p>
+      </div>
+    </section></div>`;
+  return `<div class="sth">${head}
+    <p class="page-sub">Elige cómo quieres cobrar con tarjeta.</p>
+    <span class="sth-cuenta">${ST_CHECK} Stripe enlazado${s.name ? ' · ' + escapeHtml(s.name) : ''}</span>
+    <div class="sth-cards">
+      <button type="button" class="sth-card" onclick="stHubIr('nfc')">
+        ${stArt('nfc')}
+        <span class="sth-card-b">
+          <span class="sth-card-t"><b>Cobro con NFC</b><span class="sth-pill ${stNfcOn() ? 'on' : ''}">${stNfcOn() ? 'Activo' : 'Desactivado'}</span></span>
+          <small>Cobra acercando la tarjeta del cliente a tu celular.</small>
+        </span>
+      </button>
+      <button type="button" class="sth-card" onclick="stHubIr('menu')">
+        ${stArt('menu')}
+        <span class="sth-card-b">
+          <span class="sth-card-t"><b>Pago con tarjeta en tu Menú Digital</b><span class="sth-pill ${stMenuOn() ? 'on' : ''}">${stMenuOn() ? 'Activo' : 'Desactivado'}</span></span>
+          <small>Tus clientes pagan su pedido en línea con tarjeta.</small>
+        </span>
+      </button>
+    </div>
+    <button type="button" class="sth-row" onclick="stOpenFinanzas()">
+      <span class="sth-row-ico">${icon('receipt')}</span>
+      <span class="sth-row-t"><b>Tu dinero e historial</b><small>Saldo, pagos, retiros y devoluciones</small></span>
+      ${icon('chevronRight')}
+    </button>
+  </div>`;
+}
+function stHubSubHead(titulo){
+  return `<button class="cm-back" onclick="stHubIr('home')">${icon('chevronLeft')} Stripe</button>
+    <h1 class="page-title">${titulo}</h1>`;
+}
+function stHubNfcHTML(){
+  const on = stNfcOn();
+  return `<div class="sth sth-sub">${stHubSubHead('Cobro con NFC')}
+    <p class="page-sub">Cobra con tarjeta acercándola a tu celular, sin terminal.</p>
+    ${stArt('nfc')}
+    <label class="sth-toggle ${on ? 'on' : ''}">
+      <span class="sth-toggle-t"><b>${on ? 'Cobro con NFC activado' : 'Cobro con NFC desactivado'}</b><small>${on ? 'Ya puedes cobrar con NFC desde Nueva venta.' : 'Actívalo para cobrar acercando la tarjeta.'}</small></span>
+      <span class="switch"><input type="checkbox" ${on ? 'checked' : ''} onchange="stNfcSet(this.checked)"><span class="track"></span></span>
+    </label>
+    <button type="button" class="sth-pasos" onclick="stPasos('nfc')">${ST_PLAY} Ver pasos para usarlo</button>
+    <div class="sth-sec"><div class="sth-sec-t">Cómo conectarlo</div><ol>
+      <li>Tu Stripe ya está enlazado: no tienes que hacer nada más ahí.</li>
+      <li>Usa un celular con NFC y enciéndelo en los Ajustes de tu celular.</li>
+      <li>Activa <b>Cobro con NFC</b> aquí arriba.</li>
+    </ol></div>
+    <div class="sth-sec"><div class="sth-sec-t">Cómo cobrar</div><ol>
+      <li>Arma la venta en <b>Nueva venta</b> y toca <b>Cobrar</b>.</li>
+      <li>Elige pagar con tarjeta por NFC.</li>
+      <li>Pídele al cliente que acerque su tarjeta o su celular a la parte de atrás del tuyo.</li>
+      <li>Cuando se confirme, la venta queda registrada y el dinero llega a tu Stripe.</li>
+    </ol></div>
+    <div class="sth-sec"><div class="sth-sec-t">Desactivarlo</div><ol>
+      <li>Apaga el interruptor de arriba cuando no quieras cobrar con NFC. Puedes volver a encenderlo cuando quieras.</li>
+    </ol></div>
+  </div>`;
+}
+function stHubMenuHTML(){
+  const on = stMenuOn();
+  const menuActivo = !!mdCfg().active;
+  return `<div class="sth sth-sub">${stHubSubHead('Pago con tarjeta en tu Menú Digital')}
+    <p class="page-sub">Tus clientes pagan su pedido en línea y el dinero llega a tu Stripe.</p>
+    ${stArt('menu')}
+    <label class="sth-toggle ${on ? 'on' : ''}">
+      <span class="sth-toggle-t"><b>${on ? 'Pago con tarjeta activado' : 'Pago con tarjeta desactivado'}</b><small>${on ? 'Tus clientes ya ven la opción «Tarjeta» al pagar.' : 'Actívalo para que tus clientes paguen con tarjeta.'}</small></span>
+      <span class="switch"><input type="checkbox" ${on ? 'checked' : ''} onchange="stMenuSet(this.checked)"><span class="track"></span></span>
+    </label>
+    ${!menuActivo ? `<div class="sth-aviso">${icon('alert')}<span>Tu Menú Digital todavía no está activado: tus clientes no lo pueden ver. <button type="button" onclick="goTo('menu')">Ir a Menú Digital</button></span></div>` : ''}
+    <button type="button" class="sth-pasos" onclick="stPasos('menu')">${ST_PLAY} Ver pasos para usarlo</button>
+    <div class="sth-sec"><div class="sth-sec-t">Dónde aparece</div><ol>
+      <li>En tu <b>Menú Digital</b>, cuando el cliente termina su pedido y va a pagar.</li>
+      <li>Ahí ve la opción <b>Tarjeta</b> junto a las demás formas de pago.</li>
+    </ol></div>
+    <div class="sth-sec"><div class="sth-sec-t">Cómo funciona</div><ol>
+      <li>El cliente elige <b>Tarjeta</b> y te manda su pedido.</li>
+      <li>Al aceptar el pedido, el link de pago le llega en el mismo aviso de WhatsApp.</li>
+      <li>Paga con su tarjeta en la página segura de Stripe.</li>
+      <li>Tú tocas <b>Ya pagó con tarjeta</b> y la venta queda registrada.</li>
+    </ol></div>
+  </div>`;
+}
+function stNfcSet(v){
+  const cfg = mdCfg();
+  cfg.payments.nfc = !!v;
+  mdSaveCfg(cfg);
+  vibrate(10);
+  toast(v ? 'Cobro con NFC activado' : 'Cobro con NFC desactivado', { icon:icon(v ? 'check' : 'close'), variant:v ? 'toast-success' : '' });
+  render();
+}
+function stMenuSet(v){
+  const cfg = mdCfg();
+  cfg.payments.card = !!v;
+  mdSaveCfg(cfg);
+  vibrate(10);
+  toast(v ? 'Pago con tarjeta activado' : 'Pago con tarjeta desactivado', { icon:icon(v ? 'check' : 'close'), variant:v ? 'toast-success' : '',
+    subtitle:v ? 'Tus clientes ya pueden pagar con tarjeta en tu menú' : 'La opción Tarjeta ya no aparece en tu menú' });
+  render();
+}
+/* Pasos con fotos que se van pasando */
+function stPasos(k){
+  const pasos = ST_PASOS[k] || [];
+  openModal(`
+    <div class="sheet-header"><h2>Pasos para usarlo</h2><button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button></div>
+    <div class="sth-car">
+      <div class="sth-car-track" id="sthTrack" onscroll="stPasosScroll()">
+        ${pasos.map((p, i) => `<div class="sth-slide">
+          ${p.img ? `<span class="sth-art"><img src="${p.img}" alt="" decoding="async" draggable="false"></span>` : stArt(p.art || k)}
+          <div class="sth-slide-t"><span class="sth-slide-n">${i + 1}</span><span><b>${escapeHtml(p.t)}</b><span>${escapeHtml(p.d)}</span></span></div>
+        </div>`).join('')}
+      </div>
+      <div class="sth-dots" id="sthDots">${pasos.map((p, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
+      <div class="sth-car-btns">
+        <button type="button" class="btn ghost" id="sthPrev" onclick="stPasosMover(-1)" disabled>Anterior</button>
+        <button type="button" class="btn primary" id="sthNext" onclick="stPasosMover(1)">Siguiente</button>
+      </div>
+    </div>`, { dismissible:true });
+}
+function stPasosIdx(){ const t = document.getElementById('sthTrack'); return t ? Math.round(t.scrollLeft / (t.clientWidth || 1)) : 0; }
+function stPasosScroll(){
+  const t = document.getElementById('sthTrack'); if(!t) return;
+  const i = stPasosIdx(), n = t.children.length;
+  document.querySelectorAll('#sthDots i').forEach((d, j) => d.classList.toggle('on', j === i));
+  const prev = document.getElementById('sthPrev'), next = document.getElementById('sthNext');
+  if(prev) prev.disabled = i <= 0;
+  if(next) next.textContent = i >= n - 1 ? 'Listo' : 'Siguiente';
+}
+function stPasosMover(d){
+  const t = document.getElementById('sthTrack'); if(!t) return;
+  const i = stPasosIdx(), n = t.children.length;
+  if(d > 0 && i >= n - 1){ closeModal(); return; }
+  t.scrollTo({ left:Math.max(0, Math.min(n - 1, i + d)) * t.clientWidth, behavior:'smooth' });
+}
+EXTRA_VIEWS.stripefin = stHubView;
+</script>
 <!-- ===== MEMBRESIA PREMIUM (gratis vs. $249/mes) · va al final a proposito ===== -->
 <script id="vp-promos-img">
 /* Imágenes de los anuncios de Premium, incrustadas aquí para que salgan al

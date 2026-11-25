@@ -340,7 +340,7 @@ window.VPComandas = (() => {
     menu: { nombre:'Menú Digital', abrir:'menu', h:'img/promo-menu-h.webp?v=2', v:'img/promo-menu-v.webp?v=2',
       alt:'VendoPlus Premium: tu menú en internet, recibe pedidos desde ahí',
       titulo:'El Menú Digital viene incluido en Premium', sub:'Tus clientes ven tu menú y te mandan su pedido.' },
-    stripe: { nombre:'Finanzas de Stripe', abrir:null, h:'img/promo-stripe-h.webp?v=1', v:'img/promo-stripe-v.webp?v=1',
+    stripe: { nombre:'Stripe', abrir:null, h:'img/promo-stripe-h.webp?v=1', v:'img/promo-stripe-v.webp?v=1',
       alt:'VendoPlus Premium: cobra sin contacto con NFC y deja que tus clientes paguen con tarjeta en el menú digital',
       titulo:'Los cobros con Stripe vienen en Premium', sub:'Cobra con NFC y recibe pagos con tarjeta en tu menú digital.' }
   };
@@ -366,7 +366,7 @@ window.VPComandas = (() => {
       </div>
     </section>`;
   }
-  /* Pantalla "portada" para Menú Digital y Finanzas de Stripe sin Premium */
+  /* Pantalla "portada" para Menú Digital y Stripe sin Premium */
   let portadaClave = 'menu';
   function portadaVista() {
     const o = PORTADAS[portadaClave] || PORTADAS.menu;
