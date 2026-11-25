@@ -638,7 +638,7 @@ window.VPComandas = (() => {
     const cuenta = !!(o.cm && o.cm.billAt);
     const mesero = (o.cm && o.cm.waiterName) || o.by || '';
     const banners = [];
-    if (listas.length) banners.push(`<div class="mdi-banner ok">${icon('bell')}<span><b>${plural(listas.length, 'comanda lista', 'comandas listas')} para servir</b>${caja ? 'El mesero ya puede llevarla a la mesa.' : 'Llévala a la mesa y márcala como entregada.'}</span></div>`);
+    if (listas.length) banners.push(`<div class="mdi-banner ok">${icon('bell')}<span><b>${plural(listas.length, 'comanda lista', 'comandas listas')} para servir</b>${caja ? 'El mesero ya puede llevarla a la mesa.' : 'Recógela desde la pestaña Listos.'}</span></div>`);
     if (enCocina.length) banners.push(`<div class="mdi-banner warn">${icon('clock')}<span><b>${plural(enCocina.length, 'comanda', 'comandas')} en cocina</b>${caja ? 'Todavía se está preparando algo de esta mesa.' : 'Te avisamos cuando esté lista.'}</span></div>`);
     if (cuenta) banners.push(`<div class="mdi-banner cm-banner-bill">${icon('cash')}<span><b>Pidió la cuenta</b>${caja ? 'El cliente ya quiere pagar.' : 'Caja ya sabe que esta mesa quiere pagar.'} · ${ago(o.cm.billAt)}</span></div>`);
 
@@ -670,10 +670,10 @@ window.VPComandas = (() => {
         <button class="btn ghost block" onclick="VPComandas.editarCuenta('${o.id}')">${icon('edit')} Revisar o corregir la cuenta</button>`;
     } else {
       acts = `
-        ${listas.length ? `<button class="btn primary block" onclick="VPComandas.verLista('${o.id}')">${icon('bell')} Recoger pedido listo</button>` : ''}
-        <button class="btn ${listas.length ? 'ghost' : 'primary'} block" onclick="VPComandas.ronda('${escapeHtml(o.checkout.floorTableId)}')">${icon('plus')} Agregar productos</button>
-        ${cuenta ? `<button class="btn ghost block" onclick="VPComandas.pedirCuenta('${o.id}')">${icon('close')} Quitar aviso de cuenta</button>`
-                 : holdBtn('cm-go-bill', icon('cash') + ' Pedir la cuenta', 'pedirCuenta', [o.id])}`;
+        ${cuenta
+          ? `<button class="btn ghost block" onclick="VPComandas.pedirCuenta('${o.id}')">${icon('close')} Quitar aviso de cuenta</button>`
+          : `<button class="btn primary block" onclick="VPComandas.ronda('${escapeHtml(o.checkout.floorTableId)}')">${icon('plus')} Agregar productos</button>
+             ${holdBtn('cm-go-bill', icon('cash') + ' Pedir la cuenta', 'pedirCuenta', [o.id])}`}`;
     }
 
     return `
@@ -767,6 +767,8 @@ window.VPComandas = (() => {
     if (!esMesero()) return;
     const t = VPMesas.layout().find(x => x.id === tableId);
     if (!t) return;
+    const o = VPMesas.openOrders().get(tableId);
+    if (o && o.cm && o.cm.billAt) { toast(t.name + ' ya pidió la cuenta', { icon:icon('cash'), subtitle:'Quita el aviso para agregar más productos.' }); return; }
     closeModal();
     cart = []; customItems = {}; checkout = newCheckout();
     checkout.floorTableId = t.id;
@@ -804,7 +806,7 @@ window.VPComandas = (() => {
     return `
       ${o ? `<div class="cm-cart-prev">${icon('receipt')}<span>Ya en la cuenta de ${escapeHtml(checkout.table)}: <b>${formatMoney(o.total)}</b></span></div>` : ''}
       <div class="cart-actions cm-cart-actions">
-        <button class="btn primary block" onclick="VPComandas.enviar()">${icon('comandas')} Mandar a cocina · ${plural(n, 'producto', 'productos')}</button>
+        ${holdBtn('cm-go cm-go-ok', icon('comandas') + ' Mandar a cocina · ' + plural(n, 'producto', 'productos'), 'enviar', [])}
       </div>`;
   }
 
@@ -933,8 +935,8 @@ window.VPComandas = (() => {
     o.cm.billBy = quitar ? null : meName();
     o.cm.updatedAt = nowIso();
     DB.saveTableOrders(list);
-    closeModal();
     render();
+    abrirCuenta(orderId);
     toast(quitar ? 'Se quitó el aviso de cuenta' : 'Caja ya sabe que ' + tableName(o) + ' quiere pagar', { variant:quitar ? '' : 'toast-success', icon:icon('cash') });
   }
 
@@ -1197,6 +1199,7 @@ window.VPComandas = (() => {
   /* Repinta lo que se ve (pantalla y la hoja abierta) tras un cambio */
   function refresh() {
     try {
+      if (document.querySelector('.cm-hold.holding')) { setTimeout(refresh, 900); return; }
       const sheet = document.querySelector('#modal-layer .modal-sheet');
       const mk = sheet && sheet.querySelector('.cm-open');
       if (st.open && mk && mk.dataset.id === st.open.id) {
@@ -1239,7 +1242,7 @@ window.VPComandas = (() => {
      - "dirty" = cambiado aquí y todavía sin subir: eso nunca se pisa.
   ========================================================= */
   const Sync = (() => {
-    const SK = 'cm_sync_state';
+    const SK = 'cm_sync_state2';
     let s = { uid:null, known:{}, dirty:[] };
     let last = {};            /* id -> {k,h}: cómo estaba lo local la última vez que lo vimos */
     let dirty = new Set();
@@ -1249,10 +1252,18 @@ window.VPComandas = (() => {
     const inUse = () => { try { return DB.getUsers().some(u => AREAS[u.area]) || DB.getTableOrders().some(o => o.cm) || tickets().length > 0; } catch (e) { return false; } };
     const online = () => can();
 
+    /* Huella del dato con las llaves en orden fijo: la nube (jsonb) las
+       regresa en otro orden y sin esto cada revisión parecía un cambio
+       (se volvía a dibujar la hoja abierta y se cortaba el "mantener"). */
+    function canon(v) {
+      if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+      if (v && typeof v === 'object') return '{' + Object.keys(v).sort().filter(k => v[k] !== undefined).map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+      return JSON.stringify(v === undefined ? null : v);
+    }
     function snapshot() {
       const m = {};
-      DB.getTableOrders().forEach(o => { m[o.id] = { k:'cuenta', h:JSON.stringify(o), d:o }; });
-      tickets().forEach(t => { m[t.id] = { k:'comanda', h:JSON.stringify(t), d:t }; });
+      DB.getTableOrders().forEach(o => { m[o.id] = { k:'cuenta', h:canon(o), d:o }; });
+      tickets().forEach(t => { m[t.id] = { k:'comanda', h:canon(t), d:t }; });
       return m;
     }
     function load(uid) {
@@ -1330,7 +1341,7 @@ window.VPComandas = (() => {
           delete s.known[r.id];
           return;
         }
-        const h = JSON.stringify(r.data);
+        const h = canon(r.data);
         s.known[r.id] = { k:r.kind, h };
         if (!cur[r.id] || cur[r.id].h !== h) { bag[r.id] = r.data; changed = true; }
       });
