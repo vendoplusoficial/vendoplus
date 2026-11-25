@@ -267,8 +267,6 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 
 /* ===== "No hay" ===== */
 /* Cocina: botón en cada producto y lo que ya no hubo */
-.cm-nohay-btn{ display:inline-flex; align-items:center; gap:4px; margin-top:7px; padding:5px 11px; border:1.5px solid #F2C4BE; border-radius:999px; background:#FFF4F2; color:#B4332A; font:inherit; font-size:12.5px; font-weight:800; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.cm-nohay-btn svg{ width:13px; height:13px; }
 .cm-nohay-tag{ display:inline-flex; align-items:center; gap:4px; margin-top:5px; padding:2px 8px; border-radius:999px; background:#FDECEA; color:#B4332A; font-size:11.5px; font-weight:800; font-style:normal; }
 .cm-nohay-tag svg{ width:12px; height:12px; }
 .cm-line-out .mdi-thumb, .cm-line-out .mdi-line-name{ opacity:.45; }
@@ -317,3 +315,12 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .vp-floor-table.cm-alert{ border-color:#D9473C; background:#D9473C; color:#fff; }
 .vp-floor-table.cm-alert small{ color:#fff; font-weight:800; }
 .cm-legend i.cm-alert{ background:#D9473C; border-color:#D9473C; }
+
+/* "No hay": discreto (texto gris subrayado, sin rojo) */
+.cm-nohay-btn{ display:inline-block; margin-top:6px; padding:2px 0; border:none; background:none; color:var(--ink-soft); font:inherit; font-size:12px; font-weight:700; text-decoration:underline; text-decoration-color:var(--border); text-underline-offset:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cm-nohay-btn:active{ color:#B4332A; }
+/* "¿No hay?" encima de la hoja de la mesa */
+.cm-capa-card{ text-align:left; }
+.cm-capa-card .sheet-header{ margin-bottom:12px; }
+@media (min-width:700px){ #confirm-layer .cm-capa{ align-items:flex-end; padding-bottom:28px; } .cm-capa-card{ max-width:380px !important; } }
+.cm-capa-quieta, .cm-capa-quieta .modal-sheet{ animation:none !important; }

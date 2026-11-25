@@ -664,7 +664,7 @@ window.VPComandas = (() => {
           <div class="mdi-line-name">${escapeHtml(i.name)}${i.size ? ' <span class="cm-size">' + escapeHtml(i.size) + '</span>' : ''}</div>
           ${i.note ? `<div class="dm-line-note cm-note">${icx('note')}${escapeHtml(i.note)}</div>` : ''}
           ${i.falta ? `<div class="cm-nohay-tag">${icon('alert')} No hubo ${fmtN(i.falta)}</div>` : ''}
-          ${tid && q > 0 ? `<button type="button" class="cm-nohay-btn" onclick="VPComandas.noHay('${tid}', ${n})">${icon('close')} No hay</button>` : ''}
+          ${tid && q > 0 ? `<button type="button" class="cm-nohay-btn" onclick="VPComandas.noHay('${tid}', ${n})">No hay</button>` : ''}
         </div>
         <div class="cm-qty">${q > 0 ? '×' + fmtN(q) : '<s>×' + fmtN(i.qty) + '</s>'}</div>
       </div>`;
@@ -1238,13 +1238,13 @@ window.VPComandas = (() => {
     const nh = st.nh;
     const k = nh && tickets().find(x => x.id === nh.tid);
     const it = k && k.items[nh.idx];
-    if (!it) { st.nh = null; closeModal(); return; }
+    if (!it) { cerrarCapa(); return; }
     const max = efect(it);
     nh.n = Math.min(Math.max(1, nh.n), max);
-    openModal(`
+    capa(`
       <div class="sheet-header">
         <div class="sheet-header-left" style="min-width:0;"><h2>¿No hay?</h2><span class="mdi-pill no">${escapeHtml(k.table)}</span></div>
-        <button class="sheet-close" onclick="VPComandas.abrirComanda('${k.id}')">${icon('close')}</button>
+        <button class="sheet-close" onclick="VPComandas.cerrarCapa()">${icon('close')}</button>
       </div>
       <div class="cm-nh-prod">
         <span class="mdi-thumb">${thumb(it.productId)}</span>
@@ -1261,14 +1261,28 @@ window.VPComandas = (() => {
         <small>de ${fmtN(max)}</small>
       </div>` : ''}
       <label class="cm-nh-agotar">
-        <span><b>Se acabó por hoy</b><small>Que ya no lo puedan pedir</small></span>
+        <span><b>Ya no queda nada</b><small>Nadie lo podrá pedir hasta que toques «Ya hay» (o mañana)</small></span>
         <span class="switch"><input type="checkbox" ${nh.agotar ? 'checked' : ''} onchange="VPComandas.nhAgotar(this.checked)"><span class="track"></span></span>
       </label>
       <div class="cm-sheet-acts">
         ${holdBtn('cm-go cm-go-no', icon('alert') + ' Avisar al mesero', 'confirmarNoHay', [])}
-        <button class="cm-undo" onclick="VPComandas.abrirComanda('${k.id}')">Sí hay, regresar</button>
+        <button class="cm-undo" onclick="VPComandas.cerrarCapa()">Sí hay, regresar</button>
       </div>
-    `, { dismissible:true });
+    `);
+  }
+  /* Ventanita encima de la hoja abierta (la de la mesa se queda atrás) */
+  function capa(html) {
+    let l = document.getElementById('confirm-layer');
+    if (!l) { l = document.createElement('div'); l.id = 'confirm-layer'; document.body.appendChild(l); }
+    if (typeof askConfirm === 'function' && typeof askConfirm._close === 'function') askConfirm._close();
+    const nueva = !l.querySelector('.cm-capa');
+    l.innerHTML = `<div class="modal-overlay modal-center conf-overlay cm-capa ${nueva ? '' : 'cm-capa-quieta'}" onclick="if(event.target===this)VPComandas.cerrarCapa()">
+      <div class="modal-sheet modal-card conf-card cm-capa-card" role="dialog" aria-modal="true">${html}</div></div>`;
+  }
+  function cerrarCapa() {
+    const l = document.getElementById('confirm-layer');
+    if (l && l.querySelector('.cm-capa')) l.innerHTML = '';
+    st.nh = null;
   }
   function nhCant(d) { if (st.nh) { st.nh.n += d; noHayDibujar(); } }
   function nhAgotar(v) { if (st.nh) st.nh.agotar = !!v; }
@@ -1307,7 +1321,7 @@ window.VPComandas = (() => {
     const list = tickets();
     const k = list.find(x => x.id === nh.tid);
     const it = k && k.items[nh.idx];
-    if (!it) { st.nh = null; closeModal(); return; }
+    if (!it) { cerrarCapa(); return; }
     const n = Math.min(nh.n, efect(it));
     if (n <= 0) return;
     it.falta = Math.round(((Number(it.falta) || 0) + n) * 1000) / 1000;
@@ -1317,7 +1331,7 @@ window.VPComandas = (() => {
     const r = quitarDeCuenta(k.orderId, it, n);
     if (r === 'vacia') { const l2 = tickets(); l2.forEach(x => { if (x.orderId === k.orderId && x.alertas) x.alertas.forEach(a => { a.mesaLibre = true; }); }); saveTickets(l2); }
     if (nh.agotar) marcarAgotado(it.productId, it.name);
-    st.nh = null;
+    cerrarCapa();
     if (k.status === 'cancelado') closeModal(); else abrirComanda(k.id);
     render();
     toast('Le avisamos a ' + (k.by || 'el mesero'), { variant:'toast-success', icon:icon('check'), subtitle:'No hay ' + fmtN(n) + '× ' + it.name + (nh.agotar ? ' · agotado por hoy' : '') });
@@ -1656,6 +1670,6 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    filtro, abrirComanda, estado, noHay, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
+    filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
