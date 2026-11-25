@@ -344,3 +344,7 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
   html.cm-fija .cm-tabs{ margin-bottom:8px; }
   html.cm-fija .cm-tab{ padding:9px 10px; }
 }
+
+/* Avisos: solo la lista se desliza (lo de arriba se queda fijo) */
+.cm-av-scroll{ overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:2px 2px 14px; margin:0 -2px; }
+.cm-av-scroll .mdi-empty{ margin-top:0; }

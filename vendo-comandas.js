@@ -80,20 +80,32 @@ window.VPComandas = (() => {
      El plano se estira para llenar justo lo que queda de pantalla en cada
      celular (debajo de las pestañas y arriba de la leyenda). En Avisos sí hay scroll. */
   function ajustarPlano() {
-    const fijo = currentView === 'comandas' && esMesero() && st.mtab !== 'listos';
+    const fijo = currentView === 'comandas' && esMesero();
     document.documentElement.classList.toggle('cm-fija', fijo);
-    const floor = fijo && document.querySelector('#view .cm-floor');
-    if (!floor) return;
+    if (!fijo) return;
     if (window.scrollY) window.scrollTo(0, 0);
+    const lista = document.querySelector('#view .cm-av-scroll');
+    if (lista) {
+      const r = lista.getBoundingClientRect();
+      const escala = lista.offsetHeight ? r.height / lista.offsetHeight : 1;
+      lista.style.height = Math.max(160, Math.floor((window.innerHeight - r.top - 12 - safeB()) / (escala || 1))) + 'px';
+      return;
+    }
+    const floor = document.querySelector('#view .cm-floor');
+    if (!floor) return;
     const r = floor.getBoundingClientRect();
     const escala = floor.offsetHeight ? r.height / floor.offsetHeight : 1;     /* la app usa zoom en PC */
     const ley = floor.nextElementSibling;
     const leyH = ley ? ley.getBoundingClientRect().height + 10 : 0;
-    let pr = document.getElementById('cmSafeB');
-    if (!pr) { pr = document.createElement('div'); pr.id = 'cmSafeB'; pr.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;'; document.body.appendChild(pr); }
-    const abajo = pr.getBoundingClientRect().height || 0;
+    const abajo = safeB();
     const libre = window.innerHeight - r.top - leyH - 14 - abajo;
     floor.style.height = Math.max(220, Math.floor(libre / (escala || 1))) + 'px';
+  }
+  /* Espacio de la rayita inferior del iPhone */
+  function safeB() {
+    let pr = document.getElementById('cmSafeB');
+    if (!pr) { pr = document.createElement('div'); pr.id = 'cmSafeB'; pr.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none;'; document.body.appendChild(pr); }
+    return pr.getBoundingClientRect().height || 0;
   }
   window.addEventListener('resize', () => requestAnimationFrame(ajustarPlano));
   window.addEventListener('orientationchange', () => setTimeout(ajustarPlano, 250));
@@ -792,7 +804,7 @@ window.VPComandas = (() => {
         <button type="button" role="tab" class="cm-tab ${tab === 'mesas' ? 'on' : ''}" onclick="VPComandas.tabMesero('mesas')">${VPMesas.tableIcon} Mesas</button>
         <button type="button" role="tab" class="cm-tab ${tab === 'listos' ? 'on' : ''} ${n ? 'has' : ''} ${avs.length ? 'alert' : ''}" onclick="VPComandas.tabMesero('listos')">${icon('bell')} Avisos${n ? `<span class="cm-tab-n">${n}</span>` : ''}</button>
       </div>
-      ${tab === 'mesas' ? planoHTML('mesero') : (n ? `
+      ${tab === 'mesas' ? planoHTML('mesero') : `<div class="cm-av-scroll">${n ? `
         ${avs.length ? `<div class="cm-av-t cm-av-no">${icon('alert')} No hay</div><div class="cm-pick">${avs.map(a => `
           <button type="button" class="cm-pick-card cm-pick-no" onclick="VPComandas.verAviso('${a.tid}','${a.id}')">
             <span class="cm-pick-mesa">${escapeHtml(a.table)}</span>
@@ -817,7 +829,7 @@ window.VPComandas = (() => {
           <span class="mdi-empty-ico">${icon('bell')}</span>
           <b>Sin avisos</b>
           <span>Aquí te llegan los pedidos listos de tus mesas y si cocina no tiene algo.</span>
-        </div>`)}`;
+        </div>`}</div>`}`;
   }
   /* Aviso de "No hay": qué hacer */
   function verAviso(tid, aid) {
@@ -858,7 +870,7 @@ window.VPComandas = (() => {
     if (agregar && k) { ronda(k.tableId); return; }
     render();
   }
-  function tabMesero(t) { st.mtab = t; vibrate(6); render(); window.scrollTo(0, 0); }
+  function tabMesero(t) { st.mtab = t; vibrate(6); render.fresh = true; render(); window.scrollTo(0, 0); const l = document.querySelector('#view .cm-av-scroll'); if (l) l.scrollTop = 0; }
 
   /* Mesa que atiende otro mesero */
   function mesaAjena(o) {
