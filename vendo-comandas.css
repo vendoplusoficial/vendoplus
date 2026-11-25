@@ -414,3 +414,8 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 }
 /* Con la portada de Premium la pantalla no necesita el espacio extra de abajo (así no hay scroll) */
 #view:has(> .cm-promo){ padding-bottom:0 !important; }
+
+/* La portada entra solo con un fundido (sin deslizar), ya en su tamaño final */
+#view.view-enter > section.cm-promo.cm-fit, #view.view-enter > h1.page-title.cm-promo-title{ animation:cmFadeIn .22s ease both !important; }
+section.cm-promo.cm-fit:not(.cm-fit-ok){ visibility:hidden; }
+@keyframes cmFadeIn{ from{ opacity:0; } to{ opacity:1; } }

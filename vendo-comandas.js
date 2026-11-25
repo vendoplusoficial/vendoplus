@@ -454,6 +454,8 @@ window.VPComandas = (() => {
   }
   let fitPuesto = false;
   function fitSoon() {
+    /* Se ajusta ANTES de que se pinte (microtarea): aparece ya en su tamaño final */
+    queueMicrotask(() => { try { fitCm(); } finally { const r = document.querySelector('#view .cm-fit'); if (r) r.classList.add('cm-fit-ok'); } });
     requestAnimationFrame(() => requestAnimationFrame(fitCm));
     setTimeout(fitCm, 450);   /* otra vez cuando termina la animación de entrada */
     if (!fitPuesto) {
