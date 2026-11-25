@@ -30138,12 +30138,10 @@ function stHubNfcHTML(){
 }
 function stHubMenuHTML(){
   const on = stMenuOn();
-  const menuActivo = !!mdCfg().active;
   return `<div class="sth sth-sub">${stHubSubHead('Pago en tu Menú Digital', on, 'stMenuSet(this.checked)')}
     <p class="page-sub">Tus clientes pagan su pedido en línea y el dinero llega a tu Stripe.</p>
     ${stEstadoHTML(on, 'Tus clientes ya pueden pagar con tarjeta', 'Enciéndelo para cobrar con tarjeta')}
     ${stArt('menu', on)}
-    ${!menuActivo ? `<div class="sth-aviso">${icon('alert')}<span>Tu Menú Digital todavía no está activado: tus clientes no lo pueden ver. <button type="button" onclick="goTo('menu')">Ir a Menú Digital</button></span></div>` : ''}
     <button type="button" class="sth-pasos" onclick="stPasos('menu')">${ST_PLAY} Ver pasos para usarlo</button>
   </div>`;
 }
