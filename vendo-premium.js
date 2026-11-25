@@ -119,6 +119,7 @@
       ico: 'camera'
     },
     usuarios: { titulo: 'Acceso para tus empleados', texto: 'Cada empleado entra con su propio NIP y solo puede usar las funciones que le permitas.', ico: 'users' },
+    comandas: { titulo: 'Comandas: caja, mesero y cocina', texto: 'El mesero toma el pedido en la mesa, cocina lo recibe al instante y la caja cobra. Todo conectado.', ico: 'comandas' },
   stats: {
       titulo: 'Reportes de ventas y ganancias',
       texto: 'Consulta cuánto vendes, cuánto ganas y cuáles son tus productos más vendidos.',
@@ -426,6 +427,7 @@
     { k: 'chat',     t: 'Asistente con IA',              basico: false },
     { k: 'stats',    t: 'Reportes de ventas y ganancias', basico: false },
     { k: 'usuarios', t: 'Acceso para tus empleados',     basico: false },
+    { k: 'comandas', t: 'Comandas',                      basico: false, premium: 'Caja, mesero y cocina conectados', sub: true },
     /* Cobros con tarjeta por Stripe (solo Premium): debajo, en chiquito,
        los dos cobros que incluye (cada uno en su renglón). */
     { k: 'stripe',   t: 'Cobros con tarjeta Stripe',     basico: false, premium: 'Cobro con sensor|Cobro con tarjeta en menú digital', sub: true },

@@ -348,3 +348,19 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 /* Avisos: solo la lista se desliza (lo de arriba se queda fijo) */
 .cm-av-scroll{ overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:2px 2px 14px; margin:0 -2px; }
 .cm-av-scroll .mdi-empty{ margin-top:0; }
+
+/* Activar comandas (pantalla del Dueño) */
+.cm-on-card{ display:flex; align-items:center; gap:12px; margin:16px 0 4px; padding:14px 16px; border:1px solid var(--border); border-radius:18px; background:var(--surface, #fff); cursor:pointer; }
+.cm-on-card.on{ border-color:var(--brand); background:var(--brand-soft); }
+.cm-on-card .acc-txt{ flex:1; min-width:0; }
+.cm-on-card .acc-ico svg{ width:18px; height:18px; }
+.cm-prem{ display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; background:var(--accent-soft); color:#8A6000; font-size:11px; font-weight:800; vertical-align:2px; }
+.cm-areas.cm-apagadas .cm-area{ opacity:.6; }
+
+/* Cobro dividido: Mandar a cocina (blanco) | Cobrar (igual que siempre) */
+.p2-actions.cm-p2-split{ display:grid !important; grid-template-columns:1fr 1fr; gap:10px; }
+.p2-actions.cm-p2-split > .btn{ width:100%; min-width:0; margin:0; }
+.cm-p2-cocina{ background:#fff !important; color:var(--ink, #16213E) !important; border:1.5px solid var(--border, #E8EBF2) !important; box-shadow:none; flex-direction:row !important; }
+.cm-p2-cocina .cm-hold-fill{ background:rgb(22 33 62 / 10%); }
+.cm-p2-cocina .cm-hold-in{ gap:6px; white-space:nowrap; }
+.cm-p2-cocina svg{ width:17px; height:17px; }

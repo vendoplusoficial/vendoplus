@@ -5422,7 +5422,7 @@ div.stf-row{ cursor:default; }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=10">
 <script src="vendo-mesas.js?v=11"></script>
-<link rel="stylesheet" href="vendo-comandas.css?v=15">
+<link rel="stylesheet" href="vendo-comandas.css?v=16">
 <style>
 .vp-err-card{ max-width:420px; margin:40px auto; padding:22px 20px; border:1px solid var(--border,#E8EBF2); border-radius:18px; background:#fff; display:flex; flex-direction:column; gap:10px; text-align:center; }
 .vp-err-card b{ font-size:17px; color:var(--ink,#16213E); }
@@ -5432,7 +5432,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=17"></script>
+<script src="vendo-comandas.js?v=18"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -7980,10 +7980,15 @@ function cartSheetHTML(step){
       ${(totals.discount > 0 || showsTax(tax) || totals.tip > 0) ? totalRows(true) : ''}
 
       ${checkout.floorTableId ? `<button class="btn ghost block" onclick="VPMesas.park()">${VPMesas.tableIcon} ${checkout.floorOrderId ? 'Guardar cambios' : 'Dejar mesa abierta'}</button>` : ''}
+      ${window.VPComandas && VPComandas.cobroDividido && VPComandas.cobroDividido() ? `
+      <div class="p2-actions cm-p2-split" data-fx="actions">
+        ${VPComandas.botonCocinaHTML()}
+        <button class="btn whatsapp block" id="btnCobrar" onclick="confirmarCobro()">${icon('check')} Cobrar ${formatMoney(toPay)}</button>
+      </div>` : `
       <div class="p2-actions" data-fx="actions">
         <button class="btn ghost" onclick="openCartSheet('cart')">Volver</button>
         <button class="btn whatsapp block" id="btnCobrar" onclick="confirmarCobro()">${icon('check')} Cobrar ${formatMoney(toPay)}</button>
-      </div>
+      </div>`}
       </div>
     `;
   }
@@ -8570,6 +8575,7 @@ function confirmarCobro(){
   if(checkout.floorTableId && !saved){ toast('No se pudo guardar la venta'); return; }
   if(floorOrderId) DB.saveTableOrders(DB.getTableOrders().filter(p => p.id !== floorOrderId));
   if(floorOrderId && window.VPComandas) VPComandas.cerrarOrden(floorOrderId);
+  if(checkout.cmRef && window.VPComandas) VPComandas.cerrarOrden(checkout.cmRef);
 
   // Se descuenta lo vendido del inventario (piezas, kilos, litros o metros).
   if(typeof invContext === 'function') invContext({ type:'venta', ref:orderNumberLabel(number) });
@@ -29744,7 +29750,7 @@ window.VP_PROMOS_IMG = {
   'menu-h': 'img/promo-menu-h.webp?v=1'
 };
 </script>
-<script src="vendo-premium.js?v=20261125b"></script>
+<script src="vendo-premium.js?v=20261125c"></script>
 <script src="vendo-apps.js?v=20261125a"></script>
 
 <style id="vp-fotos-cuadradas">

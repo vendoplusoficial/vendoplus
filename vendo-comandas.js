@@ -42,9 +42,27 @@ window.VPComandas = (() => {
   /* Estado de pantallas */
   const st = { screen:'home', area:null, form:null, permsDraft:null, kf:'activas', mtab:'mesas', open:null };
 
+  /* ---------- Activadas o no (apagadas al inicio; se encienden con Premium) ---------- */
+  const ON_KEY = 'mesa_cm_activo';
+  function activas() { try { return Store.get(ON_KEY, false) === true; } catch (e) { return false; } }
+  function premiumOk() { try { return !!(window.VPPremium && VPPremium.activo && VPPremium.activo()); } catch (e) { return false; } }
+  function activar(v) {
+    if (!requireOwner('Solo el Dueño puede activar las comandas')) { render(); return; }
+    if (v && !premiumOk()) {
+      render();
+      if (window.VPPremium && VPPremium.abrir) VPPremium.abrir('comandas'); else toast('Las comandas son de Premium');
+      return;
+    }
+    Store.set(ON_KEY, !!v);
+    render();
+    toast(v ? 'Comandas activadas' : 'Comandas desactivadas', { variant:v ? 'toast-success' : '', icon:icon(v ? 'check' : 'close'),
+      subtitle:v ? 'Tu equipo ya puede usar Caja, Mesero y Cocinero.' : 'Tu equipo entra al POS normal.' });
+  }
+
   /* ---------- Quién está usando la app ---------- */
   function myArea() {
     try {
+      if (!activas()) return null;
       if (!multiUser()) return null;
       const u = activeUser();
       if (!u || u.role === 'dueno') return null;
@@ -212,6 +230,7 @@ window.VPComandas = (() => {
       if (!h) return;
       clearTimeout(h.t);
       h.b.classList.remove('holding');
+      if (!done && Date.now() - h.at < HOLD_MS && !h.b.querySelector('.cm-hold-tip')) toast('Mantén presionado el botón', { icon:icon('clock'), duration:1600 });
       if (!done && Date.now() - h.at < HOLD_MS) { h.b.classList.add('cm-hold-nudge'); setTimeout(() => h && h.b && h.b.classList.remove('cm-hold-nudge'), 600); vibrate(8); }
       h = null;
     };
@@ -307,7 +326,15 @@ window.VPComandas = (() => {
     return `
       <h1 class="page-title">Comandas</h1>
       <p class="page-sub">Elige un área para ver y agregar a tu equipo</p>
-      <div class="cm-areas">
+      <label class="cm-on-card ${activas() ? 'on' : ''}">
+        <span class="acc-ico ${activas() ? 'green' : ''}">${icon('comandas')}</span>
+        <span class="acc-txt">
+          <span class="acc-label">Comandas ${activas() ? 'activadas' : 'desactivadas'}${premiumOk() ? '' : ' <span class="cm-prem">Premium</span>'}</span>
+          <span class="acc-sub">${activas() ? 'Caja, Mesero y Cocinero ya trabajan conectados.' : 'Actívalas para que tu equipo use Caja, Mesero y Cocinero.'}</span>
+        </span>
+        <span class="switch"><input type="checkbox" ${activas() ? 'checked' : ''} onchange="VPComandas.activar(this.checked)"><span class="track"></span></span>
+      </label>
+      <div class="cm-areas ${activas() ? '' : 'cm-apagadas'}">
         ${ORDER.map(id => {
           const n = gente(id).length;
           return `<button type="button" class="cm-area" onclick="VPComandas.area('${id}')">
@@ -954,6 +981,12 @@ window.VPComandas = (() => {
 
   /* Junta líneas iguales (mismo producto, tamaño, nota y precio) */
   const lineKey = c => [c.productId, c.sizeId || '', (c.note || '').trim(), c.manualPrice == null ? '' : c.manualPrice].join('|');
+  /* Cantidades del carrito por línea (para saber qué falta mandar a cocina) */
+  function cartMap() {
+    const m = {};
+    cart.forEach(c => { const k = lineKey(c); m[k] = Math.round(((m[k] || 0) + (Number(c.qty) || 0)) * 1000) / 1000; });
+    return m;
+  }
   function juntar(base, nuevas) {
     const out = JSON.parse(JSON.stringify(base || []));
     nuevas.forEach(c => {
@@ -1146,6 +1179,64 @@ window.VPComandas = (() => {
     openCartSheet('checkout');
   }
   function editarCuenta(orderId) { if (cargar(orderId)) openCartSheet('cart'); }
+
+  /* ---------- Cobro: "Mandar a cocina" junto a "Cobrar" (solo con comandas activadas) ---------- */
+  function cobroDividido() { return activas() && !esMesero() && cart.length > 0; }
+  function botonCocinaHTML() {
+    return `<button type="button" class="btn block cm-hold cm-p2-cocina" data-hold="mandarDesdeCobro" data-args="[]" title="Mantén presionado">
+      <span class="cm-hold-fill" aria-hidden="true"></span>
+      <span class="cm-hold-in">${icon('comandas')} Mandar a cocina</span>
+    </button>`;
+  }
+  /* Manda a cocina lo que falte (sin cobrar). Si es una mesa, la cuenta queda
+     abierta; si no, el pedido queda en "Ventas en espera" para cobrarlo después. */
+  function mandarDesdeCobro() {
+    if (!cobroDividido()) return;
+    const sent = checkout.cmSent || {};
+    const mapa = cartMap();
+    const items = [];
+    Object.keys(mapa).forEach(k => {
+      const q = Math.round((mapa[k] - (sent[k] || 0)) * 1000) / 1000;
+      if (q <= 0) return;
+      const c = cart.find(x => lineKey(x) === k);
+      const p = findProduct(c.productId);
+      items.push({ productId:c.productId, sizeId:c.sizeId || '', name:p ? p.name : 'Producto', size:c.sizeLabel || '', qty:q, note:(c.note || '').trim() });
+    });
+    if (!items.length) { toast('Todo esto ya está en cocina', { icon:icon('check'), subtitle:'Solo falta cobrar.' }); return; }
+    const yo = me();
+    let orderId, label, donde;
+    const svc = (SERVICE_TYPES.find(x => x.id === checkout.serviceType) || {}).name || 'Pedido';
+    const cust = typeof checkoutCustomer === 'function' ? checkoutCustomer() : null;
+    if (checkout.floorTableId) {
+      const t = VPMesas.layout().find(x => x.id === checkout.floorTableId);
+      label = t ? t.name : (checkout.table || 'Mesa');
+      const prevId = checkout.floorOrderId;
+      checkout.cmSent = mapa;
+      if (!parkNow(label, prevId)) { checkout.cmSent = sent; toast('No se pudo guardar el pedido'); return; }
+      orderId = prevId || ((VPMesas.openOrders().get(t ? t.id : '') || {}).id) || null;
+      donde = 'La cuenta de la mesa queda abierta';
+    } else {
+      const ref = checkout.cmRef || uid('ref');
+      const nombre = (checkout.table || '').trim() || (cust ? cust.name : '');
+      label = nombre ? svc + ' · ' + nombre : svc + ' · ' + fmtTime(nowIso());
+      checkout.cmRef = ref;
+      checkout.cmSent = mapa;
+      if (!parkNow(label)) { checkout.cmSent = sent; toast('No se pudo guardar el pedido'); return; }
+      orderId = ref;
+      donde = 'Queda en Ventas en espera para cobrarlo';
+    }
+    const tks = tickets();
+    const ronda = tks.filter(k => k.orderId === orderId).length + 1;
+    tks.push({
+      id: uid('cm'), orderId, tableId:checkout.floorTableId || '', table:label, round:ronda, items, pos:true,
+      by: yo ? yo.name : meName(), byId: yo ? yo.id : meId(),
+      at: nowIso(), status:'nuevo'
+    });
+    saveTickets(tks);
+    closeModal();
+    render();
+    toast('Mandado a cocina', { variant:'toast-success', icon:icon('comandas'), subtitle:label + ' · ' + donde });
+  }
 
   /* Al borrar la cuenta: lo que quedaba en cocina se cancela.
      Al cobrarla: lo que ya estaba listo se da por entregado. */
@@ -1570,6 +1661,11 @@ window.VPComandas = (() => {
       beep(); vibrate([30, 80, 30]);
       toast(nuevas.length === 1 ? 'Nueva comanda · ' + nuevas[0].table : nuevas.length + ' comandas nuevas', { icon:icon('bell'), variant:'toast-success toast-top', subtitle:nuevas.length === 1 ? 'De ' + (nuevas[0].by || 'el mesero') : '', duration:3500 });
     }
+    const delCobro = (area === 'caja' || !area) ? listas.filter(k => k.pos && !!yo && k.byId === yo.id) : [];
+    if (delCobro.length) {
+      beep(); vibrate([30, 80, 30]);
+      toast(delCobro[0].table + ' · lista', { icon:icon('bell'), variant:'toast-success toast-top', subtitle:'Ya está lista en cocina', duration:4000 });
+    }
     const mias = area === 'mesero' ? listas.filter(k => { const o = orderById(k.orderId); return o ? esMiMesa(o) : (!!yo && k.byId === yo.id); }) : [];
     if (mias.length) {
       beep(); vibrate([30, 80, 30]);
@@ -1592,7 +1688,7 @@ window.VPComandas = (() => {
     let muted = false, hooked = false, busy = false, again = false, timer = null, ch = null, chUid = null, poll = null;
 
     const can = () => { try { return Cloud.ready && !!Cloud.uid && !!Cloud.sb && AUTH.isLogged(); } catch (e) { return false; } };
-    const inUse = () => { try { return DB.getUsers().some(u => AREAS[u.area]) || DB.getTableOrders().some(o => o.cm) || tickets().length > 0 || Store.list(AKEY).length > 0; } catch (e) { return false; } };
+    const inUse = () => { try { return activas() || DB.getUsers().some(u => AREAS[u.area]) || DB.getTableOrders().some(o => o.cm) || tickets().length > 0 || Store.list(AKEY).length > 0; } catch (e) { return false; } };
     const online = () => can();
 
     /* Huella del dato con las llaves en orden fijo: la nube (jsonb) las
@@ -1771,7 +1867,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    esSolo, perfil, nombre, guardarNombre,
+    esSolo, perfil, nombre, guardarNombre, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
