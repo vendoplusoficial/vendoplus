@@ -51,7 +51,7 @@ window.addEventListener('load', function(){
 <script>
 /* Copia de la app en el aparato (sw.js): abre rápido con señal mala y sin internet */
 if('serviceWorker' in navigator && location.protocol === 'https:'){
-  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(function(r){ try{ r.update().catch(function(){}); }catch(e){} }).catch(function(){}); });
 }
 </script>
 <meta name="robots" content="index, follow">

@@ -1,19 +1,18 @@
 /* =========================================================
-   VendoPlus · copia de la app en el aparato
-   - Con buena señal: se baja la versión nueva de siempre (lo publicado
-     se ve al instante).
-   - Con señal mala: si el servidor tarda más de 2.5 s, se abre la copia
-     guardada y la nueva se guarda para la siguiente vez.
-   - Sin internet: se abre la copia guardada al momento.
-   - Cada vez que se guarda la página se guardan también los archivos que
-     esa página pide (?v=…): así la copia nunca queda a medias.
-   - Si falta un archivo y no hay red, se usa la versión que haya guardada
-     de ese mismo archivo (nunca se queda la app sin Comandas, etc.).
+   VendoPlus · copia de la app en el aparato (solo para cuando NO hay internet)
+
+   Con internet la app se comporta exactamente como una página normal:
+   todo se pide al servidor (sin esperas extra y sin versiones viejas).
+   La copia guardada SOLO se usa si el servidor no contesta (sin internet).
+
+   - Cada vez que la página se baja bien, se guarda junto con todos los
+     archivos que pide (?v=…): la copia nunca queda a medias.
+   - Las fotos y la librería fija de Supabase no cambian nunca: esas sí se
+     sirven de la copia (son las que pesan y así salen al instante).
    - Supabase, Stripe y todo lo que no es de vendoplusoficial.com pasa
      directo: nunca se guarda ni se toca.
 ========================================================= */
 const CACHE = 'vp-app-v2';            /* no cambiar: cambiarlo borra la copia */
-const ESPERA = 2500;
 const BASE = ['./', './vendor/supabase-2.119.0.js',
   './img/auth-carta.webp?v=1',
   './img/auth-clave.webp?v=1',
@@ -38,7 +37,7 @@ self.addEventListener('install', e => {
   e.waitUntil((async () => {
     const c = await caches.open(CACHE);
     await Promise.all(BASE.map(u => c.add(u).catch(() => {})));
-    /* La página que se guarda trae consigo sus archivos */
+    /* La página guardada trae consigo sus archivos desde el primer momento */
     const pag = await c.match('./');
     if (pag) await guardarLoQuePide(c, pag);
   })());
@@ -59,91 +58,62 @@ self.addEventListener('fetch', e => {
   try { url = new URL(req.url); } catch (x) { return; }
   if (url.origin !== self.location.origin) return;
   if (req.mode === 'navigate') { e.respondWith(pagina(e, req)); return; }
-  /* El código de la app (js/css): SIEMPRE se pide primero a la red (así nunca
-     se queda pegada una versión vieja); la copia solo si no hay red o tarda */
-  if (/\.(js|css|json|webmanifest)$/i.test(url.pathname) && url.pathname.indexOf('/vendor/') < 0) {
-    e.respondWith(primeroRedArchivo(req));
+  /* Fotos y librería fija: nunca cambian, la copia primero */
+  if (url.pathname.indexOf('/vendor/') >= 0 || /\.(png|svg|ico|webp|jpe?g|gif|woff2?)$/i.test(url.pathname)) {
+    e.respondWith(primeroCopia(req));
     return;
   }
-  /* La librería fija y las imágenes: la copia primero */
-  if (/[?&]v=/.test(url.search) || url.pathname.indexOf('/vendor/') >= 0 || /\.(png|svg|ico|webp|jpe?g|gif|woff2?)$/i.test(url.pathname)) {
-    e.respondWith(primeroCopia(req));
-  }
+  /* Código de la app: del servidor; la copia solo si no hay internet */
+  if (/\.(js|css|json|webmanifest)$/i.test(url.pathname)) e.respondWith(redOCopia(req));
 });
 
-/* Red primero (con tope de 2.5 s); si no hay o tarda: la copia exacta, o la que haya de ese archivo */
-async function primeroRedArchivo(req) {
-  const cache = await caches.open(CACHE);
-  const red = fetch(req).then(r => guardar(cache, req, r));
-  const copia = (await cache.match(req)) || (await cache.match(req, { ignoreSearch:true }));
-  if (!copia) return red;
-  return new Promise(resolve => {
-    let listo = false;
-    const fin = r => { if (!listo) { listo = true; clearTimeout(t); resolve(r); } };
-    const t = setTimeout(() => fin(copia), ESPERA);
-    red.then(r => fin(r && r.ok ? r : copia), () => fin(copia));
-  });
-}
+const sirve = r => r && r.ok && r.type === 'basic' && !r.redirected;
 
-function guardar(cache, req, r) {
-  if (r && r.ok && r.type === 'basic' && !r.redirected) cache.put(req, r.clone()).catch(() => {});
-  return r;
-}
-
-/* Lee la página y guarda los archivos con versión que pide (scripts, estilos, fotos) */
+/* Guarda los archivos con versión que pide la página (para cuando no haya internet) */
 async function guardarLoQuePide(cache, resp) {
   try {
-    const html = await resp.clone().text();
+    const html = await resp.text();
     const urls = new Set();
     const re = /["'(]((?!https?:|\/\/|data:)[^"'()\s<>]+\?v=[^"'()\s<>]+)["')]/g;
     let m;
     while ((m = re.exec(html))) urls.add(new URL(m[1], self.registration.scope).href);
     await Promise.all([...urls].map(async u => {
       if (await cache.match(u)) return;
-      try { const r = await fetch(u); if (r.ok && !r.redirected) await cache.put(u, r); } catch (x) {}
+      try { const r = await fetch(u); if (sirve(r)) await cache.put(u, r); } catch (x) {}
     }));
   } catch (x) {}
 }
 
 async function pagina(e, req) {
   const cache = await caches.open(CACHE);
-  const red = fetch(req).then(r => {
-    if (r && r.ok && r.type === 'basic' && !r.redirected) {
+  try {
+    const r = await fetch(req);
+    if (sirve(r)) {
       cache.put(req, r.clone()).catch(() => {});
       e.waitUntil(guardarLoQuePide(cache, r.clone()));
     }
     return r;
-  });
-  const copia = (await cache.match(req)) || (await cache.match(req, { ignoreSearch:true })) || (await cache.match('./'));
-  if (!copia) return red;
-  return new Promise(resolve => {
-    let listo = false;
-    const fin = r => { if (!listo) { listo = true; clearTimeout(t); resolve(r); } };
-    const t = setTimeout(() => fin(copia), ESPERA);
-    red.then(fin, () => fin(copia));
-  });
+  } catch (err) {
+    return (await cache.match(req)) || (await cache.match(req, { ignoreSearch:true })) || (await cache.match('./')) || Promise.reject(err);
+  }
 }
 
-async function copiaYActualiza(e, req) {
+async function redOCopia(req) {
   const cache = await caches.open(CACHE);
-  const copia = await cache.match(req);
-  const red = fetch(req).then(r => guardar(cache, req, r));
-  if (copia) { e.waitUntil(red.catch(() => {})); return copia; }
-  return red.catch(async err => (await cache.match(req, { ignoreSearch:true })) || Promise.reject(err));
+  try {
+    const r = await fetch(req);
+    if (sirve(r)) cache.put(req, r.clone()).catch(() => {});
+    return r;
+  } catch (err) {
+    return (await cache.match(req)) || (await cache.match(req, { ignoreSearch:true })) || Promise.reject(err);
+  }
 }
 
-/* Versión exacta guardada → red → si no hay red (o tarda), otra versión guardada del mismo archivo */
 async function primeroCopia(req) {
   const cache = await caches.open(CACHE);
   const copia = await cache.match(req);
   if (copia) return copia;
-  const red = fetch(req).then(r => guardar(cache, req, r));
-  const otra = await cache.match(req, { ignoreSearch:true });
-  if (!otra) return red;
-  return new Promise(resolve => {
-    let listo = false;
-    const fin = r => { if (!listo) { listo = true; clearTimeout(t); resolve(r); } };
-    const t = setTimeout(() => fin(otra), ESPERA);
-    red.then(r => fin(r && r.ok ? r : otra), () => fin(otra));
-  });
+  const r = await fetch(req);
+  if (sirve(r)) cache.put(req, r.clone()).catch(() => {});
+  return r;
 }
