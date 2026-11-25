@@ -364,3 +364,11 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 .cm-p2-cocina .cm-hold-fill{ background:rgb(22 33 62 / 10%); }
 .cm-p2-cocina .cm-hold-in{ gap:6px; white-space:nowrap; }
 .cm-p2-cocina svg{ width:17px; height:17px; }
+
+/* Barra "Pedidos en cocina" (aparte de Ventas en espera) */
+.cm-cocina-bar .parked-ico{ background:var(--brand-soft, #E5FAEC) !important; color:var(--brand-ink, #0F8F46) !important; }
+.cm-cocina-bar .parked-ico b{ background:var(--brand, #25D366) !important; }
+.parked-row .acc-label .mdi-pill{ margin-left:6px; vertical-align:1px; }
+body.cm-mesero .cm-cocina-bar{ display:none !important; }
+.parked-bar.cm-cocina-bar{ background:var(--brand-soft, #E5FAEC) !important; border-color:#9FE3BC !important; }
+.parked-bar.cm-cocina-bar .parked-ico{ background:#fff !important; }
