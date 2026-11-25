@@ -59,14 +59,31 @@ self.addEventListener('fetch', e => {
   try { url = new URL(req.url); } catch (x) { return; }
   if (url.origin !== self.location.origin) return;
   if (req.mode === 'navigate') { e.respondWith(pagina(e, req)); return; }
-  /* Archivos con versión (?v=…), la librería fija y las imágenes: la copia primero */
-  if (/[?&]v=/.test(url.search) || url.pathname.indexOf('/vendor/') >= 0 || /\.(png|svg|ico|webp|jpe?g|gif|woff2?)$/i.test(url.pathname)) {
-    e.respondWith(primeroCopia(req));
+  /* El código de la app (js/css): SIEMPRE se pide primero a la red (así nunca
+     se queda pegada una versión vieja); la copia solo si no hay red o tarda */
+  if (/\.(js|css|json|webmanifest)$/i.test(url.pathname) && url.pathname.indexOf('/vendor/') < 0) {
+    e.respondWith(primeroRedArchivo(req));
     return;
   }
-  /* Lo demás (js/css sin versión): la copia al momento y se actualiza para la siguiente vez */
-  if (/\.(js|css|json|webmanifest)$/i.test(url.pathname)) e.respondWith(copiaYActualiza(e, req));
+  /* La librería fija y las imágenes: la copia primero */
+  if (/[?&]v=/.test(url.search) || url.pathname.indexOf('/vendor/') >= 0 || /\.(png|svg|ico|webp|jpe?g|gif|woff2?)$/i.test(url.pathname)) {
+    e.respondWith(primeroCopia(req));
+  }
 });
+
+/* Red primero (con tope de 2.5 s); si no hay o tarda: la copia exacta, o la que haya de ese archivo */
+async function primeroRedArchivo(req) {
+  const cache = await caches.open(CACHE);
+  const red = fetch(req).then(r => guardar(cache, req, r));
+  const copia = (await cache.match(req)) || (await cache.match(req, { ignoreSearch:true }));
+  if (!copia) return red;
+  return new Promise(resolve => {
+    let listo = false;
+    const fin = r => { if (!listo) { listo = true; clearTimeout(t); resolve(r); } };
+    const t = setTimeout(() => fin(copia), ESPERA);
+    red.then(r => fin(r && r.ok ? r : copia), () => fin(copia));
+  });
+}
 
 function guardar(cache, req, r) {
   if (r && r.ok && r.type === 'basic' && !r.redirected) cache.put(req, r.clone()).catch(() => {});
