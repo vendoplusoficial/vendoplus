@@ -1221,8 +1221,9 @@ window.VPComandas = (() => {
       const lista = DB.getCocina();
       const prev = checkout.cmPedidoId ? lista.find(x => x.id === checkout.cmPedidoId) : null;
       const nombre = (checkout.table || '').trim() || (cust ? cust.name : '');
-      label = prev ? prev.name : (nombre ? svc + ' · ' + nombre : svc + ' · ' + fmtTime(nowIso()));
-      const id = prev ? prev.id : uid('e');
+      label = prev ? prev.name : (checkout.cmNombre || (nombre ? svc + ' · ' + nombre : svc + ' · ' + fmtTime(nowIso())));
+      checkout.cmNombre = label;
+      const id = prev ? prev.id : (checkout.cmPedidoId || uid('e'));
       checkout.cmRef = ref;
       checkout.cmPedidoId = id;
       checkout.cmSent = mapa;
@@ -1236,7 +1237,7 @@ window.VPComandas = (() => {
       if (!DB.saveCocina(lista.filter(x => x.id !== id).concat([entry]))) { checkout.cmSent = sent; toast('No se pudo guardar el pedido'); return; }
       cart = []; customItems = {}; checkout = newCheckout();
       orderId = ref;
-      donde = 'Lo cobras desde Pedidos en cocina';
+      donde = 'Queda en Ventas en espera para cobrarlo';
     }
     const tks = tickets();
     const ronda = tks.filter(k => k.orderId === orderId).length + 1;
@@ -1258,71 +1259,10 @@ window.VPComandas = (() => {
     if (ks.some(k => k.status === 'listo')) return { cls:'ok', label:'Listo' };
     return { cls:'cancel', label:'Entregado' };
   }
-  function cocinaBarHTML() {
-    if (!activas() || esMesero()) return '';
-    const l = DB.getCocina();
-    if (!l.length) return '';
-    const listos = l.filter(p => estadoPedido(p).label === 'Listo').length;
-    return `<button class="parked-bar cm-cocina-bar no-print" onclick="VPComandas.pedidosCocina()">
-      <span class="parked-ico">${icon('comandas')}<b>${l.length}</b></span>
-      <span class="parked-txt"><b>Pedidos en cocina${listos ? ' · ' + plural(listos, 'listo', 'listos') : ''}</b><small>${l.slice(-3).map(p => escapeHtml(p.name)).join(' · ')}</small></span>
-      <span class="acc-chev">${icon('chevronRight')}</span>
-    </button>`;
-  }
-  function pedidosCocina() {
-    const l = DB.getCocina().slice().reverse();
-    if (!l.length) { closeModal(); render(); return; }
-    openModal(`
-      <div class="sheet-header">
-        <h2>Pedidos en cocina</h2>
-        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
-      </div>
-      <p class="sheet-text">Ya se mandaron a cocina y falta cobrarlos.</p>
-      <div class="acc-list">${l.map(p => {
-        const e = estadoPedido(p);
-        return `
-        <div class="acc-row parked-row">
-          <span class="acc-ico green">${icon('comandas')}</span>
-          <button class="acc-txt" onclick="VPComandas.retomarPedido('${p.id}')">
-            <span class="acc-label">${escapeHtml(p.name)} <span class="mdi-pill ${e.cls}">${e.label}</span></span>
-            <span class="acc-sub">${plural(p.units || 0, 'artículo', 'artículos')} · ${formatMoney(p.total)} · ${ago(p.at)}</span>
-          </button>
-          <button class="icon-btn" onclick="VPComandas.cancelarPedido('${p.id}')" aria-label="Cancelar pedido">${icon('trash')}</button>
-          <button class="btn primary" onclick="VPComandas.retomarPedido('${p.id}')">Cobrar</button>
-        </div>`;
-      }).join('')}</div>
-    `, { dismissible:true });
-  }
-  /* Abre el pedido para cobrarlo (sigue en la lista hasta que se cobra) */
-  function retomarPedido(id) {
-    const p = DB.getCocina().find(x => x.id === id);
-    if (!p) { pedidosCocina(); return; }
-    const cargarlo = () => {
-      cart = JSON.parse(JSON.stringify(p.cart || []));
-      customItems = JSON.parse(JSON.stringify(p.customItems || {}));
-      checkout = Object.assign(newCheckout(), p.checkout || {}, { cash:'' });
-      closeModal();
-      if (currentView !== 'sale') goTo('sale'); else render();
-      openCartSheet('checkout');
-    };
-    if (checkout.cmPedidoId === id || !cart.length) { cargarlo(); return; }
-    askConfirm({ title:'Ya tienes productos en el carrito', text:'Lo que tienes ahorita se guarda en Ventas en espera y abres "' + escapeHtml(p.name) + '".', ok:'Cambiar', icon:icon('pause') }, () => {
-      if (checkout.cmPedidoId) { cargarlo(); return; }
-      if (!parkNow('Pedido ' + fmtTime(nowIso()))) { toast('No se pudo guardar el pedido actual'); return; }
-      cargarlo();
-    });
-  }
-  function cancelarPedido(id) {
-    const p = DB.getCocina().find(x => x.id === id);
-    if (!p) return;
-    askConfirm({ title:'¿Cancelar "' + escapeHtml(p.name) + '"?', text:'Se quita de Pedidos en cocina y cocina deja de prepararlo. No afecta tus ventas.', ok:'Cancelar pedido', cancel:'No', danger:true, icon:icon('trash') }, () => {
-      cancelarOrden((p.checkout || {}).cmRef);
-      quitarPedido(id);
-      if (checkout.cmPedidoId === id) { cart = []; customItems = {}; checkout = newCheckout(); }
-      render();
-      if (DB.getCocina().length) pedidosCocina(); else closeModal();
-      toast('Pedido cancelado', { icon:icon('trash') });
-    });
+  /* Estado de cocina dentro de Ventas en espera */
+  function estadoPedidoHTML(p) {
+    const e = estadoPedido(p);
+    return ` <span class="mdi-pill ${e.cls} cm-esp-pill">${e.label}</span>`;
   }
   /* Al cobrarlo se quita de la lista */
   function quitarPedido(id) { if (id) DB.saveCocina(DB.getCocina().filter(x => x.id !== id)); }
@@ -1956,7 +1896,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    esSolo, perfil, nombre, guardarNombre, cocinaBarHTML, pedidosCocina, retomarPedido, cancelarPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
