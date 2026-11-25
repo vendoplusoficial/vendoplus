@@ -101,7 +101,41 @@ window.VPComandas = (() => {
     const h = Math.floor(m / 60);
     return 'hace ' + h + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
   }
-  const unitsOf = items => items.reduce((a, i) => a + (Number.isInteger(i.qty) ? i.qty : 1), 0);
+  /* Lo que de verdad se va a servir: lo pedido menos lo que no hubo */
+  const efect = i => Math.max(0, Math.round(((Number(i.qty) || 0) - (Number(i.falta) || 0)) * 1000) / 1000);
+  const unitsOf = items => items.reduce((a, i) => { const q = efect(i); return a + (q <= 0 ? 0 : (Number.isInteger(q) ? q : 1)); }, 0);
+  /* Texto de un producto en rondas e historial, con lo que no hubo */
+  const itemTxt = i => {
+    const q = efect(i);
+    return `<span class="${q <= 0 ? 'cm-x' : ''}"><b>${fmtN(q > 0 ? q : i.qty)}×</b> ${escapeHtml(i.name)}${i.size ? ' · ' + escapeHtml(i.size) : ''}${i.note ? ` <i>(${escapeHtml(i.note)})</i>` : ''}${i.falta ? ` <em class="cm-nohay-tag">No hubo ${fmtN(i.falta)}</em>` : ''}</span>`;
+  };
+
+  /* ---------- Agotados del día (los marca cocina, los ven todos) ---------- */
+  const AKEY = 'mesa_cm_agotados';
+  const hoyKey = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  const agotadosHoy = () => Store.list(AKEY).filter(a => a && a.day === hoyKey());
+  function agotado(pid) { try { return !!pid && agotadosHoy().some(a => a.productId === pid); } catch (e) { return false; } }
+  function saveAgotados(list) { return Store.set(AKEY, list.filter(a => a && a.day === hoyKey())); }
+  function marcarAgotado(pid, name) {
+    if (!pid || agotado(pid)) return;
+    const list = agotadosHoy();
+    list.push({ id:'ag-' + pid + '-' + hoyKey(), productId:pid, name:name || ((findProduct(pid) || {}).name) || 'Producto', day:hoyKey(), at:nowIso(), by:meName() });
+    saveAgotados(list);
+  }
+  function reponer(pid) {
+    const a = agotadosHoy().find(x => x.productId === pid);
+    saveAgotados(agotadosHoy().filter(x => x.productId !== pid));
+    render();
+    toast('Ya se puede pedir otra vez', { variant:'toast-success', icon:icon('check'), subtitle:a ? a.name : '' });
+  }
+  /* En el catálogo: un agotado no se puede agregar */
+  function bloqueaAgotado(pid) {
+    if (!agotado(pid)) return false;
+    const p = findProduct(pid);
+    vibrate([18, 60, 18]);
+    toast('Se acabó: ' + (p ? p.name : 'este producto'), { icon:icon('alert'), variant:'toast-danger toast-top', subtitle:'Cocina lo marcó como agotado por hoy.' });
+    return true;
+  }
   const plural = (n, a, b) => n + ' ' + (n === 1 ? a : b);
   const thumb = productId => { const p = productId ? findProduct(productId) : null; return p && p.image ? `<img src="${p.image}" alt="">` : icon('plate'); };
 
@@ -550,6 +584,20 @@ window.VPComandas = (() => {
       return o ? esMiMesa(o) : (!!yo && k.byId === yo.id);
     });
   }
+  /* Avisos de "No hay" que le tocan a este mesero (sin atender) */
+  function misAvisos() {
+    const yo = me();
+    const out = [];
+    tickets().forEach(k => {
+      (k.alertas || []).forEach(a => {
+        if (a.visto) return;
+        const o = orderById(k.orderId);
+        if (o ? !esMiMesa(o) : !(yo && k.byId === yo.id)) return;
+        out.push(Object.assign({}, a, { tid:k.id, table:k.table, tableId:k.tableId, orderId:k.orderId }));
+      });
+    });
+    return out.sort((a, b) => new Date(a.at) - new Date(b.at));
+  }
   /* Juntas por mesa: dos rondas de la misma mesa = un solo aviso */
   function listasPorMesa() {
     const g = {};
@@ -571,6 +619,7 @@ window.VPComandas = (() => {
     const cuenta = !!(o.cm && o.cm.billAt);
     if (modo === 'caja') return { cls:'is-occupied' + (cuenta ? ' cm-bill' : ''), label:cuenta ? 'Pide cuenta' : formatMoney(o.total) };
     if (!esMiMesa(o)) return { cls:'cm-other', label:userFirstName({ name:nombreDe(o) }) || 'Otro' };
+    if (ks.some(k => (k.alertas || []).some(a => !a.visto))) return { cls:'is-occupied cm-alert', label:'¡Aviso!' };
     if (listas) return { cls:'is-occupied cm-ready', label:'¡Lista!' };
     if (cuenta) return { cls:'is-occupied cm-bill', label:'Pidió cuenta' };
     return { cls:'is-occupied', label:cocina ? 'En cocina' : 'Ocupada' };
@@ -581,7 +630,7 @@ window.VPComandas = (() => {
     const tks = tickets();
     const legend = modo === 'caja'
       ? [['', 'Libre'], ['is-occupied', 'Abierta'], ['cm-bill', 'Pide cuenta']]
-      : [['', 'Libre'], ['is-occupied', 'Mía'], ['cm-ready', 'Lista'], ['cm-bill', 'Pidió cuenta'], ['cm-other', 'De otro mesero']];
+      : [['', 'Libre'], ['is-occupied', 'Mía'], ['cm-ready', 'Lista'], ['cm-alert', 'No hay algo'], ['cm-bill', 'Pidió cuenta'], ['cm-other', 'De otro mesero']];
     return `
       <div class="vp-floor cm-floor" aria-label="Plano de mesas">
         ${VPMesas.layout().map(t => {
@@ -605,19 +654,25 @@ window.VPComandas = (() => {
   }
 
   /* Líneas de la comanda con foto, cantidad y nota (cocina y detalle) */
-  function lineasHTML(items) {
-    return items.map(i => `
-      <div class="mdi-line cm-line">
+  function lineasHTML(items, tid) {
+    return items.map((i, n) => {
+      const q = efect(i);
+      return `
+      <div class="mdi-line cm-line ${q <= 0 ? 'cm-line-out' : ''}">
         <div class="mdi-thumb">${thumb(i.productId)}</div>
         <div class="mdi-line-main">
           <div class="mdi-line-name">${escapeHtml(i.name)}${i.size ? ' <span class="cm-size">' + escapeHtml(i.size) + '</span>' : ''}</div>
           ${i.note ? `<div class="dm-line-note cm-note">${icx('note')}${escapeHtml(i.note)}</div>` : ''}
+          ${i.falta ? `<div class="cm-nohay-tag">${icon('alert')} No hubo ${fmtN(i.falta)}</div>` : ''}
+          ${tid && q > 0 ? `<button type="button" class="cm-nohay-btn" onclick="VPComandas.noHay('${tid}', ${n})">${icon('close')} No hay</button>` : ''}
         </div>
-        <div class="cm-qty">×${fmtN(i.qty)}</div>
-      </div>`).join('');
+        <div class="cm-qty">${q > 0 ? '×' + fmtN(q) : '<s>×' + fmtN(i.qty) + '</s>'}</div>
+      </div>`;
+    }).join('');
   }
   function resumen(items) {
-    return items.slice(0, 3).map(i => escapeHtml(fmtN(i.qty) + '× ' + i.name)).join(' · ') + (items.length > 3 ? ' · +' + (items.length - 3) + ' más' : '');
+    const hay = items.filter(i => efect(i) > 0);
+    return hay.slice(0, 3).map(i => escapeHtml(fmtN(efect(i)) + '× ' + i.name)).join(' · ') + (hay.length > 3 ? ' · +' + (hay.length - 3) + ' más' : '');
   }
 
   /* =========================================================
@@ -647,7 +702,7 @@ window.VPComandas = (() => {
       <div class="cm-rondas">${ks.map(k => `
         <div class="cm-ronda">
           <div class="cm-ronda-h"><b>Ronda ${k.round || 1}</b><span class="mdi-pill ${ESTADOS[k.status].cls}">${ESTADOS[k.status].label}</span><span class="mdi-time">${fmtTime(k.at)}</span></div>
-          <div class="cm-ronda-items">${k.items.map(i => `<span><b>${fmtN(i.qty)}×</b> ${escapeHtml(i.name)}${i.size ? ' · ' + escapeHtml(i.size) : ''}${i.note ? ` <i>(${escapeHtml(i.note)})</i>` : ''}</span>`).join('')}</div>
+          <div class="cm-ronda-items">${k.items.map(itemTxt).join('')}</div>
         </div>`).join('')}</div>` : '';
 
     const lineas = (o.cart || []).map(c => {
@@ -703,6 +758,8 @@ window.VPComandas = (() => {
   function meseroHTML() {
     const yo = me();
     const grupos = listasPorMesa();
+    const avs = misAvisos();
+    const n = grupos.length + avs.length;
     const tab = st.mtab === 'listos' ? 'listos' : 'mesas';
     return `
       <h1 class="page-title">Mesas</h1>
@@ -710,23 +767,73 @@ window.VPComandas = (() => {
       ${soloBar()}
       <div class="cm-tabs" role="tablist">
         <button type="button" role="tab" class="cm-tab ${tab === 'mesas' ? 'on' : ''}" onclick="VPComandas.tabMesero('mesas')">${VPMesas.tableIcon} Mesas</button>
-        <button type="button" role="tab" class="cm-tab ${tab === 'listos' ? 'on' : ''} ${grupos.length ? 'has' : ''}" onclick="VPComandas.tabMesero('listos')">${icon('bell')} Listos${grupos.length ? `<span class="cm-tab-n">${grupos.length}</span>` : ''}</button>
+        <button type="button" role="tab" class="cm-tab ${tab === 'listos' ? 'on' : ''} ${n ? 'has' : ''} ${avs.length ? 'alert' : ''}" onclick="VPComandas.tabMesero('listos')">${icon('bell')} Avisos${n ? `<span class="cm-tab-n">${n}</span>` : ''}</button>
       </div>
-      ${tab === 'mesas' ? planoHTML('mesero') : (grupos.length ? `<div class="cm-pick">${grupos.map(g => `
-        <button type="button" class="cm-pick-card" onclick="VPComandas.verLista('${escapeHtml(g.key)}')">
-          <span class="cm-pick-mesa">${escapeHtml(g.table)}</span>
-          <span class="cm-pick-txt">
-            <b>${g.ks.length > 1 ? plural(g.ks.length, 'ronda lista', 'rondas listas') : 'Ronda ' + (g.ks[0].round || 1) + ' lista'}</b>
-            <small>${resumen(g.items)}</small>
-            <small class="cm-pick-time">${icon('clock')} ${ago(new Date(g.at).toISOString())}</small>
-          </span>
-          <span class="cm-pick-go">Recoger ${icon('chevronRight')}</span>
-        </button>`).join('')}</div>` : `
+      ${tab === 'mesas' ? planoHTML('mesero') : (n ? `
+        ${avs.length ? `<div class="cm-av-t cm-av-no">${icon('alert')} No hay</div><div class="cm-pick">${avs.map(a => `
+          <button type="button" class="cm-pick-card cm-pick-no" onclick="VPComandas.verAviso('${a.tid}','${a.id}')">
+            <span class="cm-pick-mesa">${escapeHtml(a.table)}</span>
+            <span class="cm-pick-txt">
+              <b>No hay ${fmtN(a.qty)}× ${escapeHtml(a.name)}</b>
+              <small>Avísale al cliente</small>
+              <small class="cm-pick-time">${icon('clock')} ${ago(a.at)}</small>
+            </span>
+            <span class="cm-pick-go">Ver ${icon('chevronRight')}</span>
+          </button>`).join('')}</div>` : ''}
+        ${grupos.length ? `<div class="cm-av-t">${icon('bell')} Listos para recoger</div><div class="cm-pick">${grupos.map(g => `
+          <button type="button" class="cm-pick-card" onclick="VPComandas.verLista('${escapeHtml(g.key)}')">
+            <span class="cm-pick-mesa">${escapeHtml(g.table)}</span>
+            <span class="cm-pick-txt">
+              <b>${g.ks.length > 1 ? plural(g.ks.length, 'ronda lista', 'rondas listas') : 'Ronda ' + (g.ks[0].round || 1) + ' lista'}</b>
+              <small>${resumen(g.items)}</small>
+              <small class="cm-pick-time">${icon('clock')} ${ago(new Date(g.at).toISOString())}</small>
+            </span>
+            <span class="cm-pick-go">Recoger ${icon('chevronRight')}</span>
+          </button>`).join('')}</div>` : ''}` : `
         <div class="mdi-empty">
           <span class="mdi-empty-ico">${icon('bell')}</span>
-          <b>Nada por recoger</b>
-          <span>Cuando cocina termine un pedido de tus mesas, aparecerá aquí.</span>
+          <b>Sin avisos</b>
+          <span>Aquí te llegan los pedidos listos de tus mesas y si cocina no tiene algo.</span>
         </div>`)}`;
+  }
+  /* Aviso de "No hay": qué hacer */
+  function verAviso(tid, aid) {
+    const k = tickets().find(x => x.id === tid);
+    const a = k && (k.alertas || []).find(x => x.id === aid);
+    if (!a || a.visto) { closeModal(); render(); return; }
+    const o = orderById(k.orderId);
+    const puedeAgregar = !!o && !(o.cm && o.cm.billAt) || !o;
+    openModal(`
+      <div class="sheet-header">
+        <div class="sheet-header-left" style="min-width:0;"><h2>${escapeHtml(k.table)}</h2><span class="mdi-pill no">No hay</span></div>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      <div class="cm-nh-prod cm-nh-out">
+        <span class="mdi-thumb">${thumb(a.productId)}</span>
+        <b>${escapeHtml(a.name)}${a.size ? ' · ' + escapeHtml(a.size) : ''}</b>
+        <span class="cm-qty"><s>×${fmtN(a.qty)}</s></span>
+      </div>
+      <div class="cm-todo">
+        <span class="cm-todo-step"><i>${icon('person')}</i><small>Avisa al cliente</small></span>
+        <b class="cm-todo-arrow">${icon('chevronRight')}</b>
+        <span class="cm-todo-step"><i>${icon('swap')}</i><small>Ofrece otra cosa</small></span>
+      </div>
+      <p class="cm-nh-note">${icon('check')} ${a.mesaLibre ? 'Ya no quedó nada en la cuenta: la mesa quedó libre.' : 'Ya se quitó de la cuenta: no se le cobra.'}</p>
+      <div class="cm-sheet-acts">
+        ${holdBtn('cm-go cm-go-ok', icon('check') + ' Ya le avisé', 'avisoVisto', [tid, aid])}
+        ${puedeAgregar ? `<button class="btn ghost block" onclick="VPComandas.avisoVisto('${tid}','${aid}', true)">${icon('plus')} Pidió otra cosa</button>` : ''}
+      </div>
+    `, { dismissible:true });
+  }
+  function avisoVisto(tid, aid, agregar) {
+    const list = tickets();
+    const k = list.find(x => x.id === tid);
+    const a = k && (k.alertas || []).find(x => x.id === aid);
+    if (a && !a.visto) { a.visto = true; a.vistoAt = nowIso(); saveTickets(list); }
+    closeModal();
+    if (!misAvisos().length && !listasPorMesa().length) st.mtab = 'mesas';
+    if (agregar && k) { ronda(k.tableId); return; }
+    render();
   }
   function tabMesero(t) { st.mtab = t; vibrate(6); render(); }
 
@@ -1035,6 +1142,7 @@ window.VPComandas = (() => {
     const listas = all.filter(k => k.status === 'listo').sort((a, b) => new Date(b.readyAt || b.at) - new Date(a.readyAt || a.at));
     const nuevas = activas.filter(k => k.status === 'nuevo').length;
     const list = st.kf === 'listas' ? listas : activas;
+    const ags = agotadosHoy();
     return `
       <h1 class="page-title">Cocina</h1>
       <p class="page-sub">${activas.length ? plural(activas.length, 'comanda por preparar', 'comandas por preparar') + (nuevas ? ' · ' + plural(nuevas, 'nueva', 'nuevas') : '') : 'Aquí llegan las comandas de los meseros'}</p>
@@ -1042,8 +1150,16 @@ window.VPComandas = (() => {
       <div class="chip-row cm-chips">
         <button class="chip ${st.kf !== 'listas' ? 'active' : ''}" onclick="VPComandas.filtro('activas')">Por preparar <b>${activas.length}</b></button>
         <button class="chip ${st.kf === 'listas' ? 'active' : ''}" onclick="VPComandas.filtro('listas')">Listas sin entregar <b>${listas.length}</b></button>
+        <button class="chip ${st.kf === 'agotados' ? 'active' : ''}" onclick="VPComandas.filtro('agotados')">Agotados <b>${ags.length}</b></button>
       </div>
-      ${list.length ? `<div class="mdi-list cm-kds">${list.map(k => {
+      ${st.kf === 'agotados' ? (ags.length ? `<div class="acc-list cm-ags">${ags.map(a => `
+        <div class="acc-row">
+          <span class="mdi-thumb">${thumb(a.productId)}</span>
+          <span class="acc-txt"><span class="acc-label">${escapeHtml(a.name)}</span><span class="acc-sub">Agotado desde las ${fmtTime(a.at)}</span></span>
+          <button type="button" class="btn ghost cm-repon" onclick="VPComandas.reponer('${escapeHtml(a.productId)}')">Ya hay</button>
+        </div>`).join('')}</div>` : `
+      <div class="mdi-empty"><span class="mdi-empty-ico">${icon('check')}</span><b>No hay nada agotado</b>
+        <span>Cuando algo se acabe, en la comanda toca "No hay" y marca "Se acabó por hoy".</span></div>`) : list.length ? `<div class="mdi-list cm-kds">${list.map(k => {
         const e = ESTADOS[k.status];
         const notas = k.items.some(i => i.note);
         return `<button type="button" class="mdi-card cm-tk st-${k.status} ${k.status !== 'listo' ? tiempoCls(k) : ''}" onclick="VPComandas.abrirComanda('${k.id}')">
@@ -1055,7 +1171,7 @@ window.VPComandas = (() => {
           </div>
           <div class="mdi-name">${icon('person')} ${escapeHtml(k.by || 'Mesero')}</div>
           <div class="mdi-items">${resumen(k.items)}</div>
-          <div class="mdi-card-foot"><span>${plural(unitsOf(k.items), 'producto', 'productos')}${notas ? ` · <i class="cm-has-note">${icx('note')} Con notas</i>` : ''}</span><b>${fmtTime(k.at)}</b></div>
+          <div class="mdi-card-foot"><span>${plural(unitsOf(k.items), 'producto', 'productos')}${notas ? ` · <i class="cm-has-note">${icx('note')} Con notas</i>` : ''}${k.items.some(i => i.falta) ? ` · <i class="cm-has-out">${icon('alert')} Falta algo</i>` : ''}</span><b>${fmtTime(k.at)}</b></div>
         </button>`;
       }).join('')}</div>` : `
       <div class="mdi-empty">
@@ -1064,7 +1180,7 @@ window.VPComandas = (() => {
         <span>${st.kf === 'listas' ? 'Las que marques como listas aparecen aquí hasta que el mesero las entregue.' : 'Cuando un mesero mande un pedido, aparecerá aquí con un aviso.'}</span>
       </div>`}`;
   }
-  function filtro(f) { st.kf = f; render(); }
+  function filtro(f) { st.kf = f; vibrate(6); render(); }
 
   function abrirComanda(id) {
     const k = tickets().find(x => x.id === id);
@@ -1106,8 +1222,105 @@ window.VPComandas = (() => {
       </div>
       ${pasosHTML(k.status)}
       ${notas ? `<div class="cm-notes-flag">${icx('note')} ${plural(notas, 'nota', 'notas')}</div>` : ''}
-      <div class="cm-lines">${lineasHTML(k.items)}</div>
+      <div class="cm-lines">${lineasHTML(k.items, (k.status === 'nuevo' || k.status === 'preparando') ? k.id : null)}</div>
       <div class="cm-sheet-acts">${acts}</div>`;
+  }
+
+  /* ---------- "No hay": cocina quita algo y le avisa al mesero ---------- */
+  function noHay(tid, idx) {
+    const k = tickets().find(x => x.id === tid);
+    const it = k && k.items[idx];
+    if (!it || efect(it) <= 0) return;
+    st.nh = { tid, idx, n:efect(it), agotar:false };
+    noHayDibujar();
+  }
+  function noHayDibujar() {
+    const nh = st.nh;
+    const k = nh && tickets().find(x => x.id === nh.tid);
+    const it = k && k.items[nh.idx];
+    if (!it) { st.nh = null; closeModal(); return; }
+    const max = efect(it);
+    nh.n = Math.min(Math.max(1, nh.n), max);
+    openModal(`
+      <div class="sheet-header">
+        <div class="sheet-header-left" style="min-width:0;"><h2>¿No hay?</h2><span class="mdi-pill no">${escapeHtml(k.table)}</span></div>
+        <button class="sheet-close" onclick="VPComandas.abrirComanda('${k.id}')">${icon('close')}</button>
+      </div>
+      <div class="cm-nh-prod">
+        <span class="mdi-thumb">${thumb(it.productId)}</span>
+        <b>${escapeHtml(it.name)}${it.size ? ' · ' + escapeHtml(it.size) : ''}</b>
+      </div>
+      ${max > 1 ? `
+      <div class="cm-nh-cant">
+        <span>¿Cuántos no hay?</span>
+        <div class="cm-step-qty">
+          <button type="button" onclick="VPComandas.nhCant(-1)" ${nh.n <= 1 ? 'disabled' : ''} aria-label="Menos">−</button>
+          <b>${fmtN(nh.n)}</b>
+          <button type="button" onclick="VPComandas.nhCant(1)" ${nh.n >= max ? 'disabled' : ''} aria-label="Más">+</button>
+        </div>
+        <small>de ${fmtN(max)}</small>
+      </div>` : ''}
+      <label class="cm-nh-agotar">
+        <span><b>Se acabó por hoy</b><small>Que ya no lo puedan pedir</small></span>
+        <span class="switch"><input type="checkbox" ${nh.agotar ? 'checked' : ''} onchange="VPComandas.nhAgotar(this.checked)"><span class="track"></span></span>
+      </label>
+      <div class="cm-sheet-acts">
+        ${holdBtn('cm-go cm-go-no', icon('alert') + ' Avisar al mesero', 'confirmarNoHay', [])}
+        <button class="cm-undo" onclick="VPComandas.abrirComanda('${k.id}')">Sí hay, regresar</button>
+      </div>
+    `, { dismissible:true });
+  }
+  function nhCant(d) { if (st.nh) { st.nh.n += d; noHayDibujar(); } }
+  function nhAgotar(v) { if (st.nh) st.nh.agotar = !!v; }
+
+  /* Total de una cuenta con el cálculo de siempre del POS */
+  function totalDe(cartArr, custom, chk) {
+    const keep = { cart, customItems, checkout };
+    try {
+      cart = cartArr; customItems = custom || {}; checkout = chk || newCheckout();
+      return { total:computeTotals().total, units:cartUnitsCount() };
+    } finally { cart = keep.cart; customItems = keep.customItems; checkout = keep.checkout; }
+  }
+  /* Quita de la cuenta lo que no hubo (para que caja no lo cobre) */
+  function quitarDeCuenta(orderId, it, n) {
+    const list = DB.getTableOrders();
+    const o = list.find(x => x.id === orderId);
+    if (!o) return false;
+    let falta = n;
+    const mismo = c => c.productId === it.productId && (c.sizeId || '') === (it.sizeId || '');
+    const orden = (o.cart || []).filter(c => mismo(c) && (c.note || '').trim() === (it.note || '')).concat((o.cart || []).filter(c => mismo(c) && (c.note || '').trim() !== (it.note || '')));
+    orden.forEach(c => { if (falta <= 0) return; const q = Math.min(Number(c.qty) || 0, falta); c.qty = Math.round((c.qty - q) * 1000) / 1000; falta -= q; });
+    o.cart = (o.cart || []).filter(c => c.qty > 0);
+    if (!o.cart.length) {
+      DB.saveTableOrders(list.filter(x => x.id !== orderId));     /* no quedó nada: la mesa se libera */
+      return 'vacia';
+    }
+    const t = totalDe(o.cart, o.customItems, o.checkout);
+    o.total = t.total; o.units = t.units;
+    o.cm = Object.assign({}, o.cm, { updatedAt:nowIso() });
+    DB.saveTableOrders(list);
+    return true;
+  }
+  function confirmarNoHay() {
+    const nh = st.nh;
+    if (!nh) return;
+    const list = tickets();
+    const k = list.find(x => x.id === nh.tid);
+    const it = k && k.items[nh.idx];
+    if (!it) { st.nh = null; closeModal(); return; }
+    const n = Math.min(nh.n, efect(it));
+    if (n <= 0) return;
+    it.falta = Math.round(((Number(it.falta) || 0) + n) * 1000) / 1000;
+    k.alertas = (k.alertas || []).concat([{ id:uid('al'), name:it.name, size:it.size || '', productId:it.productId, qty:n, at:nowIso(), by:meName(), visto:false }]);
+    if (k.items.every(i => efect(i) <= 0)) { k.status = 'cancelado'; k.cancelReason = 'No hubo'; }
+    saveTickets(list);
+    const r = quitarDeCuenta(k.orderId, it, n);
+    if (r === 'vacia') { const l2 = tickets(); l2.forEach(x => { if (x.orderId === k.orderId && x.alertas) x.alertas.forEach(a => { a.mesaLibre = true; }); }); saveTickets(l2); }
+    if (nh.agotar) marcarAgotado(it.productId, it.name);
+    st.nh = null;
+    if (k.status === 'cancelado') closeModal(); else abrirComanda(k.id);
+    render();
+    toast('Le avisamos a ' + (k.by || 'el mesero'), { variant:'toast-success', icon:icon('check'), subtitle:'No hay ' + fmtN(n) + '× ' + it.name + (nh.agotar ? ' · agotado por hoy' : '') });
   }
 
   function estado(id, nuevo) {
@@ -1148,7 +1361,7 @@ window.VPComandas = (() => {
             <span class="mdi-pill ${ESTADOS[t.status].cls}">${ESTADOS[t.status].label}</span>
           </div>
           <div class="cm-hist-sub">${fmtDay(t.at)} · ${fmtTime(t.at)}${cocina && t.by ? ' · ' + escapeHtml(t.by) : ''}${t.readyAt ? ' · lista ' + fmtTime(t.readyAt) : ''}</div>
-          <div class="cm-ronda-items">${t.items.map(i => `<span><b>${fmtN(i.qty)}×</b> ${escapeHtml(i.name)}${i.size ? ' · ' + escapeHtml(i.size) : ''}${i.note ? ` <i>(${escapeHtml(i.note)})</i>` : ''}</span>`).join('')}</div>
+          <div class="cm-ronda-items">${t.items.map(itemTxt).join('')}</div>
         </div>`).join('')}</div>` : `
         <div class="mdi-empty"><span class="mdi-empty-ico">${icon('inbox')}</span><b>Aún no hay nada aquí</b>
           <span>${cocina ? 'Las comandas que marques como listas aparecerán aquí.' : 'Las comandas que mandes a cocina aparecerán aquí.'}</span></div>`}
@@ -1218,9 +1431,24 @@ window.VPComandas = (() => {
   setInterval(() => { if (currentView === 'comandas' && myArea() && !document.querySelector('#modal-layer .modal-overlay')) render(); }, 30000);
 
   /* Avisos de lo que llega desde otro aparato */
-  function avisos(antes, despues) {
+  function avisos(antes, despues, antesAl) {
     const area = myArea();
     const yo = me();
+    if (area === 'mesero' && antesAl) {
+      const nuevos = [];
+      despues.forEach(k => {
+        const prev = antesAl[k.id] || 0;
+        (k.alertas || []).slice(prev).forEach(a => {
+          if (a.visto) return;
+          const o = orderById(k.orderId);
+          if (o ? esMiMesa(o) : (!!yo && k.byId === yo.id)) nuevos.push(Object.assign({ table:k.table }, a));
+        });
+      });
+      if (nuevos.length) {
+        beep(); vibrate([60, 60, 60]);
+        toast(nuevos[0].table + ': no hay ' + nuevos[0].name, { icon:icon('alert'), variant:'toast-danger toast-top', subtitle:'Avísale al cliente · está en Avisos', duration:5000 });
+      }
+    }
     const nuevas = despues.filter(k => k.status === 'nuevo' && !antes[k.id]);
     const listas = despues.filter(k => k.status === 'listo' && antes[k.id] && antes[k.id] !== 'listo');
     if (area === 'cocina' && nuevas.length) {
@@ -1249,7 +1477,7 @@ window.VPComandas = (() => {
     let muted = false, hooked = false, busy = false, again = false, timer = null, ch = null, chUid = null, poll = null;
 
     const can = () => { try { return Cloud.ready && !!Cloud.uid && !!Cloud.sb && AUTH.isLogged(); } catch (e) { return false; } };
-    const inUse = () => { try { return DB.getUsers().some(u => AREAS[u.area]) || DB.getTableOrders().some(o => o.cm) || tickets().length > 0; } catch (e) { return false; } };
+    const inUse = () => { try { return DB.getUsers().some(u => AREAS[u.area]) || DB.getTableOrders().some(o => o.cm) || tickets().length > 0 || Store.list(AKEY).length > 0; } catch (e) { return false; } };
     const online = () => can();
 
     /* Huella del dato con las llaves en orden fijo: la nube (jsonb) las
@@ -1264,6 +1492,7 @@ window.VPComandas = (() => {
       const m = {};
       DB.getTableOrders().forEach(o => { m[o.id] = { k:'cuenta', h:canon(o), d:o }; });
       tickets().forEach(t => { m[t.id] = { k:'comanda', h:canon(t), d:t }; });
+      Store.list(AKEY).forEach(a => { if (a && a.id) m[a.id] = { k:'agotado', h:canon(a), d:a }; });
       return m;
     }
     function load(uid) {
@@ -1293,7 +1522,7 @@ window.VPComandas = (() => {
       if (hooked || typeof Store === 'undefined' || !Store._changed) return;
       hooked = true;
       const prev = Store._changed;
-      Store._changed = function (k) { prev.call(this, k); if (k === 'mesa_parked' || k === KEY) onLocal(); };
+      Store._changed = function (k) { prev.call(this, k); if (k === 'mesa_parked' || k === KEY || k === AKEY) onLocal(); };
       last = strip(snapshot());
       /* La copia general de la nube (al abrir la app) puede traer cuentas
          viejas: después de bajarla se revisa contra lo que está en vivo. */
@@ -1329,13 +1558,14 @@ window.VPComandas = (() => {
       const remote = {};
       (data || []).forEach(r => { remote[r.id] = r; });
       const cur = snapshot();
-      const orders = {}, tks = {};
-      Object.keys(cur).forEach(id => { (cur[id].k === 'cuenta' ? orders : tks)[id] = cur[id].d; });
-      const antes = {}; tickets().forEach(t => { antes[t.id] = t.status; });
+      const orders = {}, tks = {}, ags = {};
+      const bagOf = k => k === 'cuenta' ? orders : (k === 'agotado' ? ags : tks);
+      Object.keys(cur).forEach(id => { bagOf(cur[id].k)[id] = cur[id].d; });
+      const antes = {}, antesAl = {}; tickets().forEach(t => { antes[t.id] = t.status; antesAl[t.id] = (t.alertas || []).length; });
       let changed = false;
       (data || []).forEach(r => {
         if (dirty.has(r.id)) return;
-        const bag = r.kind === 'cuenta' ? orders : tks;
+        const bag = bagOf(r.kind);
         if (r.deleted) {
           if (bag[r.id]) { delete bag[r.id]; changed = true; }
           delete s.known[r.id];
@@ -1348,7 +1578,7 @@ window.VPComandas = (() => {
       Object.keys(cur).forEach(id => {
         if (remote[id] || dirty.has(id)) return;
         if (s.known[id]) {                          /* ya no existe en la nube */
-          delete (cur[id].k === 'cuenta' ? orders : tks)[id]; delete s.known[id]; changed = true;
+          delete bagOf(cur[id].k)[id]; delete s.known[id]; changed = true;
         } else dirty.add(id);                       /* nunca se subió: se sube */
       });
       if (changed) {
@@ -1356,9 +1586,10 @@ window.VPComandas = (() => {
         try {
           DB.saveTableOrders(Object.values(orders));
           Store.set(KEY, Object.values(tks));
+          Store.set(AKEY, Object.values(ags));
         } finally { muted = false; }
         last = strip(snapshot());
-        avisos(antes, Object.values(tks));
+        avisos(antes, Object.values(tks), antesAl);
         refresh();
       }
       save();
@@ -1423,8 +1654,8 @@ window.VPComandas = (() => {
   return {
     abrir, guard, esMesero, esCocina, esCajero, puedeAdministrar,
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
-    tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
+    tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    filtro, abrirComanda, estado, historial, cambiar, sync:() => Sync.run()
+    filtro, abrirComanda, estado, noHay, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();

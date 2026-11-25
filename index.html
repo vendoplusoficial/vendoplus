@@ -5422,8 +5422,8 @@ div.stf-row{ cursor:default; }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=9">
 <script src="vendo-mesas.js?v=11"></script>
-<link rel="stylesheet" href="vendo-comandas.css?v=7">
-<script src="vendo-comandas.js?v=9"></script>
+<link rel="stylesheet" href="vendo-comandas.css?v=8">
+<script src="vendo-comandas.js?v=10"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -7199,7 +7199,7 @@ function saleCardHTML(p){
   const qty = inCartQty(p.id);
   const usado = cartStockUse(p.id);   // lo que de verdad se descontará (con tamaños: 0.5 L, 2 L…)
   const st = stockInfo(p);
-  const agotado = st.level === 'out';
+  const agotado = st.level === 'out' || !!(window.VPComandas && VPComandas.agotado(p.id));
   const step = frac ? productStep(p) : 1;
   const sinMas = !sized && st.control && (st.stock - usado) < step - 1e-9;   // ya no quedan libres
   const tapAction = sized ? `openSizePicker('${p.id}')` : (frac ? `openQtyPad('${p.id}')` : `addToCart('${p.id}')`);
@@ -7305,6 +7305,7 @@ function newProductWithSku(code){
 /* ---------- Agregar al carrito ---------- */
 function addToCart(productId, qtyAdd, opts){
   opts = opts || {};
+  if(window.VPComandas && VPComandas.bloqueaAgotado(productId)) return;
   const p = findProduct(productId);
   if(!p) return;
   if(hasSizes(p)){ openSizePicker(productId); return; }
@@ -7352,6 +7353,7 @@ function addToCart(productId, qtyAdd, opts){
 }
 
 function changeQtyFromGrid(productId, delta){
+  if(delta > 0 && window.VPComandas && VPComandas.bloqueaAgotado(productId)) return;
   const p = findProduct(productId);
   if(!p) return;
   const st = stockInfo(p);
@@ -7380,6 +7382,7 @@ function changeQtyFromGrid(productId, delta){
 /* ---------- Granel: ¿cuánto? (kilos, litros, metros) ---------- */
 let qtyPad = null;
 function openQtyPad(productId){
+  if(window.VPComandas && VPComandas.bloqueaAgotado(productId)) return;
   const p = findProduct(productId); if(!p) return;
   const u = productUnit(p);
   const step = productStep(p);
@@ -7490,6 +7493,7 @@ function computeTotals(){
 
 /* ---------- Selector de tamaño (medio litro, litro, por kilo, etc.) ---------- */
 function openSizePicker(productId){
+  if(window.VPComandas && VPComandas.bloqueaAgotado(productId)) return;
   const p = findProduct(productId);
   if(!p || !p.sizesOn || !p.sizes || !p.sizes.length) return;
   const unitWord = sizeUnitOf(p.sizeUnit).many;
@@ -7529,6 +7533,7 @@ function cartQtyForSize(productId, sizeId){
   return it ? it.qty : 0;
 }
 function changeSizeQty(productId, sizeId, delta){
+  if(delta > 0 && window.VPComandas && VPComandas.bloqueaAgotado(productId)) return;
   const p = findProduct(productId);
   const size = p && p.sizes.find(s => s.id === sizeId);
   if(!size) return;
