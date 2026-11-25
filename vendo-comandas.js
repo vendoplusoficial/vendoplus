@@ -1084,9 +1084,9 @@ window.VPComandas = (() => {
     const notas = k.items.filter(i => i.note).length;
     let acts = '';
     if (k.status === 'nuevo') acts = `
-      ${holdBtn('cm-go cm-go-prep', FIRE + ' Preparar', 'estado', [k.id, 'preparando'])}`;
+      ${holdBtn('cm-go cm-go-prep', FIRE + ' Empezar a preparar', 'estado', [k.id, 'preparando'])}`;
     else if (k.status === 'preparando') acts = `
-      ${holdBtn('cm-go cm-go-ok', icon('check') + ' Lista', 'estado', [k.id, 'listo'])}`;
+      ${holdBtn('cm-go cm-go-ok', icon('check') + ' Ya terminé de preparar', 'estado', [k.id, 'listo'])}`;
     else if (k.status === 'listo') acts = `
       <div class="cm-wait">${icon('bell')} Esperando al mesero</div>
       <button class="cm-undo" onclick="VPComandas.estado('${k.id}','preparando')">Deshacer</button>`;
