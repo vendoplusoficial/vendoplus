@@ -5205,6 +5205,35 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
 /* Índice sin verde: ni seleccionado ni al presionar */
 /* PC (mouse): las categorías se acomodan en renglones, la barra no se corre de lado */
 </style>
+<style id="usuario-detalle-css">
+/* ===== Detalle de un usuario (Mi cuenta → Usuarios): sobrio, por secciones ===== */
+.usd-head{ align-items:center; }
+.usd-id{ display:flex; align-items:center; gap:12px; min-width:0; }
+.usd-ava{ width:46px; height:46px; border-radius:50%; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center;
+  background:var(--ink); color:#fff; font-size:17px; font-weight:700; letter-spacing:.2px; }
+.usd-ava img{ width:100%; height:100%; object-fit:cover; }
+.usd-ava svg{ width:22px; height:22px; }
+.usd-id-t{ min-width:0; }
+.usd-id-t h2{ margin:0; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.usd-role{ display:block; margin-top:2px; font-size:13px; font-weight:500; color:var(--ink-soft); }
+.usd-sec{ margin:22px 2px 8px; font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); }
+.usd-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:2px 16px; }
+.usd-card .field{ margin:14px 0; }
+.usd-card .field-hint{ font-weight:500; font-size:12.5px; line-height:1.45; color:var(--ink-soft); }
+.usd-note{ margin:14px 0; font-size:14px; color:var(--ink-soft); }
+.usd-list{ box-shadow:none; border-radius:14px; }
+.usd-list .acc-row{ padding:12px 14px; gap:12px; }
+.usd-list .acc-ico{ width:34px; height:34px; border-radius:10px; background:var(--surface-alt); color:var(--ink-soft); }
+.usd-list .acc-ico svg{ width:17px; height:17px; }
+.usd-list .acc-ico.has-photo{ background:none; overflow:hidden; }
+.usd-list .acc-ico.has-photo img{ width:100%; height:100%; object-fit:cover; }
+.usd-list .acc-label, .usd-perms .acc-label{ font-size:14.5px; font-weight:600; }
+.usd-perms .toggle-row{ padding:13px 0; gap:12px; }
+.usd-perms .toggle-row:last-child{ border-bottom:none; }
+.usd-del{ display:flex; align-items:center; justify-content:center; gap:7px; margin:20px auto 0; padding:8px 12px; border:none; background:none;
+  font-family:inherit; font-size:14px; font-weight:600; color:var(--accent-2); cursor:pointer; }
+.usd-del svg{ width:16px; height:16px; }
+</style>
 </head>
 <body>
 <!-- Estilos de la app: van TODOS al principio para que la primera imagen ya salga
@@ -15743,16 +15772,27 @@ function userOptionsHTML(u){
         <span class="acc-txt"><span class="acc-label">${label}</span><span class="acc-sub">${sub}</span></span>
         <span class="acc-chev">${icon('chevronRight')}</span>
       </button>`;
-  return `<div class="acc-list">
-    ${row(`openUserPhotoForm('${u.id}')`, userPhoto(u) ? `<img src="${userPhoto(u)}" alt="">` : icon('camera'), userPhoto(u) ? 'has-photo' : 'green',
-          esYo ? 'Mi foto' : 'Foto', userPhoto(u) ? 'Cambiar o quitar la foto' : (esYo ? 'Ponle una foto a tu usuario' : 'Ponle una foto a este usuario'))}
-    ${row(`openSetPinForm('${u.id}', ${esYo ? 'true' : 'false'})`, icon('key'), 'gold',
+  return `<div class="acc-list usd-list">
+    ${row(`openUserPhotoForm('${u.id}')`, userPhoto(u) ? `<img src="${userPhoto(u)}" alt="">` : icon('camera'), userPhoto(u) ? 'has-photo' : '',
+          esYo ? 'Mi foto' : 'Foto', userPhoto(u) ? 'Cambiar o quitar' : 'Sin foto')}
+    ${row(`openSetPinForm('${u.id}', ${esYo ? 'true' : 'false'})`, icon('key'), '',
           esYo ? 'Mi NIP' : 'NIP', u.pin ? 'Cambiar el NIP de 4 dígitos' : 'Aún no tiene NIP')}
-    ${row(`openShiftsSheet('${u.id}')`, icon('clock'), 'violet',
+    ${row(`openNipRecovery('${u.id}')`, icon('mail'), '',
+          esYo ? 'Olvidé mi NIP' : 'Recuperar NIP', 'Con un código al correo del Dueño')}
+    ${row(`openShiftsSheet('${u.id}')`, icon('clock'), '',
           esYo ? 'Mis turnos' : 'Turnos', n + ' turno' + (n === 1 ? '' : 's') + ' registrado' + (n === 1 ? '' : 's'))}
-    ${row(`openNipRecovery('${u.id}')`, icon('mail'), 'blue',
-          esYo ? 'Olvidé mi NIP' : 'Olvidó su NIP', 'Se recupera con un código al correo del Dueño')}
   </div>`;
+}
+/* Encabezado del usuario: foto o iniciales, nombre y cargo */
+function userHeadHTML(u, sub, cerrar){
+  const foto = userPhoto(u);
+  return `<div class="sheet-header usd-head">
+      <div class="usd-id">
+        <span class="usd-ava">${foto ? `<img src="${foto}" alt="">` : userInitials(u)}</span>
+        <div class="usd-id-t"><h2>${escapeHtml(u.name)}</h2><span class="usd-role">${sub}</span></div>
+      </div>
+      <button class="sheet-close" onclick="${cerrar}">${icon('close')}</button>
+    </div>`;
 }
 /* A dónde regresar al cerrar foto, NIP o turnos */
 function backToUser(id){ if(window.VPComandas && VPComandas.esSolo && VPComandas.esSolo()){ VPComandas.perfil(); return; } if(id && userById(id)) openUserDetail(id); else openUsersSheet(); }
@@ -15765,11 +15805,8 @@ function openUserDetail(id){
     /* Cada quien ve solo su propio usuario */
     if(!me || me.id !== u.id){ requireOwner('Solo el Dueño puede ver otros usuarios'); return; }
     openModal(`
-      <div class="sheet-header">
-        <h2>${escapeHtml(u.name)}</h2>
-        <button class="sheet-close" onclick="openUsersSheet()">${icon('close')}</button>
-      </div>
-      <p class="sheet-text">${roleOf(u.role).name} · Este es tu usuario</p>
+      ${userHeadHTML(u, roleOf(u.role).name + ' · Este es tu usuario', 'openUsersSheet()')}
+      <div class="usd-sec">Acceso</div>
       ${userOptionsHTML(u)}
       <div class="sheet-actions">
         <button class="btn primary block" onclick="openUsersSheet()">Volver</button>
@@ -15782,36 +15819,34 @@ function openUserDetail(id){
   if(!userEditSnap || userEditSnap.id !== u.id) userEditSnap = userSnap(u);
 
   openModal(`
-    <div class="sheet-header">
-      <h2>${escapeHtml(u.name)}</h2>
-      <button class="sheet-close" onclick="openUsersSheet()">${icon('close')}</button>
-    </div>
-    <p class="sheet-text">${roleOf(u.role).sub}</p>
+    ${userHeadHTML(u, roleOf(u.role).name, 'openUsersSheet()')}
 
+    <div class="usd-sec">Datos</div>
+    <div class="usd-card">
+      <div class="field">
+        <label for="udName">Nombre</label>
+        <input id="udName" type="text" value="${escapeHtml(u.name)}">
+      </div>
+      <div class="field">
+        <label for="udRole">Tipo de usuario</label>
+        <select id="udRole" ${esDueno ? 'disabled' : ''}>
+          ${esDueno ? '<option value="dueno">Dueño</option>' : `
+            <option value="empleado" ${u.role === 'empleado' ? 'selected' : ''}>Empleado</option>
+            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrador</option>
+          `}
+        </select>
+        <div class="field-hint">${esDueno ? 'El Dueño no puede cambiar de tipo ni eliminarse.' : roleOf(u.role).sub + ' Al cambiar el tipo, los permisos vuelven a los de ese rol.'}</div>
+      </div>
+    </div>
+
+    <div class="usd-sec">Acceso</div>
     ${userOptionsHTML(u)}
 
-    <div class="section-title">Datos y permisos</div>
-    <div class="field">
-      <label for="udName">Nombre</label>
-      <input id="udName" type="text" value="${escapeHtml(u.name)}">
-    </div>
-    <div class="field">
-      <label for="udRole">Tipo de usuario</label>
-      <select id="udRole" ${esDueno ? 'disabled' : ''}>
-        ${esDueno ? '<option value="dueno">Dueño</option>' : `
-          <option value="empleado" ${u.role === 'empleado' ? 'selected' : ''}>Empleado</option>
-          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrador</option>
-        `}
-      </select>
-      ${esDueno ? '<div class="field-hint">El Dueño no puede cambiar de tipo ni eliminarse.</div>' : '<div class="field-hint">Al cambiar el tipo, los permisos vuelven a los de ese rol.</div>'}
-    </div>
-
-    <div class="section-title" style="margin-top:6px;">Permisos</div>
+    <div class="usd-sec">Permisos</div>
     ${esDueno ? `
-      <p class="sheet-text">El Dueño siempre tiene todos los permisos.</p>
-    ` : PERMS.map(p => `
+      <div class="usd-card"><p class="usd-note">El Dueño siempre tiene todos los permisos.</p></div>
+    ` : `<div class="usd-card usd-perms">${PERMS.map(p => `
       <div class="toggle-row">
-        <span class="acc-ico ${p.id === 'gestionarProductos' ? 'green' : (p.id === 'verGanancias' ? 'violet' : 'blue')}">${icon(p.icon || 'receipt')}</span>
         <span class="acc-txt">
           <span class="acc-label">${p.label}</span>
           <span class="acc-sub">${p.sub}</span>
@@ -15821,13 +15856,11 @@ function openUserDetail(id){
           <span class="track"></span>
         </label>
       </div>
-    `).join('')}
+    `).join('')}</div>`}
 
-    <div style="margin-top:16px;">${nipRecoveryNoteHTML(esDueno)}</div>
+    ${nipRecoveryNoteHTML(esDueno)}
     ${!esDueno ? `
-      <button class="btn danger block" style="margin-top:10px;" onclick="confirmDeleteUser('${u.id}')">
-        ${icon('trash')} Eliminar usuario
-      </button>` : ''}
+      <button class="usd-del" onclick="confirmDeleteUser('${u.id}')">${icon('trash')} Eliminar usuario</button>` : ''}
 
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="userEditSnap = null; openUsersSheet()">Volver</button>
