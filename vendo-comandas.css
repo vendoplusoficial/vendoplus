@@ -65,7 +65,7 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-empty-art svg{ display:block; width:190px; max-width:70%; height:auto; margin:0 auto 6px; }
 .cm-empty{ display:flex; flex-direction:column; align-items:center; text-align:center; }
 .cm-empty-art{ display:flex; justify-content:center; width:100%; }
-.cm-empty-art img{ display:block; width:130px; max-width:45%; height:auto; margin:6px auto 10px; -webkit-user-select:none; user-select:none; }
+.cm-empty-art img{ display:block; width:104px; max-width:38%; height:auto; margin:6px auto 10px; -webkit-user-select:none; user-select:none; }
 .cm-empty .empty-text{ max-width:300px; margin-left:auto; margin-right:auto; }
 
 /* Formulario y permisos */

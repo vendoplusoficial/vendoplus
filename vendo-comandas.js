@@ -612,7 +612,7 @@ window.VPComandas = (() => {
           </div>`).join('')}
       </div>` : `
       <div class="empty-state cm-empty">
-        <span class="cm-empty-art"><img src="img/vacio-${st.area}.webp?v=1" alt="" decoding="async" draggable="false"></span>
+        <span class="cm-empty-art"><img src="img/vacio-${st.area}.webp?v=2" alt="" decoding="async" draggable="false"></span>
         <div class="empty-title">${VACIO[st.area].t}</div>
         <div class="empty-text">${VACIO[st.area].d}</div>
       </div>`}`;
