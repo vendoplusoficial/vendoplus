@@ -52,3 +52,10 @@ versión de `vendo-apps.js` y `vendo-premium.js` en sus `<script src=...?v=>`.
   Si cambias una foto, súbele la versión `?v=` en los tres lugares. Las letras (VPInter) siguen
   incrustadas a propósito.
 - Si una pantalla falla al dibujarse sale un aviso con «Reparar» (`vpRenderError` / `vpReparar`).
+
+## Diseño: cambiar, no encimar
+- Cuando el usuario pida cambiar un diseño, **edita o borra la regla original**; no agregues
+  otro bloque `<style>` "encima" que la tape. Si pide quitar algo, quítalo de verdad
+  (HTML, CSS y JS que ya no se usen).
+- Todos los `<style>` de `index.html` van en el `<head>` o al principio del `<body>`
+  (nunca al final): si van al final, al cargar se ve un instante el diseño anterior.
