@@ -6031,6 +6031,15 @@ const DATA_NOT_IN_BACKUP = ['mesa_session','mesa_user_session','mesa_active_user
 function uid(prefix){
   return (prefix || '') + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
+/* Letras al azar seguras (crypto). Para ids que sirven de "llave", como el
+   del pedido del Menú Digital: con él el cliente paga o cancela su pedido. */
+function vpAzar(n){
+  const abc = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  try{
+    const b = new Uint8Array(n); crypto.getRandomValues(b);
+    return Array.from(b, x => abc[x % 36]).join('');
+  }catch(e){ let t = ''; while(t.length < n) t += Math.random().toString(36).slice(2); return t.slice(0, n); }
+}
 
 /* ---------- Miniaturas de las fotos de productos ----------
    Las fotos se guardan grandes (1200 px) para el Menú Digital. En las
@@ -9151,7 +9160,7 @@ function ticketPrintHTML(sale){
         ${logo}
         <div class="p-title">${escapeHtml(biz.title)}</div>
         <div class="p-sub">${escapeHtml(stripEmoji(biz.sub))}</div>
-        ${biz.address ? `<div class="p-meta">${biz.address}</div>` : ''}
+        ${biz.address ? `<div class="p-meta">${escapeHtml(biz.address)}</div>` : ''}
         ${ret ? `<div class="p-kind">*** DEVOLUCIÓN ***</div>` : ''}
       </div>
       <hr class="p-sep">
@@ -10826,7 +10835,7 @@ function ticketHTML(sale){
     <div class="ticket ticket-center">
       <h3>${escapeHtml(biz.title)}</h3>
       <div class="ticket-sub">${escapeHtml(biz.sub)}</div>
-      ${biz.address ? `<div class="ticket-meta">${biz.address}</div>` : ''}
+      ${biz.address ? `<div class="ticket-meta">${escapeHtml(biz.address)}</div>` : ''}
       ${ret ? `<div class="ticket-kind">DEVOLUCIÓN ${escapeHtml(sale.folio || '')}</div>` : ''}
       <div class="ticket-meta">${ret ? 'De la venta ' + (sale.refNumber ? orderNumberLabel(sale.refNumber) : '') : 'Pedido ' + orderNumberLabel(sale.number)}</div>
       <div class="ticket-meta">${formatDateTime(sale.date)}</div>
@@ -12670,7 +12679,7 @@ function openProductForm(productId){
         ${(() => {
           const last = lastProductCategory();
           const sel = editing ? editing.category : (categories.some(c => c.id === last) ? last : '');
-          return `<option value="" disabled ${categories.some(c => c.id === sel) ? '' : 'selected'}>Selecciona una categoría</option>` + categories.map(c => `<option value="${c.id}" ${sel === c.id ? 'selected':''}>${catEmo(c)}${c.name}</option>`).join('');
+          return `<option value="" disabled ${categories.some(c => c.id === sel) ? '' : 'selected'}>Selecciona una categoría</option>` + categories.map(c => `<option value="${c.id}" ${sel === c.id ? 'selected':''}>${catEmo(c)}${escapeHtml(c.name)}</option>`).join('');
         })()}
       </select>
     </div>
@@ -18781,7 +18790,7 @@ function mdiBuildFromCart(cartLines, customerName, extra){
   });
   const now = new Date().toISOString();
   return {
-    id: 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    id: 'o' + Date.now().toString(36) + vpAzar(14),   /* 'o' + 8 + 14 = 23 (el servidor acepta hasta 25) */
     code: mdiNewCode(),
     createdAt: now,
     receivedAt: now,
@@ -22635,7 +22644,7 @@ function linesDocScreenHTML(rows){
   const biz = ticketBusiness();
   return `<div class="ticket-center">
     <h3>${escapeHtml(biz.title)}</h3>
-    ${biz.address ? `<div class="ticket-meta">${biz.address}</div>` : ''}
+    ${biz.address ? `<div class="ticket-meta">${escapeHtml(biz.address)}</div>` : ''}
   </div>` + rows.map(r => {
     if(r.t === 'title') return `<div class="ticket-kind">${escapeHtml(r.a)}</div>`;
     if(r.t === 'sep') return '<hr>';
@@ -22650,7 +22659,7 @@ function linesDocPrintHTML(rows){
   return `<div class="p-ticket">
     <div class="p-center">
       <div class="p-title">${escapeHtml(biz.title)}</div>
-      ${biz.address ? `<div class="p-meta">${biz.address}</div>` : ''}
+      ${biz.address ? `<div class="p-meta">${escapeHtml(biz.address)}</div>` : ''}
     </div>
     ${rows.map(r => {
       if(r.t === 'title') return `<div class="p-center p-kind">${escapeHtml(r.a)}</div>`;
