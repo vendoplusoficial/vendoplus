@@ -5155,7 +5155,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=50"></script>
+<script src="vendo-comandas.js?v=51"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -5219,6 +5219,10 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
 .usd-intro{ margin:2px 2px 14px; font-size:14px; line-height:1.5; color:var(--ink-soft); }
 .usd-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:2px 16px; }
 .usd-card .field{ margin:14px 0; }
+.usd-card .uf-f{ margin:14px 0; }
+.uf.usd-form{ gap:0; }
+.usd-card .uf-l{ color:var(--ink-soft); font-weight:600; }
+.usd-form > .usd-sec:first-child{ margin-top:2px; }
 .usd-card .field-hint{ font-weight:500; font-size:12.5px; line-height:1.45; color:var(--ink-soft); }
 .usd-list{ box-shadow:none; border-radius:14px; }
 .usd-list .acc-row{ padding:12px 14px; gap:12px; }
@@ -15609,29 +15613,35 @@ function openUserForm(seguir){
     title:'Nuevo usuario',
     sub:'Entrará a ' + APP_NAME + ' con su propio NIP',
     body:`
-    <div class="uf">
-      <div class="uf-f">
-        <label class="uf-l" for="nuName">Nombre completo</label>
-        <input id="nuName" class="uf-box" type="text" maxlength="40" placeholder="Ej. Luis Pérez" autocomplete="off" value="${escapeHtml(d.name)}" oninput="nuDraft.name=this.value">
-      </div>
-      ${conAreas ? `<div class="uf-f">
-        <span class="uf-l">Área</span>
-        ${ufSelHTML('nuArea', '', '', 'Área', UF_AREAS(), d.area, 'nuSetArea')}
-      </div>` : ''}
-      <div class="uf-f" id="nuCargoBox" ${sinCargo ? 'hidden' : ''}>
-        <span class="uf-l">Cargo</span>
-        ${ufSelHTML('nuRole', '', '', 'Cargo', UF_ROLES(), d.role, 'nuSetRole')}
-      </div>
-      <div class="uf-f">
-        <span class="uf-l">NIP de 4 dígitos</span>
-        <div class="uf-pins">
-          <input id="nuPin1" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin1)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin1=this.value" aria-label="NIP">
-          <input id="nuPin2" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin2)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin2=this.value" aria-label="Repite el NIP">
+    <div class="uf usd-form">
+      <div class="usd-sec">Datos</div>
+      <div class="usd-card">
+        <div class="uf-f">
+          <label class="uf-l" for="nuName">Nombre completo</label>
+          <input id="nuName" class="uf-box" type="text" maxlength="40" placeholder="Ej. Luis Pérez" autocomplete="off" value="${escapeHtml(d.name)}" oninput="nuDraft.name=this.value">
         </div>
-        <div class="uf-hint">Escríbelo dos veces. Con él entra a su cuenta.</div>
+        ${conAreas ? `<div class="uf-f">
+          <span class="uf-l">Área</span>
+          ${ufSelHTML('nuArea', '', '', 'Área', UF_AREAS(), d.area, 'nuSetArea')}
+        </div>` : ''}
+        <div class="uf-f" id="nuCargoBox" ${sinCargo ? 'hidden' : ''}>
+          <span class="uf-l">Cargo</span>
+          ${ufSelHTML('nuRole', '', '', 'Cargo', UF_ROLES(), d.role, 'nuSetRole')}
+        </div>
       </div>
-      <div class="uf-f" id="nuPermsBox" ${sinCargo ? 'hidden' : ''}>
-        <span class="uf-l">Permisos</span>
+      <div class="usd-sec">Acceso</div>
+      <div class="usd-card">
+        <div class="uf-f">
+          <span class="uf-l">NIP de 4 dígitos</span>
+          <div class="uf-pins">
+            <input id="nuPin1" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin1)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin1=this.value" aria-label="NIP">
+            <input id="nuPin2" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin2)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin2=this.value" aria-label="Repite el NIP">
+          </div>
+          <div class="uf-hint">Escríbelo dos veces. Con él entra a su cuenta.</div>
+        </div>
+      </div>
+      <div id="nuPermsBox" ${sinCargo ? 'hidden' : ''}>
+        <div class="usd-sec">Permisos</div>
         ${ufPermsRowHTML(d.perms, 'nuAbrirPermisos()')}
       </div>
     </div>`,
@@ -15651,7 +15661,7 @@ function nuSetRole(v){
   if(!nuDraft) return;
   nuDraft.role = v === 'admin' ? 'admin' : 'empleado';
   if(!nuDraft.permsTocados) nuDraft.perms = defaultPerms(nuDraft.role);
-  const fila = document.querySelector('#nuFull [onclick="nuAbrirPermisos()"] b');
+  const fila = document.querySelector('#nuFull [data-perm-n]');
   if(fila){ const on = PERMS.filter(p => nuDraft.perms[p.id]).length; fila.textContent = on + ' de ' + PERMS.length + ' permisos activados'; }
 }
 function nuAbrirPermisos(){
@@ -29602,10 +29612,13 @@ function ufElegir(id, v){
 /* (compatibilidad con llamadas viejas) */
 function ufPermsRowHTML(perms, accion){
   const on = PERMS.filter(p => perms && perms[p.id]).length;
-  return `<button type="button" class="uf-link" onclick="${accion}">
-      <span class="uf-pick-t"><b>${on} de ${PERMS.length} permisos activados</b><small>Toca para ver y cambiar cada uno</small></span>
-      <span class="uf-caret">${icon('chevronRight')}</span>
-    </button>`;
+  return `<div class="acc-list usd-list">
+      <button type="button" class="acc-row" onclick="${accion}">
+        <span class="acc-ico">${icon('shield')}</span>
+        <span class="acc-txt"><span class="acc-label">Qué puede hacer</span><span class="acc-sub" data-perm-n>${on} de ${PERMS.length} permisos activados</span></span>
+        <span class="acc-chev">${icon('chevronRight')}</span>
+      </button>
+    </div>`;
 }
 const UF_ROLES = () => ['empleado', 'admin'].map(r => ({ v:r, t:roleOf(r).name, s:roleOf(r).sub }));
 const UF_AREAS = () => [

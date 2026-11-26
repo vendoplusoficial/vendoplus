@@ -681,31 +681,35 @@ window.VPComandas = (() => {
       title: u ? 'Editar usuario' : 'Nuevo ' + a.one,
       sub: u ? escapeHtml(u.name) + ' · ' + a.name : 'Se agrega a ' + a.name,
       body: `
-        <div class="uf cm-uf">
-          <div class="uf-f">
-            <label class="uf-l" for="cmName">Nombre completo</label>
-            <input id="cmName" class="uf-box" type="text" maxlength="40" placeholder="Ej. Luis Pérez" autocomplete="off" value="${escapeHtml(f.name)}" oninput="VPComandas.campo('name', this.value)">
+        <div class="uf cm-uf usd-form">
+          <div class="usd-sec">Datos</div>
+          <div class="usd-card">
+            <div class="uf-f">
+              <label class="uf-l" for="cmName">Nombre completo</label>
+              <input id="cmName" class="uf-box" type="text" maxlength="40" placeholder="Ej. Luis Pérez" autocomplete="off" value="${escapeHtml(f.name)}" oninput="VPComandas.campo('name', this.value)">
+            </div>
+            ${conCargo ? `<div class="uf-f">
+              <span class="uf-l">Cargo</span>
+              ${ufSelHTML('cmRole', '', '', 'Cargo', roles, f.role, 'VPComandas.cargo')}
+            </div>` : ''}
           </div>
-          ${conCargo ? `<div class="uf-f">
-            <span class="uf-l">Cargo</span>
-            ${ufSelHTML('cmRole', '', '', 'Cargo', roles, f.role, 'VPComandas.cargo')}
-          </div>` : ''}
-          <div class="uf-f">
-            <label class="uf-l" for="cmPin">NIP de 4 dígitos${u ? '' : ' <span>(opcional)</span>'}</label>
-            <input id="cmPin" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.pin)}"
+          <div class="usd-sec">Acceso</div>
+          <div class="usd-card">
+            <div class="uf-f">
+              <label class="uf-l" for="cmPin">NIP de 4 dígitos${u ? '' : ' <span>(opcional)</span>'}</label>
+              <input id="cmPin" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.pin)}"
                    oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('pin', this.value)">
-            <div class="uf-hint">${u ? (u.pin ? 'Déjalo vacío para no cambiarlo.' : 'Aún no tiene NIP: entra sin escribir nada.') : 'Con NIP, solo esta persona puede entrar a su cuenta.'}</div>
-          </div>
-          ${pideNipDueno ? `<div class="uf-f">
-            <label class="uf-l" for="cmOwnerPin">Tu NIP de Dueño</label>
-            <input id="cmOwnerPin" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.ownerPin)}"
+              <div class="uf-hint">${u ? (u.pin ? 'Déjalo vacío para no cambiarlo.' : 'Aún no tiene NIP: entra sin escribir nada.') : 'Con NIP, solo esta persona puede entrar a su cuenta.'}</div>
+            </div>
+            ${pideNipDueno ? `<div class="uf-f">
+              <label class="uf-l" for="cmOwnerPin">Tu NIP de Dueño</label>
+              <input id="cmOwnerPin" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.ownerPin)}"
                    oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('ownerPin', this.value)">
-            <div class="uf-hint">Al tener equipo, tú también entras con NIP para proteger tu cuenta de Dueño.</div>
-          </div>` : ''}
-          ${conCargo ? `<div class="uf-f">
-            <span class="uf-l">Permisos</span>
-            ${ufPermsRowHTML(f.perms, 'VPComandas.permisos()')}
-          </div>` : ''}
+              <div class="uf-hint">Al tener equipo, tú también entras con NIP para proteger tu cuenta de Dueño.</div>
+            </div>` : ''}
+          </div>
+          ${conCargo ? `<div class="usd-sec">Permisos</div>
+          ${ufPermsRowHTML(f.perms, 'VPComandas.permisos()')}` : ''}
         </div>`,
       foot: `<button class="btn ghost" onclick="${u ? `VPComandas.area('${st.area}')` : 'VPComandas.volverAdd()'}">Cancelar</button>
              <button class="btn primary" onclick="VPComandas.guardarUsuario()">${u ? 'Guardar cambios' : 'Agregar a ' + a.name}</button>`
@@ -821,7 +825,7 @@ window.VPComandas = (() => {
     st.form.role = role;
     if (!st.form.permsTocados) st.form.perms = defaultPerms(role);
     /* Sin volver a dibujar la pantalla: solo se actualiza el contador de permisos */
-    const fila = document.querySelector('#cmFull .cm-uf [onclick="VPComandas.permisos()"] b');
+    const fila = document.querySelector('#cmFull .cm-uf [data-perm-n]');
     if (fila) fila.textContent = PERMS.filter(p => st.form.perms[p.id]).length + ' de ' + PERMS.length + ' permisos activados';
   }
   function permisos() {
