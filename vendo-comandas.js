@@ -953,7 +953,7 @@ window.VPComandas = (() => {
   function misListas() {
     const yo = me();
     return tickets().filter(k => {
-      if (k.status !== 'listo') return false;
+      if (k.status !== 'listo' || k.llevaId) return false;
       const o = orderById(k.orderId);
       return o ? esMiMesa(o) : (!!yo && k.byId === yo.id);
     });
@@ -1145,6 +1145,7 @@ window.VPComandas = (() => {
       <h1 class="page-title">Mesas</h1>
       <p class="page-sub">Hola, ${escapeHtml(userFirstName(yo) || yo.name)}</p>
       ${soloBar()}
+      ${charolaBar()}
       <div class="cm-tabs" role="tablist">
         <button type="button" role="tab" class="cm-tab ${tab === 'mesas' ? 'on' : ''}" onclick="VPComandas.tabMesero('mesas')">${VPMesas.tableIcon} Mesas</button>
         <button type="button" role="tab" class="cm-tab ${tab === 'listos' ? 'on' : ''} ${n ? 'has' : ''} ${avs.length ? 'alert' : ''}" onclick="VPComandas.tabMesero('listos')">${icon('bell')} Avisos${n ? `<span class="cm-tab-n">${n}</span>` : ''}</button>
@@ -1383,39 +1384,130 @@ window.VPComandas = (() => {
     toast(n === 1 ? 'Comanda entregada' : n + ' comandas entregadas', { variant:'toast-success', icon:icon('check') });
   }
 
-  /* Recoger: "¿Ya tienes el pedido?" con todo lo listo de esa mesa */
+  /* =========================================================
+     RECOGER Y LLEVAR (charola del mesero)
+     1) "Ya lo tengo" (mantener presionado): lo listo de esa mesa pasa a la
+        charola del mesero (sigue "listo", pero con llevaId = el mesero).
+     2) La charola dice a qué mesa va cada cosa. Se pueden recoger varias
+        mesas antes de salir; cada una se entrega por separado manteniendo
+        presionado "Ya lo dejé en Mesa X".
+     Todo vive en las comandas sincronizadas: si recarga o cambia de
+     aparato, la charola sigue ahí. "Lo regresé a cocina" la vacía.
+  ========================================================= */
+  function charola() {
+    const yo = me();
+    if (!yo) return [];
+    const g = {};
+    tickets().filter(k => k.status === 'listo' && k.llevaId === yo.id).forEach(k => {
+      const key = k.orderId || k.tableId;
+      (g[key] = g[key] || { key, table:k.table, ks:[] }).ks.push(k);
+    });
+    return Object.values(g).map(x => {
+      x.ks.sort((a, b) => (a.round || 1) - (b.round || 1));
+      x.at = x.ks.reduce((m, k) => Math.min(m, new Date(k.llevaAt || k.at).getTime()), Infinity);
+      x.items = x.ks.flatMap(k => k.items);
+      return x;
+    }).sort((a, b) => a.at - b.at);
+  }
+  /* Aviso fijo arriba en Mesas/Avisos mientras lleve algo */
+  function charolaBar() {
+    const c = charola();
+    if (!c.length) return '';
+    return `<button type="button" class="cmc-bar" onclick="VPComandas.verCharola()">
+      <span class="cmc-bar-ico">${VPMesas.tableIcon}</span>
+      <span class="cmc-bar-t"><b>${c.length === 1 ? 'Llévalo a ' + escapeHtml(c[0].table) : 'Llevas ' + c.length + ' pedidos'}</b>
+        <small>${c.length === 1 ? 'Toca para ver el pedido' : c.map(g => escapeHtml(g.table)).join(' · ')}</small></span>
+      <span class="cmc-bar-go">${icon('chevronRight')}</span>
+    </button>`;
+  }
+
+  /* Recoger: todo lo listo de esa mesa */
   function verLista(key) {
     const g = listasPorMesa().find(x => x.key === key)
-      || (() => { const k = tickets().find(x => x.id === key && x.status === 'listo'); return k ? { key:k.orderId || k.tableId, table:k.table, ks:[k], items:k.items } : null; })();
+      || (() => { const k = tickets().find(x => x.id === key && x.status === 'listo' && !x.llevaId); return k ? { key:k.orderId || k.tableId, table:k.table, ks:[k], items:k.items } : null; })();
     if (!g) { closeModal(); render(); return; }
+    const llevo = charola().length;
     openModal(`
       <div class="sheet-header">
-        <div class="sheet-header-left" style="min-width:0;"><h2>${escapeHtml(g.table)}</h2><span class="mdi-pill ok">${g.ks.length > 1 ? plural(g.ks.length, 'ronda', 'rondas') : 'Lista'}</span></div>
+        <div class="sheet-header-left" style="min-width:0;"><h2>Recoger en cocina</h2></div>
         <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
       </div>
-      <div class="cm-todo">
-        <span class="cm-todo-step"><i>${icon('inbox')}</i><small>Recoge en cocina</small></span>
-        <b class="cm-todo-arrow">${icon('chevronRight')}</b>
-        <span class="cm-todo-step"><i>${VPMesas.tableIcon}</i><small>Lleva a ${escapeHtml(g.table)}</small></span>
+      <div class="cmc-dest">
+        <span class="cmc-dest-ico">${icon('inbox')}</span>
+        <span class="cmc-dest-t"><small>Pedido listo de</small><b>${escapeHtml(g.table)}</b></span>
+        <span class="cmc-dest-n">${g.ks.length > 1 ? plural(g.ks.length, 'ronda', 'rondas') : 'Ronda ' + (g.ks[0].round || 1)}</span>
       </div>
+      <div class="cmc-sec">Qué recoges</div>
       <div class="cm-lines">${lineasHTML(g.items)}</div>
       <div class="cm-sheet-acts">
-        <p class="cm-ask">¿Ya tienes el pedido?</p>
-        ${holdBtn('cm-go cm-go-ok', icon('check') + ' Ya lo tengo', 'entregarGrupo', [g.ks.map(k => k.id)])}
+        ${llevo ? `<p class="cmc-nota">Ya llevas ${plural(llevo, 'pedido', 'pedidos')}: este se suma a tu charola.</p>` : ''}
+        ${holdBtn('cm-go cmc-go', icon('check') + ' Ya lo tengo', 'recoger', [g.ks.map(k => k.id)])}
         <button class="cm-undo" onclick="closeModal()">Todavía no</button>
       </div>
     `, { dismissible:true });
+  }
+  function recoger(ids) {
+    const yo = me();
+    const list = tickets();
+    let n = 0;
+    list.forEach(k => {
+      if (ids.indexOf(k.id) >= 0 && k.status === 'listo' && (!k.llevaId || (yo && k.llevaId === yo.id))) {
+        k.llevaId = yo ? yo.id : meId(); k.llevaPor = yo ? yo.name : meName(); k.llevaAt = nowIso(); n++;
+      }
+    });
+    if (!n) { closeModal(); render(); toast('Otro mesero ya lo recogió', { icon:icon('alert') }); return; }
+    saveTickets(list);
+    render();
+    verCharola();
+  }
+  /* "Enviar a…": a qué mesa va cada cosa de la charola */
+  function verCharola() {
+    const c = charola();
+    if (!c.length) { closeModal(); render(); return; }
+    const otros = listasPorMesa().length;
+    st.open = { kind:'charola', id:'charola' };
+    openModal(`
+      <i class="cm-open" data-id="charola" hidden></i>
+      <div class="sheet-header">
+        <div class="sheet-header-left" style="min-width:0;"><h2>${c.length === 1 ? 'Llévalo a la mesa' : 'Tu charola'}</h2>${c.length > 1 ? `<span class="mdi-pill">${c.length} mesas</span>` : ''}</div>
+        <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
+      </div>
+      ${c.length > 1 ? '<p class="cmc-nota cmc-nota-top">Entrega cada mesa y mantén presionado su botón al dejarla.</p>' : ''}
+      ${c.map(g => `
+        <div class="cmc-card">
+          <div class="cmc-dest">
+            <span class="cmc-dest-ico">${VPMesas.tableIcon}</span>
+            <span class="cmc-dest-t"><small>Lleva a</small><b>${escapeHtml(g.table)}</b></span>
+            <span class="cmc-dest-n">${fmtN(g.items.reduce((m, i) => m + Math.max(0, efect(i)), 0))} art.</span>
+          </div>
+          <div class="cm-lines">${lineasHTML(g.items)}</div>
+          ${holdBtn('cm-go cmc-go', icon('check') + ' Ya lo dejé en ' + escapeHtml(g.table), 'entregarGrupo', [g.ks.map(k => k.id)])}
+          <button class="cm-undo" onclick="VPComandas.soltar('${escapeHtml(g.key)}')">Lo regresé a cocina</button>
+        </div>`).join('')}
+      ${otros ? `<button class="btn ghost block cmc-mas" onclick="closeModal(); VPComandas.tabMesero('listos')">${icon('plus')} Recoger otro pedido (${otros})</button>` : ''}
+    `, { dismissible:true });
+  }
+  /* Se arrepintió: lo deja en cocina y vuelve a "Listos para recoger" */
+  function soltar(key) {
+    const yo = me();
+    const list = tickets();
+    let n = 0;
+    list.forEach(k => { if (k.status === 'listo' && yo && k.llevaId === yo.id && (k.orderId || k.tableId) === key) { delete k.llevaId; delete k.llevaPor; delete k.llevaAt; n++; } });
+    if (n) saveTickets(list);
+    render();
+    if (charola().length) verCharola(); else closeModal();
   }
   function entregarGrupo(ids) {
     const list = tickets();
     let mesa = '', n = 0;
     list.forEach(k => { if (ids.indexOf(k.id) >= 0 && k.status === 'listo') { k.status = 'entregado'; k.deliveredAt = nowIso(); k.deliveredBy = meName(); mesa = k.table; n++; } });
-    closeModal();
-    if (!n) { render(); return; }
+    if (!n) { render(); if (charola().length) verCharola(); else closeModal(); return; }
     saveTickets(list);
-    if (!listasPorMesa().length) st.mtab = 'mesas';
+    if (!listasPorMesa().length && !charola().length) st.mtab = 'mesas';
     render();
-    toast('¡Listo! Llévalo a ' + mesa, { variant:'toast-success', icon:icon('check') });
+    vibrate([20, 40, 20]);
+    toast('Entregado en ' + mesa, { variant:'toast-success', icon:icon('check'), subtitle: charola().length ? 'Te falta' + (charola().length === 1 ? ' ' + charola()[0].table : 'n ' + charola().length + ' mesas') : '' });
+    if (charola().length) verCharola(); else closeModal();
   }
 
   /* Si todavía hay platillos en cocina, "Pedir la cuenta" sale bloqueado (gris).
@@ -1854,7 +1946,7 @@ window.VPComandas = (() => {
             <span class="mdi-pill cancel">Ronda ${k.round || 1}</span>
             <span class="mdi-time cm-timer">${icon('clock')} ${k.status === 'listo' ? 'Lista ' + ago(k.readyAt || k.at) : ago(k.at)}</span>
           </div>
-          <div class="mdi-name">${icon('person')} ${escapeHtml(k.by || 'Mesero')}</div>
+          <div class="mdi-name">${icon('person')} ${escapeHtml(k.by || 'Mesero')}${k.status === 'listo' && k.llevaPor ? ' · <b>En camino con ' + escapeHtml(k.llevaPor) + '</b>' : ''}</div>
           <div class="mdi-items">${resumen(k.items)}</div>
           <div class="mdi-card-foot"><span>${plural(unitsOf(k.items), 'producto', 'productos')}${notas ? ` · <i class="cm-has-note">${icx('note')} Con notas</i>` : ''}${k.items.some(i => i.falta) ? ` · <i class="cm-has-out">${icon('alert')} Falta algo</i>` : ''}${k.items.some(i => i.cancelado) ? ` · <i class="cm-has-out">${icon('close')} Cancelaron algo</i>` : ''}</span><b>${fmtTime(k.at)}</b></div>
         </button>`;
@@ -1899,7 +1991,7 @@ window.VPComandas = (() => {
         <b>¡Pedido terminado!</b>
         <small>Le avisamos al mesero de ${escapeHtml(k.table)}</small>
       </div>
-      <div class="cm-wait">${icon('bell')} Esperando al mesero <span class="cm-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <div class="cm-wait">${k.llevaPor ? `${icon('check')} ${escapeHtml(k.llevaPor)} ya lo lleva a la mesa` : `${icon('bell')} Esperando al mesero <span class="cm-dots" aria-hidden="true"><i></i><i></i><i></i></span>`}</div>
       <button class="btn ghost block" onclick="closeModal()">Cerrar</button>
       <button class="cm-undo" onclick="VPComandas.estado('${k.id}','preparando')">Deshacer</button>`;
     }
@@ -2195,11 +2287,11 @@ window.VPComandas = (() => {
       const sheet = document.querySelector('#modal-layer .modal-sheet');
       const mk = sheet && sheet.querySelector('.cm-open');
       if (st.open && mk && mk.dataset.id === st.open.id) {
-        const ok = st.open.kind === 'cuenta' ? orderById(st.open.id) : tickets().find(x => x.id === st.open.id);
+        const ok = st.open.kind === 'charola' ? charola().length : st.open.kind === 'cuenta' ? orderById(st.open.id) : tickets().find(x => x.id === st.open.id);
         if (!ok) closeModal();
         else {
           const y = sheet.scrollTop;
-          if (st.open.kind === 'cuenta') abrirCuenta(st.open.id); else abrirComanda(st.open.id);
+          if (st.open.kind === 'charola') verCharola(); else if (st.open.kind === 'cuenta') abrirCuenta(st.open.id); else abrirComanda(st.open.id);
           const sh = document.querySelector('#modal-layer .modal-sheet');
           if (sh) sh.scrollTop = y;
         }
@@ -2447,7 +2539,7 @@ window.VPComandas = (() => {
   return {
     abrir, guard, esMesero, esCocina, esCajero, puedeAdministrar,
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
-    tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta, desbloquearCuenta,
+    tocarMesa, abrirCuenta, verLista, entregarGrupo, recoger, verCharola, soltar, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta, desbloquearCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
     portada, portadaHTML, ayuda, cerrarAyuda, buscarAdd, volverAdd, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, esPedidoCocina, botonRegresarCocina, regresarACocina, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
