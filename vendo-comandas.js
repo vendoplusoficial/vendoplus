@@ -78,6 +78,7 @@ window.VPComandas = (() => {
   const me = () => { try { return activeUser(); } catch (e) { return null; } };
 
   /* Se llama al inicio de cada render(): cada quien ve solo su sección */
+  let vistaPrevia = null;
   function guard() {
     if (typeof EXTRA_VIEWS !== 'undefined' && EXTRA_VIEWS.comandas !== view) EXTRA_VIEWS.comandas = view;
     if (typeof EXTRA_VIEWS !== 'undefined' && EXTRA_VIEWS.portada !== portadaVista) EXTRA_VIEWS.portada = portadaVista;
@@ -89,6 +90,13 @@ window.VPComandas = (() => {
     } else if (currentView === 'comandas' && !puedeAdministrar()) {
       currentView = 'sale';
     }
+    /* Al llegar a Comandas desde otra sección (menú, barra, «Más»…) siempre se
+       empieza en el inicio de Comandas, no dentro del área que se dejó abierta. */
+    if (currentView === 'comandas' && vistaPrevia !== 'comandas' && !area) {
+      st.screen = 'home'; st.area = null; st.form = null; st.permsDraft = null;
+      cerrarFull();
+    }
+    vistaPrevia = currentView;
     const b = document.body.classList;
     b.toggle('cm-solo', !!area);
     b.toggle('cm-mesero', area === 'mesero');
