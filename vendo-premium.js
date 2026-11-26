@@ -1624,7 +1624,31 @@
     } catch (e) { return false; }
   }
 
+  /* El anuncio sale hasta que su imagen ya está bajada y lista para pintarse:
+     aparece completo de un jalón, nunca a medias ni en blanco. Si la imagen
+     no llega (sin internet, muy lenta), esta vez no sale y no estorba. */
   function mostrarPromo(promo) {
+    var src = srcPromo(promo);
+    if (!src) { mostrarPromoYa(promo); return; }
+    var pre = new Image(), hecho = false;
+    function ir() {
+      if (hecho) return; hecho = true;
+      if (document.querySelector('.vp-promo')) return;
+      mostrarPromoYa(promo);
+      vigilarPremium();
+    }
+    function nada() { hecho = true; }
+    pre.decoding = 'async';
+    try { pre.fetchPriority = 'high'; } catch (e) {}
+    pre.onload = function () {
+      if (pre.decode) pre.decode().then(ir, ir); else ir();
+    };
+    pre.onerror = nada;
+    pre.src = src;
+    setTimeout(nada, 9000);
+  }
+
+  function mostrarPromoYa(promo) {
     cssPromo();
     var horizontal = esHorizontal();
     var src = srcPromo(promo);
@@ -1718,8 +1742,7 @@
     if (!PROMOS.length) return true;                     /* todavía no hay imágenes */
     var i = elegirPromo();
     if (i < 0) return true;
-    mostrarPromo(PROMOS[i]);
-    vigilarPremium();
+    mostrarPromo(PROMOS[i]);                             /* vigilarPremium() va adentro, al salir */
     return true;
   }
 

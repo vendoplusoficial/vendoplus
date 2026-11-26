@@ -60,10 +60,26 @@ window.VP_IMGS = [
   'img/promo-comandas-h.webp?v=1',
   'img/promo-comandas-v.webp?v=1'
 ];
-window.addEventListener('load', function(){
-  var ir = function(){ window.VP_IMGS.forEach(function(src){ var i = new Image(); i.decoding = 'async'; i.src = src; }); };
-  if('requestIdleCallback' in window) requestIdleCallback(ir, { timeout:2500 }); else setTimeout(ir, 1200);
-});
+/* Primero (desde el primer instante) las de los anuncios y portadas Premium
+   de la orientación del aparato, que son las que salen al abrir; el resto
+   en cuanto la página termina de cargar. Así el anuncio ya está listo. */
+(function(){
+  var horiz = (window.innerWidth || 0) > (window.innerHeight || 0);
+  var ya = {};
+  var pide = function(src, alta){
+    if(ya[src]) return; ya[src] = 1;
+    var i = new Image(); i.decoding = 'async';
+    try{ i.fetchPriority = alta ? 'high' : 'low'; }catch(e){}
+    i.src = src;
+  };
+  window.VP_IMGS.forEach(function(src){
+    if(/promo-/.test(src) && (horiz ? /-h\.webp/ : /-v\.webp/).test(src)) pide(src, true);
+  });
+  window.addEventListener('load', function(){
+    var ir = function(){ window.VP_IMGS.forEach(function(src){ pide(src, false); }); };
+    if('requestIdleCallback' in window) requestIdleCallback(ir, { timeout:800 }); else setTimeout(ir, 300);
+  });
+})();
 </script>
 <script>
 /* Copia de la app en el aparato (sw.js): abre rápido con señal mala y sin internet */
@@ -30455,7 +30471,7 @@ window.VP_PROMOS_IMG = {
   'comandas-h': 'img/promo-comandas-h.webp?v=1'
 };
 </script>
-<script src="vendo-premium.js?v=20261125k"></script>
+<script src="vendo-premium.js?v=20261126a"></script>
 <script src="vendo-apps.js?v=20261125a"></script>
 
 <style id="vp-fotos-cuadradas">
