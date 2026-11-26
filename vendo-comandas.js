@@ -1097,7 +1097,12 @@ window.VPComandas = (() => {
         ${cuenta
           ? `<button class="btn ghost block" onclick="VPComandas.pedirCuenta('${o.id}')">${icon('close')} Quitar aviso de cuenta</button>`
           : `<button class="btn primary block" onclick="VPComandas.ronda('${escapeHtml(o.checkout.floorTableId)}')">${icon('plus')} Agregar productos</button>
-             ${holdBtn('cm-go-bill', icon('cash') + ' Pedir la cuenta', 'pedirCuenta', [o.id])}`}`;
+             ${enCocina.length && !cuentaLibre[o.id]
+               ? `<button type="button" class="btn xl block cm-bill-lock" onclick="VPComandas.desbloquearCuenta('${o.id}')">
+                    <span class="cm-hold-in">${icon('lock')} Pedir la cuenta</span>
+                    <small class="cm-hold-tip">Aún hay platillos en cocina · toca para desbloquear</small>
+                  </button>`
+               : holdBtn('cm-go-bill', icon('cash') + ' Pedir la cuenta', 'pedirCuenta', [o.id])}`}`;
     }
 
     return `
@@ -1407,6 +1412,15 @@ window.VPComandas = (() => {
     toast('¡Listo! Llévalo a ' + mesa, { variant:'toast-success', icon:icon('check') });
   }
 
+  /* Si todavía hay platillos en cocina, "Pedir la cuenta" sale bloqueado (gris).
+     Un toque lo desbloquea (por si el cliente ya se quiere ir) y ya se puede pedir. */
+  const cuentaLibre = {};
+  function desbloquearCuenta(orderId) {
+    cuentaLibre[orderId] = true;
+    vibrate(8);
+    abrirCuenta(orderId);
+    toast('Listo, ya puedes pedir la cuenta', { icon:icon('cash'), subtitle:'Todavía hay platillos en cocina' });
+  }
   function pedirCuenta(orderId) {
     const list = DB.getTableOrders();
     const o = list.find(x => x.id === orderId);
@@ -2409,7 +2423,7 @@ window.VPComandas = (() => {
   return {
     abrir, guard, esMesero, esCocina, esCajero, puedeAdministrar,
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
-    tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
+    tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta, desbloquearCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
     portada, portadaHTML, ayuda, cerrarAyuda, buscarAdd, volverAdd, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, esPedidoCocina, botonRegresarCocina, regresarACocina, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
