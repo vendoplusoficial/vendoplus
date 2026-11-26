@@ -438,7 +438,7 @@ section.cm-promo.cm-fit:not(.cm-fit-ok){ visibility:hidden; }
 .cm-promo-x:active{ transform:scale(.92); }
 
 /* Botón "?" debajo de las áreas */
-.cm-ayuda-fila{ display:flex; justify-content:center; margin-top:16px; }
+.cm-ayuda-fila{ display:flex; justify-content:flex-end; margin-top:14px; }
 .cm-ayuda{ width:38px; height:38px; border-radius:50%; border:1px solid #E1E5EE; background:transparent; color:var(--ink-soft,#6B7592);
   font:500 17px/1 var(--sans, inherit); cursor:pointer; display:flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent; }
 .cm-ayuda:hover{ color:var(--ink,#16213E); border-color:#CDD3DF; }
