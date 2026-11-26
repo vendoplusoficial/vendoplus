@@ -1679,20 +1679,20 @@ window.VPComandas = (() => {
       /* Va a "Pedidos en cocina" (lista aparte de Ventas en espera) */
       const ref = checkout.cmRef || uid('ref');
       const lista = DB.getCocina();
-      const prev = checkout.cmPedidoId ? lista.find(x => x.id === checkout.cmPedidoId) : null;
+      const prev = checkout.cmPedidoId ? (lista.find(x => x.id === checkout.cmPedidoId) || checkout.cmOrig || null) : null;
       const nombre = (checkout.table || '').trim() || (cust ? cust.name : '');
       label = prev ? prev.name : (checkout.cmNombre || (nombre ? svc + ' · ' + nombre : svc + ' · ' + fmtTime(nowIso())));
       checkout.cmNombre = label;
-      const id = prev ? prev.id : (checkout.cmPedidoId || uid('e'));
+      const id = (prev && prev.id) || checkout.cmPedidoId || uid('e');
       checkout.cmRef = ref;
       checkout.cmPedidoId = id;
       checkout.cmSent = mapa;
       const t = computeTotals();
       const entry = {
-        id, name:label, at: prev ? prev.at : nowIso(),
-        by: prev ? prev.by : (yo ? yo.name : meName()), byId: prev ? prev.byId : (yo ? yo.id : meId()),
+        id, name:label, at: prev && prev.at ? prev.at : nowIso(),
+        by: prev && prev.by ? prev.by : (yo ? yo.name : meName()), byId: prev && prev.byId ? prev.byId : (yo ? yo.id : meId()),
         cart: JSON.parse(JSON.stringify(cart)), customItems: JSON.parse(JSON.stringify(customItems)),
-        checkout: Object.assign({}, checkout, { cash:'' }), total:t.total, units:cartUnitsCount()
+        checkout: Object.assign({}, checkout, { cash:'', cmOrig:undefined }), total:t.total, units:cartUnitsCount()
       };
       if (!DB.saveCocina(lista.filter(x => x.id !== id).concat([entry]))) { checkout.cmSent = sent; toast('No se pudo guardar el pedido'); return; }
       cart = []; customItems = {}; checkout = newCheckout();
@@ -1710,6 +1710,41 @@ window.VPComandas = (() => {
     closeModal();
     render();
     toast('Mandado a cocina', { variant:'toast-success', icon:icon('comandas'), subtitle:label + ' · ' + donde });
+  }
+
+  /* ---------- Retomar un pedido de cocina desde Nueva venta ----------
+     En lugar de "En espera" el carrito muestra "Regresar a cocina": si el
+     cajero lo abrió por error (o solo quería verlo), vuelve a la lista con el
+     mismo nombre, hora y estado de cocina. Si le agregó algo, eso nuevo sí se
+     manda a cocina como otra ronda. */
+  function esPedidoCocina() { return !!checkout.cmPedidoId && !checkout.floorTableId; }
+  function botonRegresarCocina() {
+    const nuevo = cobroDividido() && pendientesCobro().length > 0;
+    return `<button class="btn ghost cm-regresa" onclick="VPComandas.regresarACocina(false)" title="${nuevo ? 'Manda lo nuevo a cocina y guarda el pedido' : 'Vuelve a Pedidos en cocina sin cobrar'}">${icon('chefHat')} ${nuevo ? 'Mandar a cocina' : 'Regresar a cocina'}</button>`;
+  }
+  function regresarACocina(silencioso) {
+    if (!esPedidoCocina()) { if (!silencioso && typeof parkCurrentSale === 'function') parkCurrentSale(); return false; }
+    if (!cart.length) { if (!silencioso) toast('El carrito está vacío'); return false; }
+    if (!silencioso && cobroDividido() && pendientesCobro().length) { mandarDesdeCobro(); return true; }
+    const lista = DB.getCocina();
+    const id = checkout.cmPedidoId;
+    const prev = lista.find(x => x.id === id) || checkout.cmOrig || {};
+    const yo = me();
+    const t = computeTotals();
+    const label = prev.name || checkout.cmNombre || 'Pedido';
+    const entry = {
+      id, name:label, at: prev.at || nowIso(),
+      by: prev.by || (yo ? yo.name : meName()), byId: prev.byId || (yo ? yo.id : meId()),
+      cart: JSON.parse(JSON.stringify(cart)), customItems: JSON.parse(JSON.stringify(customItems)),
+      checkout: Object.assign({}, checkout, { cash:'', cmOrig:undefined }), total:t.total, units:cartUnitsCount()
+    };
+    if (!DB.saveCocina(lista.filter(x => x.id !== id).concat([entry]))) { if (!silencioso) toast('No se pudo guardar el pedido'); return false; }
+    cart = []; customItems = {}; checkout = newCheckout();
+    if (silencioso) return true;
+    closeModal();
+    render();
+    toast('Regresó a cocina: ' + label, { variant:'toast-success', icon:icon('chefHat'), subtitle:'Sigue en Ventas en espera para cobrarlo' });
+    return true;
   }
 
   /* ---------- Pedidos en cocina (mandados desde el cobro, sin cobrar todavía) ---------- */
@@ -2372,7 +2407,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    portada, portadaHTML, ayuda, cerrarAyuda, buscarAdd, volverAdd, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    portada, portadaHTML, ayuda, cerrarAyuda, buscarAdd, volverAdd, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, esPedidoCocina, botonRegresarCocina, regresarACocina, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();

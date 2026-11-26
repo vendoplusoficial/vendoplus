@@ -5155,7 +5155,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=48"></script>
+<script src="vendo-comandas.js?v=50"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -8378,7 +8378,9 @@ function cartSheetHTML(step){
       ${window.VPComandas && VPComandas.esMesero() ? VPComandas.cartActions() : `<div class="cart-actions">
         ${checkout.floorTableId
           ? `<button class="btn ghost" onclick="VPMesas.park()">${VPMesas.tableIcon} ${checkout.floorOrderId ? 'Guardar cambios' : 'Dejar mesa abierta'}</button>`
-          : `<button class="btn ghost" onclick="parkCurrentSale()" title="Guardar para cobrar después">${icon('pause')} En espera</button>`}
+          : (window.VPComandas && VPComandas.esPedidoCocina && VPComandas.esPedidoCocina())
+            ? VPComandas.botonRegresarCocina()
+            : `<button class="btn ghost" onclick="parkCurrentSale()" title="Guardar para cobrar después">${icon('pause')} En espera</button>`}
         <button class="btn primary block" onclick="openCartSheet('checkout')">Continuar · ${formatMoney(totals.total)}</button>
       </div>`}
       ${!checkout.floorOrderId ? '<button class="link-danger" onclick="clearCart()">Vaciar carrito</button>' : ''}
@@ -23318,6 +23320,7 @@ function parkedBarHTML(){
 function parkCurrentSale(){
   if(!cart.length){ toast('El carrito está vacío'); return; }
   if(checkout.floorTableId){ VPMesas.park(); return; }
+  if(checkout.cmPedidoId && window.VPComandas && VPComandas.regresarACocina){ VPComandas.regresarACocina(false); return; }
   const food = bizIsFood();
   const sug = checkout.table ? (food && checkout.serviceType === 'comer' ? 'Mesa ' + checkout.table : checkout.table) : (checkoutCustomer() ? checkoutCustomer().name : '');
   askConfirm({
@@ -23386,6 +23389,8 @@ function resumeSavedSale(id, isTableOrder){
     cart = (p.cart || []).slice();
     customItems = Object.assign({}, p.customItems || {});
     checkout = Object.assign(newCheckout(), p.checkout || {}, { cash:'' });
+    /* Pedido de cocina: se recuerda cómo estaba por si se regresa a cocina */
+    if(checkout.cmPedidoId) checkout.cmOrig = { name:p.name, at:p.at, by:p.by, byId:p.byId };
     closeModal();
     if(currentView !== 'sale') goTo('sale'); else render();
     openCartSheet('cart');
@@ -23394,7 +23399,8 @@ function resumeSavedSale(id, isTableOrder){
   if(isTableOrder && checkout.floorOrderId === id){ openCartSheet('cart'); return; }
   if(cart.length){
     askConfirm({ title:'Ya tienes productos en el carrito', text:'Lo que tienes ahorita se guarda en espera y retomas "' + escapeHtml(order.name) + '".', ok:'Cambiar', icon:icon('pause') }, () => {
-      if(!parkNow(checkout.floorTableId ? checkout.table : 'Pedido ' + fmtTime(new Date().toISOString()), checkout.floorOrderId)){
+      const enCocina = !checkout.floorTableId && checkout.cmPedidoId && window.VPComandas && VPComandas.regresarACocina;
+      if(enCocina ? !VPComandas.regresarACocina(true) : !parkNow(checkout.floorTableId ? checkout.table : 'Pedido ' + fmtTime(new Date().toISOString()), checkout.floorOrderId)){
         toast('No se pudo guardar el pedido actual'); return;
       }
       doIt();
