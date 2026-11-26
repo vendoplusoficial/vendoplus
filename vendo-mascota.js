@@ -1099,7 +1099,7 @@ html.vp-chat-abierto, body.vp-chat-abierto{ overflow:hidden !important; overscro
       '</div>' +
       '<p class="md-hint" style="margin-top:4px;">Se esconde solo cuando cobras, escaneas un código o escribes algo, y regresa al terminar.</p>' +
       '<div class="sheet-actions">' +
-        '<button class="btn primary block" id="vpAjustesOk">Listo</button>' +
+        '<button class="btn ghost block" id="vpAjustesOk">Listo</button>' +
       '</div>',
       { dismissible: true });
 

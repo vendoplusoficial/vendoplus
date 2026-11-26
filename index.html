@@ -1325,9 +1325,8 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
     background:var(--surface-alt); color:var(--ink);
   }
   .acc-ico svg{ width:19px; height:19px; }
-  .acc-ico.gold{ background:var(--accent-soft); color:#8A6A18; }
-  .acc-ico.green{ background:var(--sec-home-soft); color:var(--sec-home-ink); }
-  .acc-ico.red{ background:var(--danger-bg); color:var(--accent-2); }
+  /* Iconos de las listas: todos en gris, sin colores */
+  .acc-ico.gold, .acc-ico.green, .acc-ico.red{ background:var(--surface-alt); color:var(--ink-soft); }
   .acc-txt{ flex:1; min-width:0; }
   .acc-label{ font-size:15px; font-weight:700; color:var(--ink); }
   .acc-sub{ font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -2051,7 +2050,7 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
   }
   :focus-visible{ outline-color:var(--brand); }
   /* Íconos de listas: además del verde, el verde azulado de WhatsApp */
-  .acc-ico.blue, .acc-ico.violet{ background:var(--teal-soft); color:var(--teal-ink); }
+  .acc-ico.blue, .acc-ico.violet{ background:var(--surface-alt); color:var(--ink-soft); }
   .role-chip.admin{ background:var(--teal-soft); color:var(--teal-ink); }
   /* Solo lectura (cuando a ese usuario no le toca cambiarlo) */
   .acc-row.md-ro{ cursor:default; }
@@ -2116,7 +2115,7 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
   .cartbar-inner{ border-color:rgba(var(--brand-rgb),.55); }
   .cartbar-icon, .cart-total-pill .ctp-icon{ background:var(--brand); }
   .doc-note{
-    display:flex; gap:10px; align-items:flex-start; background:var(--brand-soft); color:var(--brand-ink);
+    display:flex; gap:10px; align-items:flex-start; background:var(--surface-alt); color:var(--ink);
     border-radius:13px; padding:11px 13px; font-size:12.5px; font-weight:600; line-height:1.45; margin:0 0 14px;
   }
   .doc-note svg{ width:19px; height:19px; flex-shrink:0; }
@@ -2235,7 +2234,7 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
     text-align:center; background:var(--surface); border:1.5px dashed var(--border); border-radius:16px;
     padding:26px 20px; display:flex; flex-direction:column; align-items:center; gap:5px;
   }
-  .mdi-empty-ico{ width:54px; height:54px; border-radius:17px; background:var(--sec-menu-soft); color:var(--sec-menu-ink); display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
+  .mdi-empty-ico{ width:54px; height:54px; border-radius:17px; background:var(--surface-alt); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
   .mdi-empty-ico svg{ width:26px; height:26px; }
   .mdi-empty b{ font-size:15px; }
   .mdi-empty span:last-child{ font-size:13px; color:var(--ink-soft); line-height:1.5; max-width:330px; font-weight:500; }
@@ -3109,7 +3108,7 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
   .conf-card .sheet-title{ margin-top:2px; }
   .conf-card .sheet-text{ margin-bottom:12px; }
   .conf-card .field{ margin:6px 0 4px; }
-  .conf-ico{ width:46px; height:46px; border-radius:15px; display:flex; align-items:center; justify-content:center; background:var(--brand-soft); color:var(--brand-ink); margin-bottom:12px; }
+  .conf-ico{ width:46px; height:46px; border-radius:15px; display:flex; align-items:center; justify-content:center; background:var(--surface-alt); color:var(--ink-soft); margin-bottom:12px; }
   .conf-ico svg{ width:22px; height:22px; }
   .conf-ico.danger{ background:var(--danger-bg); color:var(--accent-2); }
   .conf-toggle{ border-top:1px solid var(--border); border-bottom:none; margin-top:4px; }
@@ -3133,7 +3132,7 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
     display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; font-family:inherit; color:var(--ink);
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-card); padding:13px 12px 12px; box-shadow:var(--shadow-card); min-width:0;
   }
-  .tool-ico{ width:36px; height:36px; border-radius:11px; background:var(--brand-soft); color:var(--brand-ink); display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
+  .tool-ico{ width:36px; height:36px; border-radius:11px; background:var(--surface-alt); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
   .tool-ico svg{ width:18px; height:18px; }
   .tool-tile b{ font-size:14px; font-weight:800; }
   .tool-tile small{ font-size:11.5px; font-weight:600; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
@@ -3312,7 +3311,7 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
   /* ---------- Clientes ---------- */
   .cust-av{ background:var(--brand-soft) !important; color:var(--brand-ink); font-weight:800; font-size:14px !important; border-radius:50% !important; }
   .cust-av.big{ width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .acc-ico.cust-mini{ background:var(--brand-soft); color:var(--brand-ink); font-weight:800; font-size:13px; border-radius:50%; }
+  .acc-ico.cust-mini{ background:var(--surface-alt); color:var(--ink); font-weight:800; font-size:13px; border-radius:50%; }
   .acc-row.picked{ background:var(--brand-soft); }
   .cust-info{ display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 14px; }
   .cust-info > *{ display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:700; color:var(--ink-soft); background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:6px 11px; font-family:inherit; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -3402,7 +3401,7 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
   @media print{ #printRoot .rep-doc{ width:auto; } }
 
   .trial-bar-fill.hot{ background:var(--accent-2); }
-  .doc-note.warn-note{ background:var(--accent-soft); color:#6B4E00; }
+  .doc-note.warn-note{ background:var(--surface-alt); color:var(--ink); }
   .tax-grid .opt-card{ padding:12px 6px; }
   .tax-grid .opt-card:disabled, .seg button:disabled{ opacity:.6; cursor:not-allowed; }
 
@@ -4332,7 +4331,7 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 /* Listas largas: el celular solo dibuja las filas que están a la vista */
 .prod-row, .sale-row{ content-visibility:auto; contain-intrinsic-size:auto 72px; }
 .hist-week{ display:flex; align-items:center; gap:11px; background:#F5F7FB; border:1px solid #E6EAF3; border-radius:16px; padding:11px 12px; margin:4px 0 14px; }
-.hist-week-ico{ flex:none; width:36px; height:36px; border-radius:11px; background:#EAF9F0; color:#0F8F46; display:flex; align-items:center; justify-content:center; }
+.hist-week-ico{ flex:none; width:36px; height:36px; border-radius:11px; background:var(--surface-alt); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; }
 .hist-week-ico svg{ width:19px; height:19px; }
 .hist-week-txt{ flex:1; min-width:0; font-size:12px; font-weight:600; line-height:1.35; color:var(--ink-soft,#6B7592); }
 .hist-week-txt b{ display:block; font-size:13.5px; font-weight:800; color:var(--vp-navy,#16213E); margin-bottom:1px; }
@@ -4436,7 +4435,7 @@ body, button, input, select, textarea{ font-family:var(--sans); }
 .qp-opt{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:#fff; border:1.5px solid var(--vp-line,#E6EAF3); border-radius:18px; padding:14px; font:inherit; color:var(--vp-navy,#16213E); cursor:pointer; }
 .qp-opt:active{ background:#F5F7FB; }
 .qp-opt.off{ opacity:.45; cursor:not-allowed; }
-.qp-ico{ flex:none; width:46px; height:46px; border-radius:14px; background:#EAF9F0; color:#0F8F46; display:flex; align-items:center; justify-content:center; }
+.qp-ico{ flex:none; width:46px; height:46px; border-radius:14px; background:var(--surface-alt); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; }
 .qp-ico svg{ width:24px; height:24px; }
 .qp-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 .qp-txt b{ font-size:16px; font-weight:800; }
@@ -5452,6 +5451,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
 /* Formularios de usuario: estilo sobrio, como un POS profesional */
 .uf{ display:flex; flex-direction:column; gap:18px; }
 .uf-f{ display:flex; flex-direction:column; gap:7px; }
+.uf-f[hidden]{ display:none; }   /* mesero y cocinero: sin Cargo ni Permisos */
 .uf-l{ font-size:13px; font-weight:700; color:#3D4659; letter-spacing:.1px; }
 .uf-l span{ font-weight:500; color:#8A93A6; }
 .uf-box{ display:block; width:100%; box-sizing:border-box; height:48px; padding:0 14px; border:1px solid #D9DEE7; border-radius:10px; background:#fff;
@@ -7901,7 +7901,7 @@ function openSizePicker(productId){
         </div>`;
       }).join('')}
     </div>
-    <button class="btn primary block" style="margin-top:16px;" onclick="closeModal(); renderBackgroundIfSale();">Listo</button>
+    <button class="btn ghost block" style="margin-top:16px;" onclick="closeModal(); renderBackgroundIfSale();">Listo</button>
   `;
   openModal(html, { dismissible:true });
 }
@@ -8021,7 +8021,7 @@ openSizePicker = function(productId){
   let i = prev != null ? prev : Math.max(0, items.findIndex(x => !x.off));
   wheel = { pid:productId, kind:'size', items, i };
   openModal(whHTML('¿Cuántos ' + sizeUnitOf(p.sizeUnit).many + '?', escapeHtml(p.name), items, i,
-    `<button class="btn primary block wh-ok" onclick="whSizeOk()">Listo</button>`), { dismissible:true });
+    `<button class="btn ghost block wh-ok" onclick="whSizeOk()">Listo</button>`), { dismissible:true });
   whMount(i);
 };
 const _whChangeSizeQty = changeSizeQty;
@@ -8063,7 +8063,7 @@ openQtyPad = function(productId){
     <input type="hidden" id="qpQty" value="${items[i].qty}">
     <div class="wh-actions">
       ${qtyPad.editing ? `<button class="btn danger" onclick="wheel=null; qpRemove()" aria-label="Quitar">${icon('trash')}</button>` : ''}
-      <button class="btn primary block wh-ok" onclick="whQtyOk()">${qtyPad.editing ? 'Guardar' : 'Listo'}</button>
+      <button class="btn ${qtyPad.editing ? 'primary' : 'ghost'} block wh-ok" onclick="whQtyOk()">${qtyPad.editing ? 'Guardar' : 'Listo'}</button>
     </div>
     <button type="button" class="wh-other" onclick="wheel=null; openQtyPadClassic('${productId}')">Escribir otra cantidad o por dinero</button>`), { dismissible:true });
   whMount(i);
@@ -14863,7 +14863,7 @@ function printSettingsHTML(){
 
     <div class="sheet-actions">
       <button class="btn ghost block" onclick="printTestTicket()">${icon('print')} Prueba en hoja</button>
-      <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
+      <button class="btn ghost block" onclick="closeModal(); render();">Listo</button>
     </div>
     <button class="btn ghost block" style="margin-top:10px;" onclick="resetPrintPrefs()">Restablecer valores</button>
   `;
@@ -14898,7 +14898,7 @@ function openNotifications(){
       <label class="switch"><input type="checkbox" ${p.notifDaily ? 'checked':''} onchange="setPref('notifDaily', this.checked)"><span class="track"></span></label>
     </div>
     <div class="sheet-actions">
-      <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
+      <button class="btn ghost block" onclick="closeModal(); render();">Listo</button>
     </div>
   `, { dismissible:true });
 }
@@ -14942,7 +14942,7 @@ function openSecurity(){
     </div>
     ${AUTH_MODE.cloud ? `<p class="md-hint">Tu correo es tu usuario. Si necesitas cambiarlo, escríbenos a soporte.</p>` : ''}
     <div class="sheet-actions">
-      <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
+      <button class="btn ghost block" onclick="closeModal(); render();">Listo</button>
     </div>
   `, { dismissible:true });
 }
@@ -15496,7 +15496,7 @@ function openUsersSheet(){
     </div>` : ''}
 
     <div class="sheet-actions">
-      <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
+      <button class="btn ghost block" onclick="closeModal(); render();">Listo</button>
     </div>
   `, { dismissible:true });
 }
@@ -15683,7 +15683,7 @@ function nuAbrirPermisos(){
             <span class="switch"><input type="checkbox" ${d.perms[p.id] ? 'checked' : ''} onchange="nuDraft.perms['${p.id}']=this.checked; nuDraft.permsTocados=true; document.getElementById('nuPermN').textContent=PERMS.filter(x=>nuDraft.perms[x.id]).length+' de '+PERMS.length"><span class="track"></span></span>
           </label>`).join('')}
       </div>`,
-    foot:`<button class="btn primary" onclick="openUserForm(true)">Listo</button>`
+    foot:`<button class="btn ghost" onclick="openUserForm(true)">Listo</button>`
   });
 }
 
@@ -15705,7 +15705,7 @@ function userDoneScreen(u, o){
       </div>
       ${lines ? `<div class="ud-changes">${o.linesTitle ? `<div class="ud-changes-t">${o.linesTitle}</div>` : ''}${lines}</div>` : ''}
     </div>
-    <button type="button" class="btn primary block ud-ok" onclick="${o.back}">Listo</button>
+    <button type="button" class="btn ghost block ud-ok" onclick="${o.back}">Listo</button>
   `, { dismissible:true });
 }
 /* Cuadro chico al centro (usuario agregado o eliminado) */
@@ -15720,7 +15720,7 @@ function userDoneCard(u, o){
         <span class="udc-txt"><b>${escapeHtml(u.name)}</b><small>${roleOf(u.role).name}</small></span>
       </div>
       ${o.note ? `<p class="udc-note">${o.note}</p>` : ''}
-      <button type="button" class="btn primary block udc-ok" onclick="${o.back}">Listo</button>
+      <button type="button" class="btn ghost block udc-ok" onclick="${o.back}">Listo</button>
     </div>
   `, { dismissible:true, center:true, card:true, grip:false });
 }
@@ -15832,7 +15832,7 @@ function openUserDetail(id){
       body: `${userHeadHTML(u, roleOf(u.role).name)}
         <div class="usd-sec">Acceso</div>
         ${userOptionsHTML(u)}`,
-      foot: `<button class="btn primary" onclick="usdCerrar()">Listo</button>`
+      foot: `<button class="btn ghost" onclick="usdCerrar()">Listo</button>`
     });
     return;
   }
@@ -15905,7 +15905,7 @@ function usdPermisos(id){
             <span class="track"></span>
           </label>
         </div>`).join('')}</div>`,
-    foot: `<button class="btn primary" onclick="openUserDetail('${u.id}')">Listo</button>`
+    foot: `<button class="btn ghost" onclick="openUserDetail('${u.id}')">Listo</button>`
   });
 }
 
@@ -17545,7 +17545,7 @@ function mdOpenDone(){
         <button class="btn ghost" onclick="mdShareLink()">${icon('share')} Compartir</button>
       </div>
     </div>
-    <button type="button" class="btn primary block" onclick="closeModal()">Listo</button>
+    <button type="button" class="btn ghost block" onclick="closeModal()">Listo</button>
   `, { dismissible:true });
 }
 function mdDeactivate(){
@@ -21008,7 +21008,7 @@ function mdCfgSheetHTML(){
       <button class="sheet-close" onclick="mdSetCfgVisible(false)" aria-label="Cerrar">${icon('close')}</button>
     </div>
     ${mdConfigHTML(mdCfg())}
-    <button type="button" class="btn primary block" style="margin-top:18px;" onclick="mdSetCfgVisible(false)">Listo</button>`;
+    <button type="button" class="btn ghost block" style="margin-top:18px;" onclick="mdSetCfgVisible(false)">Listo</button>`;
 }
 /* ---- Volver de una subsección sin perder el lugar ----
    Al entrar a "Servicio a domicilio", "Horarios", etc., la hoja de
@@ -21179,7 +21179,7 @@ function mdOpenLinkSheet(){
       </div>
       <button class="btn ghost block" style="max-width:380px;margin-top:22px;" onclick="mdSetCfgVisible(true)">${icon('gear')} ${puede ? 'Configurar menú' : 'Ver detalles'}</button>
     </div>
-    <button type="button" class="btn primary block" onclick="closeModal()">Listo</button>
+    <button type="button" class="btn ghost block" onclick="closeModal()">Listo</button>
   `, { dismissible:true });
 }
 
@@ -22542,7 +22542,7 @@ function openPaymentDetail(id, justDone){
       <button class="btn ghost" onclick="printLinesDoc(paymentReceiptRows(DB.getPayments().find(x => x.id === '${p.id}')), 'Abono')">${icon('print')} Imprimir</button>
       <button class="btn ghost" onclick="sendPaymentWhatsApp('${p.id}')">${icon('whatsapp')} WhatsApp</button>
       ${!p.cancelled && isOwner() && !justDone ? `<button class="btn danger block" onclick="cancelPayment('${p.id}')">Cancelar abono</button>` : ''}
-      <button class="btn dark block" onclick="openCustomer('${p.customerId}')">Listo</button>
+      <button class="btn ghost block" onclick="openCustomer('${p.customerId}')">Listo</button>
     </div>
   `, { dismissible:true });
 }
@@ -23019,7 +23019,7 @@ function openCashCutSheet(){
     ${cashMovesHTML(sess)}` : ''}
     <div class="section-title">Cortes anteriores</div>
     ${cutsTabHTML()}
-    <button type="button" class="btn primary block" style="margin-top:18px;" onclick="closeModal()">Listo</button>
+    <button type="button" class="btn ghost block" style="margin-top:18px;" onclick="closeModal()">Listo</button>
   `, { dismissible:true });
 }
 
@@ -23223,7 +23223,7 @@ function openCutDetail(id, justClosed){
       <button class="btn ghost" onclick="openWhatsApp('', linesDocText(cashDocRows(cashById('${sess.id}'), cashById('${sess.id}').summary, 'Z')))">${icon('whatsapp')} WhatsApp</button>
       ${sigue
         ? `<button class="btn primary block" onclick="cashGateResume()">${icon('cashbox')} Abrir la caja de hoy</button>`
-        : `<button class="btn dark block" onclick="closeModal(); render();">Listo</button>`}
+        : `<button class="btn ghost block" onclick="closeModal(); render();">Listo</button>`}
     </div>
   `, { dismissible:true });
 }
@@ -23759,7 +23759,7 @@ function scannerSheetHTML(){
     </p>
 
     <div class="sheet-actions">
-      <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
+      <button class="btn ghost block" onclick="closeModal(); render();">Listo</button>
     </div>
   `;
 }
@@ -23834,7 +23834,7 @@ function openScanner(targetField){
     <div class="scan-box"><video id="scanVideo" playsinline muted></video><span class="scan-line"></span></div>
     <p class="md-hint" id="scanMsg" style="text-align:center;">Apunta la cámara al código de barras</p>
     <div class="sheet-actions">
-      <button class="btn dark block" onclick="closeScanner()">Listo</button>
+      <button class="btn ghost block" onclick="closeScanner()">Listo</button>
     </div>
   `;
   if(scanTarget){
@@ -25001,16 +25001,14 @@ function openPosSettings(){
     <div class="opt-grid tax-grid">
       ${[[0,'ban','Sin IVA','No cobro IVA'],[8,'pin','8%','Zona fronteriza'],[16,'receipt','16%','Tasa general']].map(([v, e, t, s]) => `<button class="opt-card ${Number(c.taxRate) === v ? 'active' : ''}" ${dis} onclick="setTaxRate(${v})" aria-pressed="${Number(c.taxRate) === v}"><span class="opt-emoji">${icon(e)}</span>${t}<span class="opt-note">${s}</span></button>`).join('')}
     </div>
-    <div class="doc-note">${icon('tag')}<span><b>Así se cobra un producto de $100:</b>${c.taxMode === 'incluido'
-      ? 'El cliente paga <strong>' + formatMoney(ejemplo.total) + '</strong>. El IVA ya viene dentro de tu precio de venta (de ahí, ' + formatMoney(ejemplo.iva) + ' son de IVA y ' + formatMoney(ejemplo.subtotal) + ' es tu venta sin IVA): no se suma nada extra.'
-      : 'El cliente paga <strong>' + formatMoney(ejemplo.total) + '</strong> y el ticket no muestra IVA.'} Las ventas que ya hiciste no cambian.</span></div>
+
 
     <div class="section-title">Al cobrar</div>
     <div class="qe-card">
       ${posToggle('creditOn', icon('card'), 'gold', 'Permitir fiado', 'Vender a crédito a tus clientes y recibir abonos.', c, dis)}
       ${posToggle('tipsOn', icon('coins'), 'green', 'Pedir propina', 'Aparece al cobrar con ' + c.tipOptions.join('%, ') + '% u otra cantidad.', c, dis)}
     </div>
-    <div class="doc-note" style="margin-top:12px;">${icon('cashbox')}<span><b>Caja del día obligatoria</b>Para vender siempre tiene que estar abierta la caja de hoy. En la primera venta del día ${APP_NAME} te pide el fondo; si quedó abierta la de un día anterior, primero te pide su corte. Consultar productos, reportes o clientes no la pide.</span></div>
+
     ${c.tipsOn ? `
       <div class="field" style="margin-top:14px;">
         <label for="pcTips">Porcentajes de propina</label>
@@ -25022,7 +25020,7 @@ function openPosSettings(){
       <div class="field-hint" style="color:var(--ink-soft);">Salen como botones al cobrar en efectivo para calcular el cambio.</div>
     </div>
     <div class="sheet-actions">
-      <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
+      <button class="btn ghost block" onclick="closeModal(); render();">Listo</button>
     </div>
   `, { dismissible:true });
 }
@@ -28881,7 +28879,7 @@ function sendFeedback(){
       <img class="fb-photo big" src="${FEEDBACK_PHOTO}" alt="">
       <h2>¡Gracias por tu comentario!</h2>
     </div>
-    <button type="button" class="btn primary block ud-ok" onclick="closeModal()">Listo</button>
+    <button type="button" class="btn ghost block ud-ok" onclick="closeModal()">Listo</button>
   `, { dismissible:true });
   try{ window.location.href = url; }catch(e){ try{ window.open(url, '_system'); }catch(_){} }
 }
@@ -29529,7 +29527,7 @@ function cartSanitize(){
 
 <!-- ===== ASISTENTE VENDO PLUS (mascota + cerebro) ===== -->
 <script src="vendo-cerebro.js?v=20261125"></script>
-<script src="vendo-mascota.js?v=20261125b"></script>
+<script src="vendo-mascota.js?v=20261126a"></script>
 
 <!-- ===== Formulario de usuario (Nuevo usuario y Nuevo cajero/mesero/cocinero) ===== -->
 <script id="uf-js">
