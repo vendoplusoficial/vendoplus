@@ -6158,7 +6158,6 @@ function downloadFile(name, content, mime){
   }catch(e){ return false; }
 }
 function dayKey(d){ d = new Date(d); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-function sumBy(list, fn){ return round2(list.reduce((a, x) => a + (Number(fn(x)) || 0), 0)); }
 
 /** Confirmación dentro de la app (en vez del cuadro gris del navegador).
     Se pone ENCIMA de la hoja abierta: si cancelas, la hoja sigue ahí. */
@@ -6881,11 +6880,6 @@ function cartAmountForProduct(productId){
   return round2(cart.filter(c => c.productId === productId).reduce((a,c) => a + cartLineAmount(c), 0));
 }
 /** Piezas que todavía se pueden agregar al carrito. */
-function freeStock(p){
-  const st = stockInfo(p);
-  if(!st.control) return Infinity;
-  return Math.max(0, r3(st.stock - cartStockUse(p.id)));
-}
 function lowStockProducts(){
   return DB.getProducts().filter(p => {
     if(!p.active) return false;
@@ -6972,8 +6966,6 @@ function startOfWeek(d){
   date.setDate(date.getDate() - day);
   return date;
 }
-function isSameWeek(a,b){ return startOfWeek(a).getTime() === startOfWeek(b).getTime(); }
-function isSameMonth(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth(); }
 
 /* Marca/limpia un campo obligatorio con un mensaje de error debajo,
    sin depender del toast (para que el usuario vea justo qué falta). */
@@ -7026,15 +7018,6 @@ const HAPTIC_PRINT = [20, 45, 20];
 /* La preferencia se lee de la cuenta; se guarda un momento para no
    volver a leerla en cada toque. */
 const hapticPrefCache = { at:0, on:true };
-function hapticsOn(){
-  const now = Date.now();
-  if(now - hapticPrefCache.at > 1500){
-    hapticPrefCache.at = now;
-    try{ hapticPrefCache.on = !(typeof userPrefs === 'function' && userPrefs().haptics === false); }
-    catch(e){ hapticPrefCache.on = true; }
-  }
-  return hapticPrefCache.on;
-}
 /* Vibraciones desactivadas en toda la app */
 function vibrate(pattern){ return; }
 try{ Object.defineProperty(navigator, 'vibrate', { value:function(){ return false; }, configurable:true, writable:true }); }catch(e){}
@@ -7598,7 +7581,6 @@ function saleCardHTML(p){
   </div>`;
 }
 
-function setSaleCategory(id){ saleCategoryFilter = id; render(); }
 
 /* ---------- Búsqueda y lector de código de barras ---------- */
 function onSaleSearch(v){ saleSearch = v; render(); }
@@ -8451,14 +8433,6 @@ function clearCart(){
   });
 }
 /* Compatibilidad con llamadas anteriores (por producto y tamaño) */
-function changeQty(productId, sizeId, delta){
-  const i = cart.findIndex(c => c.productId === productId && (c.sizeId || null) === (sizeId || null));
-  if(i >= 0) changeLineQty(i, delta);
-}
-function removeFromCart(productId, sizeId){
-  const i = cart.findIndex(c => c.productId === productId && (c.sizeId || null) === (sizeId || null));
-  if(i >= 0) removeLine(i);
-}
 function renderBackgroundIfSale(){ if(currentView === 'sale') render(); }
 
 /* ---------- Editar una línea: cantidad, precio, descuento y nota ---------- */
@@ -9467,11 +9441,6 @@ async function printerForget(id){
   printerRefresh();
 }
 /** "Cambiar impresora": suelta la actual y abre la busqueda otra vez. */
-async function printerChange(){
-  await printerDropLink();
-  printerSetState('off');
-  printerScan();
-}
 
 /** false cuando NO existe forma real de buscar con ese tipo de conexion. */
 function printerCanScan(tipo){
@@ -11234,14 +11203,6 @@ function openHistoryPeriod(){
     apply:(id, f, t) => { historyFilters.period = id; if(id === 'custom'){ historyFilters.from = f; historyFilters.to = t; } } });
 }
 /* Aviso de que el historial es de esta semana (se reinicia cada lunes) */
-function histWeekNoteHTML(){
-  const w = startOfWeek(new Date());
-  return `<div class="hist-week">
-      <span class="hist-week-ico">${icon('calendar')}</span>
-      <span class="hist-week-txt"><b>Esta semana · desde el lunes ${w.toLocaleDateString('es-MX', { day:'numeric', month:'long' })}</b>Se reinicia cada lunes. Tus ventas anteriores siguen guardadas.</span>
-      <button type="button" class="hist-week-btn" onclick="setHistoryFilter('period','all')">Ver anteriores</button>
-    </div>`;
-}
 
 const HISTORY_PERIODS = [
   { id:'week',      label:'Esta semana' },
@@ -11425,49 +11386,6 @@ function histWatchMore(){
 /* Gráfico de barras del historial: solo aparece cuando las ventas filtradas
    abarcan más de una semana, agrupando por día (o por semana si el rango
    es muy largo), con el mismo lenguaje visual que la vista de Ventas. */
-function buildHistoryChart(sales){
-  const activeSales = sales.filter(s => !s.cancelled);
-  if(activeSales.length < 2) return '';
-
-  const times = activeSales.map(s => new Date(s.date).getTime());
-  const minT = Math.min(...times), maxT = Math.max(...times);
-  const spanDays = (maxT - minT) / 86400000;
-  if(spanDays < 7) return '';
-
-  const groupByWeek = spanDays > 31;
-  const buckets = {};
-  activeSales.forEach(s => {
-    const d = new Date(s.date);
-    let key, label;
-    if(groupByWeek){
-      const wk = startOfWeek(d);
-      key = wk.getTime();
-      label = 'Sem. ' + wk.toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit' });
-    } else {
-      const day = new Date(d); day.setHours(0,0,0,0);
-      key = day.getTime();
-      label = day.toLocaleDateString('es-MX', { day:'2-digit', month:'short' });
-    }
-    if(!buckets[key]) buckets[key] = { key, label, total:0 };
-    buckets[key].total += s.total;
-  });
-
-  let rows = Object.values(buckets).sort((a,b) => a.key - b.key);
-  if(rows.length > 14) rows = rows.slice(-14);
-  const maxVal = Math.max(...rows.map(r => r.total), 1);
-
-  return `
-    <div class="section-title" style="margin-top:0;">Ventas por ${groupByWeek ? 'semana' : 'día'}</div>
-    <div class="card hist-chart-card">
-      ${rows.map(r => `
-        <div class="bar-row">
-          <div class="bar-row-top"><span>${r.label}</span><span class="bv">${formatMoney(r.total)}</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${(r.total/maxVal)*100}%; background:var(--sec-history);"></div></div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
 
 function onHistorySearch(val){ historyFilters.search = val; renderHistoryList(); }
 function setHistoryFilter(key, val){
@@ -13920,25 +13838,6 @@ function toggleTerms(){
   refreshEmailBtn();
 }
 
-function openCountryPicker(){
-  openModal(`
-    <h3 class="sheet-title">Elige tu país</h3>
-    <div class="country-list">
-      ${COUNTRIES.map(c => `
-        <button class="country-item ${c.code === authState.country ? 'active':''}" onclick="pickCountry('${c.code}')">
-          <span class="cflag">${c.code}</span>
-          <span class="cname">${c.name}</span>
-          <span class="cdial">${c.dial}</span>
-        </button>
-      `).join('')}
-    </div>
-  `, { dismissible:true });
-}
-function pickCountry(code){
-  authState.country = code;
-  closeModal();
-  renderAuth();
-}
 
 /* ---------- Términos y condiciones / datos personales ---------- */
 function openTerms(){
@@ -14291,32 +14190,6 @@ function finishAuth(msg){
 }
 
 /* ---------- Apple (aún sin conectar) ---------- */
-function appleSignIn(){
-  openModal(`
-    <h3 class="sheet-title">Entrar con Apple</h3>
-    <p class="sheet-text">
-      El botón ya está listo, pero para que funcione de verdad necesitas una cuenta de
-      Apple Developer y publicar la app. Mientras tanto puedes entrar en modo de prueba
-      y usar todo con normalidad.
-    </p>
-    <div class="sheet-actions">
-      <button class="btn ghost block" onclick="closeModal()">Cancelar</button>
-      <button class="btn dark block" onclick="appleDemoLogin()">Entrar en modo prueba</button>
-    </div>
-  `, { dismissible:true });
-}
-function appleDemoLogin(){
-  closeModal();
-  let u = currentUser();
-  if(!u){
-    u = newUser(authState.country, '');
-    u.provider = 'apple';
-    u.name = 'Usuario de Apple';
-    AUTH.saveUser(u);
-  }
-  AUTH.openSession();
-  finishAuth('Sesión iniciada con Apple');
-}
 
 /* =========================================================
    VISTA: MI CUENTA
@@ -14821,15 +14694,6 @@ function saveBusinessForm(){
 }
 
 /* ---------- Configuración ---------- */
-function openSettings(){
-  const p = userPrefs();
-  openModal(`
-    <h3 class="sheet-title">Configuración</h3>
-    <div class="sheet-actions">
-      <button class="btn primary block" onclick="closeModal(); render();">Listo</button>
-    </div>
-  `, { dismissible:true });
-}
 
 /* ---------- Impresi\u00f3n de tickets (tama\u00f1o del papel) ---------- */
 function openPrintSettings(){
@@ -15245,9 +15109,6 @@ function userSessionOpen(){ return localStorage.getItem('mesa_user_session') ===
    se ABRE la app, y no otra vez cada vez que se recarga. */
 function markAppUnlocked(){ try{ sessionStorage.setItem('mesa_unlocked','1'); }catch(e){} }
 function clearAppUnlocked(){ try{ sessionStorage.removeItem('mesa_unlocked'); }catch(e){} }
-function appUnlockedThisSession(){
-  try{ return sessionStorage.getItem('mesa_unlocked') === '1'; }catch(e){ return false; }
-}
 function userInitials(u){
   const n = ((u && u.name) || '').trim();
   if(!n) return icon('person');
@@ -15775,11 +15636,6 @@ function nuAbrirPermisos(){
     foot:`<button class="btn primary" onclick="openUserForm(true)">Listo</button>`
   });
 }
-function previewRoleHint(){
-  const sel = document.getElementById('nuRole');
-  const hint = document.getElementById('nuRoleHint');
-  if(sel && hint) hint.textContent = roleOf(sel.value).sub;
-}
 
 /* ---------- Pantalla completa de "usuario creado / actualizado" ---------- */
 function userDoneScreen(u, o){
@@ -16052,10 +15908,6 @@ function doDeleteUser(id){
 /* ---------- Foto de cada usuario ---------- */
 let userFormPhoto = null;
 
-function openMyPhotoForm(){
-  const me = activeUser();
-  if(me) openUserPhotoForm(me.id);
-}
 
 function openUserPhotoForm(id){
   const u = userById(id);
@@ -16141,11 +15993,6 @@ function saveUserPhoto(id){
 }
 
 /* ---------- Mi NIP ---------- */
-function openMyPinForm(){
-  const me = activeUser();
-  if(!me) return;
-  openSetPinForm(me.id, true);
-}
 
 function openSetPinForm(id, mine){
   const u = userById(id);
@@ -17413,7 +17260,6 @@ function mdOnSync(fn){
    VISTA EN MESA: MENÚ DIGITAL
 ========================================================= */
 let mdCfgOpen = false;
-function mdToggleCfg(){ mdCfgOpen = !mdCfgOpen; vibrate(8); render(); }
 
 function renderMenuDigital(){
   const cfg = mdCfg();
@@ -17809,22 +17655,6 @@ function mdCopyFallback(text, done){
    (se agregan al formulario existente sin cambiar lo demás)
 ========================================================= */
 function u_present(vals){ return vals.unit != null; }
-function mdUnitFieldHTML(p){
-  const unit = productUnit(p).id;
-  const step = p && p.unitStep ? p.unitStep : '';
-  return `
-    <div class="field" id="pfUnitField">
-      <label>Unidad de venta</label>
-      <select id="pfUnit" onchange="mdOnUnitChange()">
-        ${SALE_UNITS.map(u => `<option value="${u.id}" ${u.id === unit ? 'selected' : ''}>${u.plain ? 'Ninguna · se vende por cantidad' : u.label}</option>`).join('')}
-      </select>
-      <div id="pfStepWrap" style="display:none; margin-top:12px;">
-        <label for="pfUnitStep">Se pide de (cantidad mínima y aumento)</label>
-        <input id="pfUnitStep" type="number" min="0" step="any" value="${step}">
-      </div>
-      <div class="field-hint" id="pfUnitHint" style="color:var(--ink-soft);"></div>
-    </div>`;
-}
 function mdOnUnitChange(){
   const sel = document.getElementById('pfUnit'); if(!sel) return;
   const u = unitOf(sel.value);
@@ -18920,30 +18750,14 @@ function mdiPaintBadge(){
    VISTA: sección "Pedidos entrantes" hasta abajo del Menú Digital
 ========================================================= */
 let mdiFilter = 'nuevo';
-function mdiSetFilter(f){ mdiFilter = f; vibrate(8); render(); const s = document.getElementById('mdiSection'); if(s) s.scrollIntoView({ block:'start' }); }
 
 /* =========================================================
    PEDIDOS ENTRANTES · versión sencilla
    1) Por aceptar  →  2) Por cobrar  →  3) Terminados
 ========================================================= */
 let mdiShowDone = false;
-function mdiToggleDone(){ mdiShowDone = !mdiShowDone; vibrate(8); render(); }
 
-function mdiWhen(iso){
-  const d = new Date(iso); if(isNaN(d)) return '';
-  const hoy = new Date(); const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
-  const dia = isSameDay(d, hoy) ? 'Hoy' : isSameDay(d, ayer) ? 'Ayer' : formatDateShort(iso);
-  return dia + ', ' + d.toLocaleTimeString('es-MX', { hour:'numeric', minute:'2-digit' });
-}
 /* Aceptar desde la lista: si falta algo (envío, producto…) abre el pedido para completarlo */
-function mdiQuickConfirm(id){
-  const o = MDI.get(id); if(!o || o.status !== 'nuevo') return;
-  if(!mdiCanConfirm(o)){
-    toast('Revisa el pedido antes de aceptarlo', { icon:icon('alert'), subtitle:mdiIsDelivery(o) && !mdiHasFee(o) ? 'Falta escribir el costo de envío' : 'Hay productos por elegir' });
-    mdiOpen(id); return;
-  }
-  mdiConfirm(id);
-}
 /* Después de aceptar o rechazar: una hoja corta para avisarle al cliente */
 function mdiAfterDecision(id){
   const o = MDI.get(id); if(!o) return;
@@ -18974,10 +18788,6 @@ function mdiAfterDecision(id){
   if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
 }
 /* Después de aceptar: abre el pedido "Aceptado · falta cobrarlo" */
-function mdiChargeFromDone(id){
-  if(currentView === 'menu' || currentView === 'home') renderBgKeepModal();
-  mdiOpen(id);
-}
 function mdiDoneClose(){
   if(mdiFromToday){ mdiFromToday = false; mdiBackToToday(); return; }
   closeModal(); if(currentView === 'menu' || currentView === 'home') render();
@@ -18986,31 +18796,6 @@ function mdiDoneClose(){
 function mdiItemsText(o){
   const ls = o.lines || [];
   return ls.slice(0, 3).map(l => escapeHtml(((l.sizeLabel || unitOf(l.unit).plain) ? fmtNum(l.qty) + '× ' : fmtQty(l.qty, l.unit) + ' ') + l.name.replace(/\s*\(EJEMPLO[^)]*\)/, ''))).join(' · ') + (ls.length > 3 ? ' · +' + (ls.length - 3) + ' más' : '');
-}
-function mdiCardHTML(o){
-  const st = mdiStage(o);
-  const c = o.customer || {};
-  const pm = c.payment ? paymentOf(c.payment) : null;
-  const tags = [];
-  if(mdiIsDelivery(o)) tags.push(`<span class="mdn-tag del">${icon('truck')} A domicilio</span>`);
-  else if(c.service === 'llevar') tags.push(`<span class="mdn-tag">${icon('shop')} Pasa a recoger</span>`);
-  if(pm) tags.push(`<span class="mdn-tag">${icon(pm.ico)} ${pm.name}</span>`);
-  if(mdiIsModified(o)) tags.push(`<span class="mdn-tag mod">Modificado</span>`);
-  const stop = 'event.stopPropagation(); ';
-  let acts = '';
-  if(st.id === 'nuevo') acts = `<button type="button" class="mdn-btn no" onclick="${stop}mdiAskReject('${o.id}')">Rechazar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiQuickConfirm('${o.id}')">${icon('check')} Aceptar</button>`;
-  else if(st.id === 'pendiente') acts = `<button type="button" class="mdn-btn wa" onclick="${stop}mdiNotify('${o.id}')">${icon('whatsapp')} Avisar</button><button type="button" class="mdn-btn ok" onclick="${stop}mdiCharge('${o.id}')">${icon('cash')} Cobrar</button>`;
-  const badge = (st.id === 'nuevo' || st.id === 'pendiente') ? '' : `<span class="mdn-state ${st.cls}">${st.label}</span>`;
-  return `
-    <div class="mdn-card" role="button" tabindex="0" onclick="mdiOpen('${o.id}')">
-      <div class="mdn-row">
-        <div class="mdn-who"><b>${escapeHtml(c.name || 'Cliente sin nombre')}</b><small>${escapeHtml(o.code)} · ${mdiAgo(o.receivedAt || o.createdAt)}</small></div>
-        <div class="mdn-total"><b>${formatMoney(mdiOrderTotal(o))}</b>${badge}</div>
-      </div>
-      <div class="mdn-items">${mdiItemsText(o) || '—'}</div>
-      ${tags.length ? `<div class="mdn-tags">${tags.join('')}</div>` : ''}
-      ${acts ? `<div class="mdn-acts">${acts}</div>` : ''}
-    </div>`;
 }
 
 function mdiSectionHTML(){
@@ -19308,7 +19093,6 @@ function mdiTotalsHTML(o){
     </div>`;
 }
 function mdiMissing(o){ return (o.lines || []).filter(l => !l.productId || !findProduct(l.productId)).length; }
-function mdiCanConfirm(o){ return (o.lines || []).length > 0 && !mdiMissing(o) && (!mdiIsDelivery(o) || mdiHasFee(o)) && Number(o.etaMin) > 0; }
 function mdiSetFee(id, v){
   const raw = String(v == null ? '' : v).trim().replace(',', '.');
   const n = raw === '' ? null : parseFloat(raw);
@@ -19444,7 +19228,6 @@ function mdiClose(){
 }
 
 /* ---------- Editar productos del pedido ---------- */
-function mdiSet(id, key, val){ MDI.update(id, o => { if(o.status === 'nuevo') o[key] = val; }); vibrate(8); mdiOpen(id, true); }
 function mdiStepLine(id, i, dir){
   const o = MDI.get(id); if(!o || o.status !== 'nuevo') return;
   const l = o.lines[i]; if(!l) return;
@@ -21107,7 +20890,6 @@ function mdiWatch(){
    se regresa a la configuración. */
 var mdCfgSheetOn = false;
 var MD_CFG_TITLE = 'Configuración del Menú Digital';
-function mdCfgVisible(){ return mdCfgSheetOn; }
 /* Configuración inicial (menú desactivado): hoja de pantalla completa */
 var mdSetupOn = false;
 var MD_SETUP_TITLE = 'Configura tu Menú Digital';
@@ -21261,33 +21043,6 @@ function mdSetCfgVisible(v){
   mdCfgScrollY = 0;
   mdCfgSheetOn = false;
   _mdCloseModalBase();
-}
-function mdCompactHTML(cfg){
-  const cerrado = mdClosedNow(cfg);
-  const estado = cfg.paused ? { cls:'paused', txt:'Pausado', sub:'Pedidos pausados · tus clientes solo ven el menú' }
-               : cerrado ? { cls:'paused', txt:'Cerrado', sub:'Fuera de horario' + (hrsNextOpen(mdMenuHours(cfg)) ? ' · abre ' + hrsNextOpen(mdMenuHours(cfg)) : '') }
-               : { cls:'on', txt:'Activo', sub:'Recibiendo pedidos aquí y en tu WhatsApp' };
-  return `
-    <div class="md-compact">
-      <div class="section-title mdx-title">Configuración del Menú Digital</div>
-      <div class="mdx-row">
-        <span class="md-status-ico on">${icon('menuBook')}</span>
-        <span class="mdx-txt">
-          <b>Tu Menú Digital está activo</b>
-          <span>${escapeHtml(estado.sub)}</span>
-          <span class="md-pill ${estado.cls}">${estado.txt}</span>
-        </span>
-        <button class="mdx-gear" onclick="mdSetCfgVisible(true)" aria-label="${can('gestionarProductos') ? 'Configurar' : 'Detalles'}">${icon('gear')}</button>
-        <button class="mdx-copy" onclick="mdCopyLink()">${icon('link')}<span>Copiar enlace</span></button>
-      </div>
-      ${cfg.delivery.on === null && can('gestionarProductos') ? `
-        <button class="md-nudge" onclick="mdOpenDeliveryForm()">
-          <span class="md-nudge-ico">${icon('truck')}</span>
-          <span class="md-nudge-txt"><b>¿Tu negocio tiene servicio a domicilio?</b>Respóndelo para que tus clientes vean las opciones correctas.</span>
-          <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>` : ''}
-      ${typeof mdPubStatusHTML === 'function' ? mdPubStatusHTML() : ''}
-    </div>`;
 }
 /* Menú desactivado: solo una tarjeta; al tocarla se abre la configuración */
 function mdOffCardHTML(){
@@ -23424,37 +23179,6 @@ function expenseCat(id){ return EXPENSE_CATS.find(c => c.id === id) || EXPENSE_C
 function expensesBetween(a, b){ return DB.getExpenses().filter(e => !e.cancelled && new Date(e.date || e.at) >= a && new Date(e.date || e.at) < b); }
 let expPeriod = 'month';
 let expDraft = null;
-function expensesTabHTML(){
-  const r = expRange();
-  const list = expensesBetween(r[0], r[1]).sort((a, b) => new Date(b.date || b.at) - new Date(a.date || a.at));
-  const total = list.reduce((a, e) => a + Number(e.amount || 0), 0);
-  const byCat = {};
-  list.forEach(e => byCat[e.category] = (byCat[e.category] || 0) + Number(e.amount || 0));
-  const cats = Object.keys(byCat).sort((a, b) => byCat[b] - byCat[a]);
-  const max = Math.max(1, ...cats.map(k => byCat[k]));
-  return `
-    ${periodBarHTML(expPeriod, expFrom, expTo, 'openExpPeriod()')}
-    <div class="cash-hero exp">
-      <span class="cash-hero-ico">${icon('wallet')}</span>
-      <div class="cash-hero-txt"><span>Gastaste</span><b>${formatMoney(total)}</b><small>${list.length} gasto${list.length === 1 ? '' : 's'}</small></div>
-    </div>
-    ${can('registrarGastos') ? `<button class="btn primary block" style="margin-top:12px;" onclick="openExpenseForm()">${icon('plus')} Registrar gasto</button>` : ''}
-    ${cats.length ? `
-      <div class="section-title">Por tipo de gasto</div>
-      <div class="card">${cats.map(k => `
-        <div class="bar-row">
-          <div class="bar-row-top"><span>${icx(expenseCat(k).ico)}${expenseCat(k).name}</span><span class="bv">${formatMoney(byCat[k])}</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${byCat[k] / max * 100}%; background:var(--ink);"></div></div>
-        </div>`).join('')}</div>` : ''}
-    <div class="section-title">Gastos</div>
-    ${list.length ? `<div class="card mov-card">${list.map(e => `
-      <button class="mov-row" onclick="openExpense('${e.id}')">
-        <span class="mov-ico">${icon(expenseCat(e.category).ico)}</span>
-        <span class="mov-main"><b>${escapeHtml(e.concept || expenseCat(e.category).name)}</b><small>${formatDateTime(e.date || e.at)} · ${e.fromCash ? 'de la caja' : paymentOf(e.method).name}${e.by ? ' · ' + escapeHtml(e.by) : ''}</small></span>
-        <span class="mov-amt exp">${formatMoney(e.amount)}</span>
-      </button>`).join('')}</div>` : `<div class="todo-empty">Sin gastos en este periodo.</div>`}
-  `;
-}
 function openExpenseForm(prefill){
   if(!requirePerm('registrarGastos', 'No tienes permiso para registrar gastos')) return;
   const sess = cashCurrent();
@@ -23908,17 +23632,6 @@ async function serialReadLoop(port){
     await new Promise(r => setTimeout(r, 300));
   }
 }
-async function serialDisconnect(forget){
-  const p = serialPort; serialPort = null;
-  try{ if(serialReader) await serialReader.cancel(); }catch(e){}
-  try{ if(p) await p.close(); }catch(e){}
-  if(forget){
-    const c = scannerCfg(); c.serialOn = false; saveScannerCfg(c);
-    try{ if(p && p.forget) await p.forget(); }catch(e){}
-    toast('Lector desenlazado');
-  }
-  scannerSheetRefresh();
-}
 if(serialSupported()){
   try{
     navigator.serial.addEventListener('connect', () => { if(scannerCfg().serialOn && !serialPort) serialConnect(false); });
@@ -23935,26 +23648,6 @@ const SCANNER_CONNS = {
   usb: { name:'Cable USB', ico:'usb' },
   cam: { name:'Cámara', ico:'camera' }
 };
-function scannerStepsHTML(conn){
-  const steps = {
-    bt: [
-      'Carga y enciende tu lector. Ponlo en modo <b>Bluetooth teclado (HID)</b>: casi todos vienen así; si no, en su manual hay un código que lo activa.',
-      'En este celular, tablet o computadora abre <b>Ajustes › Bluetooth</b>, busca el lector y toca <b>Vincular</b>. Si te pide clave, suele ser <b>0000</b> o viene en el manual.',
-      'Regresa aquí y escanea cualquier producto en la <b>caja de prueba</b>.'
-    ],
-    usb: [
-      'Conecta el lector a un puerto USB de tu computadora. En celular o tablet Android usa un adaptador <b>OTG</b> (USB-C o micro USB).',
-      'No hay que instalar nada: en unos segundos tu aparato lo reconoce como un teclado.',
-      'Escanea cualquier producto en la <b>caja de prueba</b>.'
-    ],
-    cam: [
-      'Abre <b>Nueva venta</b> y toca el botón del código de barras junto a la búsqueda.',
-      'Da permiso para usar la cámara y apunta al código: el producto se agrega solo.',
-      'Funciona mejor con buena luz y el código derechito.'
-    ]
-  }[conn];
-  return `<ol class="sc-steps">${steps.map(t => `<li>${t}</li>`).join('')}</ol>`;
-}
 function scannerSheetHTML(){
   const c = scannerCfg();
   const conn = SCANNER_CONNS[c.conn] ? c.conn : 'bt';
@@ -24007,33 +23700,6 @@ function setScannerPref(key, val){
 /* Caja de prueba: sabe si el código llegó del lector (rapidísimo) o escrito a mano */
 const scTestState = { t:0, fast:0, n:0, timer:null };
 let scTestLast = '';
-function scTestKey(e){
-  const now = Date.now();
-  if(e.key === 'Enter'){ e.preventDefault(); scTestDone(false); return; }
-  if(e.key && e.key.length === 1){
-    if(!scTestState.n || now - scTestState.t > 400){ scTestState.fast = 0; scTestState.n = 0; }
-    else if(now - scTestState.t < 45) scTestState.fast++;
-    scTestState.n++; scTestState.t = now;
-  }
-}
-function scTestInput(){
-  clearTimeout(scTestState.timer);
-  scTestState.timer = setTimeout(() => {
-    const el = document.getElementById('scTest');
-    if(el && el.value.trim().length >= 6 && scTestState.n >= 6 && scTestState.fast >= scTestState.n - 2) scTestDone(true);
-  }, 250);
-}
-function scTestDone(noEnter){
-  clearTimeout(scTestState.timer);
-  const el = document.getElementById('scTest'); if(!el) return;
-  const code = el.value.replace(/[\u0000-\u001F]/g, '').trim();
-  const lector = scTestState.n >= 4 && scTestState.fast >= scTestState.n - 2;
-  scTestState.n = 0; scTestState.fast = 0;
-  el.value = '';
-  if(!code) return;
-  if(lector) scannerMarkSeen(code, 'lector');
-  scannerTestShow(code, lector ? (noEnter ? 'sin-enter' : 'lector') : 'mano');
-}
 function scannerTestShow(code, how){
   const box = document.getElementById('scResult'); if(!box) return;
   scTestLast = code;
@@ -24690,11 +24356,6 @@ function openSalesPeriod(){
 }
 /* Caja y gastos › Gastos */
 let expFrom = '', expTo = '';
-function expRange(){ return periodRangeFor(expPeriod, expFrom, expTo); }
-function openExpPeriod(){
-  openPeriodSheet({ title:'Periodo de gastos', id:expPeriod, from:expFrom, to:expTo,
-    apply:(id, f, t) => { expPeriod = id; if(id === 'custom'){ expFrom = f; expTo = t; } } });
-}
 
 function printReport(){
   vibrate(HAPTIC_PRINT);
@@ -24967,11 +24628,6 @@ async function deflateRaw(u8){
   const out = new Blob([u8]).stream().pipeThrough(cs);
   return new Uint8Array(await new Response(out).arrayBuffer());
 }
-async function inflateRaw(u8){
-  const ds = new DecompressionStream('deflate-raw');
-  const out = new Blob([u8]).stream().pipeThrough(ds);
-  return new Uint8Array(await new Response(out).arrayBuffer());
-}
 async function zipBlob(files, mime){
   const enc = new TextEncoder();
   const now = new Date();
@@ -25008,33 +24664,6 @@ async function zipBlob(files, mime){
   return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: mime || 'application/zip' });
 }
 /** Lee un zip: regresa { nombre: Uint8Array }. */
-async function unzipFiles(buf, want){
-  const u8 = new Uint8Array(buf), dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
-  let eocd = -1;
-  for(let i = u8.length - 22; i >= Math.max(0, u8.length - 70000); i--){ if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; } }
-  if(eocd < 0) throw new Error('no-zip');
-  const count = dv.getUint16(eocd + 10, true);
-  let p = dv.getUint32(eocd + 16, true);
-  const dec = new TextDecoder();
-  const out = {};
-  for(let k = 0; k < count; k++){
-    if(dv.getUint32(p, true) !== 0x02014b50) break;
-    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
-    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
-    const loc = dv.getUint32(p + 42, true);
-    const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
-    p += 46 + nlen + xlen + clen;
-    if(want && !want(name)) continue;
-    const start = loc + 30 + dv.getUint16(loc + 26, true) + dv.getUint16(loc + 28, true);
-    const raw = u8.subarray(start, start + csize);
-    if(method === 0) out[name] = raw;
-    else if(method === 8){
-      if(typeof DecompressionStream !== 'function') throw new Error('no-inflate');
-      out[name] = await inflateRaw(raw);
-    }
-  }
-  return out;
-}
 
 /** Arma el .xlsx con varias hojas y lo descarga. */
 async function downloadXlsx(fileName, sheets){
@@ -25084,42 +24713,6 @@ async function downloadXlsx(fileName, sheets){
 }
 
 /** Lee la primera hoja (o la que se llame como "productos") de un .xlsx → renglones. */
-async function readXlsxRows(buf, prefer){
-  const files = await unzipFiles(buf, n => /^xl\/(workbook\.xml|_rels\/workbook\.xml\.rels|sharedStrings\.xml|worksheets\/[^/]+\.xml)$/i.test(n));
-  const dec = new TextDecoder();
-  const parse = n => files[n] ? new DOMParser().parseFromString(dec.decode(files[n]), 'application/xml') : null;
-  const all = (doc, tag) => doc ? Array.from(doc.getElementsByTagNameNS('*', tag)) : [];
-  const wb = parse('xl/workbook.xml'), rels = parse('xl/_rels/workbook.xml.rels');
-  const sheets = all(wb, 'sheet').map(s => ({ name:s.getAttribute('name') || '', rid:s.getAttribute('r:id') || s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') }));
-  const target = rid => { const r = all(rels, 'Relationship').find(x => x.getAttribute('Id') === rid); if(!r) return null; const t = r.getAttribute('Target').replace(/^\//, ''); return t.indexOf('xl/') === 0 ? t : 'xl/' + t; };
-  let pick = sheets.find(s => prefer && prefer.test(saleNorm(s.name))) || sheets[0];
-  let path = pick ? target(pick.rid) : null;
-  if(!path || !files[path]) path = Object.keys(files).filter(n => /^xl\/worksheets\//i.test(n)).sort()[0];
-  if(!path) throw new Error('no-sheet');
-  const shared = all(parse('xl/sharedStrings.xml'), 'si').map(si => all(si, 't').map(t => t.textContent).join(''));
-  const rows = [];
-  all(parse(path), 'row').forEach(row => {
-    const out = [];
-    let auto = 0;
-    Array.from(row.children).filter(c => c.localName === 'c').forEach(c => {
-      const ref = c.getAttribute('r');
-      let ci = auto;
-      if(ref){ const m = ref.match(/^([A-Z]+)/); if(m){ ci = 0; for(const ch of m[1]) ci = ci * 26 + (ch.charCodeAt(0) - 64); ci--; } }
-      auto = ci + 1;
-      const t = c.getAttribute('t');
-      const vEl = Array.from(c.children).find(x => x.localName === 'v');
-      let val = '';
-      if(t === 's') val = shared[Number(vEl ? vEl.textContent : -1)] || '';
-      else if(t === 'inlineStr') val = all(c, 't').map(x => x.textContent).join('');
-      else if(t === 'b') val = vEl && vEl.textContent === '1' ? 'Sí' : 'No';
-      else val = vEl ? vEl.textContent : '';
-      out[ci] = val;
-    });
-    for(let i = 0; i < out.length; i++) if(out[i] === undefined) out[i] = '';
-    rows.push(out);
-  });
-  return rows.filter(r => r.some(c => String(c).trim() !== ''));
-}
 
 /* ---------- Qué lleva cada hoja ---------- */
 function xlSubtitle(range){
@@ -25273,74 +24866,6 @@ function xlSheetsFor(kind, range){
 }
 
 /** Hojas extra del reporte: resumen y agrupados. */
-function xlReportSheets(){
-  const d = reportData();
-  const ver = can('verGanancias');
-  const sub = xlSubtitle(d.r);
-  const net = d.net || 0;
-  const K = (label, v, t) => [label, t ? { v, t } : v];
-  const sec = label => Object.assign([label, ''], { _kind:'section' });
-  const bold = (label, v) => Object.assign([label, v], { _kind:'bold' });
-  const rows = [];
-  rows.push(sec('VENTAS'));
-  rows.push(K('Importe de lo vendido', d.listTotal));
-  rows.push(K('− Descuentos', -d.discounts));
-  if(d.ivaAdded) rows.push(K('+ IVA', d.ivaAdded));
-  rows.push(K('− Devoluciones (' + d.returns.length + ')', -d.returnsTotal));
-  rows.push(bold('Ventas netas', net));
-  if(d.ivaIncl) rows.push(K('IVA que ya venía en los precios', d.ivaIncl));
-  if(d.iva) rows.push(K('IVA del periodo (para tu contador)', d.iva));
-  if(d.tips) rows.push(K('Propinas (aparte)', d.tips));
-  rows.push(K('Número de ventas', d.orders.length, 'int'));
-  rows.push(K('Ticket promedio', d.orders.length ? round2(net / d.orders.length) : 0));
-  if(d.cancelled) rows.push(K('Ventas canceladas', d.cancelled, 'int'));
-  if(ver){
-    rows.push(sec('GANANCIA'));
-    rows.push(K('Costo de lo vendido', d.prof.cost));
-    rows.push(K('Ganancia (sin IVA)', d.prof.profit));
-    rows.push(K('− Gastos (' + d.exps.length + ')', -d.gastos));
-    rows.push(bold('Te queda', round2(d.prof.profit - d.gastos)));
-    if(d.prof.missing > 0) rows.push(K('Artículos sin precio de producción (no entran en la ganancia)', d.prof.missing, 'num'));
-  }
-  rows.push(sec('CÓMO TE PAGARON'));
-  PAYMENT_METHODS.filter(p => p.id !== 'mixto' && (d.byMethod[p.id] || p.id !== 'credito')).forEach(p => rows.push(K(stripEmoji(p.name), d.byMethod[p.id] || 0)));
-  const abonosTot = d.abonos.reduce((a, p) => a + Number(p.amount || 0), 0);
-  if(abonosTot) rows.push(K('Abonos de fiado recibidos', abonosTot));
-  const out = [{ name:'Resumen', title:'Reporte de ventas', subtitle:sub, filter:false,
-                 cols:[{ h:'Concepto', t:'text', w:46 }, { h:'Monto', t:'money', w:18 }], rows }];
-
-  const prods = Object.values(d.byProd).filter(p => Math.abs(p.qty) > 0.0001).sort((a, b) => b.total - a.total);
-  if(prods.length){
-    const cols = [{ h:'Producto', t:'text', w:40 }, { h:'Código', t:'text' }, { h:'Categoría', t:'text' }, { h:'Cantidad', t:'num' }, { h:'Unidad', t:'text' },
-                  { h:'Importe', t:'money', sum:true }, { h:'% de lo vendido', t:'pct' }];
-    if(ver) cols.push({ h:'Ganancia (sin IVA)', t:'money', sum:true });
-    const tot = prods.reduce((a, p) => a + p.total, 0) || 1;
-    out.push({ name:'Por producto', title:'Ventas por producto', subtitle:sub, cols, totals:true,
-      rows:prods.map(p => { const r = [p.name, p.sku || '', p.cat || '', r3(p.qty), p.sizeLabel || !p.unit || unitOf(p.unit).plain ? 'pieza' : (unitOf(p.unit).label || p.unit).toLowerCase(), round2(p.total), p.total / tot];
-        if(ver) r.push(round2(p.profit)); return r; }) });
-  }
-  const cats = Object.values(d.byCat).filter(c => Math.abs(c.total) > 0.004).sort((a, b) => b.total - a.total);
-  if(cats.length){
-    const tot = cats.reduce((a, c) => a + c.total, 0) || 1;
-    out.push({ name:'Por categoría', title:'Ventas por categoría', subtitle:sub, totals:true,
-      cols:[{ h:'Categoría', t:'text', w:30 }, { h:'Importe', t:'money', sum:true }, { h:'% de lo vendido', t:'pct' }],
-      rows:cats.map(c => [c.name, round2(c.total), c.total / tot]) });
-  }
-  const days = Object.keys(d.byDay).sort();
-  if(days.length > 1){
-    const cnt = {}; d.orders.forEach(s => { const k = dayKey(s.date); cnt[k] = (cnt[k] || 0) + 1; });
-    out.push({ name:'Por día', title:'Ventas por día', subtitle:sub, totals:true,
-      cols:[{ h:'Día', t:'date' }, { h:'Número de ventas', t:'int', sum:true }, { h:'Ventas netas', t:'money', sum:true }],
-      rows:days.map(k => { const [y, m, dd] = k.split('-').map(Number); return [new Date(y, m - 1, dd), cnt[k] || 0, round2(d.byDay[k])]; }) });
-  }
-  const users = Object.entries(d.byUser).sort((a, b) => b[1].total - a[1].total);
-  if(users.length > 1 || (users.length === 1 && users[0][0] !== 'Sin usuario')){
-    out.push({ name:'Por quién cobró', title:'Ventas por usuario', subtitle:sub, totals:true,
-      cols:[{ h:'Usuario', t:'text', w:28 }, { h:'Número de ventas', t:'int', sum:true }, { h:'Total', t:'money', sum:true }],
-      rows:users.map(([n, v]) => [n, v.count, round2(v.total)]) });
-  }
-  return out;
-}
 
 const XL_KIND_NAMES = { ventas:'ventas', detalle:'productos_vendidos', productos:'catalogo', clientes:'clientes', abonos:'abonos',
                         gastos:'gastos', inventario:'inventario', cortes:'cortes_de_caja' };
@@ -25370,14 +24895,6 @@ function exportExcel(kind, range){
   return xlRun(xlBizSlug() + '_' + (XL_KIND_NAMES[kind] || kind) + '_' + xlFileTag(range) + '.xlsx', () => xlSheetsFor(kind, range));
 }
 /** El reporte del periodo elegido (Ventas › Descargar Excel). */
-function exportReportExcel(){
-  const r = reportRange();
-  return xlRun(xlBizSlug() + '_reporte_' + xlFileTag(r) + '.xlsx', () => {
-    const sh = xlReportSheets();
-    ['ventas', 'detalle', 'abonos'].concat(can('verGanancias') ? ['gastos'] : []).forEach(k => sh.push(...xlSheetsFor(k, r)));
-    return sh;
-  }, reportRangeLabel(r));
-}
 
 /* =========================================================
    VENTAS Y COBRO (configuración)
@@ -26199,9 +25716,6 @@ function cloudCheckCode(email, token){
   return Cloud.sb.auth.verifyOtp({ email, token, type:'email' });
 }
 /** Guarda la contraseña y marca la cuenta como terminada. */
-function cloudSetPassword(pw){
-  return Cloud.sb.auth.updateUser({ password:pw, data:{ vendo_pw:true } });
-}
 /** Correo de la cuenta abierta (el de Supabase manda). */
 ownerRecoveryEmail = function(){ return (Cloud.ready && Cloud.email) || accountEmail(); };
 
@@ -28412,24 +27926,6 @@ function fdAdd(p, srcEl){
   /* Siempre abre la hoja del producto: foto, instrucciones especiales, − / + y Agregar */
   dmOpenProduct(p.id);
 }
-function fdFly(s, p){
-  const host = document.getElementById('fdHost'), fab = document.getElementById('fdFab');
-  if(!host || !fab || prefersLessMotion()) return;
-  const f = fab.getBoundingClientRect();
-  const el = document.createElement('div');
-  el.className = 'fd-fly';
-  el.innerHTML = p.image ? `<img src="${escapeHtml(p.image)}" alt="">` : FD_ICO.noimg;
-  const sx = s.left + s.width / 2 - 32, sy = s.top + s.height / 2 - 32;
-  const ex = f.left + f.width / 2 - 32, ey = f.top + f.height / 2 - 32;
-  el.style.left = sx + 'px'; el.style.top = sy + 'px';
-  host.appendChild(el);
-  const anim = el.animate([
-    { transform:'translate(0,0) scale(1.4)', opacity:1 },
-    { transform:`translate(${(ex - sx) * .5}px,${(ey - sy) * .5 - 60}px) scale(1)`, opacity:1, offset:.55 },
-    { transform:`translate(${ex - sx}px,${ey - sy}px) scale(.3)`, opacity:.3 }
-  ], { duration:650, easing:'cubic-bezier(.5,0,.75,.4)' });
-  anim.onfinish = () => { el.remove(); fab.classList.remove('fd-pop'); void fab.offsetWidth; fab.classList.add('fd-pop'); };
-}
 function fdFab(){
   const fab = document.getElementById('fdFab'); if(!fab) return;
   const n = dmUnits();
@@ -28938,7 +28434,6 @@ function mdSaveBanner(){
   mdRerenderIfMenu();
 }
 function mdDesignName(id){ const d = MD_DESIGNS.find(x => x.id === id); return d ? d.name : MD_DESIGNS[0].name; }
-function mdDesignShort(id){ const d = MD_DESIGNS.find(x => x.id === id); return d ? d.short : MD_DESIGNS[0].short; }
 function mdDesignPreview(id, pal){
   const line = '#DADDE6', ink = '#16213E';
   if(id === 'visual'){
@@ -28962,11 +28457,6 @@ function mdDesignPreview(id, pal){
     <rect x="52" y="117" width="42" height="9" rx="4.5" fill="#fff" stroke="${line}"/></svg>`;
 }
 let mdDesignDraft = 'clasico';
-function mdOpenDesignForm(){
-  if(!requirePerm('gestionarProductos', 'No tienes permiso para cambiar el Menú Digital')) return;
-  mdDesignDraft = mdValidDesign(mdCfg().design);
-  mdRenderDesignForm();
-}
 function mdPickDesign(id){ mdDesignDraft = mdValidDesign(id); vibrate(8); mdRenderDesignForm(); }
 function mdRenderDesignForm(){
   const cfg = mdCfg(), pal = mdPalette(cfg.color);
@@ -30033,8 +29523,6 @@ function ufElegir(id, v){
   try{ const f = btn.dataset.pick.split('.').reduce((acc, k) => acc && acc[k], window); if(typeof f === 'function') f(v); }catch(e){}
 }
 /* (compatibilidad con llamadas viejas) */
-function ufNativo(id, el){ if(el && el.value != null) ufElegir(id, el.value); }
-function ufToggle(){} function ufPick(){}
 function ufPermsRowHTML(perms, accion){
   const on = PERMS.filter(p => perms && perms[p.id]).length;
   return `<button type="button" class="uf-link" onclick="${accion}">
