@@ -65,7 +65,8 @@ window.VP_IMGS = [
   'img/premium-chat.webp?v=1',
   'img/premium-escaner.webp?v=1',
   'img/premium-stats.webp?v=1',
-  'img/premium-usuarios.webp?v=1'
+  'img/premium-usuarios.webp?v=1',
+  'img/menu-digital-intro.webp?v=1'
 ];
 /* Primero (desde el primer instante) las de los anuncios y portadas Premium
    de la orientación del aparato, que son las que salen al abrir; el resto
@@ -5525,6 +5526,8 @@ h1.page-title.sth-titulo{ align-items:center; gap:12px; }
 .sth-connect{ margin-top:16px; border:1px solid var(--border,#E6E9F2); border-radius:22px; background:var(--surface,#fff); overflow:hidden; display:grid; grid-template-columns:1.3fr 1fr; align-items:center; }
 .sth-connect .sth-art{ aspect-ratio:16/9; height:auto; min-height:0; background:#F1F2F8; }
 .sth-connect .sth-art img{ object-fit:contain; }
+.md-intro .md-intro-go{ height:52px; margin-top:6px; }
+.md-intro .sth-list li svg{ color:var(--vp-green, #16C15B); }
 .sth-connect-b{ padding:26px 26px 24px; display:flex; flex-direction:column; justify-content:center; gap:12px; }
 .sth-connect-b h2{ margin:0; font-size:22px; font-weight:800; color:var(--ink,#16213E); letter-spacing:-.3px; line-height:1.2; }
 .sth-connect-b p{ margin:0; font-size:14px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.45; }
@@ -17347,8 +17350,43 @@ function mdOnSync(fn){
 ========================================================= */
 let mdCfgOpen = false;
 
+/* Menú Digital apagado: primero una portada (imagen, qué puedes hacer y
+   "Activar Menú Digital"), igual que la de conectar Stripe. Al tocar el botón
+   se activa si ya está todo listo; si falta algo, se muestra la configuración. */
+let mdSetup = false;
+function mdIntroHTML(){
+  const puede = can('gestionarProductos');
+  return `<div class="sth">
+    <h1 class="page-title">Menú Digital</h1>
+    <p class="page-sub">Tu menú en internet. Recibe pedidos desde ahí.</p>
+    <section class="sth-connect md-intro">
+      <span class="sth-art"><img src="img/menu-digital-intro.webp?v=1" alt="Cliente viendo el menú digital en su celular" decoding="async" draggable="false"></span>
+      <div class="sth-connect-b">
+        <h2>Activa tu Menú Digital</h2>
+        <p>Comparte un link y tus clientes ven tus productos y te hacen su pedido desde su celular.</p>
+        <ul class="sth-list">
+          <li>${ST_CHECK}Tu menú con fotos y precios, siempre al día</li>
+          <li>${ST_CHECK}Los pedidos te llegan aquí y a tu WhatsApp</li>
+          <li>${ST_CHECK}Para recoger o a domicilio, con tu horario</li>
+          <li>${ST_CHECK}Pago en efectivo, transferencia o tarjeta</li>
+        </ul>
+        ${puede
+          ? `<button type="button" class="btn primary block md-intro-go" onclick="mdIntroGo()">${icon('menuBook')} Activar Menú Digital</button>
+             <p class="sth-nota">Te pedimos solo lo que falte para tenerlo listo.</p>`
+          : `<p class="sth-nota">Cuando el Dueño o el Administrador lo activen, aquí verás el link para compartirlo.</p>`}
+      </div>
+    </section></div>`;
+}
+function mdIntroGo(){
+  if(mdChecklist().every(x => x.ok || x.optional)){ mdActivate(); return; }
+  mdSetup = true;
+  render();
+  window.scrollTo(0, 0);
+  toast('Completa lo marcado con ! para activarlo', { icon:icon('menuBook') });
+}
 function renderMenuDigital(){
   const cfg = mdCfg();
+  if(!cfg.active && !mdSetup) return mdIntroHTML();
   return `
     <h1 class="page-title">Menú Digital</h1>
     <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>

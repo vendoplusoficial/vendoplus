@@ -53,7 +53,8 @@ const BASE = ['./', './vendor/supabase-2.119.0.js',
   './img/premium-chat.webp?v=1',
   './img/premium-escaner.webp?v=1',
   './img/premium-stats.webp?v=1',
-  './img/premium-usuarios.webp?v=1'
+  './img/premium-usuarios.webp?v=1',
+  './img/menu-digital-intro.webp?v=1'
 ];
 
 self.addEventListener('install', e => {
