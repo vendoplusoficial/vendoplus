@@ -592,11 +592,11 @@ window.VPComandas = (() => {
     return `
       <button class="cm-back" onclick="VPComandas.abrir()">${icon('chevronLeft')} Comandas</button>
       <div class="cm-head">
-        <button class="btn primary cm-add" onclick="VPComandas.agregar()">${icon('plus')} Agregar</button>
         <div class="cm-head-txt">
           <h1 class="page-title">${a.name}</h1>
           <p class="page-sub">${a.who} activos · ${a.sub.toLowerCase()}</p>
         </div>
+        <div class="cm-add-fila"><button class="btn primary cm-add" onclick="VPComandas.agregar()">${icon('plus')} Agregar</button></div>
       </div>
       ${list.length ? `<div class="acc-list cm-people">
         ${list.map(u => `
