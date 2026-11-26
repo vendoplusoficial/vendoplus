@@ -1116,7 +1116,7 @@ window.VPComandas = (() => {
       <div class="sheet-header">
         <div class="sheet-header-left" style="min-width:0;">
           <h2>${escapeHtml(tableName(o))}</h2>
-          <span class="mdi-pill ${cuenta ? 'nuevo' : 'ok'}">${cuenta ? 'Pidió la cuenta' : 'Abierta'}</span>
+          <span class="mdi-pill ${cuenta ? 'cm-pill-bill' : 'ok'}">${cuenta ? 'Pidió la cuenta' : 'Abierta'}</span>
         </div>
         <button class="sheet-close" onclick="closeModal()">${icon('close')}</button>
       </div>

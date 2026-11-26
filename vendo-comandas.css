@@ -136,7 +136,9 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-qty{ flex:none; align-self:center; min-width:46px; padding:6px 10px; border-radius:12px; background:var(--surface-alt, #F1F3F7); text-align:center; font-size:17px; font-weight:800; color:var(--ink); }
 .cm-size{ display:inline-block; margin-left:4px; padding:1px 7px; border-radius:999px; background:var(--surface-alt, #F1F3F7); font-size:11.5px; font-weight:700; color:var(--ink-soft); vertical-align:1px; }
 .cm-note{ margin-top:5px; font-weight:700; }
-.cm-banner-bill{ background:#E9EDF5; color:#3E4C6B; }
+.cm-banner-bill{ background:var(--surface, #fff); color:var(--ink-soft); border:1px solid var(--border, #E8E9EF); }
+.cm-banner-bill b{ color:var(--ink); }
+.mdi-pill.cm-pill-bill{ background:#ECEFF4; color:#3E4A63; }
 .cm-rondas{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
 .cm-ronda{ padding:10px 12px; border:1px solid var(--border); border-radius:14px; background:var(--surface, #fff); }
 .cm-ronda-h{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
