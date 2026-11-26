@@ -203,8 +203,8 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-hold.cm-hold-nudge .cm-hold-tip{ opacity:1; text-decoration:underline; }
 @keyframes cm-nudge{ 20%,60%{ transform:translateX(-5px); } 40%,80%{ transform:translateX(5px); } }
 @media (prefers-reduced-motion:reduce){ .cm-hold.cm-hold-nudge{ animation:none; } }
-.cm-go-bill{ background:#5B6B8C; color:#fff; font-size:17px !important; font-weight:800; padding:15px 18px !important; border-radius:16px !important; }
-.cm-go-bill .cm-hold-fill{ background:rgb(255 255 255 / 22%); }
+.cm-go-bill{ background:#E4E8EF; color:#16213E; font-size:17px !important; font-weight:800; padding:15px 18px !important; border-radius:16px !important; }
+.cm-go-bill .cm-hold-fill{ background:rgb(22 33 62 / 10%); }
 .cm-go-bill svg{ width:20px; height:20px; }
 
 /* Mesero: cuadro de notificaciones de pedidos listos */
