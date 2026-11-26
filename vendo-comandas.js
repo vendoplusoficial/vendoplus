@@ -1791,6 +1791,11 @@ window.VPComandas = (() => {
         k.status = 'cancelado'; k.cancelReason = 'Pedido cancelado';
         k.cancelAlertas = (k.cancelAlertas || []).concat([{ id:uid('ca'), todo:true, name:'Todo el pedido', qty:0, at:nowIso(), by:meName() }]);
         changed = true;
+      } else if (k.orderId === orderId && k.status === 'listo') {
+        /* Ya estaba lista pero el pedido se borró: sale de "Listas" para que
+           no se quede colgada sin entregar en cocina ni con los meseros. */
+        k.status = 'entregado'; k.deliveredAt = nowIso(); k.sinCobrar = true;
+        changed = true;
       }
     });
     if (changed) saveTickets(list);
