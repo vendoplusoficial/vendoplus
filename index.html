@@ -30090,8 +30090,7 @@ function ufPermsRowHTML(perms, accion){
 }
 const UF_ROLES = () => ['empleado', 'admin'].map(r => ({ v:r, t:roleOf(r).name, s:roleOf(r).sub }));
 const UF_AREAS = () => [
-  { v:'',       t:'Sin área',  s:'Usa el punto de venta normal.' },
-  { v:'caja',   t:'Caja',      s:'Cobra las cuentas de las mesas.' },
+  { v:'',       t:'Caja',      s:'Cobra y registra las ventas en el punto de venta.' },
   { v:'mesero', t:'Mesero',    s:'Toma los pedidos y los manda a cocina.' },
   { v:'cocina', t:'Cocinero',  s:'Prepara las comandas que llegan.' }
 ];
