@@ -15501,8 +15501,7 @@ function nuSetArea(v){
   const sin = v === 'mesero' || v === 'cocina';
   if(sin){ nuDraft.role = 'empleado'; nuDraft.perms = defaultPerms('empleado'); nuDraft.permsTocados = false; }
   ['nuCargoBox', 'nuPermsBox'].forEach(id => { const el = document.getElementById(id); if(el) el.hidden = sin; });
-  if(sin){ const v2 = document.querySelector('#nuRole [data-uf-val]'); if(v2) v2.textContent = roleOf('empleado').name;
-    document.querySelectorAll('#nuRole .uf-op').forEach(b => b.classList.toggle('on', b.dataset.v === 'empleado')); }
+  if(sin){ const se = document.querySelector('#nuRole select'); if(se){ se.value = 'empleado'; ufNativo('nuRole', se); } }
 }
 function nuSetRole(v){
   if(!nuDraft) return;
@@ -29929,7 +29928,7 @@ function cartSanitize(){
 .uf-in.pin{ letter-spacing:10px; text-align:center; font-size:20px; font-weight:800; }
 .uf-in + .uf-in{ border-top:1px solid var(--border,#E6E9F2); }
 .uf-card:focus-within{ border-color:#BFC6D4; box-shadow:0 0 0 3px rgba(22,33,62,.05); }
-.uf-sel-btn{ display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:10px 14px 10px 12px; border:0; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.uf-sel-btn{ display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; min-height:56px; padding:10px 14px 10px 12px; border:0; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .uf-ico{ flex:none; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#EEF1F6; color:var(--ink,#16213E); }
 .uf-ico svg{ width:19px; height:19px; }
 .uf-ico.green{ background:#EAF8F0; color:#0B6F37; } .uf-ico.blue{ background:#EAF1FF; color:#2459D6; } .uf-ico.gold{ background:#FFF4DD; color:#9A6400; } .uf-ico.violet{ background:#F0EFFF; color:#5146F0; }
@@ -29938,7 +29937,13 @@ function cartSanitize(){
 .uf-sel-t small{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.35; }
 .uf-chev{ flex:none; color:#9AA2B4; transition:transform .2s ease; display:flex; }
 .uf-chev svg{ width:18px; height:18px; }
-.uf-sel.open .uf-chev{ transform:rotate(90deg); }
+.uf-sel{ position:relative; }
+.uf-chev-down{ transform:rotate(90deg); }
+.uf-sel-sub{ margin-top:2px; }
+.uf-sel-sub:empty{ display:none; }
+/* La lista nativa va encima de todo el renglón, invisible: al tocar se abre la del aparato */
+.uf-native{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; border:0; margin:0; font-size:16px; -webkit-appearance:none; appearance:none; }
+.uf-sel:focus-within{ border-color:#BFC6D4; box-shadow:0 0 0 3px rgba(22,33,62,.05); }
 .uf-ops{ display:none; border-top:1px solid var(--border,#E6E9F2); padding:6px; }
 .uf-sel.open .uf-ops{ display:block; }
 .uf-op{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 10px; border:0; border-radius:12px; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -29955,35 +29960,30 @@ function cartSanitize(){
 <script id="uf-js">
 /* Piezas del formulario de usuario: renglón que se despliega con opciones */
 function ufSelHTML(id, ico, cls, titulo, opciones, valor, onPick){
+  /* Se ve como un renglón, pero al tocarlo abre la lista NATIVA del aparato
+     (ruedita en iPhone, lista flotante en Android y PC): sale encima, no
+     empuja lo de abajo. */
   const sel = opciones.find(o => o.v === valor) || opciones[0];
   return `<div class="uf-card uf-sel" id="${id}">
-    <button type="button" class="uf-sel-btn" onclick="ufToggle('${id}')" aria-expanded="false">
+    <div class="uf-sel-btn">
       <span class="uf-ico ${cls}">${icon(ico)}</span>
-      <span class="uf-sel-t"><small>${titulo}</small><b data-uf-val>${sel.t}</b></span>
-      <span class="uf-chev">${icon('chevronRight')}</span>
-    </button>
-    <div class="uf-ops">${opciones.map(o => `
-      <button type="button" class="uf-op ${o.v === sel.v ? 'on' : ''}" data-v="${o.v}" onclick="ufPick('${id}', this, ${onPick}('${o.v}'))">
-        <span class="uf-radio"></span>
-        <span class="uf-sel-t"><b>${o.t}</b>${o.s ? `<small>${o.s}</small>` : ''}</span>
-      </button>`).join('')}
+      <span class="uf-sel-t"><small>${titulo}</small><b data-uf-val>${sel.t}</b><small class="uf-sel-sub" data-uf-sub>${sel.s || ''}</small></span>
+      <span class="uf-chev uf-chev-down">${icon('chevronRight')}</span>
     </div>
+    <select class="uf-native" aria-label="${titulo}" onchange="ufNativo('${id}', this); ${onPick}(this.value)">
+      ${opciones.map(o => `<option value="${o.v}" ${o.v === sel.v ? 'selected' : ''} data-s="${(o.s || '').replace(/"/g, '&quot;')}">${o.t}</option>`).join('')}
+    </select>
   </div>`;
 }
-function ufToggle(id){
+function ufNativo(id, selEl){
   const el = document.getElementById(id); if(!el) return;
-  const abrir = !el.classList.contains('open');
-  document.querySelectorAll('.uf-sel.open').forEach(x => { if(x !== el){ x.classList.remove('open'); x.querySelector('.uf-sel-btn').setAttribute('aria-expanded', 'false'); } });
-  el.classList.toggle('open', abrir);
-  el.querySelector('.uf-sel-btn').setAttribute('aria-expanded', String(abrir));
+  const op = selEl.options[selEl.selectedIndex];
+  const v = el.querySelector('[data-uf-val]'); if(v) v.textContent = op.textContent;
+  const sub = el.querySelector('[data-uf-sub]'); if(sub) sub.textContent = op.dataset.s || '';
 }
-function ufPick(id, btn){
-  const el = document.getElementById(id); if(!el) return;
-  el.querySelectorAll('.uf-op').forEach(b => b.classList.toggle('on', b === btn));
-  const v = el.querySelector('[data-uf-val]'); if(v) v.textContent = btn.querySelector('b').textContent;
-  el.classList.remove('open');
-  el.querySelector('.uf-sel-btn').setAttribute('aria-expanded', 'false');
-}
+/* (se quedan por compatibilidad) */
+function ufToggle(){}
+function ufPick(){}
 function ufPermsRowHTML(perms, accion){
   const on = PERMS.filter(p => perms && perms[p.id]).length;
   return `<div class="uf-card"><button type="button" class="uf-sel-btn" onclick="${accion}">
