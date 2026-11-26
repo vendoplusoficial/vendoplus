@@ -212,9 +212,9 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 /* Qué hacer: recoge → lleva */
 .cm-todo{ display:flex; align-items:center; justify-content:center; gap:10px; margin:0 0 12px; padding:14px; border-radius:16px; background:var(--surface-alt, #F1F3F7); }
 .cm-todo-step{ display:flex; flex-direction:column; align-items:center; gap:5px; flex:1; text-align:center; }
-.cm-todo-step i{ display:inline-flex; width:44px; height:44px; align-items:center; justify-content:center; border-radius:50%; background:var(--ink); color:#fff; }
+.cm-todo-step i{ display:inline-flex; width:44px; height:44px; align-items:center; justify-content:center; border-radius:50%; background:var(--surface, #fff); color:var(--ink-soft); border:1px solid var(--border, #E8E9EF); }
 .cm-todo-step i svg{ width:21px; height:21px; }
-.cm-todo-step small{ font-size:12.5px; font-weight:800; color:var(--ink); }
+.cm-todo-step small{ font-size:12.5px; font-weight:700; color:var(--ink); }
 .cm-todo-arrow{ display:inline-flex; color:var(--ink-soft); margin-bottom:20px; }
 .cm-todo-arrow svg{ width:22px; height:22px; }
 .cm-ask{ margin:0; text-align:center; font-size:17px; font-weight:800; color:var(--ink); }
@@ -542,28 +542,7 @@ button.cmf-row:hover{ background:#FAFBFC; }
   .cm-done.cm-anim circle, .cm-done.cm-anim path{ animation:none; stroke-dashoffset:0; }
 }
 
-/* ===== Mesero: recoger en cocina y charola ("Llévalo a…") — sobrio, sin colores ===== */
-.cmc-dest{ display:flex; align-items:center; gap:12px; padding:14px; margin:0 0 12px; border:1px solid var(--border, #E8E9EF); border-radius:16px; background:var(--surface, #fff); }
-.cmc-dest-ico{ display:inline-flex; flex:none; width:44px; height:44px; align-items:center; justify-content:center; border-radius:12px; background:var(--surface-alt, #EEF0F7); color:var(--ink); }
-.cmc-dest-ico svg{ width:22px; height:22px; }
-.cmc-dest-t{ flex:1; min-width:0; display:flex; flex-direction:column; }
-.cmc-dest-t small{ font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); }
-.cmc-dest-t b{ font-size:24px; font-weight:800; color:var(--ink); line-height:1.15; letter-spacing:-.3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.cmc-dest-n{ flex:none; font-size:12.5px; font-weight:700; color:var(--ink-soft); background:var(--surface-alt, #EEF0F7); padding:5px 10px; border-radius:999px; }
-.cmc-sec{ margin:4px 2px 6px; font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); }
-.cmc-nota{ margin:0; text-align:center; font-size:13px; font-weight:600; color:var(--ink-soft); }
-.cmc-nota-top{ margin:-4px 0 12px; text-align:left; }
-.cmc-card{ display:flex; flex-direction:column; gap:8px; padding:12px; margin:0 0 14px; border-radius:20px; background:var(--surface-alt, #F4F6FA); }
-.cmc-card .cmc-dest{ margin:0; }
-.cmc-card .cm-lines{ background:var(--surface, #fff); border-radius:14px; padding:2px 12px; }
-.cmc-card .cm-undo{ margin-top:-2px; }
-.btn.cmc-go{ background:var(--ink, #16213E); box-shadow:0 8px 20px rgb(22 33 62 / 18%); }
-.cmc-mas{ margin-top:2px; }
-.cmc-bar{ display:flex; align-items:center; gap:12px; width:100%; margin:0 0 12px; padding:12px 14px; border:1px solid var(--ink, #16213E); border-radius:16px; background:var(--surface, #fff); color:var(--ink); font:inherit; text-align:left; cursor:pointer; }
-.cmc-bar-ico{ display:inline-flex; flex:none; width:38px; height:38px; align-items:center; justify-content:center; border-radius:11px; background:var(--ink, #16213E); color:#fff; }
-.cmc-bar-ico svg{ width:20px; height:20px; }
-.cmc-bar-t{ flex:1; min-width:0; display:flex; flex-direction:column; }
-.cmc-bar-t b{ font-size:15px; font-weight:800; }
-.cmc-bar-t small{ font-size:12.5px; font-weight:600; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.cmc-bar-go{ display:inline-flex; color:var(--ink-soft); }
-.cmc-bar-go svg{ width:18px; height:18px; }
+/* Mesero: "Ya lo dejé en Mesa X" en blanco (mantener presionado; se llena en gris) */
+.btn.cm-go-blanco{ background:var(--surface, #fff); color:var(--ink, #16213E); border:1.5px solid var(--border, #E1E5EE); box-shadow:0 2px 8px rgb(22 33 62 / 6%); }
+.btn.cm-go-blanco .cm-hold-fill{ background:rgb(22 33 62 / 10%); }
+.btn.cm-go-blanco .cm-hold-tip{ color:var(--ink-soft); opacity:1; }
