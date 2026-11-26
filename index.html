@@ -15402,27 +15402,29 @@ function startAddUser(){
   openUserForm();
 }
 
+/* Antes del primer usuario: el Dueño crea su propio NIP (pantalla completa) */
 function openOwnerPinSheet(){
-  openModal(`
-    <h3 class="sheet-title">Primero crea tu NIP de Dueño</h3>
-    <p class="sheet-text">
-      Vas a agregar a alguien más a ${APP_NAME}. Antes, crea tu propio NIP de 4 dígitos:
-      será el que uses para entrar y el que protege lo que solo tú puedes hacer.
-    </p>
-    ${nipRecoveryNoteHTML(true)}
-    <div class="field">
-      <label for="opPin1">Tu NIP</label>
-      <input id="opPin1" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" style="letter-spacing:8px; text-align:center;">
-    </div>
-    <div class="field">
-      <label for="opPin2">Repite tu NIP</label>
-      <input id="opPin2" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" style="letter-spacing:8px; text-align:center;">
-    </div>
-    <div class="sheet-actions">
-      <button class="btn ghost block" onclick="openUsersSheet()">Cancelar</button>
-      <button class="btn primary block" onclick="saveOwnerPin()">Guardar y continuar</button>
-    </div>
-  `, { dismissible:true });
+  try{ closeModal(); }catch(e){}
+  nuPantalla = 'owner';
+  nuFullPaint({
+    back:'nuCancelar()',
+    title:'Primero crea tu NIP de Dueño',
+    sub:'Lo usarás para entrar y para lo que solo tú puedes hacer',
+    body:`
+      <div class="uf">
+        <p class="uf-hint" style="font-size:14px;margin:0;">Vas a agregar a alguien más a ${APP_NAME}. Antes, crea tu propio NIP de 4 dígitos: protege tu cuenta de Dueño.</p>
+        <div class="uf-f">
+          <span class="uf-l">Tu NIP de 4 dígitos</span>
+          <div class="uf-pins">
+            <input id="opPin1" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)" aria-label="Tu NIP">
+            <input id="opPin2" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4)" aria-label="Repite tu NIP">
+          </div>
+          <div class="uf-hint">Escríbelo dos veces.</div>
+        </div>
+      </div>`,
+    foot:`<button class="btn ghost" onclick="nuCancelar()">Cancelar</button>
+          <button class="btn primary" onclick="saveOwnerPin()">Guardar y continuar</button>`
+  });
 }
 
 function saveOwnerPin(){
@@ -15435,16 +15437,8 @@ function saveOwnerPin(){
   if(!o) return;
   o.pin = a;
   DB.saveUsers(list);
-  /* Pantalla completa: ya tiene su contraseña (NIP) y sigue con el usuario nuevo */
-  openModal(`
-    <i class="fs-marker" hidden></i>
-    <div class="mdx-done ud-done">
-      <span class="mdx-done-ico">${icon('check')}</span>
-      <h2>¡Contraseña creada!</h2>
-      <p class="mdx-done-sub">Tu NIP de Dueño quedó guardado. Lo usarás para entrar y para lo que solo tú puedes hacer.</p>
-    </div>
-    <button type="button" class="btn block ud-add ud-ok" onclick="openUserForm()">${icon('plus')} Agregar usuario</button>
-  `, { dismissible:true });
+  toast('Tu NIP de Dueño quedó guardado', { variant:'toast-success', icon:icon('check'), subtitle:'Ahora agrega a la nueva persona' });
+  openUserForm();   /* sigue en pantalla completa con el usuario nuevo */
 }
 
 /* Nuevo usuario (pantalla completa): Nombre · Área · Cargo · NIP · Permisos */
@@ -15522,7 +15516,6 @@ function openUserForm(seguir){
         <span class="uf-l">Permisos</span>
         ${ufPermsRowHTML(d.perms, 'nuAbrirPermisos()')}
       </div>
-      ${typeof nipRecoveryNoteHTML === 'function' ? nipRecoveryNoteHTML(false) : ''}
     </div>`,
     foot:`<button class="btn ghost" onclick="nuCancelar()">Cancelar</button>
           <button class="btn primary" onclick="saveNewUser()">Crear usuario</button>`
@@ -16056,6 +16049,7 @@ let nipResendTimer = null;
 function ownerRecoveryEmail(){ return accountEmail(); }
 /* Aviso para el Dueño (solo él ve estas hojas). paraMi = habla de su propio NIP. */
 function nipRecoveryNoteHTML(paraMi){
+  return '';   /* Ya no se muestra el aviso de recuperar el NIP por correo */
   const e = ownerRecoveryEmail();
   return `
     <div class="doc-note">${icon('mail')}<span>
