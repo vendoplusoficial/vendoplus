@@ -5526,27 +5526,6 @@ h1.page-title.sth-titulo{ align-items:center; gap:12px; }
 .sth-connect{ margin-top:16px; border:1px solid var(--border,#E6E9F2); border-radius:22px; background:var(--surface,#fff); overflow:hidden; display:grid; grid-template-columns:1.3fr 1fr; align-items:center; }
 .sth-connect .sth-art{ aspect-ratio:16/9; height:auto; min-height:0; background:#F1F2F8; }
 .sth-connect .sth-art img{ object-fit:contain; }
-/* "Sin scroll": stFit() le da a la tarjeta el alto que queda en la pantalla y la
-   imagen se encoge para que todo (texto y botón) quepa sin bajar. */
-.sth-connect.sth-fit{ overflow:hidden; }
-html.sth-sin-scroll .view{ padding-bottom:0 !important; }
-.sth-connect.sth-fit .sth-art{ aspect-ratio:auto; height:100%; min-height:0; }
-@media (max-width:699px){
-  .sth-connect.sth-fit .sth-art{ flex:1 1 0; height:auto; min-height:84px; }
-}
-/* Pantallas bajitas: todo un poco más compacto */
-@media (max-height:760px){
-  .sth-connect-b{ padding-top:14px; padding-bottom:14px; gap:8px; }
-  .sth-connect-b h2{ font-size:19px; }
-  .sth-connect-b p{ font-size:13px; line-height:1.4; }
-  .sth-list{ gap:5px; }
-  .sth-list li{ font-size:13px; }
-  .sth-go, .md-intro .md-intro-go{ height:48px !important; margin-top:4px; }
-}
-@media (max-height:640px){
-  .sth-connect-b > p:not(.sth-nota){ display:none; }
-  .sth-nota{ display:none; }
-}
 .md-intro .md-intro-go{ height:52px; margin-top:6px; }
 .md-intro .sth-list li svg{ color:var(--vp-green, #16C15B); }
 .sth-connect-b{ padding:26px 26px 24px; display:flex; flex-direction:column; justify-content:center; gap:12px; }
@@ -5648,9 +5627,9 @@ button.cm-back:active, button.page-back:active{ transform:scale(.94); }
 .sth-car-btns{ display:flex; gap:10px; margin-top:10px; }
 .sth-car-btns .btn{ flex:1; }
 @media (max-width:699px){
-  .sth-connect{ display:flex; flex-direction:column; margin-top:12px; }
-  .sth-connect .sth-art{ aspect-ratio:16/9; min-height:0; height:auto; flex:none; }
-  .sth-connect-b{ padding:16px 16px 16px; gap:10px; flex:none; }
+  .sth-connect{ grid-template-columns:1fr; }
+  .sth-connect .sth-art{ aspect-ratio:16/9; min-height:0; height:auto; }
+  .sth-connect-b{ padding:18px 16px 18px; }
   .sth-connect-b h2{ font-size:20px; }
   .sth-cards{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
   .sth-cards .sth-art{ aspect-ratio:16/9; }
@@ -17406,38 +17385,6 @@ function mdIntroHTML(){
       </div>
     </section></div>`;
 }
-/* Portadas de Stripe y Menú Digital: que quepan en la pantalla sin bajar */
-function stFit(){
-  const c = document.querySelector('#view .sth-connect');
-  /* En estas portadas la página no lleva el espacio extra de abajo: así no se deja bajar */
-  document.documentElement.classList.toggle('sth-sin-scroll', !!c);
-  if(!c) return;
-  c.classList.remove('sth-fit'); c.style.height = '';
-  const nav = document.querySelector('.bottomnav');
-  const nr = nav ? nav.getBoundingClientRect() : null;
-  const piso = (nr && nr.height && getComputedStyle(nav).display !== 'none' && nr.top > innerHeight / 2) ? nr.top : innerHeight;
-  const r = c.getBoundingClientRect();
-  const z = r.height && c.offsetHeight ? r.height / c.offsetHeight : 1;       /* la app usa zoom en PC */
-  const libre = Math.floor((piso - r.top - 12) / (z || 1));
-  if(r.height / (z || 1) <= libre || libre < 300) return;                       /* ya cabe, o es demasiado poco: se deja normal */
-  c.style.height = libre + 'px';
-  c.classList.add('sth-fit');
-}
-(function(){
-  let t = null;
-  const pide = () => { cancelAnimationFrame(t); t = requestAnimationFrame(stFit); };
-  addEventListener('resize', pide);
-  addEventListener('orientationchange', () => setTimeout(stFit, 250));
-  if(window.visualViewport) visualViewport.addEventListener('resize', pide);
-  const arranca = () => {
-    const v = document.getElementById('view');
-    if(!v) return setTimeout(arranca, 300);
-    new MutationObserver(pide).observe(v, { childList:true });
-    v.addEventListener('load', e => { if(e.target && e.target.closest && e.target.closest('.sth-connect')) pide(); }, true);
-    pide();
-  };
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arranca); else arranca();
-})();
 function mdIntroGo(){
   /* Si ya está todo listo se activa de una vez; si falta algo, se abre la configuración */
   if(mdChecklist().every(x => x.ok || x.optional)){ mdActivate(); return; }
