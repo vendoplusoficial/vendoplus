@@ -471,3 +471,6 @@ section.cm-promo.cm-fit:not(.cm-fit-ok){ visibility:hidden; }
 .cm-guia-ok{ margin-top:18px; }
 body.cm-guia-abierta{ overflow:hidden; }
 @media (min-width:700px){ .cm-guia-in{ padding-top:26px; } .cm-guia-sec{ padding:18px 22px; } }
+/* Áreas vacías: letras más chicas y un poco más abajo del dibujo */
+.cm-empty .empty-title{ font-size:16.5px !important; margin-top:14px !important; }
+.cm-empty .empty-text{ font-size:13.5px !important; line-height:1.45 !important; margin-top:4px !important; max-width:280px; }
