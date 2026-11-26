@@ -1,0 +1,44 @@
+# Publica vendoplusoficial.com comprimido (sin comentarios ni espacios de más).
+# El código en main se queda legible; solo la copia publicada va comprimida.
+# Requiere una sola vez: Settings → Pages → Source: "GitHub Actions".
+name: Publicar sitio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Herramientas para comprimir
+        run: |
+          mkdir -p /tmp/h && cd /tmp/h && npm init -y >/dev/null
+          npm i --no-audit --no-fund terser@5.36.0 postcss@8.4.49
+      - name: Comprimir
+        run: NODE_PATH=/tmp/h/node_modules node .github/minificar.js . _site
+      - name: Revisar que el JavaScript comprimido esté sano
+        run: for f in _site/vendo-*.js _site/sw.js; do node --check "$f"; done
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

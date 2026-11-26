@@ -59,3 +59,10 @@ versión de `vendo-apps.js` y `vendo-premium.js` en sus `<script src=...?v=>`.
   (HTML, CSS y JS que ya no se usen).
 - Todos los `<style>` de `index.html` van en el `<head>` o al principio del `<body>`
   (nunca al final): si van al final, al cargar se ve un instante el diseño anterior.
+
+## Publicación comprimida (.github/workflows/publicar.yml)
+- Al subir a `main`, GitHub Actions corre `.github/minificar.js` y publica una copia
+  comprimida (sin comentarios ni espacios). El código en `main` se queda legible: edita ahí.
+- La compresión NO cambia nombres de funciones/variables ni valores de CSS (solo espacios
+  y comentarios), así que los `onclick="..."` y `eval(nombre)` siguen funcionando.
+- Para que aplique, en GitHub: Settings → Pages → Source = "GitHub Actions" (una sola vez).
