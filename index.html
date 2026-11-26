@@ -29878,6 +29878,9 @@ h1.page-title.sth-titulo{ align-items:center; gap:12px; }
 .sth-logo{ flex:none; display:inline-flex; width:40px; height:40px; }
 .sth-logo svg{ width:100%; height:100%; display:block; }
 @media (max-width:699px){ .sth-logo{ width:34px; height:34px; } }
+/* El texto de abajo empieza justo donde empieza la palabra "Stripe" (logo + espacio) */
+.sth-head + p.page-sub{ margin-left:52px; }
+@media (max-width:699px){ .sth-head + p.page-sub{ margin-left:46px; } }
 .sth-unlink{ flex:none; margin-top:8px; border:1px solid var(--border,#E6E9F2); background:var(--surface,#fff); color:var(--ink-soft,#6B7592);
   font:700 12.5px var(--sans, inherit); padding:7px 12px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .sth-unlink:hover{ color:#C0392B; border-color:#F3C9C4; }
