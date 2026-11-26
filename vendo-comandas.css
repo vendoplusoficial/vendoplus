@@ -474,3 +474,5 @@ body.cm-guia-abierta{ overflow:hidden; }
 /* Áreas vacías: letras más chicas y un poco más abajo del dibujo */
 .cm-empty .empty-title{ font-size:16.5px !important; margin-top:14px !important; }
 .cm-empty .empty-text{ font-size:13.5px !important; line-height:1.45 !important; margin-top:4px !important; max-width:280px; }
+/* Todo el bloque vacío (dibujo + textos) más abajo, hacia el centro de la pantalla */
+.empty-state.cm-empty{ margin-top:clamp(48px, 14vh, 140px) !important; }
