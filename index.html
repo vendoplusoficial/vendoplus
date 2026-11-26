@@ -2252,7 +2252,10 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
   .mdi-banner b{ display:block; font-size:14px; font-weight:800; }
   .mdi-banner.ok{ background:var(--success-bg); color:#1F6B49; }
   .mdi-banner.no{ background:var(--danger-bg); color:#8A3A32; }
-  .mdi-banner.warn{ background:var(--accent-soft); color:#6B4A00; margin-top:4px; }
+  .mdi-banner.warn{ background:var(--surface, #fff); color:var(--ink); border:1px solid var(--border); margin-top:4px; }
+  .mdi-banner.warn svg{ color:var(--ink-soft); }
+  .mdi-banner.warn span{ color:var(--ink-soft); }
+  .mdi-banner.warn b{ color:var(--ink); }
   .mdi-banner.cancel{ background:var(--surface-alt); color:var(--ink-soft); }
   .mdi-banner.cancel b{ color:var(--ink); }
   .mdi-compare-actions{ display:grid; grid-template-columns:1fr 1.5fr; gap:8px; margin-top:8px; }
