@@ -476,3 +476,7 @@ body.cm-guia-abierta{ overflow:hidden; }
 .cm-empty .empty-text{ font-size:13.5px !important; line-height:1.45 !important; margin-top:4px !important; max-width:280px; }
 /* Todo el bloque vacío (dibujo + textos) más abajo, hacia el centro de la pantalla */
 .empty-state.cm-empty{ margin-top:clamp(48px, 14vh, 140px) !important; }
+
+/* Formulario de usuario dentro de Comandas */
+.cm-uf{ margin-top:6px; }
+@media (min-width:700px){ .cm-uf{ max-width:620px; } }

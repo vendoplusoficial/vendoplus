@@ -649,49 +649,37 @@ window.VPComandas = (() => {
     const u = f.editId ? userById(f.editId) : null;
     const owner = ownerUser();
     const pideNipDueno = !f.editId && owner && !owner.pin;
-    const on = PERMS.filter(p => f.perms[p.id]).length;
+    const roles = ['empleado', 'admin'].map(r => ({ v:r, t:roleOf(r).name, s:roleOf(r).sub }));
     return `
-      <button class="cm-back" onclick="VPComandas.area('${st.area}')">${icon('chevronLeft')} ${a.name}</button>
+      <button class="cm-back" onclick="VPComandas.area('${st.area}')" aria-label="Regresar a ${a.name}">${icon('chevronLeft')} ${a.name}</button>
       <h1 class="page-title">${u ? 'Editar usuario' : 'Nuevo ' + a.one}</h1>
       <p class="page-sub">${u ? escapeHtml(u.name) + ' · ' + a.name : 'Se agrega directo a ' + a.name}</p>
-      <div class="cm-card">
-        <div class="field">
-          <label for="cmName">Nombre</label>
-          <input id="cmName" type="text" maxlength="40" placeholder="Luis Pérez" autocomplete="off" value="${escapeHtml(f.name)}" oninput="VPComandas.campo('name', this.value)">
+      <div class="uf cm-uf">
+        <div>
+          <div class="uf-sec-t">Nombre</div>
+          <div class="uf-card"><input id="cmName" class="uf-in" type="text" maxlength="40" placeholder="Luis Pérez" autocomplete="off" value="${escapeHtml(f.name)}" oninput="VPComandas.campo('name', this.value)"></div>
         </div>
-        <div class="field">
-          <label>Cargo</label>
-          <div class="opt-grid cm-roles">
-            ${['empleado', 'admin'].map(r => `
-              <button type="button" class="opt-card ${f.role === r ? 'active' : ''}" onclick="VPComandas.cargo('${r}')">
-                <span class="opt-emoji">${icon(r === 'admin' ? 'shield' : 'person')}</span>${roleOf(r).name}
-              </button>`).join('')}
-          </div>
-          <div class="field-hint">${roleOf(f.role).sub}</div>
+        <div>
+          <div class="uf-sec-t">Cargo</div>
+          ${ufSelHTML('cmRole', 'shield', 'blue', 'Qué puede hacer', roles, f.role, 'VPComandas.cargo')}
         </div>
-        <div class="field">
-          <label for="cmPin">NIP de 4 dígitos${u ? '' : ' (opcional)'}</label>
-          <input id="cmPin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.pin)}"
-                 style="letter-spacing:8px; text-align:center;" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('pin', this.value)">
-          <div class="field-hint">${u ? (u.pin ? 'Déjalo vacío para no cambiarlo.' : 'Aún no tiene NIP: entra sin escribir nada.') : 'Con NIP, solo esta persona puede entrar a su cuenta.'}</div>
+        <div>
+          <div class="uf-sec-t">NIP de 4 dígitos${u ? '' : ' · opcional'}</div>
+          <div class="uf-card"><input id="cmPin" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.pin)}"
+               oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('pin', this.value)" aria-label="NIP"></div>
+          <div class="uf-hint">${u ? (u.pin ? 'Déjalo vacío para no cambiarlo.' : 'Aún no tiene NIP: entra sin escribir nada.') : 'Con NIP, solo esta persona puede entrar a su cuenta.'}</div>
         </div>
         ${pideNipDueno ? `
-        <div class="field">
-          <label for="cmOwnerPin">Tu NIP de Dueño</label>
-          <input id="cmOwnerPin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.ownerPin)}"
-                 style="letter-spacing:8px; text-align:center;" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('ownerPin', this.value)">
-          <div class="field-hint">Al tener equipo, tú también entras con NIP para proteger tu cuenta de Dueño.</div>
+        <div>
+          <div class="uf-sec-t">Tu NIP de Dueño</div>
+          <div class="uf-card"><input id="cmOwnerPin" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.ownerPin)}"
+               oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('ownerPin', this.value)" aria-label="Tu NIP de Dueño"></div>
+          <div class="uf-hint">Al tener equipo, tú también entras con NIP para proteger tu cuenta de Dueño.</div>
         </div>` : ''}
-      </div>
-      <div class="acc-list cm-perms-link">
-        <button type="button" class="acc-row" onclick="VPComandas.permisos()">
-          <span class="acc-ico gold">${icon('key')}</span>
-          <span class="acc-txt">
-            <span class="acc-label">Permisos</span>
-            <span class="acc-sub">${on} de ${PERMS.length} activados</span>
-          </span>
-          <span class="acc-chev">${icon('chevronRight')}</span>
-        </button>
+        <div>
+          <div class="uf-sec-t">Permisos</div>
+          ${ufPermsRowHTML(f.perms, 'VPComandas.permisos()')}
+        </div>
       </div>
       <div class="cm-actions">
         <button class="btn ghost block" onclick="VPComandas.area('${st.area}')">Cancelar</button>
@@ -762,8 +750,10 @@ window.VPComandas = (() => {
   function cargo(role) {
     if (!st.form || st.form.role === role) return;
     st.form.role = role;
-    st.form.perms = defaultPerms(role);
-    show('form');
+    if (!st.form.permsTocados) st.form.perms = defaultPerms(role);
+    /* Sin volver a dibujar la pantalla: solo se actualiza el contador de permisos */
+    const fila = document.querySelector('#view .cm-uf [onclick="VPComandas.permisos()"] small');
+    if (fila) fila.textContent = PERMS.filter(p => st.form.perms[p.id]).length + ' de ' + PERMS.length + ' activados';
   }
   function permisos() {
     if (!st.form) return;
@@ -774,6 +764,7 @@ window.VPComandas = (() => {
   function guardarPermisos() {
     if (!st.form || !st.permsDraft) return;
     st.form.perms = st.permsDraft;
+    st.form.permsTocados = true;
     st.permsDraft = null;
     show('form');
     toast('Permisos guardados', { variant:'toast-success', icon:icon('check') });

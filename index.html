@@ -5464,7 +5464,7 @@ div.stf-row{ cursor:default; }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=10">
 <script src="vendo-mesas.js?v=11"></script>
-<link rel="stylesheet" href="vendo-comandas.css?v=38">
+<link rel="stylesheet" href="vendo-comandas.css?v=39">
 <style>
 .vp-err-card{ max-width:420px; margin:40px auto; padding:22px 20px; border:1px solid var(--border,#E8EBF2); border-radius:18px; background:#fff; display:flex; flex-direction:column; gap:10px; text-align:center; }
 .vp-err-card b{ font-size:17px; color:var(--ink,#16213E); }
@@ -5474,7 +5474,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=41"></script>
+<script src="vendo-comandas.js?v=43"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -15447,41 +15447,76 @@ function saveOwnerPin(){
   `, { dismissible:true });
 }
 
-function openUserForm(){
+/* Nuevo usuario: Nombre · Área · Cargo · NIP · Permisos */
+let nuDraft = null;
+function openUserForm(seguir){
   if(!requireOwner('Solo el Dueño puede agregar usuarios')) return;
   if(usersLimitReached()){ offerMoreUsers(); return; }
+  if(seguir !== true || !nuDraft) nuDraft = { name:'', area:'', role:'empleado', pin1:'', pin2:'', perms:defaultPerms('empleado'), permsTocados:false };
+  const d = nuDraft;
+  const conAreas = !!window.VPComandas;
   openModal(`
     <h3 class="sheet-title">Nuevo usuario</h3>
     <p class="sheet-text">Esta persona entrará a ${APP_NAME} con su propio NIP.</p>
-    <div class="field">
-      <label for="nuName">Nombre</label>
-      <input id="nuName" type="text" placeholder="Luis Pérez" autocomplete="off">
-    </div>
-    <div class="field">
-      <label for="nuRole">Tipo de usuario</label>
-      <select id="nuRole" onchange="previewRoleHint()">
-        <option value="empleado">Empleado</option>
-        <option value="admin">Administrador</option>
-      </select>
-      <div class="field-hint" id="nuRoleHint">${roleOf('empleado').sub}</div>
-    </div>
-    <div class="field">
-      <label for="nuPin1">NIP de 4 dígitos</label>
-      <input id="nuPin1" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" style="letter-spacing:8px; text-align:center;">
-    </div>
-    <div class="field">
-      <label for="nuPin2">Repite el NIP</label>
-      <input id="nuPin2" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" style="letter-spacing:8px; text-align:center;">
+    <div class="uf">
+      <div>
+        <div class="uf-sec-t">Nombre</div>
+        <div class="uf-card"><input id="nuName" class="uf-in" type="text" maxlength="40" placeholder="Luis Pérez" autocomplete="off" value="${escapeHtml(d.name)}" oninput="nuDraft.name=this.value"></div>
+      </div>
+      ${conAreas ? `<div>
+        <div class="uf-sec-t">Área</div>
+        ${ufSelHTML('nuArea', 'comandas', 'green', 'Dónde trabaja', UF_AREAS(), d.area, 'nuSetArea')}
+      </div>` : ''}
+      <div>
+        <div class="uf-sec-t">Cargo</div>
+        ${ufSelHTML('nuRole', 'shield', 'blue', 'Qué puede hacer', UF_ROLES(), d.role, 'nuSetRole')}
+      </div>
+      <div>
+        <div class="uf-sec-t">NIP de 4 dígitos</div>
+        <div class="uf-card">
+          <input id="nuPin1" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin1)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin1=this.value" aria-label="NIP">
+          <input id="nuPin2" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin2)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin2=this.value" aria-label="Repite el NIP">
+        </div>
+        <div class="uf-hint">Escríbelo dos veces. Con él entra a su cuenta.</div>
+      </div>
+      <div>
+        <div class="uf-sec-t">Permisos</div>
+        ${ufPermsRowHTML(d.perms, 'nuAbrirPermisos()')}
+      </div>
     </div>
     <div class="sheet-actions">
-      <button class="btn ghost block" onclick="openUsersSheet()">Cancelar</button>
+      <button class="btn ghost block" onclick="nuDraft=null; openUsersSheet()">Cancelar</button>
       <button class="btn primary block" onclick="saveNewUser()">Crear usuario</button>
     </div>
-  `, { dismissible:true });
+  `, { dismissible:true, swap:seguir === true });
   const acts = document.querySelector('#modal-layer .sheet-actions');
   if(acts) acts.insertAdjacentHTML('beforebegin', nipRecoveryNoteHTML(false));
 }
-
+function nuSetArea(v){ if(nuDraft) nuDraft.area = v; }
+function nuSetRole(v){
+  if(!nuDraft) return;
+  nuDraft.role = v === 'admin' ? 'admin' : 'empleado';
+  if(!nuDraft.permsTocados) nuDraft.perms = defaultPerms(nuDraft.role);
+  const fila = document.querySelector('#modal-layer [onclick="nuAbrirPermisos()"] small');
+  if(fila){ const on = PERMS.filter(p => nuDraft.perms[p.id]).length; fila.textContent = on + ' de ' + PERMS.length + ' activados'; }
+}
+function nuAbrirPermisos(){
+  if(!nuDraft) return;
+  const d = nuDraft;
+  openModal(`
+    <div class="sheet-header"><div class="sheet-header-left"><button class="sheet-back" onclick="openUserForm(true)" aria-label="Volver">${icon('chevronLeft')}</button><h2>Permisos</h2></div></div>
+    <p class="sheet-text">${d.name.trim() ? escapeHtml(d.name.trim()) + ' · ' : ''}${roleOf(d.role).name}. Activa o desactiva lo que puede hacer.</p>
+    <div class="uf-card uf-perms-list">
+      ${PERMS.map(p => `
+        <div class="toggle-row">
+          <span class="acc-ico ${p.id === 'gestionarProductos' ? 'green' : (p.id === 'verGanancias' ? 'violet' : 'blue')}">${icon(p.icon || 'receipt')}</span>
+          <span class="acc-txt"><span class="acc-label">${p.label}</span><span class="acc-sub">${p.sub}</span></span>
+          <label class="switch"><input type="checkbox" ${d.perms[p.id] ? 'checked' : ''} onchange="nuDraft.perms['${p.id}']=this.checked; nuDraft.permsTocados=true"><span class="track"></span></label>
+        </div>`).join('')}
+    </div>
+    <div class="sheet-actions"><button class="btn primary block" onclick="openUserForm(true)">Listo</button></div>
+  `, { dismissible:true, swap:true });
+}
 function previewRoleHint(){
   const sel = document.getElementById('nuRole');
   const hint = document.getElementById('nuRoleHint');
@@ -15534,10 +15569,11 @@ function userSnap(u){
 function saveNewUser(){
   if(!requireOwner('Solo el Dueño puede agregar usuarios')) return;
   if(usersLimitReached()){ offerMoreUsers(); return; }
-  const name = document.getElementById('nuName').value.trim();
-  const role = document.getElementById('nuRole').value;
-  const a = document.getElementById('nuPin1').value.replace(/\D/g,'');
-  const b = document.getElementById('nuPin2').value.replace(/\D/g,'');
+  const d = nuDraft || { name:'', area:'', role:'empleado', pin1:'', pin2:'', perms:defaultPerms('empleado') };
+  const name = (d.name || '').trim();
+  const role = d.role === 'admin' ? 'admin' : 'empleado';
+  const a = String(d.pin1 || '').replace(/\D/g,'');
+  const b = String(d.pin2 || '').replace(/\D/g,'');
   if(name.length < 2){ toast('Escribe el nombre de la persona'); return; }
   if(a.length !== 4){ toast('El NIP debe tener 4 dígitos'); return; }
   if(a !== b){ toast('Los dos NIP no son iguales'); return; }
@@ -15550,10 +15586,12 @@ function saveNewUser(){
     pin: a,
     phone: '',                       /* su NIP se recupera con un código al correo del Dueño */
     country: (currentUser() || {}).country || 'MX',
-    perms: defaultPerms(role),
+    perms: Object.assign(defaultPerms(role), d.perms || {}),
+    area: d.area || undefined,
     createdAt: new Date().toISOString()
   });
   DB.saveUsers(list);
+  nuDraft = null;
 
   // El Dueño que estaba usando Mesa sigue siendo el usuario activo.
   const me = activeUser();
@@ -29870,6 +29908,87 @@ function cartSanitize(){
 <script src="vendo-cerebro.js?v=20261125"></script>
 <script src="vendo-mascota.js?v=20261125b"></script>
 
+<!-- ===== Formulario de usuario (Nuevo usuario y Nuevo cajero/mesero/cocinero) ===== -->
+<style id="uf-css">
+.uf{ display:flex; flex-direction:column; gap:14px; }
+.uf-sec-t{ font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft,#6B7592); margin:0 0 7px 4px; }
+.uf-card{ border:1px solid var(--border,#E6E9F2); border-radius:16px; background:var(--surface,#fff); overflow:hidden; }
+.uf-in{ display:block; width:100%; box-sizing:border-box; height:52px; padding:0 16px; border:0; background:transparent; font:600 16px var(--sans, inherit); color:var(--ink,#16213E); outline:none; }
+.uf-in::placeholder{ color:#A3AAB8; font-weight:500; }
+.uf-in.pin{ letter-spacing:10px; text-align:center; font-size:20px; font-weight:800; }
+.uf-in + .uf-in{ border-top:1px solid var(--border,#E6E9F2); }
+.uf-card:focus-within{ border-color:#BFC6D4; box-shadow:0 0 0 3px rgba(22,33,62,.05); }
+.uf-sel-btn{ display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:10px 14px 10px 12px; border:0; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.uf-ico{ flex:none; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#EEF1F6; color:var(--ink,#16213E); }
+.uf-ico svg{ width:19px; height:19px; }
+.uf-ico.green{ background:#EAF8F0; color:#0B6F37; } .uf-ico.blue{ background:#EAF1FF; color:#2459D6; } .uf-ico.gold{ background:#FFF4DD; color:#9A6400; } .uf-ico.violet{ background:#F0EFFF; color:#5146F0; }
+.uf-sel-t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.uf-sel-t b{ font-size:15.5px; font-weight:800; color:var(--ink,#16213E); }
+.uf-sel-t small{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.35; }
+.uf-chev{ flex:none; color:#9AA2B4; transition:transform .2s ease; display:flex; }
+.uf-chev svg{ width:18px; height:18px; }
+.uf-sel.open .uf-chev{ transform:rotate(90deg); }
+.uf-ops{ display:none; border-top:1px solid var(--border,#E6E9F2); padding:6px; }
+.uf-sel.open .uf-ops{ display:block; }
+.uf-op{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 10px; border:0; border-radius:12px; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.uf-op:hover{ background:#F6F7FA; }
+.uf-op .uf-sel-t b{ font-size:14.5px; }
+.uf-radio{ flex:none; width:20px; height:20px; border-radius:50%; border:2px solid #C9CFDB; box-sizing:border-box; }
+.uf-op.on{ background:#F1FBF5; }
+.uf-op.on .uf-radio{ border:6px solid var(--vp-green,#16C15B); }
+.uf-hint{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); margin:7px 4px 0; line-height:1.4; }
+.uf-acts{ display:flex; gap:10px; margin-top:6px; }
+.uf-acts .btn{ flex:1; }
+.uf-perms-list .toggle-row{ padding:12px 14px; }
+</style>
+<script id="uf-js">
+/* Piezas del formulario de usuario: renglón que se despliega con opciones */
+function ufSelHTML(id, ico, cls, titulo, opciones, valor, onPick){
+  const sel = opciones.find(o => o.v === valor) || opciones[0];
+  return `<div class="uf-card uf-sel" id="${id}">
+    <button type="button" class="uf-sel-btn" onclick="ufToggle('${id}')" aria-expanded="false">
+      <span class="uf-ico ${cls}">${icon(ico)}</span>
+      <span class="uf-sel-t"><small>${titulo}</small><b data-uf-val>${sel.t}</b></span>
+      <span class="uf-chev">${icon('chevronRight')}</span>
+    </button>
+    <div class="uf-ops">${opciones.map(o => `
+      <button type="button" class="uf-op ${o.v === sel.v ? 'on' : ''}" data-v="${o.v}" onclick="ufPick('${id}', this, ${onPick}('${o.v}'))">
+        <span class="uf-radio"></span>
+        <span class="uf-sel-t"><b>${o.t}</b>${o.s ? `<small>${o.s}</small>` : ''}</span>
+      </button>`).join('')}
+    </div>
+  </div>`;
+}
+function ufToggle(id){
+  const el = document.getElementById(id); if(!el) return;
+  const abrir = !el.classList.contains('open');
+  document.querySelectorAll('.uf-sel.open').forEach(x => { if(x !== el){ x.classList.remove('open'); x.querySelector('.uf-sel-btn').setAttribute('aria-expanded', 'false'); } });
+  el.classList.toggle('open', abrir);
+  el.querySelector('.uf-sel-btn').setAttribute('aria-expanded', String(abrir));
+}
+function ufPick(id, btn){
+  const el = document.getElementById(id); if(!el) return;
+  el.querySelectorAll('.uf-op').forEach(b => b.classList.toggle('on', b === btn));
+  const v = el.querySelector('[data-uf-val]'); if(v) v.textContent = btn.querySelector('b').textContent;
+  el.classList.remove('open');
+  el.querySelector('.uf-sel-btn').setAttribute('aria-expanded', 'false');
+}
+function ufPermsRowHTML(perms, accion){
+  const on = PERMS.filter(p => perms && perms[p.id]).length;
+  return `<div class="uf-card"><button type="button" class="uf-sel-btn" onclick="${accion}">
+      <span class="uf-ico gold">${icon('key')}</span>
+      <span class="uf-sel-t"><b>Ver todos los permisos</b><small>${on} de ${PERMS.length} activados</small></span>
+      <span class="uf-chev">${icon('chevronRight')}</span>
+    </button></div>`;
+}
+const UF_ROLES = () => ['empleado', 'admin'].map(r => ({ v:r, t:roleOf(r).name, s:roleOf(r).sub }));
+const UF_AREAS = () => [
+  { v:'',       t:'Sin área',  s:'Usa el punto de venta normal.' },
+  { v:'caja',   t:'Caja',      s:'Cobra las cuentas de las mesas.' },
+  { v:'mesero', t:'Mesero',    s:'Toma los pedidos y los manda a cocina.' },
+  { v:'cocina', t:'Cocinero',  s:'Prepara las comandas que llegan.' }
+];
+</script>
 <!-- ===== STRIPE (sección propia, solo Premium): conectar, NFC, Menú Digital y tu dinero ===== -->
 <style id="st-hub-css">
 .sth{ max-width:1040px; }
