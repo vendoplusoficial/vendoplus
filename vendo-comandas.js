@@ -1680,7 +1680,8 @@ window.VPComandas = (() => {
   }
 
   /* ---------- Cobro: "Mandar a cocina" junto a "Cobrar" (solo con comandas activadas) ---------- */
-  function cobroDividido() { return activas() && !esMesero() && cart.length > 0; }
+  /* Caja manda a cocina solo pedidos para llevar/en tienda; a las mesas solo el mesero */
+  function cobroDividido() { return activas() && !esMesero() && cart.length > 0 && !checkout.floorTableId; }
   function botonCocinaHTML() {
     if (!pendientesCobro().length) return `<button type="button" class="btn block cm-p2-cocina cm-p2-off" disabled title="No hay nada nuevo para cocina">
       <span class="cm-hold-in">${icon('chefHat')} Ya está en cocina</span>

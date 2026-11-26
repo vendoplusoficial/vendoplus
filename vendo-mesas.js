@@ -173,6 +173,9 @@ window.VPMesas = (() => {
     toast('Plano guardado');
   }
 
+  function soloMeseros() {
+    try { return !!(window.VPComandas && VPComandas.activas && VPComandas.activas() && !VPComandas.esMesero()); } catch (e) { return false; }
+  }
   function choose(id) {
     const table = layout().find(t => t.id === id);
     if (!table) return;
@@ -186,6 +189,8 @@ window.VPMesas = (() => {
       return;
     }
     if (source !== 'checkout') return;
+    /* Con comandas activadas, a las mesas solo les mandan pedidos los meseros */
+    if (soloMeseros()) { toast('Los pedidos a las mesas los manda el mesero', { subtitle:'Desde caja solo se cobran las mesas.' }); return; }
     if (checkout.floorOrderId && checkout.floorTableId !== table.id) {
       toast('Esta cuenta ya está asignada a ' + checkout.table);
       return;
@@ -219,9 +224,6 @@ window.VPMesas = (() => {
       toast('La cuenta de esta mesa cambió');
       return;
     }
-    /* Con comandas activadas, lo nuevo se manda a cocina como otra ronda
-       (Ronda 1, 2, 3…) y la mesa les aparece a los meseros. */
-    if (window.VPComandas && VPComandas.hayParaCocina && VPComandas.hayParaCocina()) { VPComandas.mandarDesdeCobro(); return; }
     if (!parkNow(table.name, order?.id)) { toast('No se pudo guardar el pedido'); return; }
     closeModal();
     render();

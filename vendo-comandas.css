@@ -90,15 +90,18 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-floor{ max-width:640px; height:clamp(320px, 56vh, 520px); height:clamp(320px, 56svh, 520px); margin:0 auto 8px; }
 .vp-floor-table.cm-ready{ border-color:var(--brand); background:var(--brand); color:#fff; }
 .vp-floor-table.cm-ready small{ color:#fff; font-weight:800; }
-.vp-floor-table.cm-bill{ border-color:#7C8BA8; background:#E9EDF5; }
-.vp-floor-table.cm-bill small{ color:#3E4C6B; font-weight:800; }
+.vp-floor-table.cm-bill{ border-color:var(--accent-2, #E1594C); background:var(--danger-bg, #FBEAE8); }   /* caja / Dueño: roja */
+.vp-floor-table.cm-bill small{ color:var(--accent-2, #E1594C); font-weight:800; }
+body.cm-mesero .vp-floor-table.cm-bill{ border-color:#7C8BA8; background:#E9EDF5; }            /* mesero: gris */
+body.cm-mesero .vp-floor-table.cm-bill small{ color:#3E4C6B; }
 .vp-floor-table small{ white-space:nowrap; }
 .cm-legend{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; margin:0 auto 16px; font-size:12px; font-weight:700; color:var(--ink-soft); }
 .cm-legend span{ display:inline-flex; align-items:center; gap:6px; }
 .cm-legend i{ width:14px; height:14px; border-radius:5px; border:1px solid var(--border); background:var(--surface, #fff); }
 .cm-legend i.is-occupied{ background:var(--brand-soft); border-color:var(--brand); }
 .cm-legend i.cm-ready{ background:var(--brand); border-color:var(--brand); }
-.cm-legend i.cm-bill{ background:#E9EDF5; border-color:#7C8BA8; }
+.cm-legend i.cm-bill{ background:var(--danger-bg, #FBEAE8); border-color:var(--accent-2, #E1594C); }
+body.cm-mesero .cm-legend i.cm-bill{ background:#E9EDF5; border-color:#7C8BA8; }
 
 /* Mesero: comandas listas para servir */
 .cm-ready-list{ display:flex; flex-direction:column; gap:8px; margin:0 0 14px; }
