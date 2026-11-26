@@ -17,6 +17,9 @@ body.cm-solo #topPremium{ display:none !important; }
 @media (min-width:700px){
   html body.cm-solo.cm-solo.cm-solo .app{ grid-template-columns:minmax(0,1fr) !important; grid-template-areas:"topbar" "view" !important; padding-left:0 !important; }
 }
+/* Mesero: no tiene la barra de secciones abajo, así que el carrito va pegado abajo
+   (el del POS sube para no taparla). */
+html body.cm-solo .cartbar{ bottom:calc(16px + env(safe-area-inset-bottom)) !important; }
 body.cm-mesero .sale-tools .vp-floor-quick,
 body.cm-mesero .sale-tools .vp-floor-placeholder,
 body.cm-mesero .parked-bar,
