@@ -74,5 +74,5 @@
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.vp-floor-count.is-bill { background: var(--accent-strong, #F5BF3C); color: #16213E; }
-.sale-tools .vp-floor-quick.has-bill { border-color: var(--accent-strong, #F5BF3C); }
+.vp-floor-count.is-bill { background: #5B6B8C; color: #fff; }
+.sale-tools .vp-floor-quick.has-bill { border-color: #7C8BA8; }

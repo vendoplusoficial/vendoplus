@@ -87,15 +87,15 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-floor{ max-width:640px; height:clamp(320px, 56vh, 520px); height:clamp(320px, 56svh, 520px); margin:0 auto 8px; }
 .vp-floor-table.cm-ready{ border-color:var(--brand); background:var(--brand); color:#fff; }
 .vp-floor-table.cm-ready small{ color:#fff; font-weight:800; }
-.vp-floor-table.cm-bill{ border-color:var(--accent-strong); background:var(--accent-soft); }
-.vp-floor-table.cm-bill small{ color:#8A6000; font-weight:800; }
+.vp-floor-table.cm-bill{ border-color:#7C8BA8; background:#E9EDF5; }
+.vp-floor-table.cm-bill small{ color:#3E4C6B; font-weight:800; }
 .vp-floor-table small{ white-space:nowrap; }
 .cm-legend{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; margin:0 auto 16px; font-size:12px; font-weight:700; color:var(--ink-soft); }
 .cm-legend span{ display:inline-flex; align-items:center; gap:6px; }
 .cm-legend i{ width:14px; height:14px; border-radius:5px; border:1px solid var(--border); background:var(--surface, #fff); }
 .cm-legend i.is-occupied{ background:var(--brand-soft); border-color:var(--brand); }
 .cm-legend i.cm-ready{ background:var(--brand); border-color:var(--brand); }
-.cm-legend i.cm-bill{ background:var(--accent-soft); border-color:var(--accent-strong); }
+.cm-legend i.cm-bill{ background:#E9EDF5; border-color:#7C8BA8; }
 
 /* Mesero: comandas listas para servir */
 .cm-ready-list{ display:flex; flex-direction:column; gap:8px; margin:0 0 14px; }
@@ -133,7 +133,7 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-qty{ flex:none; align-self:center; min-width:46px; padding:6px 10px; border-radius:12px; background:var(--surface-alt, #F1F3F7); text-align:center; font-size:17px; font-weight:800; color:var(--ink); }
 .cm-size{ display:inline-block; margin-left:4px; padding:1px 7px; border-radius:999px; background:var(--surface-alt, #F1F3F7); font-size:11.5px; font-weight:700; color:var(--ink-soft); vertical-align:1px; }
 .cm-note{ margin-top:5px; font-weight:700; }
-.cm-banner-bill{ background:var(--accent-soft); color:#6B4A00; }
+.cm-banner-bill{ background:#E9EDF5; color:#3E4C6B; }
 .cm-rondas{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
 .cm-ronda{ padding:10px 12px; border:1px solid var(--border); border-radius:14px; background:var(--surface, #fff); }
 .cm-ronda-h{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
@@ -200,8 +200,8 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-hold.cm-hold-nudge .cm-hold-tip{ opacity:1; text-decoration:underline; }
 @keyframes cm-nudge{ 20%,60%{ transform:translateX(-5px); } 40%,80%{ transform:translateX(5px); } }
 @media (prefers-reduced-motion:reduce){ .cm-hold.cm-hold-nudge{ animation:none; } }
-.cm-go-bill{ background:var(--accent-strong, #F5BF3C); color:#16213E; font-size:17px !important; font-weight:800; padding:15px 18px !important; border-radius:16px !important; }
-.cm-go-bill .cm-hold-fill{ background:rgb(22 33 62 / 14%); }
+.cm-go-bill{ background:#5B6B8C; color:#fff; font-size:17px !important; font-weight:800; padding:15px 18px !important; border-radius:16px !important; }
+.cm-go-bill .cm-hold-fill{ background:rgb(255 255 255 / 22%); }
 .cm-go-bill svg{ width:20px; height:20px; }
 
 /* Mesero: cuadro de notificaciones de pedidos listos */
