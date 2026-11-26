@@ -17361,8 +17361,7 @@ let mdCfgOpen = false;
 
 /* Menú Digital apagado: primero una portada (imagen, qué puedes hacer y
    "Activar Menú Digital"), igual que la de conectar Stripe. Al tocar el botón
-   se activa si ya está todo listo; si falta algo, se muestra la configuración. */
-let mdSetup = false;
+   se activa si ya está todo listo; si falta algo, se abre la configuración. */
 function mdIntroHTML(){
   const puede = can('gestionarProductos');
   return `<div class="sth">
@@ -17387,23 +17386,19 @@ function mdIntroHTML(){
     </section></div>`;
 }
 function mdIntroGo(){
+  /* Si ya está todo listo se activa de una vez; si falta algo, se abre la configuración */
   if(mdChecklist().every(x => x.ok || x.optional)){ mdActivate(); return; }
-  mdSetup = true;
-  render();
-  window.scrollTo(0, 0);
-  toast('Completa lo marcado con ! para activarlo', { icon:icon('menuBook') });
+  mdOpenSetup();
 }
 function renderMenuDigital(){
   const cfg = mdCfg();
-  if(!cfg.active && !mdSetup) return mdIntroHTML();
+  if(!cfg.active) return mdIntroHTML();
   return `
-    <h1 class="page-title">Menú Digital</h1>
-    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>
-
-    <div class="section-title">Configuración del Menú Digital</div>
-    ${mdConfigHTML(cfg)}
-
-  `;
+    <div class="mdx-head">
+      <div class="mdx-head-txt"><h1 class="page-title">Menú Digital</h1></div>
+      <button class="mdx-gear" onclick="mdOpenLinkSheet()" aria-label="Tu Menú Digital">${icon('gear')}</button>
+    </div>
+    ${mdiSectionHTML()}`;
 }
 
 function mdChecklist(){
@@ -21177,36 +21172,6 @@ function mdSetCfgVisible(v){
   mdCfgSheetOn = false;
   _mdCloseModalBase();
 }
-/* Menú desactivado: solo una tarjeta; al tocarla se abre la configuración */
-function mdOffCardHTML(){
-  return `
-    <div class="section-title">Configuración del Menú Digital</div>
-    <button type="button" class="md-status-card mdx-off" onclick="mdOpenSetup()">
-      <span class="md-status-top">
-        <span class="md-status-ico">${icon('menuBook')}</span>
-        <span class="md-status-txt">
-          <span class="md-status-title">Menú Digital desactivado</span>
-          <span class="md-status-sub">Confirma estas opciones y actívalo</span>
-        </span>
-        <span class="md-pill off">Inactivo</span>
-        <span class="acc-chev">${icon('chevronRight')}</span>
-      </span>
-    </button>`;
-}
-renderMenuDigital = function(){
-  const cfg = mdCfg();
-  const titulo = cfg.active ? `
-    <h1 class="page-title">Menú Digital</h1>` : `
-    <h1 class="page-title">Menú Digital</h1>
-    <p class="page-sub">Tus clientes ven tu menú y sus pedidos te llegan aquí y a tu WhatsApp</p>`;
-  if(!cfg.active) return titulo + mdOffCardHTML();
-  return `
-    <div class="mdx-head">
-      <div class="mdx-head-txt">${titulo}</div>
-      <button class="mdx-gear" onclick="mdOpenLinkSheet()" aria-label="Tu Menú Digital">${icon('gear')}</button>
-    </div>
-    ${mdiSectionHTML()}`;
-};
 /* Tuerca: pantalla completa con el link, copiar/compartir y configurar */
 function mdOpenLinkSheet(){
   const cfg = mdCfg();
