@@ -168,8 +168,15 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-step.done i{ background:var(--success, #19C15F); border-color:var(--success, #19C15F); color:#fff; }
 .cm-step.now{ color:var(--ink); }
 .cm-step.now i{ background:var(--ink); border-color:var(--ink); color:#fff; transform:scale(1.08); }
-.cm-step-bar{ flex:1; height:3px; margin:0 6px 18px; border-radius:3px; background:var(--border); }
+.cm-step-bar{ position:relative; overflow:hidden; flex:1; height:4px; margin:0 6px 18px; border-radius:4px; background:var(--border); }
 .cm-step-bar.done{ background:var(--success, #19C15F); }
+/* Se va llenando mientras el cocinero mantiene presionado (dura lo mismo que el botón) */
+.cm-step-bar::after{ content:""; position:absolute; inset:0; border-radius:inherit; background:var(--success, #19C15F); transform:scaleX(0); transform-origin:left; transition:transform .18s ease; }
+.cm-step-bar.llenando::after{ transform:scaleX(1); transition:transform .7s linear; }
+.cm-steps.cm-anim .cm-step.now i, .cm-steps.cm-anim .cm-step.done:last-child i{ animation:cm-paso .45s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes cm-paso{ from{ transform:scale(.6); } to{ transform:scale(1.08); } }
+.cm-steps.cm-anim .cm-step.done:last-child i{ animation-name:cm-paso-fin; }
+@keyframes cm-paso-fin{ from{ transform:scale(.6); } to{ transform:scale(1); } }
 .cm-notes-flag{ display:inline-flex; align-items:center; gap:6px; margin:0 0 6px; padding:5px 11px; border-radius:999px; background:var(--accent-soft); color:#8A6000; font-size:13px; font-weight:800; }
 .cm-notes-flag svg{ width:15px; height:15px; }
 .cm-go{ display:flex; align-items:center; justify-content:center; gap:10px; font-size:19px !important; font-weight:800; padding:19px 20px !important; border-radius:18px !important; color:#fff; }
@@ -508,3 +515,29 @@ button.cmf-row:hover{ background:#FAFBFC; }
 .btn.cm-bill-lock .cm-hold-in{ display:inline-flex; align-items:center; gap:8px; }
 .btn.cm-bill-lock .cm-hold-in svg{ width:18px; height:18px; }
 .btn.cm-bill-lock .cm-hold-tip{ font-size:11.5px; font-weight:600; opacity:.9; }
+
+/* Cocina: "¡Pedido terminado!" y "Esperando al mesero" (la hoja ya no se cierra) */
+.cm-done{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:6px 0 4px; }
+.cm-done-ico{ width:76px; height:76px; margin-bottom:6px; color:var(--success, #19C15F); }
+.cm-done-ico svg{ width:100%; height:100%; fill:none; stroke:currentColor; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; }
+.cm-done b{ font-size:21px; font-weight:800; color:var(--ink); letter-spacing:-.2px; }
+.cm-done small{ font-size:14px; font-weight:600; color:var(--ink-soft); }
+.cm-done.cm-anim .cm-done-ico{ animation:cm-done-pop .5s cubic-bezier(.34,1.56,.64,1) both; }
+.cm-done.cm-anim circle{ stroke-dasharray:145; stroke-dashoffset:145; animation:cm-done-trazo .55s ease-out .05s forwards; }
+.cm-done.cm-anim path{ stroke-dasharray:36; stroke-dashoffset:36; animation:cm-done-trazo .35s ease-out .5s forwards; }
+.cm-done.cm-anim b, .cm-done.cm-anim small{ animation:cm-done-sube .4s ease-out both; }
+.cm-done.cm-anim b{ animation-delay:.45s; }
+.cm-done.cm-anim small{ animation-delay:.55s; }
+.cm-done.cm-anim ~ .cm-wait{ animation:cm-done-sube .4s ease-out .7s both; }
+@keyframes cm-done-pop{ from{ transform:scale(.4); opacity:0; } to{ transform:scale(1); opacity:1; } }
+@keyframes cm-done-trazo{ to{ stroke-dashoffset:0; } }
+@keyframes cm-done-sube{ from{ transform:translateY(8px); opacity:0; } to{ transform:none; opacity:1; } }
+.cm-dots{ display:inline-flex; gap:3px; margin-left:2px; }
+.cm-dots i{ width:5px; height:5px; border-radius:50%; background:currentColor; animation:cm-dots 1.2s ease-in-out infinite; }
+.cm-dots i:nth-child(2){ animation-delay:.2s; }
+.cm-dots i:nth-child(3){ animation-delay:.4s; }
+@keyframes cm-dots{ 0%,80%,100%{ opacity:.25; transform:translateY(0); } 40%{ opacity:1; transform:translateY(-3px); } }
+@media (prefers-reduced-motion:reduce){
+  .cm-done.cm-anim .cm-done-ico, .cm-done.cm-anim b, .cm-done.cm-anim small, .cm-done.cm-anim ~ .cm-wait, .cm-dots i, .cm-steps.cm-anim .cm-step i{ animation:none; }
+  .cm-done.cm-anim circle, .cm-done.cm-anim path{ animation:none; stroke-dashoffset:0; }
+}

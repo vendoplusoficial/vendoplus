@@ -242,6 +242,7 @@ window.VPComandas = (() => {
       if (!h) return;
       clearTimeout(h.t);
       h.b.classList.remove('holding');
+      if (!done && h.bar) h.bar.classList.remove('llenando');
       if (!done && Date.now() - h.at < HOLD_MS && !h.b.querySelector('.cm-hold-tip')) toast('Mantén presionado el botón', { icon:icon('clock'), duration:1600 });
       if (!done && Date.now() - h.at < HOLD_MS) { h.b.classList.add('cm-hold-nudge'); setTimeout(() => h && h.b && h.b.classList.remove('cm-hold-nudge'), 600); vibrate(8); }
       h = null;
@@ -254,7 +255,12 @@ window.VPComandas = (() => {
       void b.offsetWidth;
       b.classList.add('holding');
       const btn = b;
-      h = { b, at:Date.now(), t:setTimeout(() => {
+      /* Cocina: mientras se mantiene presionado, la barrita de pasos de arriba
+         se va llenando hacia el siguiente paso (Nueva → Cocinando → Lista). */
+      const hoja = b.closest('.modal-sheet');
+      const bar = hoja && (b.classList.contains('cm-go-prep') || b.classList.contains('cm-go-ok')) ? hoja.querySelector('.cm-step-bar:not(.done)') : null;
+      if (bar) { bar.classList.remove('llenando'); void bar.offsetWidth; bar.classList.add('llenando'); }
+      h = { b, bar, at:Date.now(), t:setTimeout(() => {
         h = null;
         btn.classList.remove('holding');
         btn.classList.add('cm-hold-done');
@@ -1870,10 +1876,12 @@ window.VPComandas = (() => {
   /* Íconos de los pasos de cocina */
   const FIRE = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21c-4 0-6.5-2.7-6.5-6.2 0-3.4 2.6-5.4 3.6-8.8.3-1 1.6-1.2 2.2-.4 1 1.4 1.4 2.8 1.4 4 .8-.5 1.4-1.3 1.6-2.3.2-.7 1-.9 1.5-.4 1.6 1.7 2.7 4 2.7 7 0 4-2.5 7.1-6.5 7.1Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 21c-1.8 0-3-1.2-3-2.9 0-1.9 1.6-2.7 2.3-4.3.8 1 3.7 2 3.7 4.4 0 1.6-1.2 2.8-3 2.8Z" fill="currentColor"/></svg>';
   function pasosHTML(st) {
-    const i = { nuevo:0, preparando:1, listo:2, entregado:2 }[st] ?? 0;
+    const i = { nuevo:0, preparando:1, listo:3, entregado:3 }[st] ?? 0;
     const p = [[icon('inbox'), 'Nueva'], [FIRE, 'Cocinando'], [icon('check'), 'Lista']];
-    return `<div class="cm-steps">${p.map((x, n) => `<span class="cm-step ${n < i ? 'done' : ''} ${n === i ? 'now' : ''}"><i>${x[0]}</i><small>${x[1]}</small></span>${n < 2 ? '<b class="cm-step-bar ' + (n < i ? 'done' : '') + '"></b>' : ''}`).join('')}</div>`;
+    return `<div class="cm-steps ${pasoFx ? 'cm-anim' : ''}">${p.map((x, n) => `<span class="cm-step ${n < i ? 'done' : ''} ${n === i ? 'now' : ''}"><i>${x[0]}</i><small>${x[1]}</small></span>${n < 2 ? '<b class="cm-step-bar ' + (n < i ? 'done' : '') + '"></b>' : ''}`).join('')}</div>`;
   }
+  let pasoFx = false;        /* el paso acaba de cambiar: se anima una vez */
+  let listaFx = null;        /* { id, visto }: animación de "¡Pedido terminado!" */
   function comandaHTML(k) {
     const e = ESTADOS[k.status];
     const notas = k.items.filter(i => i.note).length;
@@ -1882,9 +1890,19 @@ window.VPComandas = (() => {
       ${holdBtn('cm-go cm-go-prep', FIRE + ' Empezar a preparar', 'estado', [k.id, 'preparando'])}`;
     else if (k.status === 'preparando') acts = `
       ${holdBtn('cm-go cm-go-ok', icon('check') + ' Ya terminé de preparar', 'estado', [k.id, 'listo'])}`;
-    else if (k.status === 'listo') acts = `
-      <div class="cm-wait">${icon('bell')} Esperando al mesero</div>
+    else if (k.status === 'listo') {
+      const anim = !!(listaFx && listaFx.id === k.id && !listaFx.visto);
+      if (anim) listaFx.visto = true;
+      acts = `
+      <div class="cm-done ${anim ? 'cm-anim' : ''}">
+        <span class="cm-done-ico" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="23"/><path d="M15.5 27l7 7 14-15"/></svg></span>
+        <b>¡Pedido terminado!</b>
+        <small>Le avisamos al mesero de ${escapeHtml(k.table)}</small>
+      </div>
+      <div class="cm-wait">${icon('bell')} Esperando al mesero <span class="cm-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <button class="btn ghost block" onclick="closeModal()">Cerrar</button>
       <button class="cm-undo" onclick="VPComandas.estado('${k.id}','preparando')">Deshacer</button>`;
+    }
     return `
       <i class="fs-marker" hidden></i><i class="cm-open" data-id="${k.id}" hidden></i>
       <div class="sheet-header">
@@ -1899,7 +1917,7 @@ window.VPComandas = (() => {
         <span>${icon('clock')} ${ago(k.at)}</span>
         <span>Ronda ${k.round || 1}</span>
       </div>
-      ${pasosHTML(k.status)}
+      ${pasosHTML(k.status)}${(pasoFx = false, '')}
       ${notas ? `<div class="cm-notes-flag">${icx('note')} ${plural(notas, 'nota', 'notas')}</div>` : ''}
       <div class="cm-lines">${lineasHTML(k.items, (k.status === 'nuevo' || k.status === 'preparando') ? k.id : null)}</div>
       <div class="cm-sheet-acts">${acts}</div>`;
@@ -2025,10 +2043,11 @@ window.VPComandas = (() => {
     if (nuevo === 'preparando') { k.startedAt = k.startedAt || nowIso(); k.readyAt = null; }
     if (nuevo === 'listo') { k.readyAt = nowIso(); k.readyBy = meName(); k.startedAt = k.startedAt || k.at; }
     saveTickets(list);
-    if (nuevo === 'listo') {
-      closeModal();
-      toast('Comanda lista', { variant:'toast-success', icon:icon('check'), subtitle:k.table + ' · se le avisó al mesero' });
-    } else abrirComanda(id);
+    /* La hoja se queda abierta: se ve avanzar el paso y, al terminar,
+       "¡Pedido terminado!" y la pantalla de "Esperando al mesero". */
+    pasoFx = true;
+    if (nuevo === 'listo') { listaFx = { id, visto:false }; vibrate([30, 60, 30]); }
+    abrirComanda(id);
     render();
   }
 
