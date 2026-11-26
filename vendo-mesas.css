@@ -74,5 +74,5 @@
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.vp-floor-count.is-bill { background: #5B6B8C; color: #fff; }
-.sale-tools .vp-floor-quick.has-bill { border-color: #7C8BA8; }
+.vp-floor-count.is-bill { background: var(--accent-2, #E1594C); color: #fff; }   /* una mesa pidió la cuenta */
+.sale-tools .vp-floor-quick.has-bill { border-color: var(--border, #E1E5EE); background: var(--surface-alt, #EEF0F7); color: var(--ink-soft, #8A93AC); }
