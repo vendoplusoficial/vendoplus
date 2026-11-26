@@ -60,7 +60,6 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-on{ color:var(--sec-home-ink, #0F8F46); font-weight:700; }
 .cm-plus{ display:inline-flex; width:32px; height:32px; align-items:center; justify-content:center; border-radius:10px; background:var(--sec-home-soft, #E5FAEC); color:var(--sec-home-ink, #0F8F46); flex:none; }
 .cm-plus svg{ width:18px; height:18px; }
-.cm-new{ margin-top:16px; }
 .cm-empty{ margin-top:10px; }
 .cm-empty-art svg{ display:block; width:190px; max-width:70%; height:auto; margin:0 auto 6px; }
 .cm-empty{ display:flex; flex-direction:column; align-items:center; text-align:center; }
@@ -71,8 +70,6 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 /* Formulario y permisos */
 .cm-card{ margin-top:16px; padding:16px; border:1px solid var(--border); border-radius:18px; background:var(--surface, #fff); }
 .cm-card .field:last-child{ margin-bottom:0; }
-.cm-roles{ grid-template-columns:1fr 1fr !important; max-width:none !important; margin-bottom:6px; }
-.cm-roles .opt-emoji svg{ width:20px; height:20px; }
 .cm-perms-link{ margin-top:14px; }
 .cm-perms{ padding:6px 16px; }
 .cm-perms .toggle-row:last-child{ border-bottom:none; }
@@ -103,11 +100,6 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 /* Mesero: comandas listas para servir */
 .cm-ready-list{ display:flex; flex-direction:column; gap:8px; margin:0 0 14px; }
 .cm-ready-row{ display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border:1.5px solid var(--brand); border-radius:16px; background:var(--brand-soft); color:var(--ink); font:inherit; text-align:left; cursor:pointer; animation:cm-pulse 1.6s ease-in-out 3; }
-.cm-ready-ico{ display:inline-flex; width:36px; height:36px; flex:none; align-items:center; justify-content:center; border-radius:12px; background:var(--brand); color:#fff; }
-.cm-ready-ico svg{ width:19px; height:19px; }
-.cm-ready-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-.cm-ready-txt b{ font-size:14.5px; font-weight:800; }
-.cm-ready-txt small{ font-size:12.5px; color:var(--ink-soft); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 @keyframes cm-pulse{ 50%{ box-shadow:0 0 0 6px rgb(37 211 102 / 18%); } }
 @media (prefers-reduced-motion:reduce){ .cm-ready-row{ animation:none; } }
 
@@ -159,9 +151,6 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-hist-sub{ font-size:12.5px; color:var(--ink-soft); margin:2px 0 8px; }
 
 /* Cómo trabajan juntos (pantalla del Dueño) */
-.cm-how{ margin-top:18px; padding:16px 18px; border:1px solid var(--border); border-radius:18px; background:var(--surface, #fff); }
-.cm-how-t{ font-size:15px; font-weight:800; color:var(--ink); margin-bottom:8px; }
-.cm-how ol{ margin:0; padding-left:20px; display:flex; flex-direction:column; gap:5px; font-size:13.5px; color:var(--ink); line-height:1.4; }
 .cm-live{ display:flex; align-items:center; gap:8px; margin:12px 0 0; font-size:13px; font-weight:700; color:#8A6000; }
 .cm-live.on{ color:var(--sec-home-ink, #0F8F46); }
 .cm-live svg{ width:16px; height:16px; flex:none; }
@@ -209,21 +198,9 @@ body.cm-mesero .vp-empty-cta{ display:none !important; }
 .cm-go-bill svg{ width:20px; height:20px; }
 
 /* Mesero: cuadro de notificaciones de pedidos listos */
-.cm-notif{ margin:0 0 14px; padding:12px; border:1px solid var(--border); border-radius:18px; background:var(--surface, #fff); }
-.cm-notif.on{ border:1.5px solid var(--brand); background:var(--brand-soft); animation:cm-pulse 1.6s ease-in-out 3; }
-.cm-notif-h{ display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink); }
-.cm-notif-h svg{ width:18px; height:18px; color:var(--ink-soft); }
-.cm-notif.on .cm-notif-h svg{ color:var(--brand-ink, #0F8F46); }
-.cm-notif-n{ min-width:22px; height:22px; padding:0 6px; display:inline-grid; place-items:center; border-radius:999px; background:var(--brand); color:#fff; font-size:12px; font-weight:800; }
-.cm-notif-empty{ margin:6px 0 0; font-size:13px; color:var(--ink-soft); font-weight:600; }
 .cm-notif-row{ display:flex; align-items:center; gap:10px; width:100%; margin-top:8px; padding:10px; border:none; border-radius:14px; background:var(--surface, #fff); box-shadow:0 2px 8px rgb(20 32 62 / 7%); color:var(--ink); font:inherit; text-align:left; cursor:pointer; }
 .cm-notif-row:active{ transform:scale(.985); }
 .cm-notif-mesa{ flex:none; min-width:62px; padding:9px 8px; border-radius:11px; background:var(--brand); color:#fff; text-align:center; font-size:13.5px; font-weight:800; }
-.cm-notif-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-.cm-notif-txt b{ font-size:13.5px; font-weight:800; }
-.cm-notif-txt small{ font-size:12.5px; color:var(--ink-soft); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.cm-notif-go{ flex:none; display:inline-flex; align-items:center; gap:2px; font-size:13px; font-weight:800; color:var(--brand-ink, #0F8F46); }
-.cm-notif-go svg{ width:16px; height:16px; }
 
 /* Qué hacer: recoge → lleva */
 .cm-todo{ display:flex; align-items:center; justify-content:center; gap:10px; margin:0 0 12px; padding:14px; border-radius:16px; background:var(--surface-alt, #F1F3F7); }
@@ -359,7 +336,6 @@ html.cm-fija .cm-legend{ margin-bottom:0; }
 .cm-on-card.on{ border-color:var(--brand); background:var(--brand-soft); }
 .cm-on-card .acc-txt{ flex:1; min-width:0; }
 .cm-on-card .acc-ico svg{ width:18px; height:18px; }
-.cm-prem{ display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; background:var(--accent-soft); color:#8A6000; font-size:11px; font-weight:800; vertical-align:2px; }
 
 /* Cobro dividido: Mandar a cocina (blanco) | Cobrar (igual que siempre) */
 .p2-actions.cm-p2-split{ display:grid !important; grid-template-columns:1fr 1fr; gap:10px; }
