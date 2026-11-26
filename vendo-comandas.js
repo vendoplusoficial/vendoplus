@@ -66,7 +66,9 @@ window.VPComandas = (() => {
       if (!multiUser()) return null;
       const u = activeUser();
       if (!u || u.role === 'dueno') return null;
-      return AREAS[u.area] ? u.area : null;
+      /* Caja usa el punto de venta normal (Nueva venta, carrito y cobrar):
+         solo Mesero y Cocinero tienen pantalla propia. */
+      return (u.area === 'mesero' || u.area === 'cocina') ? u.area : null;
     } catch (e) { return null; }
   }
   const esMesero = () => myArea() === 'mesero';
