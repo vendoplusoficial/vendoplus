@@ -580,6 +580,12 @@ window.VPComandas = (() => {
       <div class="cm-ayuda-fila"><button type="button" class="cm-ayuda" onclick="VPComandas.ayuda()" aria-label="¿Cómo funcionan las comandas?">?</button></div>`;
   }
 
+  /* Pantalla vacía de cada área (mismo estilo que las demás secciones vacías) */
+  const VACIO = {
+    caja:   { t:'Aún no tienes cajeros',  d:'Agrégalos para que cobren y registren las ventas.' },
+    mesero: { t:'Aún no hay meseros',     d:'Agrégalos para tomar órdenes en las mesas de tus clientes.' },
+    cocina: { t:'Aún no hay cocineros',   d:'Agrégalos para que preparen tus órdenes.' }
+  };
   function areaHTML() {
     const a = AREAS[st.area];
     const list = gente(st.area);
@@ -606,9 +612,9 @@ window.VPComandas = (() => {
           </div>`).join('')}
       </div>` : `
       <div class="empty-state cm-empty">
-        <span class="cm-empty-art">${ART[st.area]}</span>
-        <div class="empty-title">Aún no hay ${a.who.toLowerCase()}</div>
-        <div class="empty-text">Toca <b>Agregar</b> para sumar a tu equipo en ${a.name}.</div>
+        <span class="cm-empty-art"><img src="img/vacio-${st.area}.webp?v=1" alt="" decoding="async" draggable="false"></span>
+        <div class="empty-title">${VACIO[st.area].t}</div>
+        <div class="empty-text">${VACIO[st.area].d}</div>
       </div>`}`;
   }
 
