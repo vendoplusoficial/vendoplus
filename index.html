@@ -5206,21 +5206,20 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
 /* PC (mouse): las categorías se acomodan en renglones, la barra no se corre de lado */
 </style>
 <style id="usuario-detalle-css">
-/* ===== Detalle de un usuario (Mi cuenta → Usuarios): sobrio, por secciones ===== */
-.usd-head{ align-items:center; }
-.usd-id{ display:flex; align-items:center; gap:12px; min-width:0; }
-.usd-ava{ width:46px; height:46px; border-radius:50%; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center;
-  background:var(--ink); color:#fff; font-size:17px; font-weight:700; letter-spacing:.2px; }
+/* ===== Detalle de un usuario (pantalla completa): sobrio, por secciones ===== */
+.usd-head{ display:flex; align-items:center; gap:14px; padding:4px 2px 2px; }
+.usd-ava{ width:52px; height:52px; border-radius:50%; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center;
+  background:var(--ink); color:#fff; font-size:19px; font-weight:700; letter-spacing:.2px; }
 .usd-ava img{ width:100%; height:100%; object-fit:cover; }
-.usd-ava svg{ width:22px; height:22px; }
+.usd-ava svg{ width:24px; height:24px; }
 .usd-id-t{ min-width:0; }
-.usd-id-t h2{ margin:0; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.usd-role{ display:block; margin-top:2px; font-size:13px; font-weight:500; color:var(--ink-soft); }
-.usd-sec{ margin:22px 2px 8px; font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); }
+.usd-id-t b{ display:block; font-size:19px; font-weight:700; color:var(--ink); line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.usd-role{ display:block; margin-top:2px; font-size:13.5px; font-weight:500; color:var(--ink-soft); }
+.usd-sec{ margin:24px 2px 8px; font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); }
+.usd-intro{ margin:2px 2px 14px; font-size:14px; line-height:1.5; color:var(--ink-soft); }
 .usd-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:2px 16px; }
 .usd-card .field{ margin:14px 0; }
 .usd-card .field-hint{ font-weight:500; font-size:12.5px; line-height:1.45; color:var(--ink-soft); }
-.usd-note{ margin:14px 0; font-size:14px; color:var(--ink-soft); }
 .usd-list{ box-shadow:none; border-radius:14px; }
 .usd-list .acc-row{ padding:12px 14px; gap:12px; }
 .usd-list .acc-ico{ width:34px; height:34px; border-radius:10px; background:var(--surface-alt); color:var(--ink-soft); }
@@ -5230,7 +5229,7 @@ input:autofill{ background-color:var(--surface, #fff) !important; }
 .usd-list .acc-label, .usd-perms .acc-label{ font-size:14.5px; font-weight:600; }
 .usd-perms .toggle-row{ padding:13px 0; gap:12px; }
 .usd-perms .toggle-row:last-child{ border-bottom:none; }
-.usd-del{ display:flex; align-items:center; justify-content:center; gap:7px; margin:20px auto 0; padding:8px 12px; border:none; background:none;
+.usd-del{ display:flex; align-items:center; justify-content:center; gap:7px; margin:22px auto 4px; padding:8px 12px; border:none; background:none;
   font-family:inherit; font-size:14px; font-weight:600; color:var(--accent-2); cursor:pointer; }
 .usd-del svg{ width:16px; height:16px; }
 </style>
@@ -15589,7 +15588,10 @@ function nuFullClose(){
 function nuCancelar(){ nuDraft = null; nuFullClose(); openUsersSheet(); }
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape' || !document.getElementById('nuFull') || document.querySelector('.uf-menu')) return;
-  if(nuPantalla === 'perms') openUserForm(true); else nuCancelar();
+  if(nuPantalla === 'perms') openUserForm(true);
+  else if(nuPantalla === 'usd-perms'){ const b = document.querySelector('#nuFull .cm-back'); if(b) b.click(); }
+  else if(nuPantalla === 'usd') usdCerrar();
+  else nuCancelar();
 });
 function openUserForm(seguir){
   if(!requireOwner('Solo el Dueño puede agregar usuarios')) return;
@@ -15767,7 +15769,7 @@ function userOptionsHTML(u){
   const esYo = !!me && me.id === u.id;
   const n = DB.getShifts().filter(s => s.userId === u.id).length;
   const row = (fn, ico, cls, label, sub) => `
-      <button class="acc-row" onclick="${fn}">
+      <button class="acc-row" onclick="usdIr(() => ${fn})">
         <span class="acc-ico ${cls}">${ico}</span>
         <span class="acc-txt"><span class="acc-label">${label}</span><span class="acc-sub">${sub}</span></span>
         <span class="acc-chev">${icon('chevronRight')}</span>
@@ -15784,89 +15786,117 @@ function userOptionsHTML(u){
   </div>`;
 }
 /* Encabezado del usuario: foto o iniciales, nombre y cargo */
-function userHeadHTML(u, sub, cerrar){
+function userHeadHTML(u, sub){
   const foto = userPhoto(u);
-  return `<div class="sheet-header usd-head">
-      <div class="usd-id">
-        <span class="usd-ava">${foto ? `<img src="${foto}" alt="">` : userInitials(u)}</span>
-        <div class="usd-id-t"><h2>${escapeHtml(u.name)}</h2><span class="usd-role">${sub}</span></div>
-      </div>
-      <button class="sheet-close" onclick="${cerrar}">${icon('close')}</button>
+  return `<div class="usd-head">
+      <span class="usd-ava">${foto ? `<img src="${foto}" alt="">` : userInitials(u)}</span>
+      <div class="usd-id-t"><b>${escapeHtml(u.name)}</b><span class="usd-role">${sub}</span></div>
     </div>`;
 }
 /* A dónde regresar al cerrar foto, NIP o turnos */
 function backToUser(id){ if(window.VPComandas && VPComandas.esSolo && VPComandas.esSolo()){ VPComandas.perfil(); return; } if(id && userById(id)) openUserDetail(id); else openUsersSheet(); }
 
+/* Detalle de un usuario: pantalla completa (como "Nuevo usuario").
+   Datos y Acceso a la vista; Permisos en su propia pantalla, que se abre
+   desde un renglón para que no empuje todo lo demás hacia abajo. */
+let usdDraft = null;   /* nombre y tipo mientras se ven los permisos */
+function usdIr(fn){ usdGuardarBorrador(); nuFullClose(); fn(); }
+function usdGuardarBorrador(){
+  const n = document.getElementById('udName'), r = document.getElementById('udRole');
+  if(n && usdDraft) usdDraft.name = n.value;
+  if(r && usdDraft) usdDraft.role = r.value;
+}
+function usdCerrar(){ usdDraft = null; userEditSnap = null; nuFullClose(); openUsersSheet(); }
 function openUserDetail(id){
   const u = userById(id);
   if(!u) return;
   const me = activeUser();
+  try{ closeModal(); }catch(e){}
   if(!isOwner()){
     /* Cada quien ve solo su propio usuario */
     if(!me || me.id !== u.id){ requireOwner('Solo el Dueño puede ver otros usuarios'); return; }
-    openModal(`
-      ${userHeadHTML(u, roleOf(u.role).name + ' · Este es tu usuario', 'openUsersSheet()')}
-      <div class="usd-sec">Acceso</div>
-      ${userOptionsHTML(u)}
-      <div class="sheet-actions">
-        <button class="btn primary block" onclick="openUsersSheet()">Volver</button>
-      </div>
-    `, { dismissible:true });
+    nuPantalla = 'usd';
+    nuFullPaint({
+      title: 'Mi usuario', sub: 'Foto, NIP y turnos',
+      back: 'usdCerrar()',
+      body: `${userHeadHTML(u, roleOf(u.role).name)}
+        <div class="usd-sec">Acceso</div>
+        ${userOptionsHTML(u)}`,
+      foot: `<button class="btn primary" onclick="usdCerrar()">Listo</button>`
+    });
     return;
   }
   const esDueno = u.role === 'dueno';
-  const perms = Object.assign(defaultPerms(u.role), u.perms || {});
   if(!userEditSnap || userEditSnap.id !== u.id) userEditSnap = userSnap(u);
+  if(!usdDraft || usdDraft.id !== u.id) usdDraft = { id:u.id, name:u.name, role:u.role };
+  const rol = esDueno ? 'dueno' : usdDraft.role;
+  const perms = Object.assign(defaultPerms(u.role), u.perms || {});
+  const activos = PERMS.filter(p => perms[p.id]).length;
+  nuPantalla = 'usd';
+  nuFullPaint({
+    title: 'Usuario', sub: 'Datos, acceso y permisos',
+    back: 'usdCerrar()',
+    body: `${userHeadHTML(u, roleOf(u.role).name)}
 
-  openModal(`
-    ${userHeadHTML(u, roleOf(u.role).name, 'openUsersSheet()')}
-
-    <div class="usd-sec">Datos</div>
-    <div class="usd-card">
-      <div class="field">
-        <label for="udName">Nombre</label>
-        <input id="udName" type="text" value="${escapeHtml(u.name)}">
+      <div class="usd-sec">Datos</div>
+      <div class="usd-card">
+        <div class="field">
+          <label for="udName">Nombre</label>
+          <input id="udName" type="text" value="${escapeHtml(usdDraft.name)}">
+        </div>
+        <div class="field">
+          <label for="udRole">Tipo de usuario</label>
+          <select id="udRole" ${esDueno ? 'disabled' : ''}>
+            ${esDueno ? '<option value="dueno">Dueño</option>' : `
+              <option value="empleado" ${rol === 'empleado' ? 'selected' : ''}>Empleado</option>
+              <option value="admin" ${rol === 'admin' ? 'selected' : ''}>Administrador</option>
+            `}
+          </select>
+          <div class="field-hint">${esDueno ? 'El Dueño no puede cambiar de tipo ni eliminarse.' : roleOf(rol).sub + ' Al cambiar el tipo, los permisos vuelven a los de ese rol.'}</div>
+        </div>
       </div>
-      <div class="field">
-        <label for="udRole">Tipo de usuario</label>
-        <select id="udRole" ${esDueno ? 'disabled' : ''}>
-          ${esDueno ? '<option value="dueno">Dueño</option>' : `
-            <option value="empleado" ${u.role === 'empleado' ? 'selected' : ''}>Empleado</option>
-            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrador</option>
-          `}
-        </select>
-        <div class="field-hint">${esDueno ? 'El Dueño no puede cambiar de tipo ni eliminarse.' : roleOf(u.role).sub + ' Al cambiar el tipo, los permisos vuelven a los de ese rol.'}</div>
+
+      <div class="usd-sec">Acceso</div>
+      ${userOptionsHTML(u)}
+
+      <div class="usd-sec">Permisos</div>
+      <div class="acc-list usd-list">
+        <button class="acc-row" onclick="${esDueno ? `toast('El Dueño siempre tiene todos los permisos')` : `usdPermisos('${u.id}')`}">
+          <span class="acc-ico">${icon('shield')}</span>
+          <span class="acc-txt"><span class="acc-label">Qué puede hacer</span><span class="acc-sub">${esDueno ? 'Todos los permisos' : activos + ' de ' + PERMS.length + ' permisos activados'}</span></span>
+          ${esDueno ? '' : `<span class="acc-chev">${icon('chevronRight')}</span>`}
+        </button>
       </div>
-    </div>
 
-    <div class="usd-sec">Acceso</div>
-    ${userOptionsHTML(u)}
-
-    <div class="usd-sec">Permisos</div>
-    ${esDueno ? `
-      <div class="usd-card"><p class="usd-note">El Dueño siempre tiene todos los permisos.</p></div>
-    ` : `<div class="usd-card usd-perms">${PERMS.map(p => `
-      <div class="toggle-row">
-        <span class="acc-txt">
-          <span class="acc-label">${p.label}</span>
-          <span class="acc-sub">${p.sub}</span>
-        </span>
-        <label class="switch">
-          <input type="checkbox" ${perms[p.id] ? 'checked' : ''} onchange="toggleUserPerm('${u.id}','${p.id}', this.checked)">
-          <span class="track"></span>
-        </label>
-      </div>
-    `).join('')}</div>`}
-
-    ${nipRecoveryNoteHTML(esDueno)}
-    ${!esDueno ? `
-      <button class="usd-del" onclick="confirmDeleteUser('${u.id}')">${icon('trash')} Eliminar usuario</button>` : ''}
-
-    <div class="sheet-actions">
-      <button class="btn ghost block" onclick="userEditSnap = null; openUsersSheet()">Volver</button>
-      <button class="btn primary block" onclick="saveUserDetail('${u.id}')">Guardar</button>
-    </div>
-  `, { dismissible:true });
+      ${nipRecoveryNoteHTML(esDueno)}
+      ${!esDueno ? `<button class="usd-del" onclick="usdIr(() => confirmDeleteUser('${u.id}'))">${icon('trash')} Eliminar usuario</button>` : ''}`,
+    foot: `<button class="btn ghost" onclick="usdCerrar()">Volver</button>
+           <button class="btn primary" onclick="saveUserDetail('${u.id}')">Guardar</button>`
+  });
+}
+/* Permisos de un usuario (pantalla aparte, se guardan al tocar cada uno) */
+function usdPermisos(id){
+  const u = userById(id); if(!u || u.role === 'dueno') return;
+  usdGuardarBorrador();
+  const perms = Object.assign(defaultPerms(u.role), u.perms || {});
+  nuPantalla = 'usd-perms';
+  nuFullPaint({
+    title: 'Permisos', sub: escapeHtml(u.name) + ' · ' + roleOf(u.role).name,
+    back: `openUserDetail('${u.id}')`,
+    body: `<p class="usd-intro">Elige qué puede hacer ${escapeHtml(u.name)}. Cada cambio se guarda al momento.</p>
+      <div class="usd-card usd-perms">${PERMS.map(p => `
+        <div class="toggle-row">
+          <span class="acc-txt">
+            <span class="acc-label">${p.label}</span>
+            <span class="acc-sub">${p.sub}</span>
+          </span>
+          <label class="switch">
+            <input type="checkbox" ${perms[p.id] ? 'checked' : ''} onchange="toggleUserPerm('${u.id}','${p.id}', this.checked)">
+            <span class="track"></span>
+          </label>
+        </div>`).join('')}</div>`,
+    foot: `<button class="btn primary" onclick="openUserDetail('${u.id}')">Listo</button>`
+  });
 }
 
 function toggleUserPerm(id, perm, value){
@@ -15886,6 +15916,7 @@ function saveUserDetail(id){
   if(!u) return;
   const name = document.getElementById('udName').value.trim();
   const roleSel = document.getElementById('udRole');
+  if(name.length >= 2){ usdDraft = null; nuFullClose(); }
   if(name.length < 2){ toast('Escribe el nombre'); return; }
   u.name = name;
   if(u.role !== 'dueno' && roleSel && roleSel.value !== u.role){
