@@ -618,32 +618,47 @@ window.VPComandas = (() => {
       </div>`}`;
   }
 
-  function addHTML() {
+  /* =========================================================
+     PANTALLA PROPIA para agregar personas a un área
+     (Agregar · Nuevo usuario · Permisos). Se abre encima de todo,
+     con encabezado y barra de botones fija abajo, como en un POS.
+  ========================================================= */
+  const FULL = { add:1, form:1, perms:1 };
+  const iniciales = u => (typeof userInitials === 'function' ? userInitials(u) : String(u.name || '?').slice(0, 2).toUpperCase());
+  function addParts() {
     const a = AREAS[st.area];
-    const list = disponibles(st.area);
+    const todos = disponibles(st.area);
+    const q = (st.qAdd || '').trim().toLowerCase();
+    const list = q ? todos.filter(u => String(u.name).toLowerCase().includes(q)) : todos;
     const premium = usersLimitReached();
-    return `
-      <button class="cm-back" onclick="VPComandas.area('${st.area}')">${icon('chevronLeft')} ${a.name}</button>
-      <h1 class="page-title">Agregar a ${a.name}</h1>
-      <p class="page-sub">Toca a la persona que quieres agregar</p>
-      <div class="section-title">Usuarios disponibles</div>
-      <div class="acc-list">
-        ${list.map(u => `
-          <button type="button" class="acc-row" onclick="VPComandas.asignar('${u.id}')">
-            ${avatar(u)}
-            <span class="acc-txt">
-              <span class="acc-label">${escapeHtml(u.name)}</span>
-              <span class="acc-sub">${roleOf(u.role).name}${AREAS[u.area] ? ' · Ahora en ' + AREAS[u.area].name : ''}</span>
-            </span>
-            <span class="cm-plus">${icon('plus')}</span>
-          </button>`).join('')}
-      </div>
-      <button class="btn block ud-add ${premium ? 'ud-premium' : ''} cm-new" onclick="VPComandas.nuevo()">
-        ${icon('plus')} ${premium ? 'Crear usuario nuevo · Contrata Premium' : 'Crear usuario nuevo'}
-      </button>`;
+    return {
+      back: `VPComandas.area('${st.area}')`,
+      title: 'Agregar a ' + a.name,
+      sub: 'Crea uno nuevo o elige de tu equipo',
+      body: `
+        <div class="cmf-card">
+          <button type="button" class="cmf-row cmf-new" onclick="VPComandas.nuevo()">
+            <span class="cmf-av cmf-av-new">${icon('plus')}</span>
+            <span class="cmf-row-t"><b>Crear usuario nuevo</b><small>${premium ? 'Disponible en Premium' : 'Nombre, NIP' + (st.area === 'caja' ? ', cargo y permisos' : '')}</small></span>
+            ${premium ? '<span class="cmf-tag">Premium</span>' : `<span class="cmf-chev">${icon('chevronRight')}</span>`}
+          </button>
+        </div>
+        <div class="cmf-sec">
+          <span>Usuarios disponibles</span><em>${todos.length}</em>
+        </div>
+        ${todos.length > 6 ? `<label class="cmf-search">${icon('search')}<input type="search" placeholder="Buscar por nombre" value="${escapeHtml(st.qAdd || '')}" oninput="VPComandas.buscarAdd(this.value)" autocomplete="off"></label>` : ''}
+        ${list.length ? `<div class="cmf-card cmf-list">
+          ${list.map(u => `
+            <div class="cmf-row">
+              <span class="cmf-av">${userPhoto(u) ? `<img src="${userPhoto(u)}" alt="">` : escapeHtml(iniciales(u))}</span>
+              <span class="cmf-row-t"><b>${escapeHtml(u.name)}</b><small>${roleOf(u.role).name}${AREAS[u.area] ? ' · ' + AREAS[u.area].name : ' · Punto de venta'}</small></span>
+              <button type="button" class="cmf-add" onclick="VPComandas.asignar('${u.id}')">Agregar</button>
+            </div>`).join('')}
+        </div>` : `<div class="cmf-empty">${todos.length ? 'Nadie coincide con tu búsqueda.' : 'Todavía no tienes otros usuarios. Crea uno nuevo arriba.'}</div>`}`,
+      foot: ''
+    };
   }
-
-  function formHTML() {
+  function formParts() {
     const f = st.form;
     const a = AREAS[st.area];
     const u = f.editId ? userById(f.editId) : null;
@@ -651,69 +666,111 @@ window.VPComandas = (() => {
     const pideNipDueno = !f.editId && owner && !owner.pin;
     const roles = ['empleado', 'admin'].map(r => ({ v:r, t:roleOf(r).name, s:roleOf(r).sub }));
     const conCargo = st.area === 'caja';   /* mesero y cocinero no llevan cargo ni permisos */
-    return `
-      <button class="cm-back" onclick="VPComandas.area('${st.area}')" aria-label="Regresar a ${a.name}">${icon('chevronLeft')} ${a.name}</button>
-      <h1 class="page-title">${u ? 'Editar usuario' : 'Nuevo ' + a.one}</h1>
-      <p class="page-sub">${u ? escapeHtml(u.name) + ' · ' + a.name : 'Se agrega directo a ' + a.name}</p>
-      <div class="uf cm-uf">
-        <div>
-          <div class="uf-sec-t">Nombre</div>
-          <div class="uf-card"><input id="cmName" class="uf-in" type="text" maxlength="40" placeholder="Luis Pérez" autocomplete="off" value="${escapeHtml(f.name)}" oninput="VPComandas.campo('name', this.value)"></div>
-        </div>
-        ${conCargo ? `<div>
-          <div class="uf-sec-t">Cargo</div>
-          ${ufSelHTML('cmRole', 'shield', 'blue', 'Qué puede hacer', roles, f.role, 'VPComandas.cargo')}
-        </div>` : ''}
-        <div>
-          <div class="uf-sec-t">NIP de 4 dígitos${u ? '' : ' · opcional'}</div>
-          <div class="uf-card"><input id="cmPin" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.pin)}"
-               oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('pin', this.value)" aria-label="NIP"></div>
-          <div class="uf-hint">${u ? (u.pin ? 'Déjalo vacío para no cambiarlo.' : 'Aún no tiene NIP: entra sin escribir nada.') : 'Con NIP, solo esta persona puede entrar a su cuenta.'}</div>
-        </div>
-        ${pideNipDueno ? `
-        <div>
-          <div class="uf-sec-t">Tu NIP de Dueño</div>
-          <div class="uf-card"><input id="cmOwnerPin" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.ownerPin)}"
-               oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('ownerPin', this.value)" aria-label="Tu NIP de Dueño"></div>
-          <div class="uf-hint">Al tener equipo, tú también entras con NIP para proteger tu cuenta de Dueño.</div>
-        </div>` : ''}
-        ${conCargo ? `<div>
-          <div class="uf-sec-t">Permisos</div>
-          ${ufPermsRowHTML(f.perms, 'VPComandas.permisos()')}
-        </div>` : ''}
-      </div>
-      <div class="cm-actions">
-        <button class="btn ghost block" onclick="VPComandas.area('${st.area}')">Cancelar</button>
-        <button class="btn primary block" onclick="VPComandas.guardarUsuario()">${u ? 'Guardar' : 'Agregar'}</button>
-      </div>`;
+    return {
+      back: u ? `VPComandas.area('${st.area}')` : `VPComandas.volverAdd()`,
+      title: u ? 'Editar usuario' : 'Nuevo ' + a.one,
+      sub: u ? escapeHtml(u.name) + ' · ' + a.name : 'Se agrega a ' + a.name,
+      body: `
+        <div class="uf cm-uf">
+          <div class="uf-f">
+            <label class="uf-l" for="cmName">Nombre completo</label>
+            <input id="cmName" class="uf-box" type="text" maxlength="40" placeholder="Ej. Luis Pérez" autocomplete="off" value="${escapeHtml(f.name)}" oninput="VPComandas.campo('name', this.value)">
+          </div>
+          ${conCargo ? `<div class="uf-f">
+            <span class="uf-l">Cargo</span>
+            ${ufSelHTML('cmRole', '', '', 'Cargo', roles, f.role, 'VPComandas.cargo')}
+          </div>` : ''}
+          <div class="uf-f">
+            <label class="uf-l" for="cmPin">NIP de 4 dígitos${u ? '' : ' <span>(opcional)</span>'}</label>
+            <input id="cmPin" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.pin)}"
+                   oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('pin', this.value)">
+            <div class="uf-hint">${u ? (u.pin ? 'Déjalo vacío para no cambiarlo.' : 'Aún no tiene NIP: entra sin escribir nada.') : 'Con NIP, solo esta persona puede entrar a su cuenta.'}</div>
+          </div>
+          ${pideNipDueno ? `<div class="uf-f">
+            <label class="uf-l" for="cmOwnerPin">Tu NIP de Dueño</label>
+            <input id="cmOwnerPin" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.ownerPin)}"
+                   oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('ownerPin', this.value)">
+            <div class="uf-hint">Al tener equipo, tú también entras con NIP para proteger tu cuenta de Dueño.</div>
+          </div>` : ''}
+          ${conCargo ? `<div class="uf-f">
+            <span class="uf-l">Permisos</span>
+            ${ufPermsRowHTML(f.perms, 'VPComandas.permisos()')}
+          </div>` : ''}
+        </div>`,
+      foot: `<button class="btn ghost" onclick="${u ? `VPComandas.area('${st.area}')` : 'VPComandas.volverAdd()'}">Cancelar</button>
+             <button class="btn primary" onclick="VPComandas.guardarUsuario()">${u ? 'Guardar cambios' : 'Agregar a ' + a.name}</button>`
+    };
   }
-
-  function permsHTML() {
+  function permsParts() {
     const f = st.form;
     const d = st.permsDraft;
-    return `
-      <button class="cm-back" onclick="VPComandas.volverForm()">${icon('chevronLeft')} Volver</button>
-      <h1 class="page-title">Permisos</h1>
-      <p class="page-sub">${f.name.trim() ? escapeHtml(f.name.trim()) + ' · ' : ''}${roleOf(f.role).name}. Activa o desactiva lo que puede hacer</p>
-      <div class="cm-card cm-perms">
-        ${PERMS.map(p => `
-          <div class="toggle-row">
-            <span class="acc-ico ${p.id === 'gestionarProductos' ? 'green' : (p.id === 'verGanancias' ? 'violet' : 'blue')}">${icon(p.icon || 'receipt')}</span>
-            <span class="acc-txt">
-              <span class="acc-label">${p.label}</span>
-              <span class="acc-sub">${p.sub}</span>
-            </span>
-            <label class="switch">
-              <input type="checkbox" ${d[p.id] ? 'checked' : ''} onchange="VPComandas.perm('${p.id}', this.checked)">
-              <span class="track"></span>
-            </label>
-          </div>`).join('')}
-      </div>
-      <div class="cm-actions">
-        <button class="btn ghost block" onclick="VPComandas.volverForm()">Cancelar</button>
-        <button class="btn primary block" onclick="VPComandas.guardarPermisos()">Guardar</button>
-      </div>`;
+    const on = PERMS.filter(p => d[p.id]).length;
+    return {
+      back: 'VPComandas.volverForm()',
+      title: 'Permisos',
+      sub: (f.name.trim() ? escapeHtml(f.name.trim()) + ' · ' : '') + roleOf(f.role).name,
+      body: `
+        <div class="cmf-sec"><span>Lo que puede hacer</span><em id="cmfPermN">${on} de ${PERMS.length}</em></div>
+        <div class="cmf-card cmf-list">
+          ${PERMS.map(p => `
+            <label class="cmf-row cmf-perm">
+              <span class="cmf-row-t"><b>${p.label}</b><small>${p.sub}</small></span>
+              <span class="switch"><input type="checkbox" ${d[p.id] ? 'checked' : ''} onchange="VPComandas.perm('${p.id}', this.checked)"><span class="track"></span></span>
+            </label>`).join('')}
+        </div>`,
+      foot: `<button class="btn ghost" onclick="VPComandas.volverForm()">Cancelar</button>
+             <button class="btn primary" onclick="VPComandas.guardarPermisos()">Guardar permisos</button>`
+    };
   }
+  function pintarFull() {
+    if (!FULL[st.screen] || !AREAS[st.area]) { cerrarFull(); return; }
+    if ((st.screen === 'form' || st.screen === 'perms') && !st.form) { cerrarFull(); return; }
+    if (st.screen === 'perms' && !st.permsDraft) { cerrarFull(); return; }
+    const parts = st.screen === 'add' ? addParts() : st.screen === 'form' ? formParts() : permsParts();
+    let el = document.getElementById('cmFull');
+    const nueva = !el;
+    if (nueva) {
+      el = document.createElement('div');
+      el.id = 'cmFull'; el.className = 'cmf';
+      el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+      document.body.appendChild(el);
+      document.body.classList.add('cmf-abierta');
+    }
+    const mismo = el.dataset.screen === st.screen;
+    const sc = mismo ? (el.querySelector('.cmf-scroll') || {}).scrollTop || 0 : 0;
+    el.dataset.screen = st.screen;
+    el.setAttribute('aria-label', parts.title);
+    el.innerHTML = `
+      <header class="cmf-top"><div class="cmf-top-in">
+        <button type="button" class="cm-back" onclick="${parts.back}" aria-label="Regresar">${icon('chevronLeft')}</button>
+        <div class="cmf-top-t"><h1>${parts.title}</h1><p>${parts.sub}</p></div>
+      </div></header>
+      <div class="cmf-scroll"><div class="cmf-in">${parts.body}</div></div>
+      ${parts.foot ? `<footer class="cmf-foot"><div class="cmf-foot-in">${parts.foot}</div></footer>` : ''}`;
+    const scr = el.querySelector('.cmf-scroll'); if (scr && sc) scr.scrollTop = sc;
+    if (nueva) requestAnimationFrame(() => el.classList.add('on')); else el.classList.add('on');
+  }
+  function cerrarFull() {
+    const el = document.getElementById('cmFull'); if (!el) return;
+    el.remove();
+    document.body.classList.remove('cmf-abierta');
+    if (typeof ufMenuCerrar === 'function') ufMenuCerrar();
+  }
+  function buscarAdd(v) {
+    st.qAdd = v;
+    const el = document.getElementById('cmFull'); if (!el) return;
+    const inp = el.querySelector('.cmf-search input'); const pos = inp ? inp.selectionStart : null;
+    pintarFull();
+    const n = el.querySelector('.cmf-search input'); if (n) { n.focus(); if (pos != null) try { n.setSelectionRange(pos, pos); } catch (e) {} }
+  }
+  function volverAdd() {
+    st.form = null; st.permsDraft = null;
+    if (disponibles(st.area).length) show('add'); else show('area');
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || !document.getElementById('cmFull') || document.querySelector('.uf-menu')) return;
+    if (st.screen === 'perms') volverForm(); else if (st.screen === 'form' && !st.form.editId) volverAdd(); else area(st.area);
+  });
 
   /* Con las comandas apagadas no se entra a las áreas ni se tocan usuarios */
   function apagadas() {
@@ -730,6 +787,7 @@ window.VPComandas = (() => {
   function agregar() {
     if (apagadas()) return;
     if (!requireOwner('Solo el Dueño puede agregar personas')) return;
+    st.qAdd = '';
     if (disponibles(st.area).length) show('add');
     else nuevo();
   }
@@ -753,15 +811,19 @@ window.VPComandas = (() => {
     st.form.role = role;
     if (!st.form.permsTocados) st.form.perms = defaultPerms(role);
     /* Sin volver a dibujar la pantalla: solo se actualiza el contador de permisos */
-    const fila = document.querySelector('#view .cm-uf [onclick="VPComandas.permisos()"] small');
-    if (fila) fila.textContent = PERMS.filter(p => st.form.perms[p.id]).length + ' de ' + PERMS.length + ' activados';
+    const fila = document.querySelector('#cmFull .cm-uf [onclick="VPComandas.permisos()"] b');
+    if (fila) fila.textContent = PERMS.filter(p => st.form.perms[p.id]).length + ' de ' + PERMS.length + ' permisos activados';
   }
   function permisos() {
     if (!st.form) return;
     st.permsDraft = Object.assign({}, st.form.perms);
     show('perms');
   }
-  function perm(id, v) { if (st.permsDraft) st.permsDraft[id] = !!v; }
+  function perm(id, v) {
+    if (!st.permsDraft) return;
+    st.permsDraft[id] = !!v;
+    const n = document.getElementById('cmfPermN'); if (n) n.textContent = PERMS.filter(p => st.permsDraft[p.id]).length + ' de ' + PERMS.length;
+  }
   function guardarPermisos() {
     if (!st.form || !st.permsDraft) return;
     st.form.perms = st.permsDraft;
@@ -2032,11 +2094,10 @@ window.VPComandas = (() => {
     if (area === 'caja') return cajaHTML();
     if (!puedeAdministrar()) return '';
     if (!activas()) { st.screen = 'home'; st.area = null; st.form = null; st.permsDraft = null; }
-    if (st.screen === 'area' && AREAS[st.area]) return areaHTML();
-    if (st.screen === 'add' && AREAS[st.area]) return addHTML();
-    if (st.screen === 'form' && st.form && AREAS[st.area]) return formHTML();
-    if (st.screen === 'perms' && st.form && st.permsDraft && AREAS[st.area]) return permsHTML();
+    if (st.screen === 'area' && AREAS[st.area]) { queueMicrotask(cerrarFull); return areaHTML(); }
+    if (FULL[st.screen] && AREAS[st.area]) { queueMicrotask(pintarFull); return areaHTML(); }
     st.screen = 'home';
+    queueMicrotask(cerrarFull);
     return homeHTML();
   }
 
@@ -2301,7 +2362,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    portada, portadaHTML, ayuda, cerrarAyuda, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    portada, portadaHTML, ayuda, cerrarAyuda, buscarAdd, volverAdd, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();

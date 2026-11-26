@@ -4617,8 +4617,8 @@ body{ overflow-x:clip; overscroll-behavior-x:none; }
 .app{ overflow-x:clip; }
 
 /* ===== Usuarios: botón azul oscuro y pantallas de creado / actualizado ===== */
-.btn.ud-add{ background:var(--vp-navy,#16213E); color:#fff; border:0; border-radius:999px; box-shadow:0 8px 18px rgba(22,33,62,.22); }
-.btn.ud-add:active{ background:#0E1730; }
+.btn.ud-add{ background:var(--vp-green,#16C15B); color:#fff; border:0; border-radius:12px; box-shadow:none; }
+.btn.ud-add:active{ background:#12A84F; }
 .ud-done{ gap:12px; }
 .ud-done h2{ font-size:25px; line-height:1.2; max-width:320px; color:var(--vp-navy,#16213E); }
 .ud-who{ display:flex; flex-direction:column; align-items:center; gap:4px; margin-top:6px; }
@@ -5464,7 +5464,7 @@ div.stf-row{ cursor:default; }
 </style>
 <link rel="stylesheet" href="vendo-mesas.css?v=10">
 <script src="vendo-mesas.js?v=11"></script>
-<link rel="stylesheet" href="vendo-comandas.css?v=39">
+<link rel="stylesheet" href="vendo-comandas.css?v=40">
 <style>
 .vp-err-card{ max-width:420px; margin:40px auto; padding:22px 20px; border:1px solid var(--border,#E8EBF2); border-radius:18px; background:#fff; display:flex; flex-direction:column; gap:10px; text-align:center; }
 .vp-err-card b{ font-size:17px; color:var(--ink,#16213E); }
@@ -5474,7 +5474,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=44"></script>
+<script src="vendo-comandas.js?v=46"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -15462,28 +15462,28 @@ function openUserForm(seguir){
     <h3 class="sheet-title">Nuevo usuario</h3>
     <p class="sheet-text">Esta persona entrará a ${APP_NAME} con su propio NIP.</p>
     <div class="uf">
-      <div>
-        <div class="uf-sec-t">Nombre</div>
-        <div class="uf-card"><input id="nuName" class="uf-in" type="text" maxlength="40" placeholder="Luis Pérez" autocomplete="off" value="${escapeHtml(d.name)}" oninput="nuDraft.name=this.value"></div>
+      <div class="uf-f">
+        <label class="uf-l" for="nuName">Nombre completo</label>
+        <input id="nuName" class="uf-box" type="text" maxlength="40" placeholder="Ej. Luis Pérez" autocomplete="off" value="${escapeHtml(d.name)}" oninput="nuDraft.name=this.value">
       </div>
-      ${conAreas ? `<div>
-        <div class="uf-sec-t">Área</div>
-        ${ufSelHTML('nuArea', 'comandas', 'green', 'Dónde trabaja', UF_AREAS(), d.area, 'nuSetArea')}
+      ${conAreas ? `<div class="uf-f">
+        <span class="uf-l">Área</span>
+        ${ufSelHTML('nuArea', '', '', 'Área', UF_AREAS(), d.area, 'nuSetArea')}
       </div>` : ''}
-      <div id="nuCargoBox" ${sinCargo ? 'hidden' : ''}>
-        <div class="uf-sec-t">Cargo</div>
-        ${ufSelHTML('nuRole', 'shield', 'blue', 'Qué puede hacer', UF_ROLES(), d.role, 'nuSetRole')}
+      <div class="uf-f" id="nuCargoBox" ${sinCargo ? 'hidden' : ''}>
+        <span class="uf-l">Cargo</span>
+        ${ufSelHTML('nuRole', '', '', 'Cargo', UF_ROLES(), d.role, 'nuSetRole')}
       </div>
-      <div>
-        <div class="uf-sec-t">NIP de 4 dígitos</div>
-        <div class="uf-card">
-          <input id="nuPin1" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin1)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin1=this.value" aria-label="NIP">
-          <input id="nuPin2" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin2)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin2=this.value" aria-label="Repite el NIP">
+      <div class="uf-f">
+        <span class="uf-l">NIP de 4 dígitos</span>
+        <div class="uf-pins">
+          <input id="nuPin1" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin1)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin1=this.value" aria-label="NIP">
+          <input id="nuPin2" class="uf-box pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(d.pin2)}" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); nuDraft.pin2=this.value" aria-label="Repite el NIP">
         </div>
         <div class="uf-hint">Escríbelo dos veces. Con él entra a su cuenta.</div>
       </div>
-      <div id="nuPermsBox" ${sinCargo ? 'hidden' : ''}>
-        <div class="uf-sec-t">Permisos</div>
+      <div class="uf-f" id="nuPermsBox" ${sinCargo ? 'hidden' : ''}>
+        <span class="uf-l">Permisos</span>
         ${ufPermsRowHTML(d.perms, 'nuAbrirPermisos()')}
       </div>
     </div>
@@ -15501,17 +15501,18 @@ function nuSetArea(v){
   const sin = v === 'mesero' || v === 'cocina';
   if(sin){ nuDraft.role = 'empleado'; nuDraft.perms = defaultPerms('empleado'); nuDraft.permsTocados = false; }
   ['nuCargoBox', 'nuPermsBox'].forEach(id => { const el = document.getElementById(id); if(el) el.hidden = sin; });
-  if(sin){ const se = document.querySelector('#nuRole select'); if(se){ se.value = 'empleado'; ufNativo('nuRole', se); } }
+  if(sin){ const b = document.getElementById('nuRole'); if(b && b.dataset.v !== 'empleado'){ b.dataset.v = 'empleado'; const t = b.querySelector('[data-uf-val]'); if(t) t.textContent = roleOf('empleado').name; const sb = b.querySelector('[data-uf-sub]'); if(sb) sb.textContent = roleOf('empleado').sub; } }
 }
 function nuSetRole(v){
   if(!nuDraft) return;
   nuDraft.role = v === 'admin' ? 'admin' : 'empleado';
   if(!nuDraft.permsTocados) nuDraft.perms = defaultPerms(nuDraft.role);
-  const fila = document.querySelector('#modal-layer [onclick="nuAbrirPermisos()"] small');
-  if(fila){ const on = PERMS.filter(p => nuDraft.perms[p.id]).length; fila.textContent = on + ' de ' + PERMS.length + ' activados'; }
+  const fila = document.querySelector('#modal-layer [onclick="nuAbrirPermisos()"] b');
+  if(fila){ const on = PERMS.filter(p => nuDraft.perms[p.id]).length; fila.textContent = on + ' de ' + PERMS.length + ' permisos activados'; }
 }
 function nuAbrirPermisos(){
   if(!nuDraft) return;
+  if(typeof ufMenuCerrar === 'function') ufMenuCerrar();
   const d = nuDraft;
   openModal(`
     <div class="sheet-header"><div class="sheet-header-left"><button class="sheet-back" onclick="openUserForm(true)" aria-label="Volver">${icon('chevronLeft')}</button><h2>Permisos</h2></div></div>
@@ -29920,77 +29921,140 @@ function cartSanitize(){
 
 <!-- ===== Formulario de usuario (Nuevo usuario y Nuevo cajero/mesero/cocinero) ===== -->
 <style id="uf-css">
-.uf{ display:flex; flex-direction:column; gap:14px; }
-.uf-sec-t{ font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft,#6B7592); margin:0 0 7px 4px; }
-.uf-card{ border:1px solid var(--border,#E6E9F2); border-radius:16px; background:var(--surface,#fff); overflow:hidden; }
-.uf-in{ display:block; width:100%; box-sizing:border-box; height:52px; padding:0 16px; border:0; background:transparent; font:600 16px var(--sans, inherit); color:var(--ink,#16213E); outline:none; }
-.uf-in::placeholder{ color:#A3AAB8; font-weight:500; }
-.uf-in.pin{ letter-spacing:10px; text-align:center; font-size:20px; font-weight:800; }
-.uf-in + .uf-in{ border-top:1px solid var(--border,#E6E9F2); }
-.uf-card:focus-within{ border-color:#BFC6D4; box-shadow:0 0 0 3px rgba(22,33,62,.05); }
-.uf-sel-btn{ display:flex; align-items:center; gap:12px; width:100%; box-sizing:border-box; min-height:56px; padding:10px 14px 10px 12px; border:0; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.uf-ico{ flex:none; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:#EEF1F6; color:var(--ink,#16213E); }
-.uf-ico svg{ width:19px; height:19px; }
-.uf-ico.green{ background:#EAF8F0; color:#0B6F37; } .uf-ico.blue{ background:#EAF1FF; color:#2459D6; } .uf-ico.gold{ background:#FFF4DD; color:#9A6400; } .uf-ico.violet{ background:#F0EFFF; color:#5146F0; }
-.uf-sel-t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
-.uf-sel-t b{ font-size:15.5px; font-weight:800; color:var(--ink,#16213E); }
-.uf-sel-t small{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.35; }
-.uf-chev{ flex:none; color:#9AA2B4; transition:transform .2s ease; display:flex; }
-.uf-chev svg{ width:18px; height:18px; }
-.uf-sel{ position:relative; }
-.uf-chev-down{ transform:rotate(90deg); }
-.uf-sel-sub{ margin-top:2px; }
-.uf-sel-sub:empty{ display:none; }
-/* La lista nativa va encima de todo el renglón, invisible: al tocar se abre la del aparato */
-.uf-native{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; border:0; margin:0; font-size:16px; -webkit-appearance:none; appearance:none; }
-.uf-sel:focus-within{ border-color:#BFC6D4; box-shadow:0 0 0 3px rgba(22,33,62,.05); }
-.uf-ops{ display:none; border-top:1px solid var(--border,#E6E9F2); padding:6px; }
-.uf-sel.open .uf-ops{ display:block; }
-.uf-op{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 10px; border:0; border-radius:12px; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.uf-op:hover{ background:#F6F7FA; }
-.uf-op .uf-sel-t b{ font-size:14.5px; }
-.uf-radio{ flex:none; width:20px; height:20px; border-radius:50%; border:2px solid #C9CFDB; box-sizing:border-box; }
-.uf-op.on{ background:#F1FBF5; }
-.uf-op.on .uf-radio{ border:6px solid var(--vp-green,#16C15B); }
-.uf-hint{ font-size:12.5px; font-weight:600; color:var(--ink-soft,#6B7592); margin:7px 4px 0; line-height:1.4; }
-.uf-acts{ display:flex; gap:10px; margin-top:6px; }
-.uf-acts .btn{ flex:1; }
+/* Formularios de usuario: estilo sobrio, como un POS profesional */
+.uf{ display:flex; flex-direction:column; gap:18px; }
+.uf-f{ display:flex; flex-direction:column; gap:7px; }
+.uf-l{ font-size:13px; font-weight:700; color:#3D4659; letter-spacing:.1px; }
+.uf-l span{ font-weight:500; color:#8A93A6; }
+.uf-box{ display:block; width:100%; box-sizing:border-box; height:48px; padding:0 14px; border:1px solid #D9DEE7; border-radius:10px; background:#fff;
+  font:500 16px var(--sans, inherit); color:var(--ink,#16213E); outline:none; transition:border-color .15s ease, box-shadow .15s ease; }
+.uf-box::placeholder{ color:#A3AAB8; }
+.uf-box:focus{ border-color:#16213E; box-shadow:0 0 0 3px rgba(22,33,62,.08); }
+.uf-box.pin{ letter-spacing:10px; text-align:center; font-size:20px; font-weight:700; }
+.uf-pins{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.uf-hint{ font-size:12.5px; font-weight:500; color:#8A93A6; line-height:1.4; }
+/* Selector hecho a mano (se abre un menú flotante encima) */
+.uf-pick{ display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; min-height:48px; padding:8px 12px 8px 14px; border:1px solid #D9DEE7; border-radius:10px;
+  background:#fff; color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color .15s ease, box-shadow .15s ease; }
+.uf-pick:hover{ border-color:#BCC3D0; }
+.uf-pick[aria-expanded="true"]{ border-color:#16213E; box-shadow:0 0 0 3px rgba(22,33,62,.08); }
+.uf-pick-t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.uf-pick-t b{ font-size:15.5px; font-weight:600; color:var(--ink,#16213E); }
+.uf-pick-t small{ font-size:12.5px; font-weight:500; color:#8A93A6; line-height:1.35; }
+.uf-pick-t small:empty{ display:none; }
+.uf-caret{ flex:none; display:flex; color:#8A93A6; transition:transform .18s ease; }
+.uf-caret svg{ width:17px; height:17px; transform:rotate(90deg); }
+.uf-pick[aria-expanded="true"] .uf-caret{ transform:rotate(180deg); }
+.uf-menu{ position:fixed; z-index:9500; box-sizing:border-box; padding:6px; border:1px solid #E3E7EE; border-radius:12px; background:#fff;
+  box-shadow:0 14px 36px rgba(16,24,40,.16), 0 2px 6px rgba(16,24,40,.06); animation:ufMenuIn .14s ease-out both; max-height:min(340px, 60vh); overflow-y:auto; }
+@keyframes ufMenuIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
+.uf-menu.arriba{ animation-name:ufMenuUp; }
+@keyframes ufMenuUp{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+.uf-opt{ display:flex; align-items:flex-start; gap:10px; width:100%; padding:10px 10px; border:0; border-radius:8px; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.uf-opt:hover, .uf-opt:focus-visible{ background:#F3F5F8; outline:none; }
+.uf-opt-t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.uf-opt-t b{ font-size:14.5px; font-weight:600; color:var(--ink,#16213E); }
+.uf-opt-t small{ font-size:12.5px; font-weight:500; color:#8A93A6; line-height:1.35; }
+.uf-opt-ok{ flex:none; width:18px; height:18px; margin-top:1px; color:var(--vp-green,#16C15B); visibility:hidden; }
+.uf-opt.on .uf-opt-ok{ visibility:visible; }
+.uf-opt.on .uf-opt-t b{ font-weight:700; }
+/* Renglón de permisos */
+.uf-link{ display:flex; align-items:center; gap:10px; width:100%; box-sizing:border-box; min-height:48px; padding:8px 12px 8px 14px; border:1px solid #D9DEE7; border-radius:10px;
+  background:#fff; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.uf-link:hover{ border-color:#BCC3D0; }
+.uf-link .uf-pick-t b{ font-weight:600; }
+.uf-link .uf-caret svg{ transform:none; }
 .uf-perms-list .toggle-row{ padding:12px 14px; }
+.uf-perms-list{ border:1px solid #E3E7EE; border-radius:12px; overflow:hidden; background:#fff; }
+.uf-perms-list .toggle-row + .toggle-row{ border-top:1px solid #EEF1F5; }
+.uf-perms-list .acc-ico{ display:none; }
 </style>
 <script id="uf-js">
-/* Piezas del formulario de usuario: renglón que se despliega con opciones */
+/* Selector hecho a mano: un botón con el valor y, al tocarlo, un menú
+   flotante encima (no empuja nada). Funciona con mouse, dedo y teclado. */
+let ufMenuInfo = null;
 function ufSelHTML(id, ico, cls, titulo, opciones, valor, onPick){
-  /* Se ve como un renglón, pero al tocarlo abre la lista NATIVA del aparato
-     (ruedita en iPhone, lista flotante en Android y PC): sale encima, no
-     empuja lo de abajo. */
   const sel = opciones.find(o => o.v === valor) || opciones[0];
-  return `<div class="uf-card uf-sel" id="${id}">
-    <div class="uf-sel-btn">
-      <span class="uf-ico ${cls}">${icon(ico)}</span>
-      <span class="uf-sel-t"><small>${titulo}</small><b data-uf-val>${sel.t}</b><small class="uf-sel-sub" data-uf-sub>${sel.s || ''}</small></span>
-      <span class="uf-chev uf-chev-down">${icon('chevronRight')}</span>
-    </div>
-    <select class="uf-native" aria-label="${titulo}" onchange="ufNativo('${id}', this); ${onPick}(this.value)">
-      ${opciones.map(o => `<option value="${o.v}" ${o.v === sel.v ? 'selected' : ''} data-s="${(o.s || '').replace(/"/g, '&quot;')}">${o.t}</option>`).join('')}
-    </select>
-  </div>`;
+  const data = encodeURIComponent(JSON.stringify(opciones));
+  return `<button type="button" class="uf-pick" id="${id}" aria-haspopup="listbox" aria-expanded="false" aria-label="${titulo}"
+      data-v="${sel.v}" data-ops="${data}" data-pick="${onPick}" onclick="ufMenuAbrir('${id}')">
+    <span class="uf-pick-t"><b data-uf-val>${sel.t}</b><small data-uf-sub>${sel.s || ''}</small></span>
+    <span class="uf-caret">${icon('chevronRight')}</span>
+  </button>`;
 }
-function ufNativo(id, selEl){
-  const el = document.getElementById(id); if(!el) return;
-  const op = selEl.options[selEl.selectedIndex];
-  const v = el.querySelector('[data-uf-val]'); if(v) v.textContent = op.textContent;
-  const sub = el.querySelector('[data-uf-sub]'); if(sub) sub.textContent = op.dataset.s || '';
+function ufMenuAbrir(id){
+  const btn = document.getElementById(id); if(!btn) return;
+  if(ufMenuInfo && ufMenuInfo.id === id){ ufMenuCerrar(); return; }
+  ufMenuCerrar();
+  let ops = []; try{ ops = JSON.parse(decodeURIComponent(btn.dataset.ops || '%5B%5D')); }catch(e){}
+  const m = document.createElement('div');
+  m.className = 'uf-menu'; m.setAttribute('role', 'listbox');
+  m.innerHTML = ops.map(o => `<button type="button" role="option" class="uf-opt ${o.v === btn.dataset.v ? 'on' : ''}" data-v="${o.v}">
+      <span class="uf-opt-t"><b>${o.t}</b>${o.s ? `<small>${o.s}</small>` : ''}</span>
+      <svg class="uf-opt-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    </button>`).join('');
+  document.body.appendChild(m);
+  const r = btn.getBoundingClientRect();
+  const vh = window.innerHeight, alto = m.offsetHeight;
+  m.style.width = r.width + 'px';
+  m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - r.width - 8)) + 'px';
+  if(r.bottom + 6 + alto > vh - 8 && r.top - 6 - alto > 8){ m.style.top = (r.top - 6 - alto) + 'px'; m.classList.add('arriba'); }
+  else m.style.top = (r.bottom + 6) + 'px';
+  btn.setAttribute('aria-expanded', 'true');
+  m.addEventListener('click', e => {
+    const b = e.target.closest('.uf-opt'); if(!b) return;
+    ufElegir(id, b.dataset.v);
+  });
+  const fuera = e => { if(!m.contains(e.target) && !btn.contains(e.target)) ufMenuCerrar(); };
+  const tecla = e => {
+    if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); ufMenuCerrar(); btn.focus(); }
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      e.preventDefault();
+      const bs = [...m.querySelectorAll('.uf-opt')]; const i = bs.indexOf(document.activeElement);
+      const n = e.key === 'ArrowDown' ? Math.min(bs.length - 1, i + 1) : Math.max(0, i - 1);
+      (bs[n] || bs[0]).focus();
+    }
+  };
+  const mover = () => ufMenuCerrar();
+  setTimeout(() => {
+    document.addEventListener('pointerdown', fuera, true);
+    document.addEventListener('keydown', tecla, true);
+    window.addEventListener('resize', mover);
+    document.addEventListener('scroll', mover, true);
+  }, 0);
+  ufMenuInfo = { id, m, btn, fuera, tecla, mover };
+  const on = m.querySelector('.uf-opt.on') || m.querySelector('.uf-opt'); if(on) on.focus({ preventScroll:true });
 }
-/* (se quedan por compatibilidad) */
-function ufToggle(){}
-function ufPick(){}
+function ufMenuCerrar(){
+  const x = ufMenuInfo; if(!x) return;
+  ufMenuInfo = null;
+  document.removeEventListener('pointerdown', x.fuera, true);
+  document.removeEventListener('keydown', x.tecla, true);
+  window.removeEventListener('resize', x.mover);
+  document.removeEventListener('scroll', x.mover, true);
+  x.m.remove();
+  if(x.btn) x.btn.setAttribute('aria-expanded', 'false');
+}
+function ufElegir(id, v){
+  const btn = document.getElementById(id); if(!btn) return;
+  let ops = []; try{ ops = JSON.parse(decodeURIComponent(btn.dataset.ops || '%5B%5D')); }catch(e){}
+  const o = ops.find(x => x.v === v); if(!o) return;
+  btn.dataset.v = v;
+  const val = btn.querySelector('[data-uf-val]'); if(val) val.textContent = o.t;
+  const sub = btn.querySelector('[data-uf-sub]'); if(sub) sub.textContent = o.s || '';
+  ufMenuCerrar();
+  btn.focus({ preventScroll:true });
+  try{ const f = btn.dataset.pick.split('.').reduce((acc, k) => acc && acc[k], window); if(typeof f === 'function') f(v); }catch(e){}
+}
+/* (compatibilidad con llamadas viejas) */
+function ufNativo(id, el){ if(el && el.value != null) ufElegir(id, el.value); }
+function ufToggle(){} function ufPick(){}
 function ufPermsRowHTML(perms, accion){
   const on = PERMS.filter(p => perms && perms[p.id]).length;
-  return `<div class="uf-card"><button type="button" class="uf-sel-btn" onclick="${accion}">
-      <span class="uf-ico gold">${icon('key')}</span>
-      <span class="uf-sel-t"><b>Ver todos los permisos</b><small>${on} de ${PERMS.length} activados</small></span>
-      <span class="uf-chev">${icon('chevronRight')}</span>
-    </button></div>`;
+  return `<button type="button" class="uf-link" onclick="${accion}">
+      <span class="uf-pick-t"><b>${on} de ${PERMS.length} permisos activados</b><small>Toca para ver y cambiar cada uno</small></span>
+      <span class="uf-caret">${icon('chevronRight')}</span>
+    </button>`;
 }
 const UF_ROLES = () => ['empleado', 'admin'].map(r => ({ v:r, t:roleOf(r).name, s:roleOf(r).sub }));
 const UF_AREAS = () => [
