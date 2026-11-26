@@ -219,6 +219,9 @@ window.VPMesas = (() => {
       toast('La cuenta de esta mesa cambió');
       return;
     }
+    /* Con comandas activadas, lo nuevo se manda a cocina como otra ronda
+       (Ronda 1, 2, 3…) y la mesa les aparece a los meseros. */
+    if (window.VPComandas && VPComandas.hayParaCocina && VPComandas.hayParaCocina()) { VPComandas.mandarDesdeCobro(); return; }
     if (!parkNow(table.name, order?.id)) { toast('No se pudo guardar el pedido'); return; }
     closeModal();
     render();

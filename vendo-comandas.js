@@ -946,7 +946,14 @@ window.VPComandas = (() => {
   }
 
   /* ---------- Cada mesero con sus mesas ---------- */
-  const duenoDe = o => (o && ((o.cm && o.cm.waiterId) || o.byId)) || '';
+  /* De quién es la mesa: el mesero que la tomó o que la abrió. Si la abrió
+     caja o el Dueño (no un mesero), es de todos los meseros hasta que uno la tome. */
+  const duenoDe = o => {
+    if (!o) return '';
+    if (o.cm && o.cm.waiterId) return o.cm.waiterId;
+    const u = o.byId && typeof userById === 'function' ? userById(o.byId) : null;
+    return u && u.area === 'mesero' ? o.byId : '';
+  };
   const nombreDe = o => (o && ((o.cm && o.cm.waiterName) || o.by)) || 'otro mesero';
   function esMiMesa(o) { const yo = me(); return !!o && !!yo && (duenoDe(o) === yo.id || !duenoDe(o)); }
   /* Comandas listas que le tocan a este mesero (de sus mesas) */
@@ -1523,6 +1530,8 @@ window.VPComandas = (() => {
     });
     return m;
   }
+  /* ¿Hay algo en el carrito que todavía no se manda a cocina? */
+  function hayParaCocina() { return cobroDividido() && pendientesCobro().length > 0; }
   function pendientesCobro() {
     const sent = enviadoMap(ordenActual());
     const m = {};
@@ -2451,7 +2460,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta, desbloquearCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    portada, portadaHTML, ayuda, cerrarAyuda, buscarAdd, volverAdd, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, esPedidoCocina, botonRegresarCocina, regresarACocina, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    portada, portadaHTML, ayuda, cerrarAyuda, buscarAdd, volverAdd, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, esPedidoCocina, botonRegresarCocina, regresarACocina, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, hayParaCocina, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
