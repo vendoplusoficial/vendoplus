@@ -15447,20 +15447,56 @@ function saveOwnerPin(){
   `, { dismissible:true });
 }
 
-/* Nuevo usuario: Nombre · Área · Cargo · NIP · Permisos */
+/* Nuevo usuario (pantalla completa): Nombre · Área · Cargo · NIP · Permisos */
 let nuDraft = null;
+let nuPantalla = 'form';
+function nuFullPaint(parts){
+  let el = document.getElementById('nuFull');
+  const nueva = !el;
+  if(nueva){
+    el = document.createElement('div');
+    el.id = 'nuFull'; el.className = 'cmf';
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+    document.body.appendChild(el);
+    document.body.classList.add('cmf-abierta');
+  }
+  el.setAttribute('aria-label', parts.title);
+  el.innerHTML = `
+    <header class="cmf-top"><div class="cmf-top-in">
+      <button type="button" class="cm-back" onclick="${parts.back}" aria-label="Regresar">${icon('chevronLeft')}</button>
+      <div class="cmf-top-t"><h1>${parts.title}</h1><p>${parts.sub}</p></div>
+    </div></header>
+    <div class="cmf-scroll"><div class="cmf-in">${parts.body}</div></div>
+    <footer class="cmf-foot"><div class="cmf-foot-in">${parts.foot}</div></footer>`;
+  if(nueva) requestAnimationFrame(() => el.classList.add('on')); else el.classList.add('on');
+}
+function nuFullClose(){
+  if(typeof ufMenuCerrar === 'function') ufMenuCerrar();
+  const el = document.getElementById('nuFull'); if(!el) return;
+  el.remove();
+  if(!document.getElementById('cmFull')) document.body.classList.remove('cmf-abierta');
+}
+function nuCancelar(){ nuDraft = null; nuFullClose(); openUsersSheet(); }
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape' || !document.getElementById('nuFull') || document.querySelector('.uf-menu')) return;
+  if(nuPantalla === 'perms') openUserForm(true); else nuCancelar();
+});
 function openUserForm(seguir){
   if(!requireOwner('Solo el Dueño puede agregar usuarios')) return;
   if(usersLimitReached()){ offerMoreUsers(); return; }
   if(seguir !== true || !nuDraft) nuDraft = { name:'', area:'', role:'empleado', pin1:'', pin2:'', perms:defaultPerms('empleado'), permsTocados:false };
+  try{ closeModal(); }catch(e){}
   const d = nuDraft;
   /* Área solo si las comandas están activadas */
   const conAreas = !!(window.VPComandas && VPComandas.activas && VPComandas.activas());
   if(!conAreas) d.area = '';
   const sinCargo = d.area === 'mesero' || d.area === 'cocina';   /* mesero y cocinero no llevan cargo ni permisos */
-  openModal(`
-    <h3 class="sheet-title">Nuevo usuario</h3>
-    <p class="sheet-text">Esta persona entrará a ${APP_NAME} con su propio NIP.</p>
+  nuPantalla = 'form';
+  nuFullPaint({
+    back:'nuCancelar()',
+    title:'Nuevo usuario',
+    sub:'Entrará a ' + APP_NAME + ' con su propio NIP',
+    body:`
     <div class="uf">
       <div class="uf-f">
         <label class="uf-l" for="nuName">Nombre completo</label>
@@ -15486,14 +15522,11 @@ function openUserForm(seguir){
         <span class="uf-l">Permisos</span>
         ${ufPermsRowHTML(d.perms, 'nuAbrirPermisos()')}
       </div>
-    </div>
-    <div class="sheet-actions">
-      <button class="btn ghost block" onclick="nuDraft=null; openUsersSheet()">Cancelar</button>
-      <button class="btn primary block" onclick="saveNewUser()">Crear usuario</button>
-    </div>
-  `, { dismissible:true, swap:seguir === true });
-  const acts = document.querySelector('#modal-layer .sheet-actions');
-  if(acts) acts.insertAdjacentHTML('beforebegin', nipRecoveryNoteHTML(false));
+      ${typeof nipRecoveryNoteHTML === 'function' ? nipRecoveryNoteHTML(false) : ''}
+    </div>`,
+    foot:`<button class="btn ghost" onclick="nuCancelar()">Cancelar</button>
+          <button class="btn primary" onclick="saveNewUser()">Crear usuario</button>`
+  });
 }
 function nuSetArea(v){
   if(!nuDraft) return;
@@ -15507,26 +15540,30 @@ function nuSetRole(v){
   if(!nuDraft) return;
   nuDraft.role = v === 'admin' ? 'admin' : 'empleado';
   if(!nuDraft.permsTocados) nuDraft.perms = defaultPerms(nuDraft.role);
-  const fila = document.querySelector('#modal-layer [onclick="nuAbrirPermisos()"] b');
+  const fila = document.querySelector('#nuFull [onclick="nuAbrirPermisos()"] b');
   if(fila){ const on = PERMS.filter(p => nuDraft.perms[p.id]).length; fila.textContent = on + ' de ' + PERMS.length + ' permisos activados'; }
 }
 function nuAbrirPermisos(){
   if(!nuDraft) return;
   if(typeof ufMenuCerrar === 'function') ufMenuCerrar();
   const d = nuDraft;
-  openModal(`
-    <div class="sheet-header"><div class="sheet-header-left"><button class="sheet-back" onclick="openUserForm(true)" aria-label="Volver">${icon('chevronLeft')}</button><h2>Permisos</h2></div></div>
-    <p class="sheet-text">${d.name.trim() ? escapeHtml(d.name.trim()) + ' · ' : ''}${roleOf(d.role).name}. Activa o desactiva lo que puede hacer.</p>
-    <div class="uf-card uf-perms-list">
-      ${PERMS.map(p => `
-        <div class="toggle-row">
-          <span class="acc-ico ${p.id === 'gestionarProductos' ? 'green' : (p.id === 'verGanancias' ? 'violet' : 'blue')}">${icon(p.icon || 'receipt')}</span>
-          <span class="acc-txt"><span class="acc-label">${p.label}</span><span class="acc-sub">${p.sub}</span></span>
-          <label class="switch"><input type="checkbox" ${d.perms[p.id] ? 'checked' : ''} onchange="nuDraft.perms['${p.id}']=this.checked; nuDraft.permsTocados=true"><span class="track"></span></label>
-        </div>`).join('')}
-    </div>
-    <div class="sheet-actions"><button class="btn primary block" onclick="openUserForm(true)">Listo</button></div>
-  `, { dismissible:true, swap:true });
+  nuPantalla = 'perms';
+  const on = PERMS.filter(p => d.perms[p.id]).length;
+  nuFullPaint({
+    back:'openUserForm(true)',
+    title:'Permisos',
+    sub:(d.name.trim() ? escapeHtml(d.name.trim()) + ' · ' : '') + roleOf(d.role).name,
+    body:`
+      <div class="cmf-sec"><span>Lo que puede hacer</span><em id="nuPermN">${on} de ${PERMS.length}</em></div>
+      <div class="cmf-card cmf-list">
+        ${PERMS.map(p => `
+          <label class="cmf-row cmf-perm">
+            <span class="cmf-row-t"><b>${p.label}</b><small>${p.sub}</small></span>
+            <span class="switch"><input type="checkbox" ${d.perms[p.id] ? 'checked' : ''} onchange="nuDraft.perms['${p.id}']=this.checked; nuDraft.permsTocados=true; document.getElementById('nuPermN').textContent=PERMS.filter(x=>nuDraft.perms[x.id]).length+' de '+PERMS.length"><span class="track"></span></span>
+          </label>`).join('')}
+      </div>`,
+    foot:`<button class="btn primary" onclick="openUserForm(true)">Listo</button>`
+  });
 }
 function previewRoleHint(){
   const sel = document.getElementById('nuRole');
@@ -15603,6 +15640,7 @@ function saveNewUser(){
   });
   DB.saveUsers(list);
   nuDraft = null;
+  nuFullClose();
 
   // El Dueño que estaba usando Mesa sigue siendo el usuario activo.
   const me = activeUser();
