@@ -5474,7 +5474,7 @@ div.stf-row{ cursor:default; }
 .vp-err-bar span{ flex:1; }
 .vp-err-bar button{ border:none; border-radius:10px; padding:8px 12px; background:#19C15F; color:#fff; font:800 13px system-ui, sans-serif; }
 </style>
-<script src="vendo-comandas.js?v=43"></script>
+<script src="vendo-comandas.js?v=44"></script>
 <style>
 /* ===== LOGO NUEVO DE VENDO PLUS (V azul marino sobre blanco) =====
    El cuadrito del logo ahora es blanco y la V va en azul marino #01164F.
@@ -15454,7 +15454,10 @@ function openUserForm(seguir){
   if(usersLimitReached()){ offerMoreUsers(); return; }
   if(seguir !== true || !nuDraft) nuDraft = { name:'', area:'', role:'empleado', pin1:'', pin2:'', perms:defaultPerms('empleado'), permsTocados:false };
   const d = nuDraft;
-  const conAreas = !!window.VPComandas;
+  /* Área solo si las comandas están activadas */
+  const conAreas = !!(window.VPComandas && VPComandas.activas && VPComandas.activas());
+  if(!conAreas) d.area = '';
+  const sinCargo = d.area === 'mesero' || d.area === 'cocina';   /* mesero y cocinero no llevan cargo ni permisos */
   openModal(`
     <h3 class="sheet-title">Nuevo usuario</h3>
     <p class="sheet-text">Esta persona entrará a ${APP_NAME} con su propio NIP.</p>
@@ -15467,7 +15470,7 @@ function openUserForm(seguir){
         <div class="uf-sec-t">Área</div>
         ${ufSelHTML('nuArea', 'comandas', 'green', 'Dónde trabaja', UF_AREAS(), d.area, 'nuSetArea')}
       </div>` : ''}
-      <div>
+      <div id="nuCargoBox" ${sinCargo ? 'hidden' : ''}>
         <div class="uf-sec-t">Cargo</div>
         ${ufSelHTML('nuRole', 'shield', 'blue', 'Qué puede hacer', UF_ROLES(), d.role, 'nuSetRole')}
       </div>
@@ -15479,7 +15482,7 @@ function openUserForm(seguir){
         </div>
         <div class="uf-hint">Escríbelo dos veces. Con él entra a su cuenta.</div>
       </div>
-      <div>
+      <div id="nuPermsBox" ${sinCargo ? 'hidden' : ''}>
         <div class="uf-sec-t">Permisos</div>
         ${ufPermsRowHTML(d.perms, 'nuAbrirPermisos()')}
       </div>
@@ -15492,7 +15495,15 @@ function openUserForm(seguir){
   const acts = document.querySelector('#modal-layer .sheet-actions');
   if(acts) acts.insertAdjacentHTML('beforebegin', nipRecoveryNoteHTML(false));
 }
-function nuSetArea(v){ if(nuDraft) nuDraft.area = v; }
+function nuSetArea(v){
+  if(!nuDraft) return;
+  nuDraft.area = v;
+  const sin = v === 'mesero' || v === 'cocina';
+  if(sin){ nuDraft.role = 'empleado'; nuDraft.perms = defaultPerms('empleado'); nuDraft.permsTocados = false; }
+  ['nuCargoBox', 'nuPermsBox'].forEach(id => { const el = document.getElementById(id); if(el) el.hidden = sin; });
+  if(sin){ const v2 = document.querySelector('#nuRole [data-uf-val]'); if(v2) v2.textContent = roleOf('empleado').name;
+    document.querySelectorAll('#nuRole .uf-op').forEach(b => b.classList.toggle('on', b.dataset.v === 'empleado')); }
+}
 function nuSetRole(v){
   if(!nuDraft) return;
   nuDraft.role = v === 'admin' ? 'admin' : 'empleado';
@@ -15582,11 +15593,11 @@ function saveNewUser(){
   list.push({
     id: 'u' + Date.now(),
     name: name,
-    role: (role === 'admin' ? 'admin' : 'empleado'),
+    role: (role === 'admin' && d.area !== 'mesero' && d.area !== 'cocina') ? 'admin' : 'empleado',
     pin: a,
     phone: '',                       /* su NIP se recupera con un código al correo del Dueño */
     country: (currentUser() || {}).country || 'MX',
-    perms: Object.assign(defaultPerms(role), d.perms || {}),
+    perms: (d.area === 'mesero' || d.area === 'cocina') ? defaultPerms('empleado') : Object.assign(defaultPerms(role), d.perms || {}),
     area: d.area || undefined,
     createdAt: new Date().toISOString()
   });

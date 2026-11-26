@@ -650,6 +650,7 @@ window.VPComandas = (() => {
     const owner = ownerUser();
     const pideNipDueno = !f.editId && owner && !owner.pin;
     const roles = ['empleado', 'admin'].map(r => ({ v:r, t:roleOf(r).name, s:roleOf(r).sub }));
+    const conCargo = st.area === 'caja';   /* mesero y cocinero no llevan cargo ni permisos */
     return `
       <button class="cm-back" onclick="VPComandas.area('${st.area}')" aria-label="Regresar a ${a.name}">${icon('chevronLeft')} ${a.name}</button>
       <h1 class="page-title">${u ? 'Editar usuario' : 'Nuevo ' + a.one}</h1>
@@ -659,10 +660,10 @@ window.VPComandas = (() => {
           <div class="uf-sec-t">Nombre</div>
           <div class="uf-card"><input id="cmName" class="uf-in" type="text" maxlength="40" placeholder="Luis Pérez" autocomplete="off" value="${escapeHtml(f.name)}" oninput="VPComandas.campo('name', this.value)"></div>
         </div>
-        <div>
+        ${conCargo ? `<div>
           <div class="uf-sec-t">Cargo</div>
           ${ufSelHTML('cmRole', 'shield', 'blue', 'Qué puede hacer', roles, f.role, 'VPComandas.cargo')}
-        </div>
+        </div>` : ''}
         <div>
           <div class="uf-sec-t">NIP de 4 dígitos${u ? '' : ' · opcional'}</div>
           <div class="uf-card"><input id="cmPin" class="uf-in pin" type="tel" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" value="${escapeHtml(f.pin)}"
@@ -676,10 +677,10 @@ window.VPComandas = (() => {
                oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); VPComandas.campo('ownerPin', this.value)" aria-label="Tu NIP de Dueño"></div>
           <div class="uf-hint">Al tener equipo, tú también entras con NIP para proteger tu cuenta de Dueño.</div>
         </div>` : ''}
-        <div>
+        ${conCargo ? `<div>
           <div class="uf-sec-t">Permisos</div>
           ${ufPermsRowHTML(f.perms, 'VPComandas.permisos()')}
-        </div>
+        </div>` : ''}
       </div>
       <div class="cm-actions">
         <button class="btn ghost block" onclick="VPComandas.area('${st.area}')">Cancelar</button>
@@ -783,7 +784,11 @@ window.VPComandas = (() => {
       const u = list.find(x => x.id === f.editId);
       if (!u) { area(st.area); return; }
       u.name = name;
-      if (u.role !== 'dueno') { u.role = f.role === 'admin' ? 'admin' : 'empleado'; u.perms = Object.assign({}, f.perms); }
+      if (u.role !== 'dueno') {
+        const cc = st.area === 'caja';
+        u.role = cc && f.role === 'admin' ? 'admin' : 'empleado';
+        u.perms = cc ? Object.assign({}, f.perms) : defaultPerms('empleado');
+      }
       if (pin) u.pin = pin;
       DB.saveUsers(list);
       paintChrome();
@@ -801,10 +806,10 @@ window.VPComandas = (() => {
     }
     list.push({
       id: 'u' + Date.now(), name,
-      role: f.role === 'admin' ? 'admin' : 'empleado',
+      role: st.area === 'caja' && f.role === 'admin' ? 'admin' : 'empleado',
       pin: pin || null, phone: '',
       country: (currentUser() || {}).country || 'MX',
-      perms: Object.assign({}, f.perms),
+      perms: st.area === 'caja' ? Object.assign({}, f.perms) : defaultPerms('empleado'),
       area: st.area,
       createdAt: nowIso()
     });
