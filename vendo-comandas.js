@@ -473,23 +473,84 @@ window.VPComandas = (() => {
     }
   }
 
-  /* "?": cómo trabajan juntos Caja, Mesero y Cocinero */
+  /* "?": guía completa de Comandas a pantalla completa */
+  const GUIA = [
+    { t:'Antes de empezar', q:'Lo hace el Dueño una sola vez', ico:'key', pasos:[
+      'Enciende el interruptor que está al lado de <b>Comandas</b>.',
+      'Toca <b>Caja</b>, <b>Mesero</b> o <b>Cocinero</b> y luego <b>Agregar</b> para sumar a cada persona de tu equipo.',
+      'Escribe su nombre y, si quieres, un <b>NIP de 4 dígitos</b> para que solo esa persona pueda entrar con su nombre.',
+      'La primera vez que agregues a alguien, crea también <b>tu NIP de Dueño</b>: así nadie más entra a tu cuenta.',
+      'Cada quien abre VendoPlus en su propio celular o tablet con <b>tu misma cuenta</b>, elige su nombre y escribe su NIP.',
+      'Cada persona ve solo su pantalla: el mesero ve las mesas, el cocinero la cocina y el cajero la caja.'
+    ]},
+    { t:'Mesero', q:'Toma los pedidos y los lleva a la mesa', ico:'users', pasos:[
+      'En <b>Mesas</b> toca una mesa libre para abrirla.',
+      'Agrega los productos del catálogo. En el carrito, toca un producto para ponerle una <b>nota</b> (por ejemplo «sin cebolla»).',
+      'Mantén presionado <b>Mandar a cocina</b>. Se manda como <b>Ronda 1</b> y se suma a la cuenta de la mesa.',
+      'Si piden algo más, agrégalo y mándalo otra vez: llega a cocina como <b>Ronda 2</b>, <b>Ronda 3</b>…',
+      'Cuando cocina termina, te llega un aviso. Recoge el pedido y mantén presionado <b>Ya lo tengo</b> para marcarlo como entregado.',
+      'Si el cliente ya no quiere algo, quítalo y toca <b>Avisar a cocina y quitar</b>: el cocinero recibe el aviso al instante.',
+      'Si cocina te avisa que algo <b>se acabó</b>, díselo al cliente y toca <b>Ya le avisé</b>.',
+      'Cuando el cliente quiera pagar, mantén presionado <b>Pedir la cuenta</b>: la caja se entera en ese momento.',
+      'Si otro mesero atendía la mesa, puedes tocar <b>Tomar esta mesa</b> para seguir tú con ella.'
+    ]},
+    { t:'Cocinero', q:'Prepara lo que llega de las mesas', ico:'chefHat', pasos:[
+      'En <b>Por preparar</b> aparecen las comandas nuevas en cuadritos, con la mesa y la ronda.',
+      'Abre una comanda para ver cada producto con su foto, la cantidad y las notas del mesero.',
+      'Mantén presionado <b>Empezar a preparar</b> para que el mesero sepa que ya se está cocinando.',
+      'Al terminar, mantén presionado <b>Ya terminé de preparar</b>: el mesero recibe el aviso para llevarlo.',
+      'Si te equivocaste, toca <b>Deshacer</b> para regresarla a «Preparando».',
+      'En <b>Listas sin entregar</b> ves lo que ya terminaste y el mesero todavía no recoge.',
+      'Si se acabó un producto, márcalo con <b>No hay</b> y toca <b>Avisar al mesero</b>: queda en <b>Agotados</b> y nadie lo puede volver a pedir.',
+      'Cuando vuelva a haber, entra a <b>Agotados</b> y toca <b>Ya hay</b> para que se pueda pedir otra vez.'
+    ]},
+    { t:'Caja', q:'Cobra las cuentas de las mesas', ico:'cashbox', pasos:[
+      'Ves todas las mesas abiertas con su total y cuáles ya <b>pidieron la cuenta</b>.',
+      'Abre la cuenta de una mesa para revisar todo lo que se pidió, ronda por ronda.',
+      'Toca <b>Cobrar</b> y elige cómo paga el cliente (efectivo, tarjeta, transferencia…).',
+      'Al cobrar, la venta queda registrada y la <b>mesa queda libre</b> para los siguientes clientes.',
+      'En <b>Nueva venta</b> también puedes mandar a cocina pedidos de mostrador con <b>Mandar a cocina</b>.'
+    ]},
+    { t:'Consejos', q:'Para que todo salga bien', ico:'alert', pasos:[
+      'Los botones importantes se <b>mantienen presionados</b> un momento: así no se mandan por accidente.',
+      'Con internet, todo se ve <b>en vivo</b> en los celulares y tablets de tu equipo.',
+      'Si se va el internet, cada aparato sigue funcionando y se pone al día cuando regresa la conexión.',
+      'Para apagar las comandas, usa el interruptor de arriba: tu equipo vuelve al punto de venta normal.'
+    ]}
+  ];
   function ayuda() {
+    cerrarAyuda();
     const vivo = Sync.online();
-    openModal(`
-      <div class="sheet-header"><h2>Así trabajan juntos</h2><button class="sheet-close" onclick="closeModal()" aria-label="Cerrar">${icon('close')}</button></div>
-      <div class="cm-how cm-how-sheet">
-        <ol>
-          <li><b>Mesero</b> abre la mesa, toma el pedido y lo manda a cocina.</li>
-          <li><b>Cocinero</b> recibe la comanda, la prepara y la marca como lista.</li>
-          <li><b>Mesero</b> recibe el aviso, la sirve y pide la cuenta cuando el cliente quiere pagar.</li>
-          <li><b>Caja</b> ve la cuenta de cada mesa y la cobra. La mesa queda libre.</li>
-        </ol>
-        <p class="cm-live ${vivo ? 'on' : ''}">${icon(vivo ? 'check' : 'alert')} ${vivo
-          ? 'En vivo: cada quien puede usar su propio celular o tablet con tu misma cuenta.'
-          : 'Sin conexión a la nube: por ahora solo funciona en este aparato.'}</p>
-      </div>`, { dismissible:true });
+    const el = document.createElement('div');
+    el.id = 'cmGuia'; el.className = 'cm-guia';
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Cómo usar Comandas');
+    el.innerHTML = `
+      <div class="cm-guia-top"><div class="cm-guia-top-in">
+        <button type="button" class="cm-back" onclick="VPComandas.cerrarAyuda()" aria-label="Regresar">${icon('chevronLeft')}</button>
+        <h1>Cómo usar Comandas</h1>
+      </div></div>
+      <div class="cm-guia-scroll"><div class="cm-guia-in">
+        <p class="cm-guia-intro">El <b>mesero</b> toma el pedido, la <b>cocina</b> lo prepara y la <b>caja</b> lo cobra. Todo conectado, cada quien desde su celular o tablet.</p>
+        <p class="cm-live ${vivo ? 'on' : ''}">${icon(vivo ? 'check' : 'alert')} ${vivo ? 'En vivo: tu equipo ya está conectado.' : 'Sin conexión a la nube: por ahora solo funciona en este aparato.'}</p>
+        ${GUIA.map(g => `<section class="cm-guia-sec">
+          <div class="cm-guia-h"><span class="cm-guia-ico">${icon(g.ico)}</span><span><b>${g.t}</b><small>${g.q}</small></span></div>
+          <ol>${g.pasos.map(x => `<li>${x}</li>`).join('')}</ol>
+        </section>`).join('')}
+        <button type="button" class="btn primary block cm-guia-ok" onclick="VPComandas.cerrarAyuda()">Entendido</button>
+      </div></div>`;
+    document.body.appendChild(el);
+    document.body.classList.add('cm-guia-abierta');
+    requestAnimationFrame(() => el.classList.add('on'));
+    try { history.pushState({ cmGuia:1 }, ''); } catch (e) {}
   }
+  function cerrarAyuda(desdeAtras) {
+    const el = document.getElementById('cmGuia'); if (!el) return;
+    el.remove();
+    document.body.classList.remove('cm-guia-abierta');
+    if (!desdeAtras) { try { if (history.state && history.state.cmGuia) history.back(); } catch (e) {} }
+  }
+  window.addEventListener('popstate', () => { if (document.getElementById('cmGuia')) cerrarAyuda(true); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('cmGuia')) cerrarAyuda(); });
 
   function homeHTML() {
     const vivo = Sync.online();
@@ -2238,7 +2299,7 @@ window.VPComandas = (() => {
     area, agregar, nuevo, editar, campo, cargo, permisos, perm, guardarPermisos, volverForm, guardarUsuario, asignar, quitar,
     tocarMesa, abrirCuenta, verLista, entregarGrupo, tabMesero, tomarMesa, verAviso, avisoVisto, ronda, saleHead, salirMesa, cartActions, enviar, entregar, pedirCuenta,
     cobrar, editarCuenta, cancelarOrden, cerrarOrden,
-    portada, portadaHTML, ayuda, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
+    portada, portadaHTML, ayuda, cerrarAyuda, esSolo, perfil, nombre, guardarNombre, estadoPedidoHTML, enCocinaTag, bloqueaQuitar, bloqueaNota, tieneEnviado, ynqCant, confirmarYaNoQuiere, cancelarTodoPedido, quitarPedido, activas, activar, cobroDividido, botonCocinaHTML, mandarDesdeCobro,
     filtro, abrirComanda, estado, noHay, cerrarCapa, nhCant, nhAgotar, confirmarNoHay, reponer, agotado, bloqueaAgotado, historial, cambiar, sync:() => Sync.run()
   };
 })();
