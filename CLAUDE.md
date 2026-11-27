@@ -5,37 +5,48 @@ El usuario pidió que **todo cambio se publique de inmediato** sin esperar a que
 al terminar, sube los cambios a `main` (es lo que se publica en vendoplusoficial.com)
 y avísale. No hace falta pedir permiso ni abrir pull request.
 
-## PENDIENTE: cambiar el logo en la app de Android
-El usuario va a pasar los archivos de su **versión Android**. En cuanto los tengas,
-**cambia el logo viejo por el nuevo en TODOS lados**, sin que te lo vuelva a pedir.
+## HECHO: el logo de la app de Android ya es el nuevo (26 nov 2026)
+Se cambió el logo viejo (cuadro verde con la bolsita) por el nuevo (fondo blanco +
+la "V" azul marino **#01164F**) en toda la app: los 10 mipmaps, el icono adaptativo
+(fondo blanco + la V del SVG adaptativo, con `monochrome`), `splash_icon.xml`,
+`ic_stat_vendo.xml` (silueta blanca de la V, sin el "Plus": a 24dp no se ve),
+`Notifier.java` (`setColor` → #01164F; la luz del LED se quedó verde a propósito,
+se ve de lejos), el icono 512 de Play Store y el gráfico destacado 1024×500.
+`colors.xml` ganó `vp_navy`.
 
-- **Logo viejo (ya no se usa):** cuadro verde (#25D366 → #1DAF5A) con una bolsa blanca con un "+".
-- **Logo nuevo:** fondo **blanco** con la "V" + "Plus" en **azul marino #01164F**, sin borde ni sombra.
-- Archivos fuente del logo nuevo (vectoriales, nítidos a cualquier tamaño) en `marca/`:
-  - `vendoplus-icono.svg`: icono completo (fondo blanco a sangre + V)
-  - `vendoplus-icono-android-adaptativo.svg`: versión con la V más chica, para la zona segura del icono adaptativo
-  - `vendoplus-logo-solo.svg`: solo la V azul, sin fondo (para foreground o uso dentro de la app)
-  - `vendoplus-icono-1024.png`: PNG grande de respaldo
-- En el sitio web ya se cambió: `icon.svg` y favicons (con esquinas redondeadas, para la pestaña del navegador), `icon-*.png`, `apple-touch-icon.png`,
-  `icon-maskable-512.png`, `og-image.png`, splash, encabezado y bienvenida de `index.html`
-  (`ICONS.logo`), `404.html`, `eliminar-cuenta.html` y `privacidad.html`.
-
-Qué revisar en Android:
-- `res/mipmap-*/ic_launcher*.png` (mdpi 48, hdpi 72, xhdpi 96, xxhdpi 144, xxxhdpi 192)
-- `res/mipmap-anydpi-v26/ic_launcher.xml` y `ic_launcher_round.xml` (icono adaptativo):
-  fondo `#FFFFFF`, foreground = la V del SVG adaptativo, y también el `monochrome`
-- `ic_launcher_background` (color o drawable) → blanco
-- Splash screen (`windowSplashScreenAnimatedIcon`, `windowSplashScreenBackground`, `splash.xml`)
-- Icono de notificaciones (`ic_stat_*`, debe ser silueta blanca de la V)
-- Icono de Play Store 512×512 y cualquier copia de `index.html`, `icon.svg`, favicons dentro de `assets/`
-- Colores del verde viejo ligados al logo (`colors.xml`) si se usan para el icono
-- Busca también restos del dibujo de la bolsa (path `M5.3 8.6h13.4...` o `M150 180h212...`)
+OJO: el verde **#25D366 / #1DAF5A** que sigue en el index y en los .js **no es el
+logo viejo**: es el verde de WhatsApp (la variable `brand`). No lo quites.
 
 ## Apps de delivery (Rappi, DiDi Food, Uber Eats): APAGADO por ahora
 El usuario pidió ocultarlas "como si no existieran" hasta que contacte a esas empresas.
 Todo sigue programado (vendo-apps.js, función `apps-delivery` y tablas `vp_apps_*` en Supabase).
 Para activarlas: en `index.html` cambia `window.VP_APPS_ACTIVO = false;` a `true` y sube la
 versión de `vendo-apps.js` y `vendo-premium.js` en sus `<script src=...?v=>`.
+
+## Cobro con NFC (Tap to Pay con Stripe): APAGADO por ahora
+En `index.html`: `window.VP_NFC_ACTIVO = false;`. El apartado se ve dentro de Stripe
+pero dice **Próximamente** y no se puede activar (`stHubNfcHTML`, `stNfcSet`, `stNfcOn`).
+
+Todo lo demás ya está programado:
+- App Android: `NfcCobro.java` (SDK de Stripe Terminal), `NfcSoporte.java` (revisa si
+  el celular puede, sin tocar Stripe), `VendoPlusApp.java`, y la sección 10 de
+  `vendo-app.js` (que se sale sola si `VP_NFC_ACTIVO` no es `true`).
+- Supabase: función `stripe-terminal` (token, intent, revisar, cancelar).
+
+**Antes de encenderlo**, Stripe tiene que activar la capacidad `card_present` en la
+cuenta (México está en vista previa pública de Tap to Pay on Android). Mientras no,
+el cobro no funciona aunque se prenda el apagador.
+Para encenderlo: `VP_NFC_ACTIVO = true` y súbele la versión a `vendo-premium.js`.
+
+## Pedidos del Menú Digital pagados con tarjeta
+El pedido se guarda en `menu_orders` desde que el cliente lo manda (hace falta para
+poder cobrarlo), pero **al negocio NO le llega hasta que el pago está confirmado**:
+`mdiFromCloud()` devuelve `null` mientras `data.stripeCheckout === true` y
+`charge_status !== 'paid'`, y `MdiCloud.take()` no lo marca como recibido.
+En cuanto Stripe confirma, el Realtime de `menu_orders` (escucha UPDATE) dispara otra
+revisión y el pedido entra al instante.
+Después de pagar, al cliente se le ofrece mandar **su ticket** por WhatsApp: es
+opcional, el pedido ya llegó solo.
 
 ## Arranque rápido y sin internet (sw.js)
 - `sw.js` es SOLO para cuando no hay internet: con internet todo se pide al servidor como una

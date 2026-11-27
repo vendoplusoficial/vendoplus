@@ -5572,6 +5572,11 @@ html.sth-sin-scroll .view{ padding-bottom:0 !important; }
 .sth-card-b small{ font-size:13px; font-weight:600; color:var(--ink-soft,#6B7592); line-height:1.4; }
 .sth-pill{ flex:none; font-size:11.5px; font-weight:800; padding:4px 9px; border-radius:999px; background:#EEF1F6; color:#6B7592; }
 .sth-pill.on{ background:#EAF8F0; color:#0B6F37; }
+  .sth-pill.soon, .sth-estado.soon{ background:#FFF4E2; }
+  .sth-pill.soon{ color:#8A5A09; }
+  .sth-estado.soon i{ background:#D98A1A; }
+  .sth-estado.soon b{ color:#8A5A09; }
+  .sth-estado.soon span{ color:#A8762B; }
 .sth-row{ display:flex; align-items:center; gap:14px; width:100%; margin-top:16px; padding:16px 18px; border:1px solid var(--border,#E6E9F2); border-radius:18px;
   background:var(--surface,#fff); color:inherit; font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 .sth-row:active{ transform:scale(.99); }
@@ -13923,7 +13928,7 @@ function openTerms(){
     <div class="terms-doc">
       <p><b>1. Uso del servicio.</b> ${APP_NAME} es una herramienta para administrar ventas, inventario y clientes de tu negocio. Eres responsable de la información que captures y de usar la cuenta de forma legal.</p>
       <p><b>2. Tu cuenta.</b> Tu correo electrónico y tu contraseña son tu acceso. Cuida tu contraseña, no la compartas y no compartas los códigos que te lleguen por correo.</p>
-      <p><b>3. Gratis y membresía Premium.</b> Vendo Plus es gratis y sin tarjeta: vender (hasta 300 ventas completadas al mes en el plan Básico; al llegar a 300 puedes seguir vendiendo ese mismo día y, desde el día siguiente, los cobros nuevos se pausan hasta el mes siguiente o hasta activar Premium), generar y enviar tickets, historial, caja y corte, clientes y crédito, inventario con fotos, tu perfil no se cobran nunca. Aparte existe <b>Premium</b>, de $${TRIAL_PRECIO} MXN al mes con Google Play (la cancelas cuando quieras en Play Store), que desbloquea las ventas ilimitadas, el Menú Digital, el asistente con IA, los escaneos de carta con IA sin límite (gratis son 3 pruebas en total) y todas las estadísticas. Si no pagas o cancelas, tu cuenta NO se pausa: solo se apagan esas funciones y todos tus datos y productos se quedan guardados.</p>
+      <p><b>3. Gratis y membresía Premium.</b> Vendo Plus es gratis y sin tarjeta: vender (hasta 300 ventas completadas al mes en el plan Básico; al llegar a 300 puedes seguir vendiendo ese mismo día y, desde el día siguiente, los cobros nuevos se pausan hasta el mes siguiente o hasta activar Premium), generar y enviar tickets, historial, caja y corte, clientes y crédito, inventario con fotos, tu perfil no se cobran nunca. Aparte existe <b>Premium</b>, de $${TRIAL_PRECIO} MXN al mes con Stripe, que desbloquea las ventas ilimitadas, el Menú Digital, el asistente con IA, los escaneos de carta con IA sin límite (gratis son 3 pruebas en total) y todas las estadísticas. Si no pagas o cancelas, tu cuenta NO se pausa: solo se apagan esas funciones y todos tus datos y productos se quedan guardados.</p>
       <p><b>4. Disponibilidad.</b> Hacemos lo posible por que el servicio funcione siempre, pero puede haber interrupciones por mantenimiento o fallas de terceros.</p>
       <h3 class="sheet-title" style="margin-top:18px;">Tratamiento de datos personales</h3>
       <p><b>Qué guardamos.</b> Tu correo electrónico, tu nombre, los datos de tu negocio (productos, ventas, clientes) y las fotos que subas.</p>
@@ -21402,10 +21407,10 @@ function dmCoSvc(id){
 /* Con tarjeta y Stripe, el cliente paga aquí mismo al enviar su pedido */
 function dmPaysOnline(){ const co = dmCoState(); const pm = mdCfg().payments; return co.pay === 'tarjeta' && !!(pm.st && pm.st.on) && !!(VENDO_CONFIG.SUPABASE_URL && VENDO_CONFIG.SUPABASE_ANON_KEY); }
 function dmSendNoteHTML(nombre){
-  if(dmPaysOnline()) return `${icon('card')}<span><b>Paga y listo</b>Al enviar tu pedido pagas con tu tarjeta aquí mismo. Después lo mandas por WhatsApp.</span>`;
+  if(dmPaysOnline()) return `${icon('card')}<span><b>Paga y listo</b>Pagas con tu tarjeta aquí mismo y tu pedido le llega al negocio al instante.</span>`;
   return `${icon('whatsapp')}<span><b>Se abrirá WhatsApp</b>Con tu número de pedido, listo para enviárselo${nombre ? ' a ' + escapeHtml(nombre) : ' al negocio'}. Ahí te confirmarán tu pedido y el total.</span>`;
 }
-function dmSendBtnHTML(){ return dmPaysOnline() ? icon('card') + ' Enviar y pagar' : icon('whatsapp') + ' Enviar pedido'; }
+function dmSendBtnHTML(){ return dmPaysOnline() ? icon('card') + ' Pagar y enviar' : icon('whatsapp') + ' Enviar pedido'; }
 function dmCoPay(id){
   const co = dmCoState(); const changed = co.pay !== id;
   co.pay = id;
@@ -21667,6 +21672,12 @@ function saleIsMenu(s){ return s && s.origin === 'menu'; }
    vendo-apps.js / vendo-premium.js para que se actualice). */
 window.VP_APPS_ACTIVO = false;
 if(window.VP_APPS_ACTIVO) document.documentElement.classList.add('vp-apps-on');
+/* Cobro con NFC (Tap to Pay con Stripe): APAGADO POR AHORA.
+   El apartado se ve en Stripe, pero dice "Próximamente" y no se puede activar.
+   Para encenderlo: cambia false por true (y sube la versión de vendo-premium.js).
+   Antes de encenderlo, Stripe tiene que activar la capacidad card_present en la
+   cuenta; mientras no, el cobro no funcionaría aunque se active aquí. */
+window.VP_NFC_ACTIVO = false;
 const VP_APPS = {
   /* c = color de acento, b = color de los botones, img = logo */
   rappi:{ n:'Rappi',     c:'#FF441F', b:'#FF441F', l:'R', img:'logos-apps/rappi.png' },
@@ -26904,6 +26915,13 @@ function mdiFromCloud(row){
     /* El cliente regresó a cambiar su pedido antes de pagar: este ya no va */
     if(row.charge_status === 'cancelled') return null;
     const d = row.data || {};
+    /* PAGO CON TARJETA EN EL MENÚ: el pedido existe en la nube desde que el
+       cliente lo manda (hace falta para poder cobrarlo), pero al negocio NO
+       le llega hasta que el pago queda confirmado. Así nadie prepara comida
+       de un pedido que al final no se pagó.
+       En cuanto Stripe confirma, el Realtime de menu_orders (escucha UPDATE)
+       dispara otra revisión y el pedido entra al instante. */
+    if(d.stripeCheckout === true && row.charge_status !== 'paid') return null;
     const lines = (Array.isArray(d.original) ? d.original : []).slice(0, 150)
       .map(mdiCleanLine).filter(l => l.qty > 0).map(mdiRepriceLine);
     if(!lines.length) return null;
@@ -27357,11 +27375,11 @@ function spOk(){
   spPaint(`<div class="pg-card pg-center sp-card sp-ok">
       ${spCabeza()}
       <div class="sp-check"><svg viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M15 27l7.5 7.5L37.5 19"/></svg></div>
-      <h1>${enviado ? '¡Listo, ya quedó!' : '¡Pago confirmado!'}</h1>
-      <p>Tu pago de <b>${pgMoney(d.amount)}</b> quedó confirmado${enviado ? ' y ya le avisaste al negocio por WhatsApp.' : '.'}</p>
-      ${enviado ? '' : `<div class="sp-paso"><b>Último paso</b>Manda tu pedido por WhatsApp para que el negocio lo reciba también por ahí.</div>`}
+      <h1>¡Pago confirmado!</h1>
+      <p>Pagaste <b>${pgMoney(d.amount)}</b> y <b>tu pedido ya le llegó al negocio</b>.</p>
+      ${enviado ? '' : `<div class="sp-paso"><b>¿Quieres tu ticket?</b>Mándalo por WhatsApp y te queda el comprobante en tu chat con el negocio.</div>`}
       <button type="button" class="sp-btn sp-wa${enviado ? ' sp-wa-sec' : ''}" onclick="spEnviarWa()">
-        <span class="sp-btn-txt">${icon('whatsapp')} ${enviado ? 'Enviar otra vez por WhatsApp' : 'Enviar a WhatsApp'}</span>
+        <span class="sp-btn-txt">${icon('whatsapp')} ${enviado ? 'Mandar el ticket otra vez' : 'Mandar mi ticket por WhatsApp'}</span>
       </button>
       ${enviado && spMenuId() ? `<button type="button" class="sp-volver" onclick="spVolverMenu()">Volver al menú</button>` : ''}
       <p class="pg-mini">Pedido ${pgEsc(d.code || '')}</p>
@@ -27389,14 +27407,16 @@ function spMenuId(){ try{ return sessionStorage.getItem('vp_pago_menu_' + sp.id)
 function spVolverMenu(){ const m = spMenuId(); if(!m) return; location.replace(location.pathname + '#menu/' + encodeURIComponent(m)); location.reload(); }
 function spWaKey(){ return 'vp_pago_wa_' + sp.id; }
 function spWaEnviado(){ try{ return localStorage.getItem(spWaKey()) === '1'; }catch(e){ return false; } }
-/** El cliente SÍ O SÍ le manda su pedido pagado al negocio por WhatsApp. */
+/** Le manda el ticket al negocio por WhatsApp. Es OPCIONAL: el pedido ya le
+    llegó solo al confirmarse el pago. Esto es para que al cliente le quede su
+    comprobante en el chat. */
 function spEnviarWa(){
   const d = sp.data || {};
   let base = '';
   try{ base = sessionStorage.getItem('vp_pago_wa_txt_' + sp.id) || ''; }catch(e){}
   const msg = base
     ? base.replace(/\n\nQuedo en espera[^]*$/, '') + '\n\nYa pagué con tarjeta: *' + pgMoney(d.amount) + ' MXN* ✅'
-    : '¡Hola' + (d.business ? ' ' + d.business : '') + '! Ya pagué con tarjeta mi pedido ' + (d.code || '') + '.' +
+    : '¡Hola' + (d.business ? ' ' + d.business : '') + '! Aquí está mi comprobante del pedido ' + (d.code || '') + '.' +
       '\n\n*Total pagado: ' + pgMoney(d.amount) + ' MXN*\nPago confirmado ✅';
   const url = 'https://wa.me/' + String(d.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
   try{ localStorage.setItem(spWaKey(), '1'); }catch(e){}
@@ -27512,7 +27532,10 @@ const MdiCloud = {
     const nuevos = [], ids = [];
     const gone = mdiGoneList();
     (rows || []).forEach(row => {
-      if(row && row.id) ids.push(row.id);
+      /* Si está esperando el pago, no se marca como recibido: así vuelve a
+         bajar en la siguiente revisión, en cuanto el cliente pague. */
+      const esperandoPago = !!(row && row.data && row.data.stripeCheckout === true && row.charge_status !== 'paid');
+      if(row && row.id && !esperandoPago) ids.push(row.id);
       if(row && gone.indexOf(row.id) >= 0) return;
       const o = mdiFromCloud(row);
       if(!o) return;
@@ -29734,7 +29757,7 @@ const ST_PASOS = {
 const ST_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const ST_PLAY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>';
 
-function stNfcOn(){ return mdCfg().payments.nfc === true; }
+function stNfcOn(){ return window.VP_NFC_ACTIVO === true && mdCfg().payments.nfc === true; }
 /** ¿Sale "Pagar con NFC" al cobrar con tarjeta? Solo Premium y con el interruptor encendido. */
 function stNfcCobro(){ try{ return stEsPro() && stNfcOn(); }catch(e){ return false; } }
 /* Por ahora es de prueba: el cobro real con NFC llega con la app de Android */
@@ -29787,7 +29810,9 @@ function stHubView(){
       <button type="button" class="sth-card" onclick="stHubIr('nfc')">
         ${stArt('nfc')}
         <span class="sth-card-b">
-          <span class="sth-card-t"><b>Cobro con NFC</b><span class="sth-pill ${stNfcOn() ? 'on' : ''}">${stNfcOn() ? 'Activo' : 'Desactivado'}</span></span>
+          <span class="sth-card-t"><b>Cobro con NFC</b>${window.VP_NFC_ACTIVO !== true
+            ? '<span class="sth-pill soon">Próximamente</span>'
+            : `<span class="sth-pill ${stNfcOn() ? 'on' : ''}">${stNfcOn() ? 'Activo' : 'Desactivado'}</span>`}</span>
           <small>Cobra acercando la tarjeta del cliente a tu celular.</small>
         </span>
       </button>
@@ -29818,6 +29843,17 @@ function stEstadoHTML(on, siTxt, noTxt){
   return `<span class="sth-estado ${on ? 'on' : ''}"><i></i><b>${on ? 'Activado' : 'Desactivado'}</b><span>${on ? siTxt : noTxt}</span></span>`;
 }
 function stHubNfcHTML(){
+  /* Mientras VP_NFC_ACTIVO esté en false: se ve, pero sin interruptor. */
+  if(window.VP_NFC_ACTIVO !== true){
+    return `<div class="sth sth-sub">
+      <button class="cm-back" onclick="stHubIr('home')" aria-label="Regresar a Stripe">${icon('chevronLeft')} Stripe</button>
+      <div class="sth-tit"><h1 class="page-title">Cobro con NFC</h1></div>
+      <p class="page-sub">Cobra con tarjeta acercándola a tu celular, sin terminal.</p>
+      <span class="sth-estado soon"><i></i><b>Próximamente</b><span>Lo estamos terminando</span></span>
+      ${stArt('nfc', false)}
+      <p class="sth-nota">Muy pronto vas a poder cobrar tarjetas acercándolas a tu celular, sin comprar terminal. Te avisamos aquí mismo en cuanto esté listo.</p>
+    </div>`;
+  }
   const on = stNfcOn();
   return `<div class="sth sth-sub">${stHubSubHead('Cobro con NFC', on, 'stNfcSet(this.checked)')}
     <p class="page-sub">Cobra con tarjeta acercándola a tu celular, sin terminal.</p>
@@ -29836,6 +29872,11 @@ function stHubMenuHTML(){
   </div>`;
 }
 function stNfcSet(v){
+  if(window.VP_NFC_ACTIVO !== true){
+    toast('El cobro con NFC llega pronto', { icon:icon('clock'), subtitle:'Te avisamos en cuanto lo puedas usar.', duration:3600 });
+    render();
+    return;
+  }
   const cfg = mdCfg();
   cfg.payments.nfc = !!v;
   mdSaveCfg(cfg);

@@ -777,4 +777,377 @@
     safe(function(){ if(cloudOn() && Cloud.uid) PlayPay.maybeSync(); });
     setTimeout(function(){ VA.syncBars(); }, 300);
   });
+
+  /* =======================================================================
+     10) COBRO CON NFC (Tap to Pay con Stripe)
+     -----------------------------------------------------------------------
+     El celular se vuelve la terminal: el cliente acerca su tarjeta a la
+     pantalla y el dinero cae DIRECTO en la cuenta de Stripe del negocio.
+
+     Reglas que se respetan aquí:
+       · Solo aparece en celulares que SÍ pueden (Android 13+, NFC, etc.).
+         En los demás, el apartado completo no se dibuja: ni el interruptor.
+       · Al apagarlo, se desconecta la terminal y desaparece todo.
+       · El cobro de la MEMBRESÍA sigue siendo de Google Play; esto es otra
+         cosa: el negocio le cobra a SUS clientes en SU cuenta de Stripe.
+  ======================================================================= */
+  /* Mientras el cobro con NFC esté apagado en index.html (VP_NFC_ACTIVO = false),
+     la app no instala NADA de esto: manda el "Próximamente" que dibuja el index.
+     Esta sección es la última del archivo, así que salirse aquí no deja nada
+     a medias. Para encenderlo se cambia el apagador en index.html, no aquí. */
+  if(window.VP_NFC_ACTIVO !== true) return;
+
+  var NFC = window.VPNfc = {
+    compatible:false,     /* ¿este celular puede? */
+    motivo:'',            /* si no puede, por qué */
+    conectado:false,      /* ¿la terminal está encendida? */
+    revisado:false,
+    prendiendo:false,
+    cobrando:false
+  };
+
+  /* ---------- La pantalla de cobro (se dibuja una sola vez) ---------- */
+  var NFC_ONDAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M7 8.5c2 2 2 5 0 7M11 6c3.4 3.4 3.4 8.6 0 12M15 3.5c4.8 4.8 4.8 12.2 0 17"/></svg>';
+
+  safe(function(){
+    var st = document.createElement('style');
+    st.id = 'vp-nfc-css';
+    st.textContent =
+      '#vpNfcPay{ position:fixed; inset:0; z-index:960; display:none; flex-direction:column;' +
+        ' background:var(--surface,#fff); padding:14px 22px calc(26px + env(safe-area-inset-bottom)); }' +
+      '#vpNfcPay.on{ display:flex; }' +
+      '#vpNfcPay .nfc-top{ display:flex; align-items:center; min-height:40px; }' +
+      '#vpNfcPay .nfc-back{ width:40px; height:40px; border:0; background:none; padding:0; cursor:pointer;' +
+        ' color:var(--ink,#16213E); display:inline-flex; align-items:center; justify-content:center;' +
+        ' -webkit-tap-highlight-color:transparent; }' +
+      '#vpNfcPay .nfc-back:active{ transform:scale(.92); }' +
+      '#vpNfcPay .nfc-back svg{ width:24px; height:24px; }' +
+      '#vpNfcPay .nfc-cuerpo{ flex:1; display:flex; flex-direction:column; align-items:center;' +
+        ' justify-content:center; gap:20px; min-height:0; text-align:center; }' +
+      '#vpNfcPay h2{ margin:0; font-size:21px; font-weight:800; color:var(--ink,#16213E); letter-spacing:-.2px; }' +
+      '#vpNfcPay .nfc-monto{ margin:0; font-size:clamp(32px,9vw,42px); font-weight:800; color:var(--ink,#16213E);' +
+        ' letter-spacing:-1px; line-height:1.1; }' +
+      '#vpNfcPay .nfc-circulo{ width:clamp(150px,44vw,190px); height:clamp(150px,44vw,190px); border-radius:50%;' +
+        ' background:#E8EBFA; display:flex; align-items:center; justify-content:center; color:#16213E;' +
+        ' transition:background .25s ease, color .25s ease; }' +
+      '#vpNfcPay .nfc-circulo svg{ width:46%; height:46%; }' +
+      '#vpNfcPay.espera .nfc-circulo{ animation:nfcLatido 1.6s ease-in-out infinite; }' +
+      '#vpNfcPay.ok .nfc-circulo{ background:#E7F7EF; color:#1A8A54; animation:none; }' +
+      '#vpNfcPay.mal .nfc-circulo{ background:#FDECEA; color:#C0392B; animation:none; }' +
+      '@keyframes nfcLatido{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.045); } }' +
+      '@media (prefers-reduced-motion:reduce){ #vpNfcPay.espera .nfc-circulo{ animation:none; } }' +
+      '#vpNfcPay .nfc-pie{ margin:0; font-size:15px; font-weight:600; color:var(--ink-soft,#6B7592);' +
+        ' max-width:30ch; line-height:1.45; }' +
+      '#vpNfcPay .nfc-acciones{ display:flex; flex-direction:column; gap:10px; }' +
+      '#vpNfcPay .nfc-btn{ width:100%; height:54px; border-radius:999px; border:1.5px solid var(--border,#E6E9F2);' +
+        ' background:var(--surface,#fff); color:var(--ink,#16213E); font:800 16.5px var(--sans, inherit);' +
+        ' cursor:pointer; -webkit-tap-highlight-color:transparent; }' +
+      '#vpNfcPay .nfc-btn:active{ transform:scale(.985); }' +
+      '#vpNfcPay .nfc-btn.primary{ border-color:transparent; background:var(--ink,#16213E); color:#fff; }';
+    document.head.appendChild(st);
+  });
+
+  function nfcPantalla(){
+    var el = document.getElementById('vpNfcPay');
+    if(el) return el;
+    el = document.createElement('div');
+    el.id = 'vpNfcPay';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.innerHTML =
+      '<div class="nfc-top"><button type="button" class="nfc-back" id="vpNfcBack" aria-label="Regresar">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+      '</button></div>' +
+      '<div class="nfc-cuerpo">' +
+        '<h2 id="vpNfcTit">Cobro con NFC</h2>' +
+        '<p class="nfc-monto" id="vpNfcMonto">$0.00 MXN</p>' +
+        '<div class="nfc-circulo" id="vpNfcIco">' + NFC_ONDAS + '</div>' +
+        '<p class="nfc-pie" id="vpNfcPie">Acerca la tarjeta a la parte de atrás de tu celular.</p>' +
+      '</div>' +
+      '<div class="nfc-acciones" id="vpNfcActs">' +
+        '<button type="button" class="nfc-btn" id="vpNfcCancel">Cancelar</button>' +
+      '</div>';
+    document.body.appendChild(el);
+    el.querySelector('#vpNfcBack').addEventListener('click', function(){ nfcCerrar(); });
+    el.querySelector('#vpNfcCancel').addEventListener('click', function(){ nfcCancelar(); });
+    return el;
+  }
+
+  function nfcPinta(estado, titulo, pie, botones){
+    var el = nfcPantalla();
+    el.className = 'on' + (estado ? ' ' + estado : '');
+    var t = el.querySelector('#vpNfcTit'); if(t && titulo != null) t.textContent = titulo;
+    var p = el.querySelector('#vpNfcPie'); if(p && pie != null) p.textContent = pie;
+    var ico = el.querySelector('#vpNfcIco');
+    if(ico) ico.innerHTML = estado === 'ok'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
+      : (estado === 'mal'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 7v7M12 17.5v.01"/></svg>'
+        : NFC_ONDAS);
+    var acts = el.querySelector('#vpNfcActs');
+    if(acts && botones){
+      acts.innerHTML = '';
+      botones.forEach(function(b){
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'nfc-btn' + (b.primary ? ' primary' : '');
+        btn.textContent = b.txt;
+        btn.addEventListener('click', b.fn);
+        acts.appendChild(btn);
+      });
+    }
+  }
+
+  function nfcMonto(n){
+    var el = document.getElementById('vpNfcMonto');
+    if(!el) return;
+    var txt;
+    try{ txt = formatMoney(n); }catch(e){ txt = '$' + Number(n).toFixed(2); }
+    el.textContent = txt + ' MXN';
+  }
+
+  function nfcCerrar(){
+    var el = document.getElementById('vpNfcPay');
+    if(el) el.className = '';
+    safe(function(){ VA.syncBars(); });
+  }
+
+  function nfcCancelar(){
+    if(!NFC.cobrando){ nfcCerrar(); return; }
+    nfcPinta('', 'Cancelando…', 'Un momento.', []);
+    VA.call('nfc.cancelar', {}).catch(function(){}).then(function(){
+      NFC.cobrando = false;
+      nfcCerrar();
+    });
+  }
+
+  /* ---------- La sesión de Supabase para el servidor ---------- */
+  function nfcSesion(){
+    if(!cloudOn() || !Cloud.sb) return Promise.reject(new Error('Entra a tu cuenta.'));
+    return Cloud.sb.auth.getSession().then(function(r){
+      var s = r && r.data && r.data.session;
+      if(!s || !s.access_token) throw new Error('Tu sesión venció. Vuelve a entrar.');
+      return VA.call('nfc.sesion', {
+        url: (window.VENDO_CONFIG && VENDO_CONFIG.SUPABASE_URL) || '',
+        anonKey: (window.VENDO_CONFIG && VENDO_CONFIG.SUPABASE_ANON_KEY) || '',
+        token: s.access_token
+      });
+    });
+  }
+
+  /* ---------- ¿Este celular puede? ---------- */
+  function nfcRevisar(){
+    return VA.call('nfc.estado', {}).then(function(d){
+      NFC.compatible = !!(d && d.compatible);
+      NFC.motivo = (d && d.motivo) || '';
+      NFC.conectado = !!(d && d.conectado);
+      NFC.revisado = true;
+      return d;
+    }).catch(function(){
+      NFC.compatible = false; NFC.revisado = true;
+      return null;
+    });
+  }
+
+  /* ---------- Prender y apagar la terminal ---------- */
+  function nfcEncender(){
+    if(NFC.conectado) return Promise.resolve();
+    if(NFC.prendiendo) return Promise.reject(new Error('Ya se está encendiendo.'));
+    NFC.prendiendo = true;
+    return nfcSesion()
+      .then(function(){ return VA.call('nfc.encender', {}); })
+      .then(function(){ NFC.prendiendo = false; NFC.conectado = true; })
+      .catch(function(e){ NFC.prendiendo = false; throw e; });
+  }
+
+  function nfcApagar(){
+    NFC.conectado = false;
+    return VA.call('nfc.apagar', {}).catch(function(){});
+  }
+
+  /* ---------- Lo que ve el dueño en Stripe › Cobro con NFC ---------- */
+  safe(function(){
+    if(!has('stHubNfcHTML')) return;
+    var _hub = stHubNfcHTML;
+    stHubNfcHTML = function(){
+      /* Celular que no puede: el apartado NO se dibuja. Ni interruptor ni nada. */
+      if(!NFC.compatible){
+        if(!NFC.revisado) return '';
+        var razon = nfcTexto(NFC.motivo);
+        if(!razon) return '';
+        return '<div class="sth sth-sub">' +
+          '<div class="sth-tit"><h2 class="page-title">Cobro con NFC</h2></div>' +
+          '<p class="page-sub">' + escapeHtml(razon) + '</p>' +
+        '</div>';
+      }
+      return _hub.apply(this, arguments);
+    };
+  });
+
+  /* El botón "Pagar con NFC" solo sale si este celular puede Y está encendido */
+  safe(function(){
+    if(!has('stNfcOn')) return;
+    var _on = stNfcOn;
+    stNfcOn = function(){
+      try{ return NFC.compatible && _on.apply(this, arguments); }catch(e){ return false; }
+    };
+  });
+
+  /* El interruptor: al prenderlo se enciende la terminal de verdad */
+  safe(function(){
+    if(!has('stNfcSet')) return;
+    var _set = stNfcSet;
+    stNfcSet = function(v){
+      if(!v){
+        _set.call(this, false);
+        nfcApagar();
+        return;
+      }
+      if(!NFC.compatible){
+        toast('Este celular no puede cobrar con NFC', { icon:icon('alert'), variant:'toast-danger', subtitle:nfcTexto(NFC.motivo), duration:4600 });
+        safe(function(){ render(); });
+        return;
+      }
+      /* Se prende primero de verdad; si Stripe dice que no, no se queda encendido. */
+      toast('Encendiendo la terminal…', { icon:icon('card') });
+      nfcEncender().then(function(){
+        _set.call(window, true);
+      }).catch(function(e){
+        var msg = (e && e.message) || 'No se pudo encender la terminal';
+        toast('No se pudo encender el cobro con NFC', { icon:icon('alert'), variant:'toast-danger', subtitle:String(msg).slice(0, 160), duration:5200 });
+        safe(function(){ render(); });
+      });
+    };
+  });
+
+  /* ---------- EL COBRO ---------- */
+  safe(function(){
+    if(!has('stNfcCobrar')) return;
+    stNfcCobrar = function(){
+      if(NFC.cobrando) return;
+      var total = 0;
+      try{ total = Number(computeTotals().toPay) || 0; }catch(e){ total = 0; }
+      if(!(total > 0)){
+        toast('No hay nada que cobrar', { icon:icon('alert'), variant:'toast-danger' });
+        return;
+      }
+      tick([12]);
+      nfcPantalla();
+      nfcMonto(total);
+      nfcPinta('espera', 'Cobro con NFC', 'Preparando el cobro…', [
+        { txt:'Cancelar', fn:nfcCancelar }
+      ]);
+      safe(function(){ VA.syncBars(); });
+
+      NFC.cobrando = true;
+      var arrancar = NFC.conectado ? Promise.resolve() : nfcEncender();
+      arrancar.then(function(){
+        return nfcSesion();
+      }).then(function(){
+        nfcPinta('espera', 'Cobro con NFC', 'Acerca la tarjeta a la parte de atrás de tu celular.', [
+          { txt:'Cancelar', fn:nfcCancelar }
+        ]);
+        return VA.call('nfc.cobrar', {
+          amount: total,
+          code: (window.checkout && checkout.ref) || '',
+          venta: 'v' + Date.now()
+        });
+      }).then(function(r){
+        NFC.cobrando = false;
+        tick([15, 60, 15]);
+        var tarjeta = r && r.card;
+        var ref = tarjeta && tarjeta.last4
+          ? String(tarjeta.brand || 'Tarjeta').toUpperCase() + ' ····' + tarjeta.last4
+          : (r && r.id ? String(r.id).slice(-8) : '');
+        /* Se deja la referencia en el campo del folio: la venta la registras
+           tú con el botón de siempre, como cualquier otro cobro. */
+        safe(function(){
+          if(window.checkout && ref){ checkout.ref = ref; }
+          var inp = document.getElementById('payRef');
+          if(inp && ref) inp.value = ref;
+        });
+        nfcPinta('ok', 'Pagado', ref ? 'Se cobró con ' + ref : 'El cobro se completó.', [
+          { txt:'Listo', primary:true, fn:function(){ nfcCerrar(); } }
+        ]);
+        if(r && r.sinRevisar){
+          toast('El cobro salió, revisa tu Stripe', { icon:icon('alert'), subtitle:'No se pudo confirmar con el servidor, pero la tarjeta sí se cobró.', duration:5200 });
+        }
+      }).catch(function(e){
+        NFC.cobrando = false;
+        var code = (e && e.code) || '';
+        var msg = (e && e.message) || 'No se pudo cobrar';
+        if(code === 'cancelado'){ nfcCerrar(); return; }
+        if(code === 'sesion'){ nfcSesion().catch(function(){}); }
+        if(code === 'apagado' || code === 'incompatible') NFC.conectado = false;
+        tick([30, 60, 30]);
+        nfcPinta('mal', 'No se pudo cobrar', String(msg).slice(0, 180), [
+          { txt:'Intentar otra vez', primary:true, fn:function(){ nfcCerrar(); setTimeout(stNfcCobrar, 180); } },
+          { txt:'Cerrar', fn:function(){ nfcCerrar(); } }
+        ]);
+      });
+    };
+  });
+
+  /* ---------- Avisos que manda Android mientras cobra ---------- */
+  VA.on('nfc.acerca', function(){
+    if(NFC.cobrando) nfcPinta('espera', 'Cobro con NFC', 'Acerca la tarjeta a la parte de atrás de tu celular.', [
+      { txt:'Cancelar', fn:nfcCancelar }
+    ]);
+  });
+  VA.on('nfc.confirmando', function(){
+    if(NFC.cobrando) nfcPinta('espera', 'Confirmando…', 'No cierres esta pantalla.', []);
+  });
+  VA.on('nfc.conexion', function(d){ NFC.conectado = !!(d && d.conectado); });
+  VA.on('nfc.listo', function(){ NFC.conectado = true; });
+  VA.on('nfc.desconectado', function(){ NFC.conectado = false; });
+  VA.on('nfc.reconectando', function(){
+    if(NFC.cobrando) nfcPinta('espera', 'Reconectando…', 'Se perdió la conexión un momento.', []);
+  });
+  VA.on('nfc.reconectado', function(){ NFC.conectado = true; });
+  /* Android avisa que su permiso venció y pide uno nuevo */
+  VA.on('nfc.revalidar', function(){ nfcSesion().catch(function(){}); });
+
+  function nfcTexto(m){
+    switch(m){
+      case 'android_viejo': return 'Tu celular necesita Android 13 o más nuevo para cobrar con NFC.';
+      case 'sin_nfc': return 'Este celular no tiene NFC, así que no puede leer tarjetas.';
+      case 'sin_llave_hardware': return 'Este celular no tiene la seguridad que Stripe exige para cobrar tarjetas.';
+      case 'procesador': return 'Este aparato no es compatible con el cobro sin contacto.';
+      case 'sin_play': return 'Necesitas la Play Store de Google instalada para cobrar con NFC.';
+      case 'opciones_desarrollador': return 'Apaga las «Opciones de desarrollador» en los Ajustes de tu celular para poder cobrar con NFC.';
+      case 'sin_internet': return 'Necesitas internet para cobrar con tarjeta.';
+      case 'terminal_apagado': return 'Stripe todavía no activa el cobro presencial en tu cuenta.';
+      case 'terminal_pendiente': return 'Stripe está revisando tu cuenta para el cobro presencial.';
+      case 'sin_stripe': return 'Primero enlaza tu Stripe en Menú Digital › Pago con tarjeta.';
+      default: return '';
+    }
+  }
+
+  /* ---------- Al abrir la app ---------- */
+  /* La revisión del celular va de inmediato: así el apartado de Stripe no
+     aparece vacío un instante. Es rápida y no usa internet. */
+  nfcRevisar().then(function(){
+    safe(function(){ if(typeof currentView !== 'undefined' && currentView === 'stripefin') render(); });
+    if(!NFC.compatible) return;
+    /* Si el dueño ya lo tenía encendido, la terminal se prepara sola en
+       segundo plano: así el primer cobro no se tarda. Esto sí espera un
+       poco, para no estorbar el arranque. */
+    setTimeout(function(){
+      safe(function(){
+        if(cloudOn() && Cloud.uid && typeof mdCfg === 'function' && mdCfg().payments.nfc === true){
+          nfcEncender().catch(function(){});
+        }
+      });
+    }, 2500);
+  });
+
+  /* Al volver a la app se revisa que la terminal siga lista */
+  VA.on('resume', function(){
+    if(!NFC.compatible) return;
+    safe(function(){
+      if(typeof mdCfg === 'function' && mdCfg().payments.nfc === true && !NFC.conectado && !NFC.cobrando){
+        nfcEncender().catch(function(){});
+      }
+    });
+  });
 })();
