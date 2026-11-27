@@ -1909,9 +1909,9 @@ window.VPComandas = (() => {
       <div class="cm-done ${anim ? 'cm-anim' : ''}">
         <span class="cm-done-ico" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="23"/><path d="M15.5 27l7 7 14-15"/></svg></span>
         <b>¡Pedido terminado!</b>
-        <small>Le avisamos al mesero de ${escapeHtml(k.table)}</small>
+        <small>${k.pos ? 'Le avisamos a caja' : 'Le avisamos al mesero de ' + escapeHtml(k.table)}</small>
       </div>
-      <div class="cm-wait">${icon('bell')} Esperando al mesero <span class="cm-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      ${k.pos ? '' : `<div class="cm-wait">${icon('bell')} Esperando al mesero <span class="cm-dots" aria-hidden="true"><i></i><i></i><i></i></span></div>`}
       <button class="btn ghost block" onclick="closeModal()">Cerrar</button>
       <button class="cm-undo" onclick="VPComandas.estado('${k.id}','preparando')">Deshacer</button>`;
     }
